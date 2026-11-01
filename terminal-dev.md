@@ -179,5 +179,5 @@ Run `npm audit` for details.
 <!-- BUILDER QUEST -->
 
 - Please explain what tip route root, how it was derived and how is it used across this infra and protocols
-
 - How does this proving-key work, from how it created with code in program/script to what really happens?
+- What is R1CS? How run the Groth16 setup? and this is zk-snarks right and please which protocol own this zk gpru or tcap or what?

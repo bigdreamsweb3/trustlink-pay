@@ -4,6 +4,7 @@ import { sha256 } from "@noble/hashes/sha256";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils";
 import { ristretto255 } from "@noble/curves/ed25519.js";
 import { ConfidentialKeys, ElGamalPubkey } from "@solana/zk-sdk";
+import { decryptBalanceBlindingDeltaV1, deriveGpruBalanceScanKeyV1, decodeBabyJubHexV1 } from "./babyjub-delta-cipher.js";
 
 const RECORD_KEY_DOMAIN = new TextEncoder().encode("DBRIX_GPRU_TRANSACTION_RECORD_KEY_V1\0");
 const RECORD_ENVELOPE_ALGORITHM = "dbrix-core-secretbox-v1";
@@ -19,7 +20,7 @@ export type GpruTransactionRecordEnvelopeV1 = {
   compression?: "deflate";
 };
 
-export type GpruBalanceActionRecordV1 = {
+export type GpruOwnerMemoActionPayloadV1 = {
   version: 1;
   recordType: "tsn-gpru-balance-action-v1";
   sequence: string;
@@ -30,6 +31,10 @@ export type GpruBalanceActionRecordV1 = {
   actionKind: 1 | 2 | 3;
   tokenId: number;
   amountBaseUnits: string;
+};
+
+/** Owner-side action after recovering its blinding delta from the proof-bound Memo ciphertext. */
+export type GpruBalanceActionRecordV1 = GpruOwnerMemoActionPayloadV1 & {
   balanceBlindingDelta: string;
 };
 
@@ -37,9 +42,11 @@ export type GpruMemoBindingV1 = {
   successorPortfolioRoot: string;
   successorBalancePoint: { x: string; y: string };
   actionCommitment: string;
+  encryptedBlindingDelta: string;
+  deltaEphemeralPublicKey: { x: string; y: string };
 };
 
-const MEMO_BINDING_PREFIX = /^TSN_GPRU_HEAD_V1:([0-9a-f]{64}):([0-9a-f]{64}):([0-9a-f]{64}):([0-9a-f]{64}):/iu;
+const MEMO_BINDING_PREFIX = /^TSN_GPRU_HEAD_V1:([0-9a-f]{64}):([0-9a-f]{64}):([0-9a-f]{64}):([0-9a-f]{64}):([0-9a-f]{64}):([0-9a-f]{64}):([0-9a-f]{64}):/iu;
 
 function assert32(value: Uint8Array, label: string): void {
   if (!(value instanceof Uint8Array) || value.length !== 32) {
@@ -119,13 +126,18 @@ export function parseGpruMemoBindingV1(memoPayload: string): GpruMemoBindingV1 {
     successorPortfolioRoot: match[1]!.toLowerCase(),
     successorBalancePoint: { x: match[2]!.toLowerCase(), y: match[3]!.toLowerCase() },
     actionCommitment: match[4]!.toLowerCase(),
+    encryptedBlindingDelta: match[5]!.toLowerCase(),
+    deltaEphemeralPublicKey: { x: match[6]!.toLowerCase(), y: match[7]!.toLowerCase() },
   };
 }
 
-export function validateGpruBalanceActionRecordV1(value: unknown): GpruBalanceActionRecordV1 {
+export function validateGpruBalanceActionRecordV1(value: unknown, recoveredBlindingDelta: bigint): GpruBalanceActionRecordV1 {
   if (!value || typeof value !== "object") throw new Error("GPRU owner balance action record must be an object");
-  const record = value as Partial<GpruBalanceActionRecordV1>;
-  const expectedKeys = ["version", "recordType", "sequence", "previousMemoCommitment", "actionCommitment", "authorizationCommitment", "nullifier", "actionKind", "tokenId", "amountBaseUnits", "balanceBlindingDelta"];
+  const record = value as Partial<GpruOwnerMemoActionPayloadV1>;
+  const expectedKeys = ["version", "recordType", "sequence", "previousMemoCommitment", "actionCommitment", "authorizationCommitment", "nullifier", "actionKind", "tokenId", "amountBaseUnits"];
+  if (Object.prototype.hasOwnProperty.call(value, "balanceBlindingDelta")) {
+    throw new Error("DBrix Memo record must not contain a duplicate blinding delta; recover it from the proof-bound Memo ciphertext");
+  }
   if (Object.keys(value).sort().join("|") !== expectedKeys.sort().join("|")) {
     throw new Error("GPRU owner action record contains missing or unsupported fields");
   }
@@ -152,12 +164,12 @@ export function validateGpruBalanceActionRecordV1(value: unknown): GpruBalanceAc
     throw new Error("GPRU action tokenId must be a positive u32");
   }
   if (!/^[1-9][0-9]*$/u.test(String(record.amountBaseUnits))) throw new Error("GPRU action amount must be a positive decimal integer");
-  if (!/^(0|[1-9][0-9]*)$/u.test(String(record.balanceBlindingDelta))) throw new Error("GPRU blinding delta must be a nonnegative decimal integer");
   const sequence = BigInt(record.sequence!);
   if (sequence > 0xffff_ffff_ffff_ffffn || BigInt(record.amountBaseUnits!) > 0xffff_ffff_ffff_ffffn) {
     throw new Error("GPRU action sequence or amount exceeds u64");
   }
-  const blind = BigInt(record.balanceBlindingDelta!);
+  const blind = recoveredBlindingDelta;
+  if (typeof blind !== "bigint") throw new Error("GPRU balance blinding delta must be recovered from the proof-bound Memo ciphertext");
   const babyJubjubSuborder = 2736030358979909402780800718157159386076813972158567259200215660948447373041n;
   if (blind === 0n || blind >= babyJubjubSuborder) throw new Error("GPRU blinding delta must be nonzero and inside the BabyJubjub scalar field");
   const predecessor = record.previousMemoCommitment!.toLowerCase();
@@ -191,7 +203,7 @@ export function assertGpruMemoActionMatchesProofV1(
     nullifier: string;
   },
 ): void {
-  const validated = validateGpruBalanceActionRecordV1(record);
+  const validated = record;
   if (validated.actionKind !== proofAction.actionKind
       || validated.tokenId !== proofAction.tokenId
       || validated.amountBaseUnits !== BigInt(proofAction.amountBaseUnits).toString()
@@ -206,8 +218,10 @@ export function decryptGpruLedgerMemoV1(params: {
   memoPayload: string;
   masterSeed: Uint8Array;
   gpruElgamalPublicKey: Uint8Array;
+  gpruBalanceScanPublicKeyX: Uint8Array;
+  gpruBalanceScanPublicKeyY: Uint8Array;
 }): GpruBalanceActionRecordV1 {
-  parseGpruMemoBindingV1(params.memoPayload);
+  const binding = parseGpruMemoBindingV1(params.memoPayload);
   const match = MEMO_BINDING_PREFIX.exec(params.memoPayload)!;
   const ledgerPayload = params.memoPayload.slice(match[0].length);
   if (!/^[A-Za-z0-9_-]+$/u.test(ledgerPayload)) {
@@ -240,8 +254,22 @@ export function decryptGpruLedgerMemoV1(params: {
       { data: envelope.data, nonce: envelope.nonce, ...(envelope.compression ? { compression: envelope.compression } : {}) } satisfies EncryptedData,
       key,
     );
-    const validated = validateGpruBalanceActionRecordV1(record);
-    const binding = parseGpruMemoBindingV1(params.memoPayload);
+    const scanKey = deriveGpruBalanceScanKeyV1(params.masterSeed);
+    if (scanKey.publicKey.x !== decodeBabyJubHexV1(bytesToHex(params.gpruBalanceScanPublicKeyX), "TIP scan public x")
+        || scanKey.publicKey.y !== decodeBabyJubHexV1(bytesToHex(params.gpruBalanceScanPublicKeyY), "TIP scan public y")) {
+      scanKey.secret = 0n;
+      throw new Error("TIN master seed does not derive the registered GPRU balance scan key");
+    }
+    const delta = decryptBalanceBlindingDeltaV1({
+      encryptedDelta: BigInt(`0x${binding.encryptedBlindingDelta}`),
+      ephemeralPublicKey: {
+        x: BigInt(`0x${binding.deltaEphemeralPublicKey.x}`),
+        y: BigInt(`0x${binding.deltaEphemeralPublicKey.y}`),
+      },
+      scanSecret: scanKey.secret,
+    });
+    scanKey.secret = 0n;
+    const validated = validateGpruBalanceActionRecordV1(record, delta);
     if (validated.actionCommitment !== binding.actionCommitment) {
       throw new Error("Decrypted GPRU action commitment differs from the proof-bound Memo prefix");
     }

@@ -1,10 +1,13 @@
 # TrustLink Labs / TSN
 
-TrustLink Labs is building **TSN (Transfer Settlement Network)**, the complete
-identity-aware settlement infrastructure on Solana. **TSNP (Transfer Settlement
-Network Protocol)** is its on-chain settlement protocol program. TIP, GPRU,
-TCAP, and DIP have separate responsibilities; Circle's CCTP is an external
-cross-chain protocol used only at supported integrations.
+TrustLink Labs is building foundational infrastructure for the **Internet of
+Value** through **TSN (Transfer Settlement Network)**, a hybrid, identity-aware
+settlement network designed to make value transfer interoperable across
+applications and blockchain networks. TSN combines off-chain coordination and
+verification with on-chain authorization and settlement enforcement. **TSNP
+(Transfer Settlement Network Protocol)** is its on-chain settlement protocol
+program. TIP, GPRU, TCAP, and DIP have separate responsibilities; Circle's CCTP
+is an external cross-chain protocol used only at supported integrations.
 **TSN XP** is the active user-facing experience being built on that network.
 The separately hosted TrustLink Pay site is an earlier application surface.
 **TCAP (Transfer Confidential Asset Protocol)** provides the commitment-backed private
@@ -24,10 +27,14 @@ balance accounting used by the current credit architecture.
 - [GPRU ownership and TCAP custody](docs/GPRU-TCAP-LINK-BREAKING.md)
 
 TSN coordinates identity resolution, signed payment intents, redacted Receiver
-work, Node verification, leases, and exact transaction submission. GPRU is the
-opaque ownership and routing commitment; TCAP is the custody and private
-balance layer. Funding and recipient ownership are never joined by a public
-per-transfer intent or receipt account.
+work, Node verification, leases, and exact transaction submission. GPRU guards
+the integrity and privacy of the user's private state presented to TCAP for a
+balance-changing action: its proof is intended to show that the hidden state is
+current and the proposed transition follows from it. TCAP governs accepted
+assets, authorization, reserves, and liquidity, and applies valid transitions
+atomically. The proof path is not yet operational end to end, and public
+transaction fields and the shared TCAP root can still reveal activity and
+correlation.
 
 ## Link-breaking transfer architecture
 
@@ -141,10 +148,12 @@ completed.
   resolves their payment routes.
 - **TIN:** Transfer Identity Number, a 10-digit identity within TIP; it is not
   a private key, token account or balance.
-- **GPRU:** Guard Privacy Routing Unit, a non-custodial authorization and
-  routing layer that never holds funds or balances.
-- **TCAP:** Transfer Confidential Asset Protocol, the private balance accounting
-  layer for tip transitions and encrypted owner snapshots.
+- **GPRU:** Guarded Privacy Routing Unit. It guards the integrity and privacy
+  of the user's private state presented to TCAP by verifying the hidden-state
+  transition proof; it does not hold funds.
+- **TCAP:** Transfer Confidential Asset Protocol. It governs accepted assets,
+  authorization, reserves, and liquidity, and applies valid transitions
+  atomically. The hidden-head proof path is not operational end to end yet.
 - **Receiver:** durable ingress, redacted work storage, leases and status
   evidence; it does not receive plaintext roots or spend keys.
 - **TSN Node:** off-chain verifier that checks signatures, policy, commitments,
@@ -154,7 +163,8 @@ completed.
 - **Cranker:** fee-paying submitter of already authorized work; it cannot change
   amount, token, recipient binding, commitments, sequence, policy, scope,
   nullifier or expiry.
-- **TCAP program:** on-chain custody and opaque GPRU tip-commitment enforcement.
+- **TCAP program:** on-chain asset and reserve governance with atomic settlement
+  checks; GPRU verifies the private-state proof TCAP relies on.
 
 Solana validators provide execution, ordering, consensus and finality. They are
 not TSN Nodes or Crankers; TSN uses Solana and does not replace Solana

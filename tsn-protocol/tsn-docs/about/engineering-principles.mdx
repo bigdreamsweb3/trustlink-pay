@@ -1,25 +1,21 @@
 ---
-title: "TrustLink Labs Engineering Principles"
-sidebarTitle: "Engineering Principles"
-description: "Source-backed boundaries for identity, authorization, proof verification, and asset governance."
+title: "TrustLink Labs Design Principles"
+sidebarTitle: "Design Principles"
+description: "The protocol principles behind identity separation, private-state protection, and settlement authority."
 ---
 
-TrustLink Labs separates transfer identity, settlement coordination, cryptographic verification, and asset governance so each contract can be reviewed independently.
+TSN separates transfer identity, private-state verification, and asset settlement so that each has a clear authority boundary.
 
-## Data minimization
+## Identity stays separate from custody
 
-TIP stores encrypted identity and recovery data with public route commitments. Receiver, Node, and Cranker receive only the data required by their service contracts. The current TSN credit transaction passes a TIP registry account into GPRU and writes a shared TCAP root, so the current path still exposes those repeated on-chain account references and transaction ordering.
+TIP manages transfer identities. A TIN gives a sender a recipient identifier to resolve; it is not a wallet key or a place where tokens are held. The owner remains responsible for authorizing wallet actions.
 
-## User-controlled identity keys
+## Private state is checked before settlement
 
-The owner authorizes TIN creation with a wallet. Recovery material is held in a separate TIP-owned recovery PDA, and the SDK handles owner recovery. GPRU's one-time ElGamal key design keeps the matching private material owner-side; Node and Cranker do not need the owner's long-term private key.
+GPRU is designed to guard the integrity and privacy of a user's private state as it is presented to TCAP. Its proof should show that the hidden state is current and that the proposed transition follows from it. TCAP governs accepted assets and liquidity, then applies authorized changes atomically. GPRU does not hold funds or replace TCAP's checks.
 
-## Verifiable state changes
+## Claims match evidence
 
-The proof-shaped credit ABI binds a hidden-head Groth16 proof, Memo commitment, action, and shared-root transition. It does not write a per-TIN TCAP PDA. The circuit source includes balance constraints, but has not been compiled or reviewed.
+A protocol description, source implementation, successful build, deployment, and confirmed transaction are different kinds of evidence. Public materials state feature limitations plainly and do not describe a capability as active until its end-to-end behavior is verified.
 
-Node currently fails closed because the circuit/setup artifacts, private witness source, and prover service are not configured. Debit and exit are not established end to end. The global writable root and public action arguments limit privacy.
-
-## Evidence discipline
-
-Source, compilation, deployment, and confirmed transactions are separate evidence. A page should not label a behavior live because an instruction exists or a build passed. See [Current technology](/about/current-technology) and [Security invariants](/security/invariants) for the current status boundary.
+The hidden-head proof path is not established end to end, and TSN does not claim zero linkability. Public transaction metadata may reveal activity or correlation. Detailed proof and deployment verification belongs in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

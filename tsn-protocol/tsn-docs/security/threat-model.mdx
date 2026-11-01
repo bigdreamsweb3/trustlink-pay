@@ -1,33 +1,27 @@
 ---
-title: "TSN Threat Model: Current Credit Boundaries"
+title: "TSN Privacy and Security Boundaries"
 sidebarTitle: "Threat Model"
-description: "Source-backed threat boundaries for proof-shaped TSN credit settlement and hidden-head proving."
+description: "What TSN is designed to protect, what each participant can do, and what remains visible on public chains."
 ---
 
-This page describes the current wallet-to-TIN credit source and separates implemented checks from security properties that remain unestablished. It does not treat source presence as deployment or end-to-end evidence.
+TSN separates user authorization, service verification, private-state protection, and settlement authority. The sender's wallet authorizes the requested payment. TSN services verify and route work. GPRU is designed to guard the integrity and privacy of the private state presented to TCAP. TCAP governs accepted assets, liquidity, and atomic settlement.
 
-## Current credit path
+## Participant boundaries
 
-The TSN credit instruction validates Mother authorization, verifies the GPRU DNA key proof and encrypted-credit relation, and calls TCAP to advance a shared commitment root. The transaction includes a Memo instruction whose data is bound by commitment. The active caller does not create a per-TIN TCAP tip account or persist the Memo as account state.
-
-The shared TCAP root and sequence reject reapplication of the same global predecessor. They do not prove that the caller supplied the latest ciphertext for a particular TIN. GPRU checks the supplied predecessor relation but does not persist a per-TIN head in this path.
-
-## Adversary boundaries
-
-| Actor | Source-backed capability | Limit or residual risk |
+| Participant | Role | Boundary |
 | --- | --- | --- |
-| Receiver | Accepts ingress, stores work, and leases it to operators | Acceptance and lease state do not establish Node verification or on-chain settlement. |
-| Node | Verifies work, resolves TIP data, and prepares settlement authorization | Node verification alone does not move funds; the chain instruction must validate the authorized transition. |
-| Cranker | Submits the authorized transaction and pays the Solana fee | Submission can fail or be delayed; only confirmed chain state establishes settlement. |
-| Chain observer | Reads public instruction data, account keys, commitments, sequence, and transaction ordering | Memo payloads may be encrypted, but their ciphertext and surrounding transaction metadata remain public. The shared TCAP root is a repeatable public account reference. |
-| Malicious credit caller | Can submit malformed or stale transition inputs | The programs check authorization, GPRU relation, approved asset/policy, validity, and global root predecessor. The current path lacks an authenticated per-TIN latest-head check. |
+| Sender wallet | Reviews and authorizes the payment. | A service or Cranker cannot replace the sender's approval. |
+| TSN services | Coordinate and verify payment work. | Service acceptance or verification is not on-chain settlement. |
+| Cranker | Submits authorized work and pays transaction fees. | Submission does not prove confirmation or give authority to alter payment terms. |
+| GPRU | Guards the user's private state presented to TCAP. | A proof does not hold funds or replace TCAP checks. |
+| TCAP | Governs accepted assets and applies authorized settlement. | The transition must satisfy the applicable asset, authorization, and liquidity rules. |
 
-## Hidden-head source boundary
+## Public-chain visibility
 
-The TSNP/TCAP credit ABI carries a Groth16 hidden-head proof and TCAP invokes the GPRU verifier before mutation. Node currently fails closed because the circuit has not been compiled/reviewed and no proving keys, witness source, or prover service are configured. Circuit source includes balance arithmetic constraints, but they are not verified. The instruction exposes action kind, token ID, amount, nullifier and other public inputs; every update uses the same writable TCAP root, so the design does not provide zero linkability.
+Solana exposes transaction signatures, account keys, timing, instruction data, and ordering. Encryption can protect selected payload contents but does not hide those surrounding facts. Shared public references or repeated transaction patterns may allow observers to correlate activity. TSN does not claim zero linkability.
 
-## Out of scope and evidence
+## Capability status
 
-The source does not establish confidential debit or exit end to end. Public wallet funding and exits expose their ordinary transaction metadata. A submitted transaction is not a confirmed transaction, and confirmed reserve funding is not proof that the later TCAP transition succeeded. Establish each lifecycle stage from its own signed decision, transaction signature, and resulting chain state.
+The hidden-head proof flow is not established as an end-to-end settlement capability, and confidential debit and exit are not established as available. A source-level design or accepted service request is not proof of settlement; rely on the confirmed chain transaction and resulting state.
 
-See [Security invariants](/security/invariants), [Replay protection](/security/replay-protection), and [GPRU and TCAP state](/architecture/gpru-confidential-balances).
+The detailed adversary assumptions and implementation evidence are in the [repository security documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

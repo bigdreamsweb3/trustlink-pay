@@ -1,5 +1,6 @@
 import { Buffer } from "buffer";
 import { deriveGpruElgamalKeyCommitment } from "./gpru.js";
+import { decodeBabyJubHexV1, isValidBabyJubPointV1 } from "./gpru/babyjub-delta-cipher.js";
 import { sha256 } from "@noble/hashes/sha2";
 import nacl from "tweetnacl";
 import {
@@ -37,16 +38,30 @@ export function validateTinTipRoute(params: {
   gpruElgamalKeyVersion?: number;
   gpruElgamalPublicKey?: Uint8Array | null;
   gpruElgamalKeyCommitment?: Uint8Array | null;
+  gpruBalanceScanKeyVersion?: number;
+  gpruBalanceScanPublicKeyX?: Uint8Array | null;
+  gpruBalanceScanPublicKeyY?: Uint8Array | null;
   policyCommitment?: Uint8Array | null;
 }): boolean {
   const zero = (value?: Uint8Array | null) =>
     !value || value.every((byte) => byte === 0);
   const nonZero32 = (value?: Uint8Array | null) =>
     Boolean(value && value.length === 32 && !zero(value));
-  if (params.tipRouteVersion !== 1 || params.gpruElgamalKeyVersion !== 1) return false;
+  const scanPointValid = (() => {
+    try {
+      return isValidBabyJubPointV1({
+        x: decodeBabyJubHexV1(Buffer.from(params.gpruBalanceScanPublicKeyX ?? []).toString("hex"), "GPRU balance scan x"),
+        y: decodeBabyJubHexV1(Buffer.from(params.gpruBalanceScanPublicKeyY ?? []).toString("hex"), "GPRU balance scan y"),
+      });
+    } catch { return false; }
+  })();
+  if (params.tipRouteVersion !== 1 || params.gpruElgamalKeyVersion !== 1 || params.gpruBalanceScanKeyVersion !== 1) return false;
   return (
     nonZero32(params.gpruElgamalPublicKey) &&
     nonZero32(params.gpruElgamalKeyCommitment) &&
+    nonZero32(params.gpruBalanceScanPublicKeyX) &&
+    nonZero32(params.gpruBalanceScanPublicKeyY) &&
+    scanPointValid &&
     nonZero32(params.policyCommitment) &&
     Buffer.from(deriveGpruElgamalKeyCommitment(
       params.gpruElgamalKeyVersion,
@@ -114,6 +129,9 @@ function decodeTinV1RegistryAccount(data: Uint8Array) {
     gpruElgamalKeyVersion: u8("gpru_elgamal_key_version"),
     gpruElgamalPublicKey: take(32, "gpru_elgamal_public_key"),
     gpruElgamalKeyCommitment: take(32, "gpru_elgamal_key_commitment"),
+    gpruBalanceScanKeyVersion: u8("gpru_balance_scan_key_version"),
+    gpruBalanceScanPublicKeyX: take(32, "gpru_balance_scan_public_key_x"),
+    gpruBalanceScanPublicKeyY: take(32, "gpru_balance_scan_public_key_y"),
     policyCommitment: take(32, "policy_commitment"),
   };
   if (bytes.subarray(offset).some((byte) => byte !== 0)) {
@@ -150,7 +168,7 @@ export async function resolveTinV1Identity(params: {
   if (!account.lookupCommitment.equals(expectedLookupCommitment)) {
     throw new Error("TIN_REGISTRY_LOOKUP_COMMITMENT_MISMATCH");
   }
-  if (account.routeVersion < 1n || account.tipRouteVersion !== 1 || account.gpruElgamalKeyVersion !== 1) {
+  if (account.routeVersion < 1n || account.tipRouteVersion !== 1 || account.gpruElgamalKeyVersion !== 1 || account.gpruBalanceScanKeyVersion !== 1) {
     throw new Error("TIN_REGISTRY_ROUTE_VERSION_UNSUPPORTED");
   }
   if (!Buffer.from(deriveGpruElgamalKeyCommitment(
@@ -159,6 +177,16 @@ export async function resolveTinV1Identity(params: {
   )).equals(account.gpruElgamalKeyCommitment)) {
     throw new Error("TIN_REGISTRY_GPRU_KEY_COMMITMENT_MISMATCH");
   }
+  if (!validateTinTipRoute({
+    tipRouteVersion: account.tipRouteVersion,
+    gpruElgamalKeyVersion: account.gpruElgamalKeyVersion,
+    gpruElgamalPublicKey: account.gpruElgamalPublicKey,
+    gpruElgamalKeyCommitment: account.gpruElgamalKeyCommitment,
+    gpruBalanceScanKeyVersion: account.gpruBalanceScanKeyVersion,
+    gpruBalanceScanPublicKeyX: account.gpruBalanceScanPublicKeyX,
+    gpruBalanceScanPublicKeyY: account.gpruBalanceScanPublicKeyY,
+    policyCommitment: account.policyCommitment,
+  })) throw new Error("TIN_REGISTRY_GPRU_BALANCE_SCAN_KEY_INVALID");
   const envelope = account.encryptedIdentityEnvelope;
   if (envelope.length < 28) throw new Error("TIN_REGISTRY_IDENTITY_ENVELOPE_MALFORMED");
   const identityKeyBytes = Buffer.from(sha256(Buffer.concat([
@@ -189,6 +217,9 @@ export async function resolveTinV1Identity(params: {
     ownerPubkeyHash: account.ownerCommitment.toString("hex"),
     verifiedCredentials: [] as string[],
     registryPda: registryPda.toBase58(),
+    gpruBalanceScanKeyVersion: account.gpruBalanceScanKeyVersion,
+    gpruBalanceScanPublicKeyX: account.gpruBalanceScanPublicKeyX.toString("hex"),
+    gpruBalanceScanPublicKeyY: account.gpruBalanceScanPublicKeyY.toString("hex"),
   };
 }
 
@@ -570,6 +601,9 @@ export function serializeTinV1CreationParams(params: {
   gpruElgamalKeyCommitment: Buffer | Uint8Array;
   policyCommitment: Buffer | Uint8Array;
   gpruElgamalKeyVersion: 1;
+  gpruBalanceScanKeyVersion: 1;
+  gpruBalanceScanPublicKeyX: Buffer | Uint8Array;
+  gpruBalanceScanPublicKeyY: Buffer | Uint8Array;
   intentHash: Buffer | Uint8Array;
   expiryTs: bigint | number;
 }) {
@@ -597,6 +631,9 @@ export function serializeTinV1CreationParams(params: {
   if (!validateTinTipRoute({
     tipRouteVersion: params.tipRouteVersion as 1,
     gpruElgamalKeyVersion: params.gpruElgamalKeyVersion,
+    gpruBalanceScanKeyVersion: params.gpruBalanceScanKeyVersion,
+    gpruBalanceScanPublicKeyX: params.gpruBalanceScanPublicKeyX,
+    gpruBalanceScanPublicKeyY: params.gpruBalanceScanPublicKeyY,
     gpruElgamalPublicKey,
     gpruElgamalKeyCommitment,
     policyCommitment,
@@ -615,6 +652,9 @@ export function serializeTinV1CreationParams(params: {
     Buffer.from([params.gpruElgamalKeyVersion]),
     gpruElgamalPublicKey,
     gpruElgamalKeyCommitment,
+    Buffer.from([params.gpruBalanceScanKeyVersion]),
+    normalizeHash32(params.gpruBalanceScanPublicKeyX, "gpruBalanceScanPublicKeyX"),
+    normalizeHash32(params.gpruBalanceScanPublicKeyY, "gpruBalanceScanPublicKeyY"),
     policyCommitment,
   );
   const expiry = Buffer.alloc(8);
@@ -651,6 +691,9 @@ export function serializeTinV1CreationStageParams(params: {
   gpruElgamalKeyCommitment: Buffer | Uint8Array;
   policyCommitment: Buffer | Uint8Array;
   gpruElgamalKeyVersion: 1;
+  gpruBalanceScanKeyVersion: 1;
+  gpruBalanceScanPublicKeyX: Buffer | Uint8Array;
+  gpruBalanceScanPublicKeyY: Buffer | Uint8Array;
   expiryTs: bigint | number;
 }) {
   for (const [field, value, required] of [
@@ -666,6 +709,9 @@ export function serializeTinV1CreationStageParams(params: {
   if (!validateTinTipRoute({
     tipRouteVersion: params.tipRouteVersion as 1,
     gpruElgamalKeyVersion: params.gpruElgamalKeyVersion,
+    gpruBalanceScanKeyVersion: params.gpruBalanceScanKeyVersion,
+    gpruBalanceScanPublicKeyX: params.gpruBalanceScanPublicKeyX,
+    gpruBalanceScanPublicKeyY: params.gpruBalanceScanPublicKeyY,
     gpruElgamalPublicKey: params.gpruElgamalPublicKey,
     gpruElgamalKeyCommitment: params.gpruElgamalKeyCommitment,
     policyCommitment: params.policyCommitment,
@@ -686,6 +732,9 @@ export function serializeTinV1CreationStageParams(params: {
     Buffer.from([params.gpruElgamalKeyVersion]),
     requireHash32(params.gpruElgamalPublicKey, "gpruElgamalPublicKey"),
     requireHash32(params.gpruElgamalKeyCommitment, "gpruElgamalKeyCommitment"),
+    Buffer.from([params.gpruBalanceScanKeyVersion]),
+    requireHash32(params.gpruBalanceScanPublicKeyX, "gpruBalanceScanPublicKeyX"),
+    requireHash32(params.gpruBalanceScanPublicKeyY, "gpruBalanceScanPublicKeyY"),
     requireHash32(params.policyCommitment, "policyCommitment"),
   );
   appendI64(parts, params.expiryTs);
@@ -831,6 +880,9 @@ export async function submitTinV1Creation(params: {
       gpruElgamalKeyVersion: prepared.gpruElgamalKeyVersion,
       gpruElgamalPublicKey: hex(prepared.gpruElgamalPublicKey),
       gpruElgamalKeyCommitment: hex(prepared.gpruElgamalKeyCommitment),
+      gpruBalanceScanKeyVersion: prepared.gpruBalanceScanKeyVersion,
+      gpruBalanceScanPublicKeyX: hex(prepared.gpruBalanceScanPublicKeyX),
+      gpruBalanceScanPublicKeyY: hex(prepared.gpruBalanceScanPublicKeyY),
       policyCommitment: hex(prepared.policyCommitment),
       lookupIssuanceProof: params.lookupIssuanceProof,
     }),
@@ -855,6 +907,9 @@ export function createTinV1OwnerIntentHash(params: {
   gpruElgamalKeyCommitment: Buffer | Uint8Array;
   policyCommitment: Buffer | Uint8Array;
   gpruElgamalKeyVersion: 1;
+  gpruBalanceScanKeyVersion: 1;
+  gpruBalanceScanPublicKeyX: Buffer | Uint8Array;
+  gpruBalanceScanPublicKeyY: Buffer | Uint8Array;
   expiryTs: bigint | number;
 }) {
   const routeVersion = Buffer.alloc(8);
@@ -876,6 +931,9 @@ export function createTinV1OwnerIntentHash(params: {
     Buffer.from([params.gpruElgamalKeyVersion]),
     normalizeHash32(params.gpruElgamalPublicKey, "gpruElgamalPublicKey"),
     normalizeHash32(params.gpruElgamalKeyCommitment, "gpruElgamalKeyCommitment"),
+    Buffer.from([params.gpruBalanceScanKeyVersion]),
+    normalizeHash32(params.gpruBalanceScanPublicKeyX, "gpruBalanceScanPublicKeyX"),
+    normalizeHash32(params.gpruBalanceScanPublicKeyY, "gpruBalanceScanPublicKeyY"),
     normalizeHash32(params.policyCommitment, "policyCommitment"),
     expiry,
   ])));
@@ -905,13 +963,16 @@ export function buildTinV1Creation(params: {
   gpruElgamalKeyCommitment: Buffer | Uint8Array;
   policyCommitment: Buffer | Uint8Array;
   gpruElgamalKeyVersion: 1;
+  gpruBalanceScanKeyVersion: 1;
+  gpruBalanceScanPublicKeyX: Buffer | Uint8Array;
+  gpruBalanceScanPublicKeyY: Buffer | Uint8Array;
   expiryTs?: bigint | number;
   nonce?: Buffer | Uint8Array;
 }) {
   if (params.tipRouteVersion !== 1) throw new Error("TIN V1 creation requires the active TIP route version");
   const gpruElgamalPublicKey = Buffer.from(params.gpruElgamalPublicKey);
   const gpruElgamalKeyCommitment = Buffer.from(params.gpruElgamalKeyCommitment);
-  if (!validateTinTipRoute({ tipRouteVersion: params.tipRouteVersion, gpruElgamalKeyVersion: params.gpruElgamalKeyVersion, gpruElgamalPublicKey, gpruElgamalKeyCommitment, policyCommitment: params.policyCommitment })) {
+  if (!validateTinTipRoute({ tipRouteVersion: params.tipRouteVersion, gpruElgamalKeyVersion: params.gpruElgamalKeyVersion, gpruElgamalPublicKey, gpruElgamalKeyCommitment, gpruBalanceScanKeyVersion: params.gpruBalanceScanKeyVersion, gpruBalanceScanPublicKeyX: params.gpruBalanceScanPublicKeyX, gpruBalanceScanPublicKeyY: params.gpruBalanceScanPublicKeyY, policyCommitment: params.policyCommitment })) {
     throw new Error("TIN V1 creation requires a valid versioned GPRU ElGamal key commitment");
   }
   const zero = Buffer.alloc(32);
@@ -936,6 +997,9 @@ export function buildTinV1Creation(params: {
     gpruElgamalKeyVersion: params.gpruElgamalKeyVersion,
     gpruElgamalPublicKey: params.gpruElgamalPublicKey,
     gpruElgamalKeyCommitment: params.gpruElgamalKeyCommitment,
+    gpruBalanceScanKeyVersion: params.gpruBalanceScanKeyVersion,
+    gpruBalanceScanPublicKeyX: params.gpruBalanceScanPublicKeyX,
+    gpruBalanceScanPublicKeyY: params.gpruBalanceScanPublicKeyY,
     policyCommitment: params.policyCommitment,
     expiryTs,
   };

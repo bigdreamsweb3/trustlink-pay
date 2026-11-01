@@ -40,7 +40,8 @@ export function recoverGpruBalanceHistoryV1(
   const actions = input.map(({ memoPayload, record, onChainAction }) => {
     if (typeof memoPayload !== "string") throw new Error("GPRU Memo payload must be text");
     const binding = parseGpruMemoBindingV1(memoPayload);
-    const validated = validateGpruBalanceActionRecordV1(record);
+    const { balanceBlindingDelta, ...ownerPayload } = record;
+    const validated = validateGpruBalanceActionRecordV1(ownerPayload, BigInt(balanceBlindingDelta));
     if (validated.actionCommitment !== binding.actionCommitment
         || validated.actionCommitment !== onChainAction.actionCommitment) {
       throw new Error("Decrypted GPRU action commitment differs from the on-chain proof binding");

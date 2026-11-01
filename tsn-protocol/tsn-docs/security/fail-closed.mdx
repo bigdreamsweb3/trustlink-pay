@@ -1,25 +1,20 @@
 ---
-title: "TSN Fail-Closed Behavior in the Credit Path"
-sidebarTitle: "Fail-Closed"
-description: "The source-backed rejection boundaries between Receiver ingress and the TCAP credit transition."
+title: "When TSN Cannot Complete a Payment"
+sidebarTitle: "Failure Behavior"
+description: "How applications should interpret rejected, pending, and uncertain payment outcomes."
 ---
 
-The wallet-to-TIN credit route has separate service and on-chain checks. A rejection or timeout at an earlier stage does not prove a later transaction happened, and a confirmed reserve deposit does not prove the TCAP credit transition confirmed.
+TSN distinguishes request acceptance, verification, transaction submission, and Solana confirmation. A failure or timeout at one stage does not prove that a later stage ran. A confirmed funding transaction also does not prove a separate credit transaction succeeded.
 
-## Credit path checks
+The expected behavior is to stop when a required authorization, identity, proof, asset, liquidity, or chain check cannot be established. Applications should show the reported stage and reason without describing unconfirmed work as settled.
 
-1. **Receiver ingress:** validates the request shape and stores authenticated work. Acceptance is not payment verification.
-2. **Node verification:** checks the signed request and funding evidence, resolves the TIN route through TIP, and prepares authorized work. Node verification is not on-chain settlement.
-3. **Cranker submission:** leases eligible work and submits the authorized transaction. A Cranker cannot repair stale owner-signed transaction data by changing its blockhash or payment fields; the sender must authorize a fresh transaction when required.
-4. **TSNP/GPRU/TCAP execution:** TSNP checks the Mother authorization, GPRU checks DNA-key derivation and encrypted-credit relation, and TCAP validates the approved asset, authorization signer, validity window, global root predecessor, and next sequence before advancing shared state.
-5. **Confirmation:** only the transaction signature and resulting account state on the target cluster establish that the transition executed.
+## Safe application response
 
-## Current guarantees and limits
+1. Preserve the request identifier and any transaction signatures.
+2. Query the latest request status and inspect each transaction on the selected network.
+3. Do not retry with altered sender-approved terms.
+4. If an owner-signed transaction has expired, prepare a new one and request the owner's signature again.
 
-TCAP's shared-root predecessor and sequence make a repeated stale global transition fail. They do not prove that the caller supplied a particular TIN's latest ciphertext. The active credit instruction does not create a TCAP TIN-tip PDA. GPRU/TCAP hidden-head instructions are separate source and are not called by current settlement services; their circuit does not prove debit affordability, exact balance arithmetic, or reserve solvency.
+GPRU is intended to guard the private state presented to TCAP; TCAP governs funds and applies authorized transitions atomically. The hidden-head proof path is not established end to end, so an application must not promise that proof-gated settlement is available.
 
-Transaction arguments, account keys, Memo ciphertext, signer, fee payer, and ordering remain visible on Solana. Do not claim zero linkability, private amount, or an authenticated latest Memo based only on the current credit source.
-
-Epoch treasury, `SettlementDna`, opaque slot, payout, and refund checks belong to separate TSNP instruction families. Use those checks only when the transaction actually invokes that family.
-
-See [Security invariants](/security/invariants), [Replay protection](/security/replay-protection), and [Current architecture](/overview/architecture).
+Internal rejection reasons and operator recovery procedures are maintained in the [repository runbooks](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

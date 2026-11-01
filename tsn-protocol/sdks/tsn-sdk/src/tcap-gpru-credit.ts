@@ -37,7 +37,7 @@ function fixedHex(value: string, byteLength: number, label: string): Buffer {
 }
 
 function serializeHiddenHeadProof(proof: GpruHiddenHeadProofV1): Buffer {
-  if (proof.publicInputs.length !== 9) throw new Error("GPRU hidden-head V1 requires exactly 9 public inputs");
+  if (proof.publicInputs.length !== 12) throw new Error("GPRU hidden-head V1 requires exactly 12 public inputs");
   if (![1, 2, 3].includes(proof.actionKind)) throw new Error("Unsupported GPRU hidden-head action kind");
   const action = Buffer.from([proof.actionKind]);
   return Buffer.concat([

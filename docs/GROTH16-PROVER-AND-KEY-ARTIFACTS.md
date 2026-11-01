@@ -4,7 +4,7 @@ This guide explains the proof-generation component used by GPRU's hidden-head V1
 
 ## What the prover does
 
-The circuit defines the exact statement that GPRU accepts. For one balance-changing action, a prover supplies private witness data for TIP route membership, the current hidden per-TIN head, predecessor sequence and Memo/action commitments, the predecessor portfolio root, the selected-token path, and the nullifier's unused path. The circuit checks the transition and emits a Groth16 proof plus nine public inputs. It does not reveal the private route or head witness.
+The circuit defines the exact statement that GPRU accepts. For one balance-changing action, a prover supplies private witness data for TIP route membership, the current hidden per-TIN head, predecessor sequence and Memo/action commitments, the predecessor portfolio root, selected-token and nullifier paths, and the one-time encrypted-delta opening. The circuit checks the transition and emits a Groth16 proof plus twelve public inputs. It proves that the Memo's one-time ciphertext encrypts the same private Pedersen blinding delta used in the transition, without revealing the delta, private route, or head witness.
 
 The prover is an off-chain program or service. It receives a valid witness and the circuit-specific proving key, computes the witness, and creates the proof. It cannot make an invalid transition pass: GPRU checks the proof against the verifying key stored in its global verifier PDA, and TCAP invokes that check before changing its shared root or reserve liabilities. If verification or any later TCAP condition fails, Solana rolls back the whole instruction transaction.
 
@@ -23,8 +23,13 @@ The order is fixed by `main.circom`, GPRU, TSN, and TCAP. Every proof producer a
 7. `successorPortfolioRoot` — updated root of the hidden per-TIN token commitment map.
 8. `successorBalanceX` — X coordinate of the selected token's successor Pedersen commitment.
 9. `successorBalanceY` — Y coordinate of the selected token's successor Pedersen commitment.
+10. `encryptedBlindingDelta` — one-time ciphertext of the private blinding delta.
+11. `deltaEphemeralPublicX` — X coordinate of the ciphertext's ephemeral point.
+12. `deltaEphemeralPublicY` — Y coordinate of the ciphertext's ephemeral point.
 
-The Memo prefix is `TSN_GPRU_HEAD_V1:<successorPortfolioRoot>:<successorBalanceX>:<successorBalanceY>:<actionCommitment>:` followed by the DBrix Ledger stream. GPRU checks the prefix against public inputs 7, 8, 9, and 4 respectively, hashes the complete Memo for input 3, checks inputs 1 and 6 against canonical TCAP and TIP accounts, and recomputes input 4 from action fields. The Rust verifier expects canonical 32-byte big-endian BN254 scalar encodings. A producer must not reorder, truncate, or reinterpret these values.
+The corresponding Memo prefix has these seven fields after `TSN_GPRU_HEAD_V1`: successor portfolio root, successor balance X/Y, action commitment, encrypted blinding delta, and ephemeral point X/Y. The owner-encrypted Ledger record excludes the delta. The TIP-registered BabyJubjub scan key lets the owner recover the delta, and the circuit proves that recovered value is the one used by the balance commitment transition.
+
+The Memo prefix is `TSN_GPRU_HEAD_V1:<successorPortfolioRoot>:<successorBalanceX>:<successorBalanceY>:<actionCommitment>:<encryptedBlindingDelta>:<deltaEphemeralPublicX>:<deltaEphemeralPublicY>:` followed by the DBrix Ledger stream. GPRU checks the prefix against public inputs 7-12, hashes the complete Memo for input 3, checks inputs 1 and 6 against canonical TCAP and TIP accounts, and recomputes input 4 from action fields. The Rust verifier expects canonical 32-byte big-endian BN254 scalar encodings. A producer must not reorder, truncate, or reinterpret these values.
 
 ## Proving and verifying keys
 
@@ -37,7 +42,7 @@ The setup has toxic-waste risk: if all setup contributors retain or collude arou
 Use a pinned Circom compiler, pinned `circomlib`, and pinned `snarkjs` version. The required pipeline is:
 
 1. Compile `tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom` to R1CS, witness-calculator output, and symbols. Record the compiler/library versions, build command, source hashes, and measured constraint count for this updated source; older metrics are stale.
-2. Review the circuit constraints and public-input order. Confirm that the Rust verifier's nine-input layout and the generated verification key's input count match.
+2. Review the circuit constraints and public-input order. Confirm that the Rust verifier's twelve-input layout and the generated verification key's input count match.
 3. Run the Powers of Tau and circuit-specific setup. Preserve the public ceremony transcript and contribution verification output; securely discard contributor secret randomness.
 4. Verify the final zkey against the exact R1CS and Powers of Tau artifact, then export the verification key. Record hashes for the final R1CS, WASM, zkey, and verification-key file.
 5. Convert the exported verification key into the exact fixed-width G1/G2 byte encoding expected by `InitializeHiddenHeadVerifierArgsV1`. This adapter must be checked against the `groth16-solana` verifier's point format and proof serialization before any on-chain initialization. The repository does not yet provide this validated converter.

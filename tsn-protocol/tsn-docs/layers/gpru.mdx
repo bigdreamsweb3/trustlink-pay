@@ -1,23 +1,23 @@
 ---
-title: "GPRU: Guarded Privacy Routing Unit"
+title: "GPRU: Guarding Private User State"
 sidebarTitle: "GPRU"
-description: "GPRU verifies one-time DNA keys and Groth16 hidden-head state transitions for TSNP and TCAP."
+description: "GPRU protects the integrity and privacy of the user state presented to TCAP for a balance-changing action."
 ---
 
-# GPRU: Guarded Privacy Routing Unit
+**GPRU (Guarded Privacy Routing Unit)** guards the integrity and privacy of a user's private state as that state is presented to TCAP. For a balance-changing action, its proof is intended to show that the hidden state is current and that the proposed transition follows from it.
 
-GPRU is a standalone Solana program for verifying cryptographic relations used by TSNP and TCAP. It does not custody TCAP assets. Its source includes one-time DNA-key verification and a Groth16 verifier for hidden-head transitions.
+This gives GPRU a verification role, not custody of funds. **TCAP governs accepted assets, authorization, reserves, and liquidity**, and applies a valid transition atomically. A GPRU proof by itself cannot move tokens or authorize a payment.
 
-## Hidden-head proof contract in source
+## What the proof is intended to establish
 
-The TSNP `register_tcap_credit_authorization_v2` ABI carries a hidden-head proof to TCAP's `credit_gpru_memo_v1` instruction. TCAP calls GPRU `verify_hidden_head_transition_v1` before it updates the shared root and reserve liabilities. The verifier checks the canonical TIP route root and TCAP root, binds the proof to the following Memo instruction and its successor balance point, checks the action commitment, and verifies the Groth16 proof.
+- The submitted private state is the current state for the action.
+- The proposed change follows from that state and the authorized action.
+- The private identity and state witness need not be disclosed in plaintext to the verifier.
 
-The updated Circom source declares nine public inputs in order: old and new TCAP roots, Memo commitment, action commitment, nullifier, TIP route root, successor portfolio root, and selected-token successor balance-point X and Y. Its private witness contains TIP route membership, one hidden per-TIN head and sequence, a nested token-map path, and the prior nullifier state. Balance arithmetic uses Pedersen commitments; the Memo body contains a separate owner-encrypted action record for recovery. The updated circuit has not been recompiled or independently reviewed. Source constraints are not proof that a transition can be proven or safely executed.
+These are the design goals of the hidden-head proof. The proof flow is not currently established as an end-to-end settlement capability, so applications must not present it as an active guarantee.
 
-## Prover and key status
+## Privacy limits
 
-Node currently returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`; it does not authorize a settlement without proof generation over a current hidden-head witness and Memo. The repository does not contain compiled circuit artifacts, a production proving/verifying key pair, a validated key-encoding adapter, a witness provider, or a prover service. The GPRU verifier PDA has not been initialized as part of this work. See [GPRU Groth16 prover setup](/developers/groth16-hidden-head) for the creation and installation lifecycle.
+Proofs do not hide all Solana transaction data. Transaction accounts, signatures, timing, instruction data, and ordering remain public. Repeated public state references or exposed action fields can allow observers to correlate activity; TSN does not claim zero linkability.
 
-## Privacy boundary
-
-The proof is intended to conceal the selected route/head. It does not provide zero linkability: all transitions use the same public writable TCAP root, exposing protocol-level participation and ordering. The current ABI also exposes action kind, token ID, amount, nullifier, root values, Memo commitment, TIP route root, and successor point. Transaction accounts, timing, and Memo bytes remain visible on Solana.
+For the cryptographic contract, circuit artifacts, and integration decisions, see the [GPRU documentation in the repository](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

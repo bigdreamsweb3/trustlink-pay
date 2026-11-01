@@ -6,17 +6,17 @@ GPRU (Guarded Privacy Routing Unit) derives transaction-specific routing materia
 
 The hidden-head circuit commits to a single per-TIN portfolio root. That root is a nested map of TCAP token IDs to BabyJubjub Pedersen balance commitments. The Groth16 proof validates a selected token's credit, debit, or exit transition, advances the hidden TIN head, and inserts a fresh nullifier under the shared protocol root.
 
-The balance points are homomorphic commitments, not ciphertexts and not decryptable values. The Solana Memo carries the successor portfolio root, selected-token point, and action commitment in its fixed prefix, followed by a DBrix Ledger stream. The Ledger stream contains a DBrix Secretbox-encrypted action record for owner recovery. The SDK decrypts actions and replays them to reconstruct per-token numeric balances and the opening deltas.
+The balance points are homomorphic commitments, not ciphertexts and not decryptable values. The Solana Memo prefix carries the successor portfolio root, selected-token point, action commitment, and a one-time encryption of the exact Pedersen blinding delta, followed by a DBrix Ledger stream. The Ledger stream contains the Secretbox-encrypted action record without a duplicate delta. Groth16 proves the published one-time ciphertext encrypts the same private delta used in the Pedersen transition; the owner decrypts the record, recovers that delta from the Memo ciphertext, and replays actions to reconstruct numeric balances.
 
 This removes the previous Ristretto-ElGamal portfolio vector from the Memo contract. Ristretto remains part of GPRU's transaction-specific route-key and record-key derivation; it is not used as the balance-state proof representation. The Groth16 circuit and Memo now describe the same BabyJubjub Pedersen commitment transition.
 
 ## Settlement status and security boundary
 
-GPRU's on-chain verifier checks the proof's nine public inputs, the current shared TCAP root, TIP route root, proof-bound Memo prefix, and complete Memo commitment. TCAP remains responsible for accepted-token checks, confirmed funding or owner authorization, reserve/liquidity checks, and atomic root advancement.
+GPRU's on-chain verifier checks the proof's twelve public inputs, the current shared TCAP root, TIP route root, proof-bound Memo prefix, and complete Memo commitment. TCAP remains responsible for accepted-token checks, confirmed funding or owner authorization, reserve/liquidity checks, and atomic root advancement.
 
 The Node's settlement builder remains fail-closed. A trusted source for the current hidden TIN head, predecessor portfolio root, and token-map witness is still required before it can create a valid proof. An owner-recovered Memo action must match the on-chain action kind, token, amount, action commitment, authorization commitment, and nullifier before it is included in reconstructed history. The owner balance-history SDK also checks its private predecessor sequence; it does not substitute for that witness source or establish RPC scan completeness. No credit, debit, or exit should be described as enabled solely because the circuit, verifier, Memo builder, or SDK helper exists.
 
-The encrypted action is owner-readable; the on-chain proof does not prove the Secretbox plaintext matches its public action inputs. The owner SDK compares the decrypted action fields with the action and authorization values in the confirmed on-chain proof statement before accepting history. The Groth16 circuit proves Pedersen arithmetic and hidden-head freshness, not confidentiality of all transaction metadata.
+The Secretbox-encrypted action is owner-readable. The circuit binds the blinding delta to a separate one-time BabyJubjub ciphertext in the Memo prefix; the owner derives the private scan secret from the recovered master seed and decrypts that exact delta. The owner SDK still compares decrypted action fields with the action and authorization values in the confirmed proof before accepting history. The Groth16 circuit does not hide public transaction metadata or replace TCAP's liquidity and authorization checks.
 
 ## Native Node adapter
 

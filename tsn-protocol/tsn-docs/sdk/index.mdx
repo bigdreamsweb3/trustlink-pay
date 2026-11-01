@@ -1,31 +1,21 @@
 ---
 title: "Build with the TSN SDK"
 sidebarTitle: "SDK Overview"
-description: "Use the TypeScript SDK to connect an application to TSN, resolve TIP identities, create signed payment authorizations, and submit work."
+description: "Use TypeScript helpers for TIN identity, network readiness, wallet authorization, and payment status."
 ---
 
-`@trustlink/tsn-sdk` is the application-facing TypeScript package for TSN. It provides service selection, TIP/TIN identity helpers, signed payment authorization builders, intent submission, wallet transaction utilities, and recovery functions. The SDK prepares and submits authorized requests; the TSN Node verifies work, the Receiver coordinates it, and a permissioned Cranker submits the authorized transaction.
+The TSN TypeScript SDK helps an application connect to configured TSN services, work with TIP identities, prepare wallet-authorized payment intents, and follow their status. The application supplies its service endpoints and wallet integration; the SDK does not start or manage TSN infrastructure.
 
-The package is currently maintained in the TSN infrastructure workspace and is not published to the public npm registry. Use the repository build before importing it into an application:
+The SDK is maintained as a private workspace package and is not currently available through the public npm registry. Workspace build and service-operation instructions belong in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs). The pages here focus on application-facing functions and expected request behavior.
 
-```bash title="Build the workspace SDK"
-npm --prefix tsn-protocol/sdks/tsn-sdk install
-npm run tsn:sdk:build
-```
+## Check configured network services
 
-## First connection
+The application chooses the endpoints and passes them to the SDK. Keep environment-specific URLs in the application configuration rather than hard-coding them into shared package code.
 
-Pass the endpoints selected by your application. The SDK checks configured local endpoints before configured live endpoints for Node, Receiver, and Solana RPC, then reports which endpoint was selected.
-
-```ts title="Check service availability"
+```ts
 import { getTsnNetworkStatus } from "@trustlink/tsn-sdk";
 
-const network = await getTsnNetworkStatus({
-  local: {
-    node: "http://127.0.0.1:8000",
-    receiver: "http://127.0.0.1:8010",
-    rpc: "http://127.0.0.1:8787",
-  },
+const status = await getTsnNetworkStatus({
   live: {
     node: process.env.TSN_NODE_URL,
     receiver: process.env.TSN_RECEIVER_URL,
@@ -33,34 +23,28 @@ const network = await getTsnNetworkStatus({
   },
 });
 
-if (!network.readyForNativeTransactions) {
-  throw new Error("TSN services are not ready");
+if (!status.readyForNativeTransactions) {
+  throw new Error("TSN is not ready for native transactions");
 }
 ```
 
-Use the SDK's TIN V1 resolver in a trusted application environment when the application is authorized to access the TIP registry lookup secret. Keep `TINS_LOOKUP_SECRET` on the server; do not bundle it into browser code. The Node independently validates the TIN registry and route during payment verification.
+Network readiness only reports whether configured dependencies respond. It does not authorize a payment or confirm settlement.
 
-## Build an integration
-
-The guides introduce one SDK task at a time, with the relevant inputs and code before the protocol details:
+## Application guides
 
 <CardGroup cols={2}>
-  <Card title="Quickstart" icon="rocket" href="/developers/getting-started">
-    Connect services, resolve a TIN, sign an authorization, submit a request, and follow its status.
-  </Card>
-  <Card title="Network status" icon="signal" href="/developers/network-status">
-    Configure local-first service discovery and check readiness before requesting a wallet signature.
-  </Card>
-  <Card title="TIN V1 identity" icon="fingerprint" href="/developers/private-tin-issuance">
-    Create private identity envelopes and recover a TIN through its owner-indexed record.
+  <Card title="TIN identity" icon="fingerprint" href="/developers/private-tin-issuance">
+    Resolve a recipient identity and understand wallet recovery.
   </Card>
   <Card title="Payment lifecycle" icon="diagram-project" href="/developers/payment-intent-lifecycle">
-    Follow authorization, Receiver acceptance, Node verification, Cranker execution, and confirmation.
+    Follow a signed intent through verification and chain confirmation.
+  </Card>
+  <Card title="Network status" icon="signal" href="/developers/network-status">
+    Configure endpoint selection and interpret readiness results.
+  </Card>
+  <Card title="SDK reference" icon="code" href="/api-reference/sdk/tsn-sdk">
+    Browse the application-facing TypeScript functions.
   </Card>
 </CardGroup>
 
-## SDK reference
-
-The reference pages document the public package exports and their source-backed behavior. Start with [TSN SDK](/api-reference/sdk/tsn-sdk) for application functions, [TIN V1 SDK](/api-reference/sdk/tins) for identity creation and recovery, and [Cranker SDK](/api-reference/sdk/tsn-cranker-sdk) for operator setup.
-
-For protocol concepts and deployed status, see [Protocol Architecture](/overview/architecture) and [Current Technology](/about/current-technology). The guides distinguish source behavior from deployed capabilities.
+For a code-level API reference, see [TSN SDK](/api-reference/sdk/tsn-sdk) and [TIN SDK](/api-reference/sdk/tins). For implementation decisions and service operations, use the repository's [root documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

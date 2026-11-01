@@ -9,9 +9,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cli = process.env.SNARKJS_CLI
   ? path.resolve(process.env.SNARKJS_CLI)
   : path.join(root, "node_modules", "snarkjs", "build", "cli.cjs");
+const build = process.env.GPRU_CIRCUIT_BUILD_DIR
+  ? path.resolve(process.env.GPRU_CIRCUIT_BUILD_DIR)
+  : path.join(root, "build", "hidden_head_v1");
 const dev = process.env.GPRU_DEV_SETUP_DIR
   ? path.resolve(process.env.GPRU_DEV_SETUP_DIR)
-  : path.join(root, "build", "hidden_head_v1", "dev");
+  : path.join(build, "dev");
 const vk = process.argv[2] ? path.resolve(process.argv[2]) : path.join(dev, "verification_key.json");
 const publicSignals = process.argv[3] ? path.resolve(process.argv[3]) : path.join(dev, "public.json");
 const proof = process.argv[4] ? path.resolve(process.argv[4]) : path.join(dev, "proof.json");

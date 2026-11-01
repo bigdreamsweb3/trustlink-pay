@@ -1,42 +1,19 @@
 ---
-title: "Replay Protection and Safe Retry Patterns in TSN"
-sidebarTitle: "Replay & Retries"
-description: "How funding-bound TCAP settlement authorizations use atomic predecessor and sequence checks to reject replay."
+title: "Replay Protection and Safe Retries"
+description: "How an application should handle repeated requests and uncertain transaction outcomes."
 ---
 
-# Replay protection and retries
+TSN settlement is designed to bind an authorized action to its funding context and to apply state changes through an atomic predecessor check. When the expected state has already advanced, a duplicate settlement cannot apply as though it were new.
 
-For a TCAP credit, the Node derives a funding commitment from the exact signed reserve-deposit transaction. That commitment is included in the GPRU scope and TSN authorization digest, then passed to TCAP as the transition nullifier. It binds the settlement authorization to its funding transaction without a separate spent-funding record or a per-transaction PDA.
+For a balance-changing action, GPRU is intended to prove that the hidden user state is current and that the proposed transition follows from it. TCAP checks the relevant authorization and asset conditions and applies the transition atomically. The hidden-head proof path is not established end to end, so applications must not treat this design description as evidence that the capability is active.
 
-TCAP provides the stateful replay check. A credit must name the current predecessor commitment and the next sequence. In the same instruction that applies the successor, TCAP advances the stored commitment and sequence and records the transition nullifier. A replay of that settlement therefore refers to a stale predecessor and sequence and cannot apply again, including when two crankers submit it concurrently.
+## Handling an uncertain result
 
-## What the authorization binds
+1. Keep the original request identifier and any transaction signature.
+2. Query the SDK or configured service for the latest request status.
+3. If a transaction signature exists, check its result on the intended Solana cluster before resubmitting.
+4. If the sender's signed transaction expired or its blockhash is stale, prepare a fresh transaction and ask the sender to authorize it again.
 
-The Node hashes the canonical bytes of the signed funding transaction with a domain separator. The resulting 32-byte value is carried in the transition's `nullifier` field. TSN includes it in the authorization digest; TCAP includes it in the transition and atomically records it with the successor state. The Node verifies the funding transaction and the Mother Node signs the exact settlement message before the Cranker submits it.
+Do not let an operator edit the payment amount, destination, or other sender-approved terms to make a retry succeed. A service timeout is not proof that a transaction failed; rely on the chain result and current protocol state.
 
-The `nullifier` name is retained by the current instruction ABI. In this credit flow it carries the funding-derived commitment; it is not a PDA address and does not create a separate spent-funding account.
-
-## Atomic state checks
-
-TCAP accepts a credit only when all of the following match its current state and authorization:
-
-- the supplied predecessor equals the stored commitment;
-- the sequence equals the stored sequence plus one;
-- the policy, asset, authorization digest, and validity window are valid;
-- the transition nullifier differs from the last applied transition.
-
-TCAP writes the successor commitment, next sequence, and nullifier as one state transition. If any check fails, the instruction does not advance the state.
-
-## Retrying settlement work
-
-If submission fails before confirmation, the Cranker can retry the same authorized transaction while its slot validity window remains open and TCAP state still has the expected predecessor and sequence. If the first submission actually confirmed but its response was lost, TCAP rejects another application because the state has already advanced; check the transaction signature and current TCAP state before creating replacement work.
-
-After the validity window expires, the Node must verify the funding result and current TCAP state before issuing a fresh authorization. The authorization remains bound to the original funding transaction. A retry does not require or create a separate spent-funding PDA.
-
-This replay guarantee covers reapplying the same settlement transition. It does not mean that a public observer can infer the recipient identity from the funding commitment; the commitment is a domain-separated hash of the signed funding bytes and does not reveal those bytes.
-
-## Related pages
-
-- [Payment Intent Lifecycle](/developers/payment-intent-lifecycle) for Receiver acceptance, Node verification, and settlement stages.
-- [TCAP](/layers/tcap) for the credit state transition and reserve boundary.
-- [Replay Protection](/security/replay-protection) for the broader security model.
+For the full replay/nullifier contract and source-level behavior, see the [repository's security and protocol documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

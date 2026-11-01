@@ -44,12 +44,12 @@ pub struct VerifyHiddenHeadTransitionV1<'info> {
     pub tcap_commitment_root: UncheckedAccount<'info>,
     /// GPRU-owned, globally shared verifier configuration; it contains no user-specific data.
     #[account(seeds = [hidden_head::GPRU_HIDDEN_HEAD_VERIFIER_SEED], bump = verifier.bump)]
-    pub verifier: Account<'info, hidden_head::GpruHiddenHeadVerifierV1>,
+    pub verifier: Box<Account<'info, hidden_head::GpruHiddenHeadVerifierV1>>,
     /// CHECK: canonical instructions sysvar; GPRU binds the proof's memo commitment to the Memo instruction following the TSN call.
     pub instructions: UncheckedAccount<'info>,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct InitializeHiddenHeadVerifierArgsV1 {
     pub circuit_commitment: [u8; 32],
     pub verifying_key_commitment: [u8; 32],
@@ -57,7 +57,9 @@ pub struct InitializeHiddenHeadVerifierArgsV1 {
     pub beta_g2: [u8; 128],
     pub gamma_g2: [u8; 128],
     pub delta_g2: [u8; 128],
-    pub ic: [[u8; 64]; hidden_head::HIDDEN_HEAD_PUBLIC_INPUTS + 1],
+    /// Heap-backed because the fixed verifying-key point array exceeds the
+    /// SBF stack budget during this one-time initialization instruction.
+    pub ic: Vec<[u8; 64]>,
 }
 
 #[derive(Accounts)]
@@ -68,7 +70,7 @@ pub struct InitializeHiddenHeadVerifierV1<'info> {
     /// CHECK: authenticated as the canonical TSN Mother Escrow account below.
     pub mother_escrow: UncheckedAccount<'info>,
     #[account(init, payer = authority, space = hidden_head::GpruHiddenHeadVerifierV1::SPACE, seeds = [hidden_head::GPRU_HIDDEN_HEAD_VERIFIER_SEED], bump)]
-    pub verifier: Account<'info, hidden_head::GpruHiddenHeadVerifierV1>,
+    pub verifier: Box<Account<'info, hidden_head::GpruHiddenHeadVerifierV1>>,
     pub system_program: Program<'info, System>,
 }
 

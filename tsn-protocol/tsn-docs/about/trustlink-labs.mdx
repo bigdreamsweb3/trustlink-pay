@@ -1,60 +1,28 @@
 ---
-title: "TrustLink Labs: Building Open Payment Infrastructure"
-sidebarTitle: "About"
-description: "TrustLink Labs builds TSN, TIN, GPRU, TCAP, and TSN XP. Learn the mission, engineering approach, and how the protocol components fit together."
+title: "About TrustLink Labs"
+sidebarTitle: "TrustLink Labs"
+description: "TrustLink Labs builds hybrid Internet of Value infrastructure through TSN."
 ---
 
-TrustLink Labs is a research and engineering organization building open payment infrastructure on Solana. Its products are the Transfer Settlement Network protocol stack and TSN XP, the active user-facing experience being built on top of it.
+TrustLink Labs is building foundational infrastructure for the **Internet of Value** through **TSN (Transfer Settlement Network)**, a hybrid settlement network designed to make value transfer interoperable, identity-aware, and privacy-preserving across applications and blockchain networks. TSN combines off-chain coordination and verification with on-chain authorization and settlement enforcement. The team is developing TSN as its implementation of the **Decentralized Settlement Protocol (DESP)**. **TSNP (Transfer Settlement Network Protocol)** names the on-chain settlement protocol within the broader TSN infrastructure; cross-network routes are described as live only when supported by deployment evidence.
 
-## Mission
+The protocol separates transfer identity, private-state verification, and asset governance. TIP manages transfer identities such as TIN; GPRU is designed to guard the private state presented to TCAP; TCAP governs accepted assets and applies authorized settlement. The proof-gated hidden-state flow is not yet established end to end, and TSN does not claim zero linkability.
 
-> Build the protocol stack that makes stablecoin payments as intuitive as modern banking while preserving user ownership, privacy, and open blockchain principles.
+TrustLink Labs also develops TSN XP as a reference application for interacting with the protocols and SDKs. This site focuses on protocol responsibilities and application integration; implementation discussions, service operations, and deployment records live in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).
 
-## Products
-
-**TSN** (Transfer Settlement Network) is the core protocol: an identity-first, intent-based, privacy-preserving settlement layer for stablecoin and digital asset transfers on Solana. It provides identity-aware authorization, treasury-backed settlement, and confidential balance accounting.
-
-**TSN XP** is the active user-facing product and SDK integration experience. It demonstrates identity, transfer authorization, Receiver ingress, Node verification, Cranker execution, and Solana settlement. The older hosted TrustLink Pay application is a separate earlier product surface, not TSN XP.
-
-## Protocol components
-
-| Component | Role |
-| --- | --- |
-| **TSN** | Coordinates authorization, leases, epoch liability, and settlement execution |
-| **TIP** | Transfer Identity Protocol: manages transfer identities and route metadata |
-| **TIN** | Transfer Identity Number: one portable 10-digit identity within TIP |
-| **GPRU** | Guarded Privacy Routing Unit: transaction DNA and proof-verified confidential state transitions |
-| **TCAP** | Transfer Confidential Asset Protocol: governs approved assets, reserves, and liability accounting |
-| **Stable-TCAP** | Devnet-only test asset; valueless; not USDC |
-
-## Engineering approach
-
-TrustLink Labs combines AI-assisted engineering with human-led architecture. The maintainer team sets protocol design, security review, and boundary definitions. Implementation, testing, and documentation use AI tooling under human review. This lets a small team ship at the pace of a larger one without sacrificing the discipline that a payment protocol requires.
-
-## Resources
+## Connect
 
 <CardGroup cols={2}>
-  <Card title="GitHub" icon="github" href="https://github.com/Trustlink-Labs">
-    TrustLink Labs organization on GitHub.
+  <Card title="GitHub" icon="github" href="https://github.com/bigdreamsweb3/trustlink-pay">
+    Protocol workspace and open-source documentation.
   </Card>
-
-  <Card title="TSN XP" icon="wallet">
-    Active user-facing TSN product and SDK experience.
-  </Card>
-
-  <Card title="Research Library" icon="book" href="https://github.com/Trustlink-Labs/Trustlink-Research">
-    Open protocol research and analysis.
-  </Card>
-
-  <Card title="TSN Blog" icon="rss" href="https://tsn-protocol.blogspot.com">
-    Long-form TSNP writing.
-  </Card>
-
   <Card title="X" icon="x-twitter" href="https://x.com/TrustLinkLabs">
-    Follow @TrustLinkLabs.
+    Follow TrustLink Labs updates.
   </Card>
-
-  <Card title="What We're Building" icon="cubes" href="/about/what-were-building">
-    Concrete artifacts and current scope.
+  <Card title="Research library" icon="book" href="https://github.com/Trustlink-Labs/Trustlink-Research">
+    Protocol research and analysis.
+  </Card>
+  <Card title="TSN blog" icon="rss" href="https://tsn-protocol.blogspot.com">
+    Long-form protocol writing.
   </Card>
 </CardGroup>

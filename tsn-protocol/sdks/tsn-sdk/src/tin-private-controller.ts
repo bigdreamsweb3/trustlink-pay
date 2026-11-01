@@ -5,6 +5,7 @@ import {
   deriveGpruElgamalPublicKey,
   GPRU_ELGAMAL_KEY_VERSION_V1,
 } from "./gpru.js";
+import { deriveGpruBalanceScanKeyV1, encodeBabyJubKeyV1 } from "./gpru/babyjub-delta-cipher.js";
 
 import {
   computePruConfigurationHash,
@@ -120,6 +121,8 @@ export async function createTinV1OwnerSeedEnvelope(params: {
   const marker = "tin-v1";
   const pruConfigurationHash = "0".repeat(64);
   const gpruElgamalPublicKey = deriveGpruElgamalPublicKey(masterSeed);
+  const balanceScanKey = deriveGpruBalanceScanKeyV1(masterSeed);
+  const balanceScanPublicKey = encodeBabyJubKeyV1(balanceScanKey.publicKey);
   try {
     const localSeed = await encryptTinMasterSeedLocally({
       masterSeed,
@@ -154,8 +157,12 @@ export async function createTinV1OwnerSeedEnvelope(params: {
         GPRU_ELGAMAL_KEY_VERSION_V1,
         gpruElgamalPublicKey,
       ),
+      gpruBalanceScanKeyVersion: 1 as const,
+      gpruBalanceScanPublicKeyX: balanceScanPublicKey.x,
+      gpruBalanceScanPublicKeyY: balanceScanPublicKey.y,
     };
   } finally {
+    balanceScanKey.secret = 0n;
     dataKey.fill(0);
     masterSeed.fill(0);
   }

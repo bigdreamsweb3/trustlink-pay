@@ -1,6 +1,6 @@
 # TCAP balance transitions and GPRU proof boundary
 
-This document distinguishes the proof-shaped TSNP/TCAP ABI from a working proof-generation system. TCAP governs assets, reserves, and liabilities. GPRU verifies cryptographic relations. Node currently fails closed because the Groth16 prover and witness provider are not configured.
+This document distinguishes the proof-shaped TSNP/TCAP ABI from a working proof-generation system. GPRU is intended to guard the integrity and privacy of the user's private state presented for a balance-changing action, proving that the hidden state is current and the proposed transition follows from it. TCAP governs accepted assets, authorization, reserves, liquidity, and liabilities, and applies a valid transition atomically. Node currently fails closed because the Groth16 prover and witness provider are not configured.
 
 ## Current source behavior
 
@@ -10,13 +10,13 @@ The proof is intended to show that the private per-TIN/asset predecessor is the 
 
 ## Hidden-head source path
 
-GPRU contains the verifier entrypoint and Circom source for route membership, hidden-head update, Memo/action binding, nullifier insertion, and Pedersen balance constraints. The active TSNP credit ABI carries the proof through TCAP to GPRU. The updated circuit has nine public inputs, including the successor portfolio root and selected token's Pedersen balance point X/Y. Its Memo prefix binds those values and the action commitment; the body stores an owner-encrypted action record. The updated circuit has not been freshly compiled or reviewed; no matching proving/verifying keys, validated key converter, witness provider, prover service, initialized verifier, or Devnet proof evidence is established. Action kind, token ID, and amount are public instruction values.
+GPRU contains the verifier entrypoint and Circom source for route membership, hidden-head update, Memo/action binding, nullifier insertion, and Pedersen balance constraints. The active TSNP credit ABI carries the proof through TCAP to GPRU. The circuit has twelve public inputs, including the successor portfolio root and point plus a one-time encrypted blinding delta and ephemeral point. Its Memo prefix binds these values. The proof constrains the ciphertext to the same private delta used in the Pedersen balance transition; the owner-encrypted action record omits the delta. R1CS generation has succeeded, but independent review, matching keys, a validated key converter, witness provider, prover service, initialized verifier, and Devnet proof evidence are not established. Action kind, token ID, and amount are public instruction values.
 
 ## Required balance-proof contract
 
 For a credit, the circuit proves that the successor Pedersen commitment is the confirmed amount added to the authenticated predecessor. For a debit, it proves that the prior balance covers the amount, the successor is the exact subtraction, and the result is in range. For an exit, TCAP must bind the proved debit to the public destination and enforce reserve solvency. A TIN-to-TIN transfer must prove source/destination conservation for the same asset.
 
-TCAP must perform its reserve-liability and replay-state updates atomically with the verified proof result. Client-side arithmetic cannot substitute for on-chain validation. The Memo commitment binds the complete bytes, while the circuit validates Pedersen arithmetic and hidden-head state; it does not prove that the Secretbox plaintext matches the action. Owner recovery cross-checks decrypted action fields against the on-chain instruction.
+TCAP must perform its reserve-liability and replay-state updates atomically with the verified proof result. Client-side arithmetic cannot substitute for on-chain validation. The Memo commitment binds the complete bytes, and the circuit validates Pedersen arithmetic, hidden-head state, and the ciphertext-to-delta relation. It does not prove every Secretbox plaintext action field matches the on-chain action. Owner recovery cross-checks decrypted action fields against the on-chain instruction and action commitment.
 
 ## Privacy boundary
 

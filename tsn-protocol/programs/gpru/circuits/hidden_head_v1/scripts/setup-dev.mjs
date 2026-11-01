@@ -6,13 +6,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const build = process.env.GPRU_CIRCUIT_BUILD_DIR
+  ? path.resolve(process.env.GPRU_CIRCUIT_BUILD_DIR)
+  : path.join(root, "build", "hidden_head_v1");
 const output = process.env.GPRU_DEV_SETUP_DIR
   ? path.resolve(process.env.GPRU_DEV_SETUP_DIR)
-  : path.join(root, "build", "hidden_head_v1", "dev");
+  : path.join(build, "dev");
 const suppliedPotFinal = process.env.GPRU_PTAU_FINAL_PATH
   ? path.resolve(process.env.GPRU_PTAU_FINAL_PATH)
   : null;
-const r1cs = path.join(root, "build", "hidden_head_v1", "main.r1cs");
+const r1cs = path.join(build, "main.r1cs");
 const cli = process.env.SNARKJS_CLI
   ? path.resolve(process.env.SNARKJS_CLI)
   : path.join(root, "node_modules", "snarkjs", "build", "cli.cjs");
@@ -74,7 +77,7 @@ const metadata = {
   circomlibVersion,
   powersOfTauSource: suppliedPotFinal ? path.basename(suppliedPotFinal) : "locally generated development ceremony",
   r1csSha256: await sha256(r1cs),
-  witnessWasmSha256: await sha256(path.join(root, "build", "hidden_head_v1", "main_js", "main.wasm")),
+  witnessWasmSha256: await sha256(path.join(build, "main_js", "main.wasm")),
   powersOfTauSha256: await sha256(potFinal),
   provingKeySha256: await sha256(zkeyFinal),
   verificationKeySha256: await sha256(verificationKey),

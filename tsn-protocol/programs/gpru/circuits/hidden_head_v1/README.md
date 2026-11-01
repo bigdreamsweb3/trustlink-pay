@@ -4,7 +4,7 @@
 
 ## Public inputs
 
-The nine public inputs are ordered exactly as the GPRU, TSN, TCAP, and SDK proof ABIs:
+The twelve public inputs are ordered exactly as the GPRU, TSN, TCAP, and SDK proof ABIs:
 
 1. `oldGlobalRoot`
 2. `newGlobalRoot`
@@ -15,8 +15,11 @@ The nine public inputs are ordered exactly as the GPRU, TSN, TCAP, and SDK proof
 7. `successorPortfolioRoot`
 8. `successorBalanceX` for the selected token
 9. `successorBalanceY` for the selected token
+10. `encryptedBlindingDelta`, the one-time encrypted scalar `delta + x(e*S) mod q`
+11. `deltaEphemeralPublicX`, the x coordinate of `E = e*Base8`
+12. `deltaEphemeralPublicY`, the y coordinate of `E = e*Base8`
 
-The Memo starts with `TSN_GPRU_HEAD_V1:<portfolio-root>:<balance-x>:<balance-y>:<action-commitment>:` followed by the Base64URL DBrix Ledger stream. GPRU parses the four values, checks them against the public inputs, and hashes the complete instruction data for `memoCommitment`; the SHA-256 digest is reduced modulo the BN254 scalar modulus as the public field input. The owner action record stores the same canonical field encoding for its predecessor Memo link.
+The Memo starts with `TSN_GPRU_HEAD_V1:<portfolio-root>:<balance-x>:<balance-y>:<action-commitment>:<encrypted-delta>:<ephemeral-x>:<ephemeral-y>:` followed by the Base64URL DBrix Ledger stream. GPRU parses all seven values, checks them against the public inputs, and hashes the complete instruction data for `memoCommitment`; the SHA-256 digest is reduced modulo the BN254 scalar modulus as the public field input. The owner-encrypted Ledger record deliberately omits the blinding delta. The owner reconstructs it from the one-time prefix ciphertext after decrypting the record.
 
 ## What the proof establishes
 
@@ -26,7 +29,7 @@ The witness proves that the hidden active TIP route is a member of the shared TI
 - Debit and exit open predecessor and successor balances privately, constrain both to unsigned 64-bit values, and prove the successor is nonnegative and differs by the authorized amount.
 - Other token commitments remain in the same nested map; a first credit for a token uses an empty token leaf.
 
-The circuit uses additive homomorphic **Pedersen commitments**, not encrypted balance ciphertexts. A commitment hides its opening but cannot be decrypted. Each Memo instead carries an owner-encrypted action record containing the token action and blinding delta. For credit, the fresh delta randomizes the successor point and the owner updates its known opening by adding that delta; the prover does not need the prior opening. Debit and exit proofs open predecessor and successor points privately, prove the amount subtraction and nonnegative successor, and bind the blinding transition. The owner decrypts the history and replays the actions to recover numeric balances. The commitment point in the Memo prefix is a proof binding, not an encryption.
+The circuit uses additive homomorphic **Pedersen commitments**, not encrypted balance ciphertexts. It also proves a separate one-time BabyJubjub encryption relation for the fresh Pedersen blinding delta: `C = delta + x(e*S) mod q`, where `S` is the private TIP-authenticated scan point, `e` is the private ephemeral scalar, and the Memo publishes only `C` and `E=e*Base8`. The owner derives `S`'s secret from the recovered master seed and decrypts `delta = C - x(s*E) mod q`. This binds the owner's recovered balance-history update to the exact delta in the Pedersen successor without publishing the delta or reusing a transaction-linkable ElGamal key. Credit updates the locally held opening by adding the recovered delta; debit and exit proofs open predecessor and successor points privately, prove the amount subtraction and nonnegative successor, and bind the same ciphertext relation. The commitment point in the Memo prefix is a proof binding, not an encryption.
 
 The circuit does not prove token custody, reserve solvency, or TCAP liquidity. TCAP must enforce accepted assets, authorization, reserve conditions, and the shared-root update atomically. The circuit source and ABI alone do not enable a settlement path.
 

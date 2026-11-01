@@ -1,19 +1,29 @@
 # TSNP, TIP, GPRU, and TCAP: source-backed architecture within TSN
 
+TrustLink Labs is building foundational infrastructure for the **Internet of
+Value** through **TSN**, a hybrid settlement network designed to make value
+transfer interoperable, identity-aware, and privacy-preserving across
+applications and blockchain networks. The model combines off-chain identity
+resolution, coordination, and verification with on-chain authorization and
+asset settlement. Cross-network interoperability describes the architecture's
+direction; it is not a claim that every route is operational.
+
 This document describes the checked-in program and service contracts. Source code is not evidence that a circuit was compiled, a verifier was initialized, a program build was deployed, or a settlement completed on chain.
 
 ## Protocol roles
 
 - **TIP (Transfer Identity Protocol)** creates and resolves transfer identities. A **TIN (Transfer Identity Number)** is one 10-digit identity within TIP. TIP owns identity and route data; the TIN owner retains the recovery secret.
-- **GPRU (Guarded Privacy Routing Unit)** derives one-time DNA keys and verifies hidden-head Groth16 proofs. It does not custody TCAP assets.
+- **GPRU (Guarded Privacy Routing Unit)** guards the integrity and privacy of the user's private state presented to TCAP. Its hidden-head proof is intended to establish that the hidden state is current and the proposed transition follows from it, without exposing the TIN or hidden per-TIN state in the proof. GPRU does not custody TCAP assets.
 - **TSN (Transfer Settlement Network)** is the complete infrastructure that coordinates authenticated intent/work, Node verification, Mother authorization, and exact Cranker submission.
 - **TCAP (Transfer Confidential Asset Protocol)** governs approved assets, reserve liabilities, and the shared commitment root. The root is protocol-wide, not a per-TIN balance account.
+
+In plain terms, GPRU checks the private state and proposed balance change that TCAP relies on; TCAP remains the authority for funds and applies the accepted change atomically. The proof does not hide all transaction metadata: public fields and the shared TCAP root can still reveal activity and correlation. The Node currently fails closed because the prover and witness source are not configured, so this proof boundary is not yet operational end to end.
 
 ## Hidden-head credit ABI in source
 
 The TSNP `register_tcap_credit_authorization_v2` instruction accepts a proof-shaped hidden-head argument and invokes TCAP's `credit_gpru_memo_v1`. TCAP validates the approved asset, Mother-derived authorization signer, validity window, current root and next sequence, then invokes GPRU `verify_hidden_head_transition_v1`. Only after proof verification does TCAP advance its shared root and move the matching amount from pending to settled reserve liabilities in the same transaction.
 
-GPRU checks the canonical TIP route root and TCAP root, binds the supplied proof to the Memo instruction following the TSN call, recomputes the action commitment, validates the portfolio-root/point/action prefix, and verifies the Groth16 proof. The updated circuit has nine public inputs: old/new TCAP roots, Memo commitment, action commitment, nullifier, TIP route root, successor portfolio root, and successor balance point X/Y. Its private witness includes one hidden outer head per TIN plus a nested token commitment path, TIP route membership, sequence, and nullifier state. Balance state uses additive BabyJubjub Pedersen commitments; the Memo body contains an owner-encrypted action record used for balance recovery. The updated circuit has not yet been compiled or validated as a proof system.
+GPRU checks the canonical TIP route root and TCAP root, binds the supplied proof to the Memo instruction following the TSN call, recomputes the action commitment, validates the seven-field portfolio-root/point/action/delta-ciphertext prefix, and verifies the Groth16 proof. The circuit has twelve public inputs: old/new TCAP roots, Memo commitment, action commitment, nullifier, TIP route root, successor portfolio root and point, encrypted blinding delta, and ephemeral point. Its private witness includes one hidden outer head per TIN, nested token commitment path, TIP route membership, sequence, nullifier state, and ciphertext opening. Balance state uses additive BabyJubjub Pedersen commitments; the Memo body contains an owner-encrypted action record without the delta. The proof constrains the public one-time ciphertext to the exact delta used in the Pedersen transition. R1CS generation succeeded; trusted setup, proof generation, independent review, and end-to-end verification remain incomplete.
 
 Node currently returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED` for settlement authorization. There is no configured witness source or proof-generation service, no generated proving/verifying-key artifacts, no validated verification-key byte converter, and no end-to-end proof test. Therefore the program ABI is proof-shaped, but the service flow is not operational. See [GPRU Groth16 prover and key artifacts](./GROTH16-PROVER-AND-KEY-ARTIFACTS.md) for the complete missing-artifact and setup lifecycle.
 

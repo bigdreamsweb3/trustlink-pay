@@ -50,6 +50,9 @@ pub fn stage(
             params.gpru_elgamal_key_version,
             &params.gpru_elgamal_public_key,
             &params.gpru_elgamal_key_commitment,
+            params.gpru_balance_scan_key_version,
+            &params.gpru_balance_scan_public_key_x,
+            &params.gpru_balance_scan_public_key_y,
             &params.policy_commitment,
         )
     {
@@ -80,6 +83,9 @@ pub fn stage(
             || existing.gpru_elgamal_key_version != params.gpru_elgamal_key_version
             || existing.gpru_elgamal_public_key != params.gpru_elgamal_public_key
             || existing.gpru_elgamal_key_commitment != params.gpru_elgamal_key_commitment
+            || existing.gpru_balance_scan_key_version != params.gpru_balance_scan_key_version
+            || existing.gpru_balance_scan_public_key_x != params.gpru_balance_scan_public_key_x
+            || existing.gpru_balance_scan_public_key_y != params.gpru_balance_scan_public_key_y
             || existing.policy_commitment != params.policy_commitment
             || existing.expiry_ts != params.expiry_ts
         {
@@ -107,6 +113,9 @@ pub fn stage(
         gpru_elgamal_key_version: params.gpru_elgamal_key_version,
         gpru_elgamal_public_key: params.gpru_elgamal_public_key,
         gpru_elgamal_key_commitment: params.gpru_elgamal_key_commitment,
+        gpru_balance_scan_key_version: params.gpru_balance_scan_key_version,
+        gpru_balance_scan_public_key_x: params.gpru_balance_scan_public_key_x,
+        gpru_balance_scan_public_key_y: params.gpru_balance_scan_public_key_y,
         policy_commitment: params.policy_commitment,
         expiry_ts: params.expiry_ts,
     };
@@ -226,6 +235,9 @@ pub fn finalize(
         gpru_elgamal_key_version: state.gpru_elgamal_key_version,
         gpru_elgamal_public_key: state.gpru_elgamal_public_key,
         gpru_elgamal_key_commitment: state.gpru_elgamal_key_commitment,
+        gpru_balance_scan_key_version: state.gpru_balance_scan_key_version,
+        gpru_balance_scan_public_key_x: state.gpru_balance_scan_public_key_x,
+        gpru_balance_scan_public_key_y: state.gpru_balance_scan_public_key_y,
         policy_commitment: state.policy_commitment,
         intent_hash: state.intent_hash,
         expiry_ts: state.expiry_ts,

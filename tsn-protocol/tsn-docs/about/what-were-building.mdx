@@ -1,75 +1,15 @@
 ---
-title: "What TrustLink Labs Is Building: Protocols and Products"
-sidebarTitle: "What We're Building"
-description: "TrustLink Labs protocols and products: TSN infrastructure, TSNP, TIP/TIN, GPRU, TCAP, DIP, CCTP integrations, TSN XP, and SDKs."
+title: "What TrustLink Labs Builds"
+sidebarTitle: "What We Build"
+description: "Hybrid Internet of Value infrastructure for identity-aware, privacy-preserving settlement."
 ---
 
-TrustLink Labs builds settlement infrastructure called TSN. The stack includes TSNP (Transfer Settlement Network Protocol), TIP, GPRU, TCAP, and DIP, plus network services, a reference application, and SDKs. Circle's CCTP is an external cross-chain transfer protocol and is named only where a supported integration uses it. The layers separate identity, authorization, settlement, and private balance accounting.
+TrustLink Labs is building foundational infrastructure for the **Internet of Value** through **TSN**, a hybrid settlement network designed to make value transfer interoperable, identity-aware, and privacy-preserving across applications and blockchain networks. TSN combines off-chain coordination and verification with on-chain authorization and asset settlement. Cross-network interoperability is an architectural goal; individual routes must be verified before they are described as live.
 
-## Concrete artifacts
+The network combines protocol layers with application SDKs so a payment can be addressed through a portable identity, authorized by a wallet, checked against private state, and settled under asset-specific rules.
 
-### TSNP on-chain protocol
+**TSN** names the full infrastructure. **TSNP** is the on-chain Transfer Settlement Network Protocol. **TIP** manages transfer identity, including the 10-digit **TIN**. **GPRU** guards the integrity and privacy of the user's private state presented to **TCAP**. TCAP governs the accepted assets, reserves, and settlement transition. **DIP** describes the deposit-ingress protocol for external value. Circle's **CCTP** is a separate protocol used only where an integration supports it.
 
-TSNP (Transfer Settlement Network Protocol) is the on-chain settlement protocol program within TSN (Transfer Settlement Network), the complete infrastructure. The TSN infrastructure includes:
+The design goal is to keep identity, private-state verification, and asset governance in distinct roles. GPRU's proof is intended to show that a hidden state is current and that a proposed change follows from it; TCAP remains the authority over funds and applies authorized changes atomically.
 
-- Solana programs for intent acceptance, epoch treasury, and settlement enforcement.
-- TSN Receiver for durable ingress, work storage, and short leases.
-- TSN Node for stateless verification, route decisions, and permit signing.
-- TSN RPC Gateway for controlled Solana RPC transport.
-
-### TIN registry
-
-The Transfer Identity Protocol (TIP) issues and resolves transfer identities. A Transfer Identity Number (TIN) is one 10-digit identity within TIP. A TIN separates the identity a user shares from the wallet address used for public settlement boundaries.
-
-### GPRU authorization and routing
-
-GPRU (Guarded Privacy Routing Unit) provides one-time ElGamal DNA key derivation and a Groth16 hidden-head verifier. A local circuit build exists, but Node currently fails closed because no trusted proving-key configuration, authenticated-map witness source, or proof-generation service is configured.
-
-### TCAP
-
-The Transfer Confidential Asset Protocol (TCAP) governs approved assets, reserves, and shared commitment state. Its proof-shaped credit instruction calls GPRU before atomically advancing the global TCAP root and reserve liabilities. This path does not create a per-TIN TCAP tip account. TCAP also contains older TIN-tip instructions that are separate from this proof path.
-
-### TSN XP
-
-TSN XP is the user-facing application for TIN identity and TSN payment operations. The SDK provides wallet-based TIN creation, registry resolution, and owner recovery helpers. Service health, program deployment, and each transaction's confirmation remain environment-specific and must be checked against the selected cluster.
-
-The separately hosted TrustLink Pay site is an earlier application surface and should not be presented as the current TSN XP product.
-
-### TSN SDK
-
-The `@trustlink/tsn-sdk` package provides TypeScript interfaces for identity operations, intent construction, route handling, and settlement helpers. Settlement remains unavailable through Node until a configured hidden-head prover returns a valid proof.
-
-<CardGroup cols={2}>
-  <Card title="Architecture overview" icon="building" href="/overview/architecture">
-    How TSN, TIN, GPRU, and TCAP fit together.
-  </Card>
-
-  <Card title="TCAP" icon="lock" href="/layers/tcap">
-    Shared-root proof-shaped credit transitions and their prover readiness boundary.
-  </Card>
-
-  <Card title="Developer quickstart" icon="code" href="/developers/getting-started">
-    Build your first TSN payment intent.
-  </Card>
-
-  <Card title="TSN XP" icon="external-link">
-    User-facing TIN and payment operations; check selected service and chain status at runtime.
-  </Card>
-</CardGroup>
-
-## Scope statement
-
-The following are separate milestones and are not presented as active production capabilities:
-
-- Recurring payments and subscription-provider execution.
-- Mainnet deployment.
-- Formal cryptographic audits.
-- Perfect unlinkability.
-- Confidential debits and exits (these remain proof-gated and disabled).
-
-## Related topics
-
-- [About TrustLink Labs](/about/trustlink-labs)
-- [Engineering principles](/about/engineering-principles)
-- [Current technology](/about/current-technology)
-- [Contribute](/about/contribute)
+The hidden-head proof path and confidential debit/exit are not established as end-to-end capabilities. For current implementation and deployment status, see [Current Protocol Capabilities](/about/current-technology). The detailed engineering record is maintained in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

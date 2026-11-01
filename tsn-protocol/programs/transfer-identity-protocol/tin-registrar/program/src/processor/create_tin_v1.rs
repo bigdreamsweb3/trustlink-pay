@@ -60,6 +60,9 @@ pub fn apply<'a>(
         params.gpru_elgamal_key_version,
         &params.gpru_elgamal_public_key,
         &params.gpru_elgamal_key_commitment,
+        params.gpru_balance_scan_key_version,
+        &params.gpru_balance_scan_public_key_x,
+        &params.gpru_balance_scan_public_key_y,
         &params.policy_commitment,
     ) {
         return Err(Error::InvalidInstruction.into());
@@ -102,6 +105,9 @@ pub fn apply<'a>(
         gpru_elgamal_key_version: params.gpru_elgamal_key_version,
         gpru_elgamal_public_key: params.gpru_elgamal_public_key,
         gpru_elgamal_key_commitment: params.gpru_elgamal_key_commitment,
+        gpru_balance_scan_key_version: params.gpru_balance_scan_key_version,
+        gpru_balance_scan_public_key_x: params.gpru_balance_scan_public_key_x,
+        gpru_balance_scan_public_key_y: params.gpru_balance_scan_public_key_y,
         policy_commitment: params.policy_commitment,
     };
     let seeds: [&[u8]; 3] = [crate::seeds::TIN_V1, &params.lookup_commitment, &[bump]];
@@ -139,6 +145,8 @@ pub fn apply<'a>(
         program_id,
         &params.lookup_commitment,
         &params.gpru_elgamal_key_commitment,
+        &params.gpru_balance_scan_public_key_x,
+        &params.gpru_balance_scan_public_key_y,
         &params.policy_commitment,
     )?;
     solana_program::msg!("TIP V1 route appended to shared membership root at index={}", route_leaf_index);
@@ -166,6 +174,9 @@ fn owner_intent_hash(params: &CreateTinV1Params) -> [u8; 32] {
         &[params.gpru_elgamal_key_version],
         &params.gpru_elgamal_public_key,
         &params.gpru_elgamal_key_commitment,
+        &[params.gpru_balance_scan_key_version],
+        &params.gpru_balance_scan_public_key_x,
+        &params.gpru_balance_scan_public_key_y,
         &params.policy_commitment,
         &params.expiry_ts.to_le_bytes(),
     ]).to_bytes()

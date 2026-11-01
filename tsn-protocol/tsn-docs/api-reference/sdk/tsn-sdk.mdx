@@ -26,20 +26,17 @@ The exports below are grouped by source module. The linked source is authoritati
 import { getTsnNetworkStatus } from "@trustlink/tsn-sdk";
 
 const status = await getTsnNetworkStatus({
-  local: {
-    node: "http://127.0.0.1:8000",
-    receiver: "http://127.0.0.1:3000",
-  },
   live: {
-    receiver: "https://tsn-receiver.example",
-    rpc: "https://tsn-rpc-gateway.vercel.app",
+    node: process.env.TSN_NODE_URL,
+    receiver: process.env.TSN_RECEIVER_URL,
+    rpc: process.env.TSN_RPC_URL,
   },
 });
 
-if (!status.readyForTransactions) throw new Error("TSN core services are unavailable");
+if (!status.readyForNativeTransactions) throw new Error("TSN core services are unavailable");
 ```
 
-The function probes local Node and Receiver candidates before their live candidates. It checks only the configured TSN RPC gateway and reports it offline instead of switching endpoints. The function reports route count and Cranker observations, and does not require a Cranker heartbeat for native intent creation. Cross-chain readiness additionally requires at least one registered ready destination.
+The application supplies endpoint values; the SDK does not read the application's `.env` file. When both local and live endpoints are supplied, it prefers a reachable local endpoint before the configured live one. Native readiness requires the configured Node, Receiver, and RPC gateway to respond. Cross-chain readiness additionally requires a registered destination route. The Cranker is a transaction-submission role, not a public application HTTP dependency.
 
 ## Payment authorization
 

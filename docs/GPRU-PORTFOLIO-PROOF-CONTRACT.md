@@ -5,9 +5,11 @@ This contract aligns the hidden-head circuit, settlement Memo, and owner balance
 ## Ownership and state
 
 - **TIP** owns TIN identity, owner recovery, and route discovery. TIN is the 10-digit identity managed by TIP.
-- **GPRU** derives transaction-specific routing material and verifies the proof that a hidden TIN portfolio head advances correctly.
+- **GPRU** guards the integrity and privacy of the user's private portfolio state presented to TCAP. Its proof is intended to establish that the hidden head is current and that the proposed balance transition follows from it, without exposing the TIN or hidden per-TIN state in the proof.
 - **TCAP** governs accepted token IDs, reserve liquidity, authorization, liability accounting, and atomic settlement state.
 - **Memo** carries an owner-encrypted action record and the public proof binding. It is transaction instruction data; no balance PDA or per-transaction PDA is introduced.
+
+In plain terms, GPRU verifies the private state transition that TCAP relies on; TCAP governs the funds and applies the authorized transition atomically. The hidden-head proof path remains fail-closed until its prover, witness source, verifier setup, and end-to-end execution are verified. Public transaction data and the shared TCAP root can still reveal activity and correlation.
 
 The shared authenticated state has one hidden outer leaf per TIN route. That leaf commits to the hidden sequence, predecessor Memo/action commitments, and one root for the TIN's token map. The nested token map contains one Pedersen commitment point for each token that has a balance. Token IDs are TCAP's accepted `tokenId` values.
 
@@ -21,7 +23,7 @@ C_t = v * G + r * H
 
 The circuit can add or subtract the public transaction amount by adding the corresponding multiple of `G`, then update the blinding by adding a fresh delta times `H`. Debit and exit proofs privately open old and new commitments and enforce a nonnegative successor. These are homomorphic **commitments**: they hide the amount and support arithmetic, but they do not encrypt or decrypt it.
 
-Each Memo contains one DBrix Secretbox-encrypted `tsn-gpru-balance-action-v1` record. It includes action kind, token ID, amount in base units, the hidden per-TIN sequence and predecessor Memo commitment for local history validation, the action commitment, and the balance blinding delta. The owner derives the record key from their TIP-registered GPRU scan key material, decrypts the records, validates each record against its settlement instruction and proof-bound Memo action commitment, checks the private history links, and replays credits, debits, and exits by token ID.
+Each Memo contains one DBrix Secretbox-encrypted `tsn-gpru-balance-action-v1` record. It includes action kind, token ID, amount in base units, the hidden per-TIN sequence and predecessor Memo commitment for local history validation, and the action commitment. It deliberately excludes the balance blinding delta. The public Memo prefix carries a one-time BabyJubjub ciphertext of that delta and its ephemeral point. The Groth16 witness proves this ciphertext encrypts the exact delta used by the Pedersen transition. The owner derives the TIP-registered scan secret from the master seed, recovers the delta from the ciphertext, decrypts the record, validates it against its settlement instruction and proof-bound action commitment, checks private history links, and replays credits, debits, and exits by token ID.
 
 The predecessor Memo commitment in the encrypted record is the big-endian SHA-256 digest reduced modulo the BN254 scalar modulus, exactly matching the value committed in the hidden-head circuit. The complete Memo hash includes the visible one-time prefix and encrypted Ledger body; GPRU applies the same field reduction before comparing it with the proof input. Each transition also uses a nonzero balance blinding delta, and the circuit proves its relation to the previous and next openings for all three action kinds.
 
@@ -29,7 +31,7 @@ The SDK recovery helper requires the caller to supply decrypted records with the
 
 ## Hidden-head proof and Memo binding
 
-The nine Groth16 public inputs are:
+The twelve Groth16 public inputs are:
 
 1. `oldGlobalRoot`
 2. `newGlobalRoot`
@@ -40,14 +42,17 @@ The nine Groth16 public inputs are:
 7. `successorPortfolioRoot`
 8. `successorBalanceX`
 9. `successorBalanceY`
+10. `encryptedBlindingDelta`
+11. `deltaEphemeralPublicX`
+12. `deltaEphemeralPublicY`
 
 The Memo begins with:
 
 ```text
-TSN_GPRU_HEAD_V1:<successorPortfolioRoot>:<successorBalanceX>:<successorBalanceY>:<actionCommitment>:
+TSN_GPRU_HEAD_V1:<successorPortfolioRoot>:<successorBalanceX>:<successorBalanceY>:<actionCommitment>:<encryptedBlindingDelta>:<deltaEphemeralPublicX>:<deltaEphemeralPublicY>:
 ```
 
-The rest is the encoded DBrix Ledger stream holding the encrypted action. GPRU checks that the four prefix fields equal the proof's corresponding public inputs, hashes the entire Memo, and verifies the proof. The circuit proves TIP route membership, current-head membership under the old shared root, one sequence advance, selected-token commitment arithmetic and portfolio-root update, and one-time nullifier insertion under the new root.
+The rest is the encoded DBrix Ledger stream holding the encrypted action. GPRU checks that all seven prefix fields equal the proof's corresponding public inputs, hashes the entire Memo, and verifies the proof. The circuit proves TIP route membership, current-head membership under the old shared root, one sequence advance, selected-token commitment arithmetic and portfolio-root update, the one-time ciphertext relation, and nullifier insertion under the new root.
 
 The portfolio-root prefix is a fresh successor value. The predecessor root and route remain private witnesses, so the Memo does not repeat a stable per-TIN identifier. The public shared root still exposes that a global state transition occurred; traffic timing and other public transaction fields can also provide correlation signals.
 
@@ -55,10 +60,10 @@ The portfolio-root prefix is a fresh successor value. The predecessor root and r
 
 TCAP checks the accepted asset, funding or owner authorization, reserve/liquidity conditions, and validity window. It verifies the GPRU proof and atomically advances the shared root with its liability accounting. Once the predecessor root advances, the same settlement cannot be applied again. A funding-derived commitment binds settlement authorization to its original funding without a separate spent-funding record.
 
-The GPRU proof establishes balance commitment arithmetic and freshness. It does not prove token custody, reserve solvency, or that the Memo's Secretbox plaintext correctly represents the action. Owner recovery cross-checks decrypted action fields against the on-chain settlement instruction and action commitment. The Memo record is for owner-readable balance history; TCAP does not trust it to authorize liquidity movement.
+The GPRU proof establishes balance commitment arithmetic and freshness, and proves the one-time Memo ciphertext encrypts the exact blinding delta used by the transition. It does not prove token custody, reserve solvency, or that every Secretbox plaintext action field correctly represents the on-chain action. Owner recovery cross-checks decrypted action fields against the on-chain settlement instruction and action commitment. The Memo record is for owner-readable balance history; TCAP does not trust it to authorize liquidity movement.
 
 ## Current implementation status
 
-The source now uses a nine-input circuit contract with one hidden outer TIN head and a nested per-token Pedersen commitment map. GPRU's Memo parser validates the portfolio-root, point, and action-commitment prefix. The Cranker Memo builder emits the same format. The SDK decrypts action records and reconstructs balances after checking action fields and private sequence/predecessor continuity. The Node record encoder rejects public portfolio ciphertexts, and the Ristretto portfolio balance updater has been removed; Ristretto remains for DNA routing and record-key agreement.
+The source now uses a twelve-input circuit contract with one hidden outer TIN head, a nested per-token Pedersen commitment map, and a one-time ciphertext relation for its blinding delta. GPRU's Memo parser validates all seven public prefix fields. The Cranker Memo builder emits the same format. The SDK decrypts action records, recovers the delta from the prefix ciphertext, and reconstructs balances after checking action fields and private sequence/predecessor continuity. R1CS generation has succeeded; the Ristretto portfolio balance updater has been removed, while Ristretto remains for DNA routing and record-key agreement.
 
-This does **not** enable settlement. The TSN Node still fails closed because a trusted provider for the latest hidden-head and nested token-map witness is not configured. The Groth16 circuit must be recompiled; a matching proving/verifying key must be generated; GPRU verifier configuration must match the new circuit; and Node/Cranker settlement serialization must be integrated and compiled. No SBF deployment, verifier initialization, end-to-end proof, or live credit/debit/exit result is claimed here.
+This does **not** enable settlement. The TSN Node still fails closed because a trusted provider for the latest hidden-head and nested token-map witness is not configured. A matching proving/verifying key must be generated; GPRU verifier configuration must match the circuit; the circuit needs independent review; and the proof-generation service and complete execution path must be built and verified. No SBF deployment, verifier initialization, end-to-end proof, or live credit/debit/exit result is claimed here.

@@ -1,8 +1,22 @@
 # TrustLink documentation
 
+TrustLink Labs is building foundational infrastructure for the **Internet of
+Value** through **TSN**, a hybrid settlement network that combines off-chain
+coordination and verification with on-chain authorization and asset settlement.
+Its design aims to make value transfer interoperable, identity-aware, and
+privacy-preserving across applications and blockchain networks; route
+availability and end-to-end proof support must be checked against current
+implementation evidence.
+
+Across these guides, the protocol boundary is consistent: **GPRU guards the integrity and privacy of the user's private state presented to TCAP for a balance-changing action; TCAP governs the assets and liquidity and applies authorized transitions atomically.** The hidden-head proof path is not operational end to end until its prover, witness source, verifier setup, and execution are verified. Public transaction fields and shared state may still expose activity or correlation.
+
 For internal team runbooks, start with the categorized [team guide index](./team/README.md).
 The public Mintlify documentation for developers, judges, and users is maintained
 separately under `tsn-protocol/tsn-docs/`.
+
+## Documentation boundary
+
+Mintlify is for public protocol explanations and application-facing SDK guides. Keep source-level architecture discussions, circuit and key setup, integration decisions, deployment steps, service startup, and operator runbooks in this repository's `docs/` folder. When a feature is not available end to end, Mintlify should state that limitation briefly and link here for the engineering record; it should not publish a build diary or local service commands.
 
 Read these documents in order:
 

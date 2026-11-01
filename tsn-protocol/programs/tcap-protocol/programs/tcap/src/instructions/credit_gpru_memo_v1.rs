@@ -10,7 +10,7 @@ pub const ACTION_KIND_CREDIT_V1: u8 = 1;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
 pub struct HiddenHeadProofArgsV1 {
-    pub public_inputs: [[u8; 32]; 9],
+    pub public_inputs: [[u8; 32]; 12],
     pub proof_a: [u8; 64],
     pub proof_b: [u8; 128],
     pub proof_c: [u8; 64],

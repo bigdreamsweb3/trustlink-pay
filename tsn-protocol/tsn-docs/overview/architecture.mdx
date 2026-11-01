@@ -1,46 +1,32 @@
 ---
-title: "TSNP, TIP, GPRU, and TCAP Architecture"
-sidebarTitle: "Architecture"
-description: "Source-backed protocol roles and the proof-shaped hidden-head credit path, including its runtime readiness boundary."
+title: "TSN Protocol Architecture"
+description: "How TIP, GPRU, TCAP, and TSNP divide identity, private-state protection, and settlement authority."
 ---
 
-# Protocol architecture
+TSN separates the identity used to address a transfer from the private state used to validate a balance change and the assets governed by settlement. This separation gives each protocol layer a distinct responsibility.
 
-TIP identifies transfer identities and routes. TSNP enforces on-chain authorization and settlement rules; TSN services coordinate work. GPRU verifies cryptographic proofs. TCAP governs approved assets, reserves, and shared replay state. The checked-in TSNP/TCAP credit ABI is proof-shaped, while Node fails closed until a prover and setup artifacts are configured.
+As hybrid infrastructure for the **Internet of Value**, TSN coordinates identity, requests, and verification through off-chain services, then relies on on-chain programs to enforce authorization and settlement rules. The architecture is designed for interoperable value transfer across applications and blockchain networks; each route's live status depends on its deployment and verification evidence.
 
 ```mermaid
-flowchart LR
-    S[Sender SDK: signed intent and funding transaction] --> R[Receiver: accept and persist ingress]
-    R --> N[TSN Node: verify and request hidden-head proof]
-    N --> P[Groth16 prover: private witness + proving key]
-    P --> C[Cranker: submit exact authorized transaction]
-    C --> T[TSNP Program: validate Mother authorization and pass proof]
-    T -->|CPI| TCAP[TCAP: check asset, root, reserve, authorization]
-    TCAP --> G[GPRU: verify hidden-head proof]
-    TIP[TIP shared route root] --> G
-    M[Solana Memo: encrypted action + portfolio root + balance point + action commitment] --> G
-    G -->|valid proof| TCAP
-    TCAP -->|atomic state update| T
+flowchart TD
+    W[Owner or sender wallet] -->|identity and signed intent| I[TIP: Transfer Identity Protocol]
+    I -->|TIN route context| S[TSNP: on-chain settlement protocol]
+    S -->|private-state proof| G[GPRU: guards state integrity and privacy]
+    G -->|verified transition| C[TCAP: asset and reserve authority]
+    C -->|atomic settlement| L[Solana token and protocol state]
 ```
 
-## TIP and TIN
+## Responsibility boundaries
 
-TIP is the Transfer Identity Protocol. It manages transfer identity records and route metadata. A TIN is one 10-digit Transfer Identity Number within TIP. The TIN registry stores encrypted identity fields and route commitments, including the versioned GPRU scan public key and its commitment. TIP source also maintains a shared route Merkle root.
+- **TIP** manages transfer identities. A **TIN** is one 10-digit identity managed by TIP; it is not a wallet key or a store of funds.
+- **GPRU** guards the user's private state as it is presented to TCAP. Its proof is intended to show that the hidden state is current and that the proposed transition follows from it.
+- **TCAP** governs accepted assets, reserve liquidity, and the balance-changing action. It applies an authorized transition atomically.
+- **TSNP** enforces its on-chain authorization and settlement rules. **TSN** names the complete infrastructure, including the protocol layers and supporting services.
 
-## Proof-shaped credit path in source
+The proof does not grant custody or payment authority to GPRU. Settlement requires the applicable authorization and TCAP checks as well as a valid proof.
 
-TSN's `register_tcap_credit_authorization_v2` validates the Mother authorization and passes proof arguments to TCAP `credit_gpru_memo_v1`. TCAP checks the approved asset, authorization signer, time window, shared-root predecessor and sequence, pending liability, and reserve solvency, then invokes GPRU `verify_hidden_head_transition_v1`. GPRU checks the canonical roots and binds the proof to the following Memo instruction before Groth16 verification. TCAP advances the shared root and reserve liabilities only after successful verification.
+## Privacy boundary
 
-The proof uses the protocol-wide TIP route root and hides the selected route/head witness. TCAP does not create a per-TIN tip PDA; the Memo remains transaction instruction data. The Node settlement authorization endpoint currently returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`, so the service flow cannot produce an authorized settlement yet.
+Encryption and zero-knowledge proofs can protect selected values, but they do not hide the existence or timing of a public-chain transaction. Solana observers can see transaction accounts, signatures, instruction data, and ordering. The current shared TCAP state reference can also provide a correlation point, so TSN does not claim zero linkability.
 
-## Prover and circuit status
-
-The updated Circom source declares nine public inputs: old/new TCAP roots, Memo commitment, action commitment, nullifier, TIP route root, successor portfolio root, and successor balance point X/Y. Its private witness covers TIP route membership, one hidden per-TIN outer head, a nested per-token commitment map, nullifier-map paths, and balance openings. The balance state uses Pedersen commitments; the DBrix Memo body carries an owner-encrypted action record for recovery. The circuit has not been recompiled or reviewed after this change. Matching proving/verifying keys, a validated key converter, witness provider, initialized verifier account, and end-to-end proof evidence are not established. See [GPRU Groth16 prover setup](/developers/groth16-hidden-head).
-
-All transitions write the same TCAP root account. That common writable account and the public action fields, nullifier, roots, Memo commitment, route root, successor point, timing, and transaction accounts expose protocol-level linkage. The design is not zero-linkability.
-
-## Service lifecycle
-
-Receiver acceptance, Node verification, Cranker submission, and Solana confirmation are separate milestones. A confirmed reserve funding transaction is not itself confirmation of the later TCAP state transition. Use transaction and account evidence from the correct cluster to claim settlement completion.
-
-See [GPRU and TCAP state](/architecture/gpru-confidential-balances) and [Current technology](/about/current-technology) for exact limits.
+The hidden-head proof flow is not currently established as an end-to-end settlement capability. This page describes the protocol's responsibility boundaries, not a claim that every layer is deployed or operational. Source-level design and deployment evidence are maintained in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

@@ -1,52 +1,14 @@
 ---
-title: "GPRU Groth16 Prover Setup"
-description: "Developer guide to compiling the hidden-head circuit, creating and validating Groth16 artifacts, and installing the verifier key."
+title: "How GPRU Proofs Guard User State"
+description: "A plain-language overview of the zero-knowledge proof intended to protect private state before TCAP settlement."
 ---
 
-# GPRU Groth16 prover setup
+GPRU is designed to guard the integrity and privacy of a user's private state as it is presented to TCAP for a balance-changing action. A Groth16 proof lets a verifier check a statement about hidden data without receiving the private data itself.
 
-This is an implementation guide for protocol developers. It describes how the hidden-head circuit is intended to produce proofs and how its setup artifacts are created. It is not a claim that a production prover or verifier setup is currently available.
+In this design, the proof is intended to establish that the user's hidden state is current and that the requested change follows from it. TCAP then applies the asset, authorization, and liquidity checks and governs the actual settlement. The proof does not give GPRU custody of the funds or independently authorize a payment.
 
-## What the prover and keys do
+The proof is one part of a larger protocol contract: the private statement, transaction record, on-chain verifier, and TCAP state transition must all agree. A proof that checks only a different statement would not validate the user's encrypted balance record.
 
-The circuit defines the transition GPRU will accept. A proof generator receives the circuit's private witness and circuit-specific proving key, calculates the witness, and produces a succinct proof with nine public inputs. GPRU checks that proof using the matching verifying key installed in the global verifier account. TCAP calls GPRU before it advances the shared root and reserve liabilities.
+The hidden-head proof flow is not currently established as an end-to-end settlement capability. The circuit, setup ceremony, prover, verifier configuration, and transaction flow require coordinated verification before an application can rely on it. Public transaction fields and repeated state references can still reveal correlation.
 
-Groth16 setup is circuit-specific. Compiling the Circom source produces an R1CS constraint system and a witness calculator. The Powers of Tau phase and circuit-specific phase produce the proving key and verifying key. Production setup must use a documented multi-party ceremony, verify contributions and the final zkey, and preserve public transcripts and artifact hashes. Keep setup secrets and private witness files out of source control. The proving key is not a user's private key, but must be integrity-controlled and matched to the deployed verifier key.
-
-## Current status
-
-The circuit and public-input ABI changed to one hidden per-TIN head with a nested token commitment map. Previous compile counts and generated artifacts do not match the current source. Recompile the updated circuit before setup. Matching setup keys, a Rust point-encoding adapter, private witness provider, and working prover service are not established. Node returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`; settlement remains disabled until these prerequisites and the complete proof path are verified.
-
-## Local circuit toolchain
-
-Install the pinned Circom 2, `circomlib`, and `snarkjs` packages, then compile from the repository root:
-
-```sh
-npm run gpru:circuit:install
-npm run gpru:circuit:compile
-npm run gpru:circuit:info
-```
-
-Record compiler/library versions, build command, source hashes, and constraint count. Do not begin a trusted setup until the public-input order, path depths, hash functions, Pedersen arithmetic, Memo prefix, and Rust verifier encoding have been reviewed.
-
-## Local-only setup and proof commands
-
-The following command shape is for development only. Choose the Powers of Tau power only after measuring the updated circuit; use a coordinated multi-party ceremony for production:
-
-```sh
-snarkjs powersoftau new bn128 18 build/hidden_head_v1/pot_0000.ptau -v
-snarkjs powersoftau contribute build/hidden_head_v1/pot_0000.ptau build/hidden_head_v1/pot_0001.ptau --name="local development only" -v
-snarkjs powersoftau prepare phase2 build/hidden_head_v1/pot_0001.ptau build/hidden_head_v1/pot_final.ptau -v
-snarkjs groth16 setup build/hidden_head_v1/main.r1cs build/hidden_head_v1/pot_final.ptau build/hidden_head_v1/hidden_head_0000.zkey
-snarkjs zkey contribute build/hidden_head_v1/hidden_head_0000.zkey build/hidden_head_v1/hidden_head_final.zkey --name="local development only" -v
-snarkjs zkey verify build/hidden_head_v1/main.r1cs build/hidden_head_v1/pot_final.ptau build/hidden_head_v1/hidden_head_final.zkey
-snarkjs zkey export verificationkey build/hidden_head_v1/hidden_head_final.zkey build/hidden_head_v1/verification_key.json
-```
-
-For a valid private witness, `snarkjs wtns calculate` generates a witness file, and `snarkjs groth16 prove` produces the proof and public-input JSON. `snarkjs groth16 verify` checks the result locally. Before the proof can be submitted, its public inputs and proof points must be converted to the exact fixed-width encoding expected by GPRU and validated using the same Rust verifier implementation.
-
-## Install the on-chain verifier
-
-GPRU's `initialize_hidden_head_verifier_v1` instruction creates its global verifier PDA under Mother authority. It records a source-derived circuit commitment and a commitment to the supplied verification-key bytes. The current circuit commitment hashes `main.circom` plus a fixed library label; it does not bind all included library sources, compiler version, flags, or the generated R1CS. The initializer cannot prove on chain that a supplied key was generated from the intended circuit. Reproduce and independently verify the circuit-to-key relationship before initialization. The key must also be converted to the expected fixed-width G1/G2 byte format and tested against Rust; no validated converter or initialized verifier account is present.
-
-For the full public-input contract and current protocol boundary, see [GPRU hidden heads](/architecture/gpru-confidential-balances). The upstream [Circom proving guide](https://docs.circom.io/getting-started/proving-circuits/) describes the standard compilation, setup, proof, and verification stages.
+The circuit and proving-key lifecycle are engineering materials kept in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs), rather than setup instructions for an application integrator.

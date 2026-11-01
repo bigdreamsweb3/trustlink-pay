@@ -1,54 +1,37 @@
 ---
-title: "Wallet-to-TIN Credit Lifecycle"
-sidebarTitle: "Payment Intent Lifecycle"
-description: "Current Receiver, Node, Cranker, GPRU, and TCAP stages for a wallet-to-TIN credit."
+title: "Payment Intent Lifecycle"
+description: "Understand the user authorization, processing, submission, and confirmation stages of a TSN payment."
 ---
 
-The wallet-to-TIN credit flow has two distinct Solana operations: the sender-authorized reserve deposit and the later GPRU-checked TCAP credit transition. Receiver acceptance, Node verification, Cranker submission, reserve-funding confirmation, and credit confirmation are different lifecycle facts.
-
-## Flow
+A TSN payment passes through several distinct stages. An application should display each stage accurately: a request being received does not mean it was verified, and a submitted transaction does not mean it succeeded.
 
 ```mermaid
-sequenceDiagram
-    participant W as Sender wallet and SDK
-    participant R as Receiver
-    participant N as TSN Node
-    participant C as Cranker
-    participant S as TSNP program
-    participant G as GPRU
-    participant T as TCAP
-
-    W->>R: Signed payment intent and owner-authorized deposit transaction
-    R-->>W: Ingress accepted; work ID
-    R->>N: Authenticated work
-    N->>N: Verify authorization and funding; resolve TIN route through TIP
-    N-->>R: Verified authorized work
-    C->>R: Lease eligible work
-    C->>C: Submit authorized reserve deposit
-    C->>S: Submit credit transition with Memo data
-    S->>G: Verify DNA-key proof and encrypted-credit relation
-    S->>T: Advance shared TCAP commitment root
-    T-->>R: Credit transaction confirmation is reported
+stateDiagram-v2
+    [*] --> Authorized: Sender signs intent
+    Authorized --> Received: Application submits request
+    Received --> Verified: Protocol checks pass
+    Verified --> Submitted: Authorized transaction is sent
+    Submitted --> Confirmed: Solana confirms execution
+    Received --> Rejected: Request is invalid
+    Verified --> Rejected: Required checks fail
+    Submitted --> Failed: Transaction does not execute
 ```
 
-## What each status proves
+| Stage | Meaning for the application |
+| --- | --- |
+| Authorized | The sender reviewed and signed the requested payment details. |
+| Received | The service accepted the request for processing. |
+| Verified | Required authorization and payment checks passed for the next step. |
+| Submitted | An authorized transaction was sent to Solana. |
+| Confirmed | Solana confirmed successful execution of that transaction. |
+| Rejected or failed | The request or transaction did not complete; the reported reason determines the next safe action. |
 
-| Evidence | What it establishes | What it does not establish |
-| --- | --- | --- |
-| Receiver accepted | Ingress work was accepted and stored | Node verification, funding confirmation, or settlement |
-| Node verified | The Node accepted the request and prepared authorized work | Cranker submission or on-chain execution |
-| Cranker submitted | A transaction was sent to the configured Solana RPC | Confirmation or successful program execution |
-| Funding confirmed | The reserve deposit transaction confirmed | The later TCAP credit transition confirmed |
-| Credit confirmed | The TSNP/GPRU/TCAP instruction completed on chain | That the app has indexed all prior Memo history or that confidential debit/exit is available |
+Some flows use separate transactions for funding and the subsequent credit. Each signature confirms only its own transaction. A confirmed funding transaction does not prove that the later TCAP transition completed.
 
-## On-chain state and replay boundary
+## Safe retries
 
-The credit ABI binds the Memo instruction to a hidden-head proof. TCAP advances one shared global root and reserve liabilities only after GPRU verifies the proof; no `TCapTinTipV1` or per-TIN Memo account is written. Node currently fails closed because the prover and witness source are not configured.
+Before retrying, check the transaction signature and the latest status. If a transaction may have succeeded but the response was lost, do not create a replacement payment until its chain result is known. A stale or expired sender-signed transaction must be rebuilt and approved again by the sender; an operator must not modify its authorization.
 
-The funding-derived transition value binds the settlement authorization to the signed reserve deposit. It does not create a separate spent-funding PDA. A transaction failure or uncertain client response should be resolved by checking its signature and the current root before constructing a replacement.
+GPRU is intended to guard the private state presented to TCAP, while TCAP governs funds and applies authorized changes atomically. That hidden-head proof flow is not established end to end; the lifecycle stages above do not imply that it is enabled.
 
-## Data visibility
-
-Solana exposes instruction arguments, account keys, Memo bytes, signatures, fee payer, and transaction ordering. An encrypted Memo may hide plaintext from an observer, but the amount passed in public instruction arguments and transaction metadata remain visible where the ABI includes them. The common writable TCAP root is a repeated public account reference.
-
-The updated circuit source has nine public inputs for the hidden portfolio root and Pedersen balance transition, but recompilation, matching key generation, proof generation, and end-to-end verification remain incomplete. See [GPRU and TCAP state](/architecture/gpru-confidential-balances), [GPRU Groth16 prover setup](/developers/groth16-hidden-head), and [Replay protection](/security/replay-protection).
+For application request and response types, see the [TSN SDK reference](/api-reference/sdk/tsn-sdk). Service implementation and operations belong in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

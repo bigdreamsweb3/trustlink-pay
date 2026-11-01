@@ -4,7 +4,7 @@
 
 ### Abstract
 
-TSN (Transfer Settlement Network) is TrustLink Labs' settlement infrastructure. TSNP (Transfer Settlement Network Protocol) is the on-chain settlement protocol program within that infrastructure. TIP manages transfer identities, GPRU provides guarded privacy routing and proof verification, TCAP governs confidential assets and reserve liabilities, and DIP defines deposit ingress. Circle's CCTP is a separate cross-chain transfer protocol used by supported integrations. The current TSNP/TCAP credit ABI carries a GPRU hidden-head Groth16 proof, while the Node settlement path fails closed because its prover and witness source are not configured.
+TrustLink Labs is building foundational infrastructure for the **Internet of Value** through **TSN (Transfer Settlement Network)**, a hybrid settlement network designed to make value transfer interoperable, identity-aware, and privacy-preserving across applications and blockchain networks. TSN combines off-chain coordination and verification with on-chain authorization and asset settlement. **TSNP (Transfer Settlement Network Protocol)** is the on-chain settlement protocol within TSN. **TIP** manages transfer identities. **GPRU (Guarded Privacy Routing Unit)** is designed to guard the integrity and privacy of the user's private state presented to **TCAP**. TCAP governs accepted assets, authorization, reserve liquidity, and atomic application of valid transitions; **DIP** defines deposit ingress. Circle's **CCTP** is a separate cross-chain transfer protocol used by supported integrations. The hidden-head proof path remains fail-closed until its prover and witness source are configured and end-to-end verification is complete. Public transaction metadata can still reveal activity and correlation.
 
 The current source accounting domain is Solana. The repository also contains the Creditcoin-first EVM settlement boundary, Attestcoin route verification, destination vault/executor contracts, and deployment helpers. These source components are not the same as a live production deployment: testnet deployment and real transaction evidence are required before claiming the cross-chain path is operational.
 
@@ -144,13 +144,15 @@ transition digest. It does not create or update the legacy `TCapTinTipV1`
 account. The Memo commitment binds instruction bytes; it does not prove that
 those bytes represent a valid encrypted balance by itself.
 
-The updated Circom source defines nine public inputs: old/new global roots,
+The updated Circom source defines twelve public inputs: old/new global roots,
 Memo and action commitments, nullifier, TIP route root, successor portfolio
-root, and selected-token successor Pedersen balance point X/Y. Private
-witnesses hold route/head membership, sequence, nested token-map paths, and
-balance openings. The balance points are commitments, not ciphertexts; the
-Memo body carries an owner-encrypted action record used to recover amounts.
-The updated circuit has not been recompiled or reviewed.
+root and selected-token successor Pedersen point X/Y, plus a one-time encrypted
+blinding delta and its ephemeral point X/Y. Private witnesses hold route/head
+membership, sequence, nested token-map paths, balance openings, and the
+ciphertext opening. The circuit constrains that ciphertext to encrypt the exact
+delta used in the Pedersen transition. The owner-encrypted Memo body omits the
+delta; the owner recovers it using the TIP-registered scan secret. R1CS
+generation has succeeded, but the circuit has not been independently reviewed.
 No trusted setup artifacts, validated key converter, prover service, witness
 provider, initialized verifier, or end-to-end proof evidence is established.
 The ABI exposes action kind, token ID, and amount. The shared root is a common

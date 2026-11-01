@@ -1,46 +1,39 @@
 ---
-title: "How a TIN Credit Moves Through TSN"
-sidebarTitle: "How It Works"
-description: "The current source-backed ingress, verification, GPRU credit check, and TCAP shared-root transition."
+title: "How a TSN Transfer Works"
+description: "The user-facing sequence for resolving a TIN, authorizing a transfer, and settling it on Solana."
 ---
 
-# TIN credit lifecycle
+A TSN transfer begins with an identity the recipient can share and ends with an on-chain settlement governed by TCAP. The sender reviews the resolved recipient and authorizes the payment; protocol services verify the request and prepare it for execution.
 
-The sender signs payment and reserve-funding details for a recipient TIN. Receiver accepts and stores the ingress. The TSN Node verifies the signed request, resolves the TIP route, and constructs authorized work. A Cranker submits the exact work. In the current TSN credit instruction, GPRU validates the DNA-key proof and encrypted credit transition before TCAP advances its shared root.
+This is TSN's hybrid model: applications and protocol services coordinate the request off chain, while TSNP and TCAP enforce applicable authorization, asset, and settlement rules on chain. This model is intended to connect value transfer across the Internet of Value, while the status of each cross-network route remains specific to its verified deployment.
 
 ```mermaid
 sequenceDiagram
-    participant S as Sender SDK and wallet
-    participant R as Receiver
-    participant N as TSN Node
-    participant C as Cranker
-    participant T as TSNP program
+    participant S as Sender and wallet
+    participant A as Application and SDK
+    participant I as TIP
+    participant N as TSN verification services
     participant G as GPRU
-    participant P as TIP
-    participant A as TCAP
-    participant M as Memo instruction
+    participant T as TCAP
+    participant C as Solana
 
-    S->>R: Signed intent and reserve-funding transaction
-    R-->>S: Ingress accepted
-    R->>N: Persisted work for verification
-    N->>P: Resolve TIN route
-    N->>C: Authorized settlement work
-    C->>T: Submit exact authorized transaction
-    T->>G: Verify DNA key proof and credit transition
-    G->>T: Validation result
-    T->>A: CPI credit_gpru_memo_v1
-    A->>A: Check global root and sequence; advance root
-    T->>M: Memo data bound by commitment
+    S->>A: Choose recipient TIN and payment details
+    A->>I: Resolve recipient identity and route
+    I-->>A: Return the available recipient details
+    A->>S: Present payment for review
+    S->>A: Sign the requested authorization
+    A->>N: Submit the authorized intent
+    N->>N: Verify authorization and payment evidence
+    N->>G: Prepare private-state transition proof
+    G->>T: Guard the proposed private-state change
+    T->>C: Apply authorized, asset-checked transition
+    C-->>A: Transaction confirmation
 ```
 
-## Current security and privacy limits
+GPRU protects the integrity and privacy of the user's private state presented to TCAP: its proof is intended to show that the hidden state is current and that the proposed change follows from it. TCAP remains responsible for the funds and applies a valid authorized change atomically.
 
-TCAP stores one shared global commitment root for this credit path, not a per-TIN latest-head account. The root transition prevents replay of the same global transition. The current caller still supplies GPRU's prior ciphertext; no persistent per-TIN head proves that it is the latest. The TIP registry is passed to GPRU during key proof verification, and the shared TCAP root is present in each credit transaction, so the current path is not unlinkable.
+## What confirmation means
 
-The TSNP/TCAP credit ABI carries the Groth16 hidden-head proof, but Node currently fails closed because no prover or witness provider is configured. The circuit source includes balance arithmetic constraints, but has not been compiled or reviewed. Action kind, token ID, amount, and other proof inputs remain public; debit and exit are not established as enabled.
+An accepted request means the application delivered the intent. Verification means the protocol services accepted it for processing. A submitted transaction is not yet a confirmed transaction. Settlement is confirmed only when the relevant Solana transaction succeeds; for a flow with separate funding and credit transactions, each signature represents a separate stage.
 
-## Lifecycle evidence
-
-Receiver acceptance means the request was stored; it does not mean Node verification or chain execution. Node verification is not Cranker submission. A submitted signature is not confirmation until Solana reports the expected instruction as confirmed. A confirmed reserve deposit is separate from confirmation of the later TCAP transition.
-
-See [Protocol architecture](/overview/architecture) and [GPRU and TCAP state](/architecture/gpru-confidential-balances) for program-level boundaries.
+The hidden-head proof flow is not yet established end to end, and confidential debit and exit are not available as verified capabilities. Public transaction metadata can still reveal activity and correlation. Use the SDK lifecycle guides to interpret status in an application, and the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs) for implementation and operator procedures.

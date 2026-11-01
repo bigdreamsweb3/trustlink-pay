@@ -8,7 +8,7 @@ Use these names consistently in code, documentation, and public explanations.
 | **TSNP** | Transfer Settlement Network Protocol | The on-chain settlement protocol program within TSN. The source crate currently retains the internal identifier `trustlink_escrow`; TSNP does not change its program ID or ABI by itself. |
 | **TIP** | Transfer Identity Protocol | Manages transfer identity and route discovery. |
 | **TIN** | Transfer Identity Number | A 10-digit identity managed by TIP; it is not the whole identity protocol or a wallet key. |
-| **GPRU** | Guarded Privacy Routing Unit | A protocol for transaction-specific routing material and privacy proofs. It does not own TCAP assets or reserves. |
+| **GPRU** | Guarded Privacy Routing Unit | Guards the integrity and privacy of a user's private state presented to TCAP by verifying transaction-specific routing and state-transition proofs. It does not own TCAP assets or reserves. |
 | **TCAP** | Transfer Confidential Asset Protocol | Governs accepted assets, reserve liquidity, and atomic settlement accounting. |
 | **DIP** | Deposit Ingress Protocol | Defines the deposit-ingress boundary and its integration with the settlement protocols. |
 | **CCTP** | Circle Cross-Chain Transfer Protocol | Circle's external protocol. Describe it as an integration only where the relevant code and deployment support it; it is not a TrustLink protocol name. |
@@ -17,6 +17,7 @@ Use these names consistently in code, documentation, and public explanations.
 
 - Name the overall infrastructure **TSN** and the on-chain settlement program **TSNP**. Do not call the protocol simply “TSN” where that confuses the program with the whole infrastructure.
 - Keep TIP and TIN distinct: TIP is the protocol; a TIN is one identity type inside it.
+- Explain the GPRU/TCAP boundary plainly: GPRU verifies that the hidden user state presented for a balance-changing action is current and that the proposed transition follows from it; TCAP governs accepted assets, authorization, reserves, liquidity, and atomic application of the transition. Preserve current implementation and privacy limits wherever this intended role is described.
 - List TSNP, TIP, GPRU, TCAP, and DIP as separate TrustLink protocol layers where relevant. Mention Circle's CCTP separately as an external protocol.
 - Do not use DESP as an umbrella name for TSN or TSNP. Use direct names and describe the concrete responsibility instead.
 - Preserve existing program IDs, keypairs, account layouts, and instruction ABIs unless a separately reviewed code change updates them.

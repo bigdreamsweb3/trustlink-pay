@@ -11,7 +11,7 @@ establishes that the credit state change executed.
 | Receiver → Node | Stores ingress and leases authenticated work | Receiver acceptance alone does not verify a payment or settle it. |
 | Node → TSN | Resolves TIP, validates work, and prepares authorized transition data | Node verification alone does not move TCAP assets. |
 | Cranker → Solana | Submits the authorized transaction and pays transaction fees | The Cranker cannot change the transaction's authorized fields; submission alone is not confirmation. |
-| TSN → GPRU → TCAP | Verifies the DNA-key/credit relation, then atomically advances TCAP's shared commitment root | The root is global, not a per-TIN head; current source does not prove the supplied predecessor is latest for that TIN. |
+| TSN → GPRU → TCAP | GPRU is the proof gate for the user's private state and proposed balance transition presented to TCAP; TCAP checks funds and applies an authorized transition atomically | The hidden-head proof is not wired end to end; the active source does not prove that the supplied predecessor is the latest state for that TIN. The shared root and public transaction fields can still correlate activity. |
 
 The encrypted Memo is transaction instruction data. TCAP does not store it in a
 per-TIN balance account in the current credit path. Reading transaction

@@ -37,12 +37,22 @@ fn poseidon2(left: &[u8; 32], right: &[u8; 32]) -> Result<[u8; 32], ProgramError
 fn route_leaf(
     lookup_commitment: &[u8; 32],
     gpru_key_commitment: &[u8; 32],
+    balance_scan_public_key_x: &[u8; 32],
+    balance_scan_public_key_y: &[u8; 32],
     policy_commitment: &[u8; 32],
 ) -> Result<[u8; 32], ProgramError> {
     let lookup_commitment = canonical_field_bytes(lookup_commitment)?;
     let gpru_key_commitment = canonical_field_bytes(gpru_key_commitment)?;
+    let balance_scan_public_key_x = canonical_field_bytes(balance_scan_public_key_x)?;
+    let balance_scan_public_key_y = canonical_field_bytes(balance_scan_public_key_y)?;
     let policy_commitment = canonical_field_bytes(policy_commitment)?;
-    let inputs: [&[u8]; 3] = [&lookup_commitment, &gpru_key_commitment, &policy_commitment];
+    let inputs: [&[u8]; 5] = [
+        &lookup_commitment,
+        &gpru_key_commitment,
+        &balance_scan_public_key_x,
+        &balance_scan_public_key_y,
+        &policy_commitment,
+    ];
     poseidon_hashv(Parameters::Bn254X5, Endianness::BigEndian, &inputs)
         .map(|hash| hash.to_bytes())
         .map_err(|_| ProgramError::InvalidInstructionData)
@@ -55,6 +65,8 @@ pub fn append_route<'a>(
     program_id: &solana_program::pubkey::Pubkey,
     lookup_commitment: &[u8; 32],
     gpru_key_commitment: &[u8; 32],
+    balance_scan_public_key_x: &[u8; 32],
+    balance_scan_public_key_y: &[u8; 32],
     policy_commitment: &[u8; 32],
 ) -> Result<u32, ProgramError> {
     let (expected, bump) = crate::tip_route_root_pda(program_id);
@@ -93,7 +105,13 @@ pub fn append_route<'a>(
         return Err(Error::InvalidInstruction.into());
     }
     let leaf_index = root.leaf_count as u32;
-    let mut node = route_leaf(lookup_commitment, gpru_key_commitment, policy_commitment)?;
+    let mut node = route_leaf(
+        lookup_commitment,
+        gpru_key_commitment,
+        balance_scan_public_key_x,
+        balance_scan_public_key_y,
+        policy_commitment,
+    )?;
     for level in 0..TipRouteMerkleRootV1::DEPTH {
         let zero = &ROUTE_ZERO_HASHES_V1[level];
         if ((root.leaf_count >> level) & 1) == 0 {

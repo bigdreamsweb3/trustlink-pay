@@ -1,31 +1,11 @@
 ---
-title: "TSN Operator Boundaries: Current TIN Credit"
-sidebarTitle: "Operator Boundaries"
-description: "What the Receiver, Node, Cranker, and Solana programs do in the current TSN credit path."
+title: "Service and Protocol Boundaries"
+sidebarTitle: "Service Boundaries"
+description: "The limits of application, verification-service, transaction-submission, proof, and settlement authority."
 ---
 
-This page covers the current wallet-to-TIN credit route. TSN also has separate epoch treasury, claim-slot, settlement, and refund instruction families; their existence in source does not mean the TIN credit caller invokes them.
+TSN services coordinate payment work, but the settlement programs enforce the on-chain rules. The sender authorizes the payment, services verify and route the request, and a Cranker submits the authorized transaction. Only successful program execution on Solana confirms the corresponding state change.
 
-## TIN credit boundaries
+GPRU guards the integrity and privacy of the user's private state presented to TCAP. TCAP governs assets, reserves, and liquidity, then applies an authorized transition atomically. A service response or a GPRU proof alone cannot move funds.
 
-| Boundary | Data or action | What it does not establish |
-| --- | --- | --- |
-| SDK to Receiver | Signed funding/intent work is submitted and accepted into the Receiver queue | Acceptance does not prove the Node verified the work. |
-| Receiver to Node | Authenticated work is leased or made available for verification | A lease does not authorize token movement. |
-| Node to TSN | Node prepares the authorized credit transition, including route and GPRU material | Node verification alone does not settle the credit. |
-| Cranker to Solana | Cranker submits the exact authorized transaction and pays its fee | Submission alone does not establish confirmation. |
-| TSN to GPRU to TCAP | TSN verifies authorization, GPRU key/credit relations, and TCAP advances its shared root | The shared root is not an authenticated latest head for each TIN. |
-
-## Data visible on chain
-
-Solana transaction account keys, instruction arguments, Memo bytes, signatures, fee payer, and ordering are publicly observable. Encryption protects Memo contents only to the extent the application encrypts them correctly; it does not hide transaction metadata. Every current shared-root transition references the same TCAP root account, creating a public common account reference.
-
-## Separate epoch instruction families
-
-`SettlementDna`, `EpochClaimSlot`, opaque slot, epoch treasury, payout, and refund mechanisms belong to separate TSN instruction families. Do not use their permits, account layouts, or refund behavior as descriptions of the current TSNP-to-GPRU-to-TCAP TIN credit call unless the transaction being documented actually invokes those instructions.
-
-## Current limits
-
-The proof-shaped credit ABI updates the hidden head through TCAP's shared root without a per-TIN TCAP PDA. Node currently fails closed because no Groth16 prover or witness source is configured. Circuit arithmetic, key artifacts, verifier initialization, and end-to-end behavior are unverified. Debit and exit are not established as available end to end, and the shared root remains a public link across actions.
-
-See [Payment intent lifecycle](/developers/payment-intent-lifecycle), [Current architecture](/overview/architecture), and [Threat model](/security/threat-model).
+The hidden-head proof path is not established end to end, and public transaction metadata can remain correlatable. This page explains user-facing trust boundaries; service credentials, deployment, and operation are covered in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

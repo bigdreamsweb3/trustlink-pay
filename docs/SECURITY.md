@@ -12,8 +12,8 @@ The shared TCAP root is protocol-wide replay sequencing, not a per-TIN balance h
 
 - The wallet authorizes the sender's funding transaction; the Cranker cannot alter or re-sign that user authorization.
 - Receiver accepts and persists ingress and work records. Node verifies requests, resolves TIP routing, and constructs settlement work.
-- GPRU validates the transaction-specific key proof and encrypted-credit relation supplied to the active credit instruction; it does not own reserve liquidity or persist a per-TIN latest head in that path.
-- TCAP governs approved assets, reserve movement, and the shared commitment root. Legacy per-TIN TIP instructions remain in source but are not the active TSN credit path.
+- GPRU's role is to guard the integrity and privacy of the user's private state presented to TCAP for a balance-changing action. Its hidden-head proof is intended to establish that the state is current and the proposed transition follows from it, without exposing the TIN or hidden per-TIN state in the proof. The hidden-head proof path is not currently connected end to end; the active credit path checks narrower GPRU key/credit relations and does not establish a per-TIN latest head.
+- TCAP governs accepted assets, authorization, reserve movement, liquidity, and the shared commitment root. It applies a valid transition atomically; it does not rely on GPRU to custody or regulate funds. Legacy per-TIN TIP instructions remain in source but are not the active TSN credit path.
 - The Cranker pays Solana fees and submits eligible work. It does not choose a new recipient, amount, or route.
 
 ## Security and privacy boundaries

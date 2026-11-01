@@ -1,25 +1,12 @@
 ---
-title: "Replay Protection in the Current TCAP Credit Path"
-sidebarTitle: "Replay Protection"
-description: "How the wired credit transition uses a global TCAP root, and why it is not a per-TIN latest-head proof."
+title: "Replay Protection"
+description: "How TSN prevents the same authorized state change from being applied twice."
 ---
 
-# Replay protection
+TSN is designed to bind a settlement to the authorization and predecessor state it was created for. When an accepted transition advances the state atomically, a repeated request refers to an already-used predecessor and cannot apply as a new transition.
 
-The current TSN credit instruction calls TCAP `credit_gpru_memo_v1`. TCAP requires the supplied previous global root to match `TcapCommitmentRootStateV1.current_root` and the supplied root sequence to equal the stored sequence plus one. A successful transition updates the root and sequence in the same instruction. Resubmitting the same transition with its stale root and sequence fails.
+For a balance-changing action, GPRU is intended to prove that the hidden user state is current and that the proposed change follows from it. TCAP governs the funds and applies valid authorized transitions atomically. The hidden-head proof path is not established end to end, so do not treat this design goal as an active guarantee until the relevant flow is verified.
 
-The Node also derives a funding-bound commitment and TSN includes it in the authorization. This binds the settlement authorization to the signed deposit. It is not a separate spent-funding registry.
+If an application receives a timeout, it should check the transaction signature and current status before retrying. A service timeout alone does not prove the transaction failed. An expired sender-signed transaction must be prepared again and approved by the sender.
 
-## Hidden per-TIN head proof in source
-
-The intended proof binds the update to a hidden per-TIN/asset head and inserts a one-time nullifier while TCAP advances the shared root. No per-TIN TCAP PDA is written. The circuit has not been compiled or reviewed, and the Node has no configured witness source or prover. The Node currently refuses to authorize settlement without that proof.
-
-## Hidden-head verifier source
-
-The TSNP/TCAP proof-shaped credit ABI calls the GPRU Groth16 verifier before mutation. The proof path remains non-operational until circuit compilation, trusted setup, proof generation, verifier initialization, and end-to-end validation are completed. The public ABI exposes action kind, token ID, and amount. All transitions touch the same shared TCAP root, which exposes global ordering and protocol-level linkage.
-
-## Safe retry behavior
-
-If a transaction has not confirmed, check its signature and the current global TCAP root before retrying. If it confirmed but the response was lost, do not assume failure from a client timeout. Check the transaction and account state first. A replacement authorization must be based on verified funding and current program state; do not fabricate a new predecessor or replay nonce.
-
-See [Credit Settlement](/developers/confidential-settlement) for the active CPI sequence and [Current Technology](/about/current-technology) for the broader status boundary.
+The exact replay/nullifier contract and implementation evidence belong in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

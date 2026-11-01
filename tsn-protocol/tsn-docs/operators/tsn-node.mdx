@@ -1,98 +1,13 @@
 ---
-title: "Mother Node: Verification and Authorization Boundary"
-sidebarTitle: "Mother Node"
-description: "The TSN Node verifies signed intents, coordinates the epoch treasury, holds encrypted payment bindings, and signs Mother-rooted DNA permits."
+title: "TSN Node Role"
+sidebarTitle: "TSN Node"
+description: "The TSN Node verifies payment work and prepares authorized settlement for execution."
 ---
 
-**In plain English:** The Mother Node is TSN’s coordination and verification role. The current implementation is `tsn-node`. It checks that a signed intent is valid, holds the encrypted payment binding, and coordinates the epoch treasury. It also signs the short-lived Mother-rooted DNA permits that authorize Cranker Nodes to settle. It is the only party that sees plaintext bindings.
+The TSN Node is a service role in the wider TSN infrastructure. It verifies payment work against the sender's authorization, applicable identity route, and funding evidence, then prepares eligible work for on-chain execution.
 
-## Node role
+The Node does not itself settle a payment. A Cranker submits authorized work, and Solana program checks determine whether the requested state change can execute. Node verification and chain confirmation are separate events.
 
-<Note>
-  **Status: Live on Devnet.** Hosted at `https://tsn-node.wasmer.app`.
-</Note>
+GPRU guards the integrity and privacy of user state presented to TCAP. TCAP remains responsible for accepted assets, reserves, and atomic settlement. The hidden-head proof path is not yet established end to end.
 
-The Mother Node:
-
-- verifies canonical signatures, expiry, nonce and replay rules
-- verifies amounts, commitments, and the recipient route commitment and version
-- creates the durable verified payment record
-- **redacts recipient identity** from that record
-- stores the encrypted payment binding off-chain
-- derives the opaque keyed slot with HMAC-SHA256
-- signs Mother-rooted DNA permits for Cranker Nodes
-- authorizes refunds when an intent expires
-
-## What the Node sees (and what it does not expose)
-
-**Sees, encrypted, in Node-only storage:**
-
-- Recipient route, sender refund destination
-- Funding lineage, amount, mint, epoch, payment hash
-
-**Sees, transiently, to derive slot and permit:**
-
-- Recipient TIN inside the initial signed request
-- Route binding
-
-**Never exposes:**
-
-- Plaintext binding to Receiver, Cranker, or the chain
-- The encryption key
-- The Node-only route reference (used only once, expires quickly)
-
-## Work lifecycle
-
-```text
-RECEIVED
-  → NODE_VERIFYING
-  → VERIFIED
-  → CRANKER_LEASED
-  → SUBMITTED
-  → CONFIRMED
-```
-
-`REJECTED` is terminal for invalid work. A lease expiring returns eligible work to the queue but never grants a cranker authority to alter the plan.
-
-## Mother-rooted DNA permit
-
-For each lease, the Node signs a permit binding:
-
-- opaque slot
-- commitment digest, random nonce, nullifier
-- Mother-rooted epoch treasury and ledger
-- CrankerVault, recipient, mint, amount
-- lease id, version, expiry
-- authorization expiry
-
-The permit is what makes the settlement instruction valid. Without it, the TSNP program rejects the transaction before token movement.
-
-## Refund authorization
-
-<Note>**Status: Live on Devnet.**</Note>
-
-If an intent expires without settlement, the Node signs a refund permit against the same opaque slot. The first valid refund initializes and consumes the slot as `REFUNDED` and returns the exact amount from the epoch treasury to the sender's authorized refund destination.
-
-## Related
-
-<CardGroup cols={2}>
-  <Card title="Cranker Node" icon="gears" href="/operators/tsn-cranker">
-    An independent operator process that submits Mother-Node-authorized work.
-  </Card>
-
-<Card title="TSNP" icon="network-wired" href="/layers/tsnp">
-  Program-level settlement instructions.
-</Card>
-
-<Card
-  title="Architecture"
-  icon="diagram-project"
-  href="/overview/architecture"
->
-  End-to-end sequence diagram.
-</Card>
-
-  <Card title="FAQ" icon="circle-question" href="/get-started/faq">
-    Privacy boundaries and Devnet status.
-  </Card>
-</CardGroup>
+This site explains protocol roles and application SDK use. Node deployment, configuration, and operational procedures are maintained in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

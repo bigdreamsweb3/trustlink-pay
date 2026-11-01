@@ -1,82 +1,12 @@
 ---
-title: "Community and route governance"
-description: "How the TSN community evaluates and expands settlement routes across its protocols."
+title: "Community and Governance"
+description: "How TSN separates community input from user authorization and on-chain settlement authority."
 ---
 
-TSN is TrustLink Labs' complete Transfer Settlement Network infrastructure.
-TSNP is its on-chain settlement protocol program, alongside TIP, GPRU, TCAP,
-and DIP. Circle's CCTP is an external cross-chain transfer protocol. Community
-participation is part of the infrastructure: people can propose routes, review evidence,
-provide liquidity, operate Nodes and Crankers, and vote on whether a route
-should proceed to activation.
+TrustLink Labs welcomes users, protocol engineers, cryptographers, security researchers, and open-source contributors to help review TSN and shape its development.
 
-Community governance does not replace cryptographic authorization. A vote does
-not create stablecoin liquidity, approve a user's payment, or give an operator
-permission to change a signed settlement.
+Community input can inform protocol priorities and future network participation. It does not authorize an individual user's payment, create token liquidity, or replace the on-chain rules enforced by TSNP and TCAP. The sender's wallet authorizes payment; GPRU is intended to guard the private state presented to TCAP; TCAP governs assets and applies valid transitions atomically.
 
-## Who participates
+Formal route governance and permissionless operator participation should not be treated as active capabilities unless their proposal, voting, and activation rules are published and verified. Current engineering and network-operation details belong in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).
 
-- Users and merchants provide demand, feedback, and failure reports.
-- Liquidity providers and treasuries fund destination vaults and publish their
-  operating limits.
-- Route proposers provide contract addresses, source links, tests, risk
-  analysis, and deployment evidence.
-- Mother Nodes validate intents, route state, signatures, commitments, and
-  liquidity observations.
-- Cranker Nodes submit the exact authorized transaction and pay network fees. They
-  do not select routes or decide payouts.
-- Reviewers and builders test contracts, monitor routes, and analyze incidents.
-- Community voters decide whether a route proposal should enter activation.
-
-## Route proposal to activation
-
-```text
-Proposal
-  → evidence packet
-  → technical and security review
-  → public discussion and vote
-  → timelocked activation
-  → on-chain route registry
-  → Node live-liquidity gate
-  → authorized settlement
-```
-
-A route proposal must identify the destination chain, chain ID and chain key,
-RPC and explorer, gas asset, stablecoin, vault, executor, Attestcoin message
-path, route limits, finality assumptions, and operator responsibilities. It
-must include real testnet deployment and payout evidence before activation.
-
-The community decision is not route readiness. The Node still checks the exact
-route, destination executor, token, capacity, expiry, and proof-backed
-liquidity observation immediately before accepting work.
-
-## Verified identities and safety
-
-The planned on-chain registry will bind proposals and votes to verified
-addresses and signatures. The design must specify quorum, voting periods,
-eligibility, delegation, sybil resistance, conflict disclosure, proposal
-expiry, timelocks, emergency pause, and route retirement before deployment. A
-simple repeatable boolean vote is not enough to establish a safe governance
-decision.
-
-Community approval cannot expose TIN values, device keys, private balances, or
-plaintext receiving roots. Public route records contain only the evidence
-needed to evaluate a route and coordinate settlement.
-
-## Current status
-
-Creditcoin core settlement contracts and the first `DestinationRegistry`
-deployment are now present on CC3 Testnet. The registry is available at
-[`0xd8DD919B3Cf8C365Bb0dc82Dd3D06Cf5B8f41ba0`](https://creditcoin-testnet.blockscout.com/address/0xd8DD919B3Cf8C365Bb0dc82Dd3D06Cf5B8f41ba0),
-with deployment transaction
-[`0xe34fd69dc1e8b39e308e13493918b8238a5a69f9bc327d7ea57daeaef659bf52`](https://creditcoin-testnet.blockscout.com/tx/0xe34fd69dc1e8b39e308e13493918b8238a5a69f9bc327d7ea57daeaef659bf52).
-The destination route gate still has no configured route, and no proposal,
-vote, activation, liquidity observation, or payout has been recorded. The live
-status is:
-
-**Registry deployed on CC3 Testnet; community route activation is not yet
-live.**
-
-The internal team runbook contains the proposal evidence template and incident
-process. Public documentation intentionally omits operator secrets and private
-filesystem details.
+Contributors can begin at [TrustLink Labs on GitHub](https://github.com/Trustlink-Labs) or the [TrustLink Pay protocol repository](https://github.com/bigdreamsweb3/trustlink-pay). The [contribution guide](/about/contribute) links to research and SDK material.

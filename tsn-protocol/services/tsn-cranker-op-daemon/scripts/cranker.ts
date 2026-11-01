@@ -134,6 +134,7 @@ function verifyNodeAttestation(work: Work) {
       "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
       "routeVersion", "routeNonce", "tipRouteVersion",
       "gpruElgamalKeyVersion", "gpruElgamalPublicKey", "gpruElgamalKeyCommitment",
+      "gpruBalanceScanKeyVersion", "gpruBalanceScanPublicKeyX", "gpruBalanceScanPublicKeyY",
       "policyCommitment",
     ],
   };
@@ -582,7 +583,7 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
   const [tipRouteRoot] = PublicKey.findProgramAddressSync([Buffer.from("tip:route-merkle-root:v1")], tipProgramId);
   const [gpruVerifier] = PublicKey.findProgramAddressSync([Buffer.from("gpru:hidden-head-verifier:v1")], GPRU_PROGRAM_ID);
   const proof = transition.proof as Record<string, unknown> | undefined;
-  if (!proof || !Array.isArray(proof.publicInputs) || proof.publicInputs.length !== 9) {
+  if (!proof || !Array.isArray(proof.publicInputs) || proof.publicInputs.length !== 12) {
     throw new Error("Node TCAP transition is missing the Groth16 hidden-head proof");
   }
   const publicInputs = proof.publicInputs.map((value) => String(value));
@@ -633,6 +634,9 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     successorPortfolioRoot,
     successorBalancePoint,
     actionCommitment,
+    encryptedBlindingDelta: publicInputs[9]!,
+    deltaEphemeralPublicX: publicInputs[10]!,
+    deltaEphemeralPublicY: publicInputs[11]!,
   });
   const rootBefore = await connection.getAccountInfo(commitmentRoot, "confirmed");
   const rootDisc = hash("account:TcapCommitmentRootStateV1").subarray(0, 8);
@@ -818,6 +822,9 @@ async function submitStagedTinV1Creation(params: {
     gpruElgamalKeyVersion: Number(payload.gpruElgamalKeyVersion) as 1,
     gpruElgamalPublicKey: hex32(payload.gpruElgamalPublicKey, "gpruElgamalPublicKey"),
     gpruElgamalKeyCommitment: hex32(payload.gpruElgamalKeyCommitment, "gpruElgamalKeyCommitment"),
+    gpruBalanceScanKeyVersion: Number(payload.gpruBalanceScanKeyVersion) as 1,
+    gpruBalanceScanPublicKeyX: hex32(payload.gpruBalanceScanPublicKeyX, "gpruBalanceScanPublicKeyX"),
+    gpruBalanceScanPublicKeyY: hex32(payload.gpruBalanceScanPublicKeyY, "gpruBalanceScanPublicKeyY"),
     policyCommitment: hex32(payload.policyCommitment, "policyCommitment"),
     expiryTs: BigInt(String(payload.expiry)),
   });
@@ -965,6 +972,9 @@ async function processTinOperation(
     gpruElgamalKeyVersion: 1,
     gpruElgamalPublicKey,
     gpruElgamalKeyCommitment,
+    gpruBalanceScanKeyVersion: 1,
+    gpruBalanceScanPublicKeyX: hex32(payload.gpruBalanceScanPublicKeyX, "gpruBalanceScanPublicKeyX"),
+    gpruBalanceScanPublicKeyY: hex32(payload.gpruBalanceScanPublicKeyY, "gpruBalanceScanPublicKeyY"),
     policyCommitment: hex32(payload.policyCommitment, "policyCommitment"),
     intentHash,
     expiryTs: BigInt(String(payload.expiry)),

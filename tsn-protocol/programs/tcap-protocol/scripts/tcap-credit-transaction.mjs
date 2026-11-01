@@ -270,8 +270,8 @@ export function buildCreditTcapTinTipV2Instruction(fields) {
 
 /** TSN wrapper for the canonical hidden-head proof transition. */
 export function buildTsnRegisterTcapCreditAuthorizationV2Instruction(fields) {
-  if (!Array.isArray(fields.proof?.publicInputs) || fields.proof.publicInputs.length !== 9) {
-    throw new Error("GPRU hidden-head V1 requires exactly nine public inputs");
+  if (!Array.isArray(fields.proof?.publicInputs) || fields.proof.publicInputs.length !== 12) {
+    throw new Error("GPRU hidden-head V1 requires exactly twelve public inputs");
   }
   const proofB = Buffer.from(fields.proof.proofB ?? "", "hex");
   if (proofB.length !== 128) throw new Error("proof.proofB must be exactly 128 bytes");

@@ -34,20 +34,18 @@ def _validate_balance_action_record_v1(value: Any) -> dict[str, Any]:
     allowed = {
         "version", "recordType", "sequence", "previousMemoCommitment", "actionCommitment",
         "authorizationCommitment", "nullifier", "actionKind", "tokenId", "amountBaseUnits",
-        "balanceBlindingDelta",
     }
     if set(value) != allowed:
         raise ValueError("GPRU owner balance action record has an unsupported field set")
     if type(value.get("version")) is not int or value.get("version") != 1 or value.get("recordType") != "tsn-gpru-balance-action-v1":
         raise ValueError("Unsupported GPRU owner balance action record")
-    if any(isinstance(value[name], bool) for name in ("sequence", "tokenId", "actionKind", "amountBaseUnits", "balanceBlindingDelta")):
+    if any(isinstance(value[name], bool) for name in ("sequence", "tokenId", "actionKind", "amountBaseUnits")):
         raise ValueError("GPRU owner balance action integer values cannot be booleans")
     try:
         sequence = int(value["sequence"])
         token_id = int(value["tokenId"])
         action_kind = int(value["actionKind"])
         amount = int(value["amountBaseUnits"])
-        blinding_delta = int(value["balanceBlindingDelta"])
     except (TypeError, ValueError) as exc:
         raise ValueError("GPRU owner balance action values must be integers") from exc
     previous = str(value["previousMemoCommitment"])
@@ -62,10 +60,6 @@ def _validate_balance_action_record_v1(value: Any) -> dict[str, Any]:
         raise ValueError("GPRU owner action kind must be credit (1), debit (2), or exit (3)")
     if amount <= 0 or amount > 0xFFFFFFFFFFFFFFFF:
         raise ValueError("GPRU owner action amount must be a positive u64")
-    if blinding_delta < 0 or blinding_delta >= BABYJUB_SUBORDER:
-        raise ValueError("GPRU owner action blinding delta is outside the BabyJubjub scalar field")
-    if blinding_delta == 0:
-        raise ValueError("GPRU owner action must use a fresh nonzero balance blinding delta")
     if len(previous) != 64 or any(char not in "0123456789abcdef" for char in previous):
         raise ValueError("GPRU previous Memo commitment must be 32-byte lowercase hex")
     for label, field in (("action commitment", action_commitment),
@@ -93,7 +87,6 @@ def _validate_balance_action_record_v1(value: Any) -> dict[str, Any]:
         "actionKind": action_kind,
         "tokenId": token_id,
         "amountBaseUnits": str(amount),
-        "balanceBlindingDelta": str(blinding_delta),
     }
 
 
@@ -103,6 +96,9 @@ def encrypt_transaction_record_v1(
     shared_point: bytes,
     record_ephemeral_public_key: bytes,
     dna: bytes,
+    encrypted_blinding_delta: str,
+    delta_ephemeral_public_x: str,
+    delta_ephemeral_public_y: str,
     memo_binding: dict[str, str],
 ) -> dict[str, Any]:
     """Encrypt an owner-readable action and bind its one-time Pedersen head in the Memo."""
@@ -164,9 +160,16 @@ def encrypt_transaction_record_v1(
 
     document = json.dumps(envelope, separators=(",", ":"), sort_keys=True, ensure_ascii=True).encode("utf-8")
     slots, memo_payload = _ledger_memo_payload_v1(document)
+    delta_cipher_fields = (encrypted_blinding_delta, delta_ephemeral_public_x, delta_ephemeral_public_y)
+    for label, value in zip(("encrypted blinding delta", "delta ephemeral public x", "delta ephemeral public y"), delta_cipher_fields):
+        if not isinstance(value, str) or len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+            raise ValueError(f"GPRU {label} must be 32-byte lowercase hex")
+        if int(value, 16) >= BN254_SCALAR_MODULUS:
+            raise ValueError(f"GPRU {label} must be a canonical BN254 scalar")
     final_memo_payload = (
         f"TSN_GPRU_HEAD_V1:{binding['successorPortfolioRoot']}:{binding['successorBalanceX']}"
-        f":{binding['successorBalanceY']}:{binding['actionCommitment']}:{memo_payload}"
+        f":{binding['successorBalanceY']}:{binding['actionCommitment']}:{encrypted_blinding_delta}"
+        f":{delta_ephemeral_public_x}:{delta_ephemeral_public_y}:{memo_payload}"
     )
     memo_digest = hashlib.sha256(final_memo_payload.encode("ascii")).digest()
     return {
@@ -211,15 +214,18 @@ def validate_transaction_record_v1(transition: dict[str, Any]) -> None:
         raise ValueError("DBrix transaction record document does not match its Ledger memo encoding")
     proof = transition.get("proof")
     public_inputs = proof.get("publicInputs") if isinstance(proof, dict) else None
-    if not isinstance(public_inputs, list) or len(public_inputs) != 9:
-        raise ValueError("GPRU transaction record is missing its nine public hidden-head inputs")
+    if not isinstance(public_inputs, list) or len(public_inputs) != 12:
+        raise ValueError("GPRU transaction record is missing its twelve public hidden-head inputs")
     try:
         successor_root, balance_x, balance_y, action_commitment = (
             str(public_inputs[index]).removeprefix("0x").lower() for index in (6, 7, 8, 3)
         )
     except (IndexError, TypeError) as exc:
         raise ValueError("GPRU public hidden-head inputs are malformed") from exc
-    prefix = f"TSN_GPRU_HEAD_V1:{successor_root}:{balance_x}:{balance_y}:{action_commitment}:"
+    encrypted_delta, ephemeral_x, ephemeral_y = (
+        str(public_inputs[index]).removeprefix("0x").lower() for index in (9, 10, 11)
+    )
+    prefix = f"TSN_GPRU_HEAD_V1:{successor_root}:{balance_x}:{balance_y}:{action_commitment}:{encrypted_delta}:{ephemeral_x}:{ephemeral_y}:"
     expected_memo_payload = prefix + expected_payload
     if transition.get("memoPayload") != expected_memo_payload:
         raise ValueError("DBrix Memo prefix does not match the proof-bound successor state")

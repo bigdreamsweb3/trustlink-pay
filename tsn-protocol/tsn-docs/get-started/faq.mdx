@@ -1,51 +1,36 @@
 ---
-title: "TSN Infrastructure FAQ: Protocol Boundaries and Current Status"
-sidebarTitle: "FAQ"
-description: "Answers about TSNP, TIP, TIN, GPRU, TCAP, privacy limits, and current source status."
+title: "TSN FAQ"
+description: "Answers about TSN, TIP, TIN, GPRU, TCAP, settlement status, and privacy boundaries."
 ---
 
 ## What is TSN?
 
-TSN (Transfer Settlement Network) is the full infrastructure. TSNP is its on-chain settlement protocol program; TIP, GPRU, and TCAP are separate protocol layers.
+TSN (Transfer Settlement Network) is the full settlement infrastructure. TSNP is its on-chain Transfer Settlement Network Protocol. TIP, GPRU, and TCAP are distinct protocol layers.
 
 ## Is TIP the same as TIN?
 
 No. TIP is the Transfer Identity Protocol. A TIN is one 10-digit Transfer Identity Number managed within TIP.
 
-## What does the current GPRU credit verifier do?
+## What does GPRU guard?
 
-The current TSNP credit ABI carries a hidden-head Groth16 proof through TCAP to GPRU. The circuit source represents route membership, latest-head advancement, a nullifier update, and balance transitions. Node currently fails closed because no prover/witness service or generated setup keys are configured.
+GPRU guards the integrity and privacy of the user's private state presented to TCAP for a balance-changing action. Its proof is intended to establish that the hidden state is current and that the proposed transition follows from it. TCAP governs the funds and applies valid authorized changes atomically.
 
-## Does the current credit path store a TCAP TIP PDA?
+## Does a GPRU proof move funds?
 
-The current proof-shaped TSNP credit instruction calls TCAP `credit_gpru_memo_v1`, which verifies the GPRU proof before advancing one global TCAP commitment root and reserve liabilities. It does not initialize or update `TCapTinTipV1`. TCAP still contains older TIN-tip instructions in source; they are not part of this proof path.
+No. A proof is one check in the settlement process. It does not grant custody or replace sender authorization, accepted-asset checks, or TCAP's reserve and liquidity rules.
 
-## What is the hidden-head proof?
+## Is the hidden-head proof flow available end to end?
 
-GPRU's Groth16 verifier checks a proof that a private TIN head is current, updates its nested token commitment map, binds the Memo, and inserts a nullifier. The updated circuit has nine public inputs and includes Pedersen balance-transition constraints. It has not been recompiled or reviewed; matching keys, a prover, a witness source, an initialized verifier, and end-to-end execution evidence are not established. See [GPRU Groth16 prover setup](/developers/groth16-hidden-head).
+It is not established as an end-to-end settlement capability. Confidential debit and exit are also not established as available. Check current capability and network status before relying on a feature.
 
-## Is the hidden-head design unlinkable?
+## Does TSN make transfers completely untraceable?
 
-No. Each transition through that design writes the same public TCAP shared-root account, exposing a common protocol-level link and ordering. The current instruction ABI also exposes action kind, token ID, and amount. The proof aims to conceal which TIN head changed; it does not provide zero linkability.
+No. Encryption can hide selected payload contents, but Solana still exposes transaction accounts, signatures, timing, instruction data, and ordering. Public state references may also allow activity to be correlated. TSN does not claim zero linkability.
 
-## Can a user debit or exit confidentially today?
+## When is a payment complete?
 
-The current source does not establish debit or exit as operational. Those actions need reviewed proof constraints, authorization, reserve/payout checks, a configured prover, and end-to-end on-chain verification.
+A request being accepted, verified, or submitted is not the same as settlement. A payment is confirmed only after the relevant Solana transaction succeeds. If funding and credit use separate transactions, check both stages.
 
-## How do I know a payment settled?
+## Where are integration and operations details?
 
-Receiver acceptance, Node verification, Cranker submission, funding confirmation, and TCAP transition confirmation are distinct. Check the settlement transaction signature and resulting account state on the intended cluster.
-
-## Is the system audited or ready for mainnet?
-
-This documentation does not claim a completed formal audit or mainnet readiness. Verify the current program deployment and security review status before using real funds.
-
-## What about ZK-PRU?
-
-ZK-PRU is historical experiment material, not the current GPRU/TCAP runtime architecture.
-
-## Where are the source and docs?
-
-- Protocol source: [TrustLink Labs on GitHub](https://github.com/Trustlink-Labs/TSN-Protocol)
-- [Current architecture](/overview/architecture)
-- [Current technology](/about/current-technology)
+Mintlify explains protocol roles and application SDK usage. Source-level design, proof setup, deployment, and service runbooks are in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

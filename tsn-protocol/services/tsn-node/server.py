@@ -506,7 +506,8 @@ def _sign_node_verification(
                 "lookupCommitment", "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
                 "routeVersion", "routeNonce",
                 "tipRouteVersion", "gpruElgamalKeyVersion", "gpruElgamalPublicKey",
-                "gpruElgamalKeyCommitment", "policyCommitment",
+                "gpruElgamalKeyCommitment", "gpruBalanceScanKeyVersion",
+                "gpruBalanceScanPublicKeyX", "gpruBalanceScanPublicKeyY", "policyCommitment",
             },
         }.get(str(work.get("kind") or ""), set())
         execution_payload = {name: verified_payload[name] for name in allowed if name in verified_payload}
@@ -1129,6 +1130,9 @@ def decode_private_tin_route_material(data: bytes) -> dict[str, Any]:
     gpru_elgamal_key_version = take(1, "GPRU ElGamal key version")[0]
     gpru_elgamal_public_key = take(32, "GPRU ElGamal public key")
     gpru_elgamal_key_commitment = take(32, "GPRU ElGamal key commitment")
+    gpru_balance_scan_key_version = take(1, "GPRU balance scan key version")[0]
+    gpru_balance_scan_public_key_x = take(32, "GPRU balance scan public key x")
+    gpru_balance_scan_public_key_y = take(32, "GPRU balance scan public key y")
     policy_commitment = take(32, "policy commitment")
     if version != 1 or status != 1 or any(buffer[offset:]):
         raise ValueError("unsupported private TIN account schema")
@@ -1144,6 +1148,9 @@ def decode_private_tin_route_material(data: bytes) -> dict[str, Any]:
         "gpruElgamalKeyVersion": gpru_elgamal_key_version,
         "gpruElgamalPublicKey": gpru_elgamal_public_key.hex(),
         "gpruElgamalKeyCommitment": gpru_elgamal_key_commitment.hex(),
+        "gpruBalanceScanKeyVersion": gpru_balance_scan_key_version,
+        "gpruBalanceScanPublicKeyX": gpru_balance_scan_public_key_x.hex(),
+        "gpruBalanceScanPublicKeyY": gpru_balance_scan_public_key_y.hex(),
         "policyCommitment": policy_commitment.hex(),
     }
 
@@ -1215,6 +1222,15 @@ async def read_onchain_tin_tip_route(tin: str) -> Optional[dict[str, Any]]:
             return None
         gpru_elgamal_public_key = bytes.fromhex(material["gpruElgamalPublicKey"])
         gpru_elgamal_key_commitment = bytes.fromhex(material["gpruElgamalKeyCommitment"])
+        balance_scan_x = bytes.fromhex(material["gpruBalanceScanPublicKeyX"])
+        balance_scan_y = bytes.fromhex(material["gpruBalanceScanPublicKeyY"])
+        if int(material.get("gpruBalanceScanKeyVersion") or 0) != 1 or len(balance_scan_x) != 32 or len(balance_scan_y) != 32:
+            return None
+        scan_x, scan_y = int.from_bytes(balance_scan_x, "big"), int.from_bytes(balance_scan_y, "big")
+        if scan_x >= BN254_SCALAR_MODULUS or scan_y >= BN254_SCALAR_MODULUS or (
+            168700 * scan_x * scan_x + scan_y * scan_y - 1 - 168696 * scan_x * scan_x * scan_y * scan_y
+        ) % BN254_SCALAR_MODULUS != 0:
+            return None
         if int(material.get("gpruElgamalKeyVersion") or 0) != 1 or len(gpru_elgamal_public_key) != 32:
             return None
         expected_key_commitment = hashlib.sha256(
@@ -1234,6 +1250,9 @@ async def read_onchain_tin_tip_route(tin: str) -> Optional[dict[str, Any]]:
             "gpruElgamalKeyVersion": material["gpruElgamalKeyVersion"],
             "gpruElgamalPublicKey": gpru_elgamal_public_key.hex(),
             "gpruElgamalKeyCommitment": gpru_elgamal_key_commitment.hex(),
+            "gpruBalanceScanKeyVersion": 1,
+            "gpruBalanceScanPublicKeyX": balance_scan_x.hex(),
+            "gpruBalanceScanPublicKeyY": balance_scan_y.hex(),
             "tipRootCommitment": tip_root_commitment,
             "policyCommitment": material["policyCommitment"],
         }
@@ -1921,9 +1940,18 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
     gpru_elgamal_key_version = int(_field(payload, "gpru_elgamal_key_version", "gpruElgamalKeyVersion", default=0))
     gpru_elgamal_public_key = _decode_hash32(_field(payload, "gpru_elgamal_public_key", "gpruElgamalPublicKey", default=""), "gpru_elgamal_public_key")
     gpru_elgamal_key_commitment = _decode_hash32(_field(payload, "gpru_elgamal_key_commitment", "gpruElgamalKeyCommitment", default=""), "gpru_elgamal_key_commitment")
+    gpru_balance_scan_key_version = int(_field(payload, "gpru_balance_scan_key_version", "gpruBalanceScanKeyVersion", default=0))
+    gpru_balance_scan_public_key_x = _decode_hash32(_field(payload, "gpru_balance_scan_public_key_x", "gpruBalanceScanPublicKeyX", default=""), "gpru_balance_scan_public_key_x")
+    gpru_balance_scan_public_key_y = _decode_hash32(_field(payload, "gpru_balance_scan_public_key_y", "gpruBalanceScanPublicKeyY", default=""), "gpru_balance_scan_public_key_y")
     policy_commitment = _decode_hash32(_field(payload, "policy_commitment", "policyCommitment", default=""), "policy_commitment")
-    if gpru_elgamal_key_version != 1 or any(value == bytes(32) for value in (gpru_elgamal_public_key, gpru_elgamal_key_commitment, policy_commitment)):
+    if gpru_elgamal_key_version != 1 or gpru_balance_scan_key_version != 1 or any(value == bytes(32) for value in (gpru_elgamal_public_key, gpru_elgamal_key_commitment, gpru_balance_scan_public_key_x, gpru_balance_scan_public_key_y, policy_commitment)):
         raise HTTPException(422, "TIP requires nonzero versioned GPRU ElGamal key data and policy commitment")
+    scan_x = int.from_bytes(gpru_balance_scan_public_key_x, "big")
+    scan_y = int.from_bytes(gpru_balance_scan_public_key_y, "big")
+    if scan_x >= BN254_SCALAR_MODULUS or scan_y >= BN254_SCALAR_MODULUS or (
+        168700 * scan_x * scan_x + scan_y * scan_y - 1 - 168696 * scan_x * scan_x * scan_y * scan_y
+    ) % BN254_SCALAR_MODULUS != 0:
+        raise HTTPException(422, "GPRU balance scan public key is not a canonical BabyJubjub point")
     expected_gpru_key_commitment = hashlib.sha256(
         b"TSN_GPRU_ELGAMAL_KEY_COMMITMENT_V1\0" + bytes([gpru_elgamal_key_version]) + gpru_elgamal_public_key
     ).digest()
@@ -1938,7 +1966,8 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         metadata_hash_bytes,
         route_version.to_bytes(8, "little", signed=False), route_nonce_bytes, bytes([tip_route_version]),
         bytes([gpru_elgamal_key_version]), gpru_elgamal_public_key,
-        gpru_elgamal_key_commitment, policy_commitment,
+        gpru_elgamal_key_commitment, bytes([gpru_balance_scan_key_version]),
+        gpru_balance_scan_public_key_x, gpru_balance_scan_public_key_y, policy_commitment,
         _encode_signed_i64_le(expiry),
     ])).digest()
     if not secrets.compare_digest(expected_hash, intent_hash_bytes):
@@ -1978,6 +2007,9 @@ def _normalize_tin_operation_input(payload: dict[str, Any]) -> dict[str, Any]:
         "gpruElgamalKeyVersion": gpru_elgamal_key_version,
         "gpruElgamalPublicKey": gpru_elgamal_public_key.hex(),
         "gpruElgamalKeyCommitment": gpru_elgamal_key_commitment.hex(),
+        "gpruBalanceScanKeyVersion": gpru_balance_scan_key_version,
+        "gpruBalanceScanPublicKeyX": gpru_balance_scan_public_key_x.hex(),
+        "gpruBalanceScanPublicKeyY": gpru_balance_scan_public_key_y.hex(),
         "policyCommitment": policy_commitment.hex(),
         "displayNameStatus": "opaque_to_node", "displayNameReadableByNode": False,
         "envelopeChecks": {
@@ -2151,8 +2183,8 @@ def _validate_tcap_credit_digest(transition: dict[str, Any]) -> str:
     if not isinstance(proof, dict):
         raise ValueError("TCAP transition is missing the GPRU hidden-head proof")
     raw_inputs = proof.get("publicInputs")
-    if not isinstance(raw_inputs, list) or len(raw_inputs) != 9:
-        raise ValueError("GPRU hidden-head proof must contain exactly nine public inputs")
+    if not isinstance(raw_inputs, list) or len(raw_inputs) != 12:
+        raise ValueError("GPRU hidden-head proof must contain exactly twelve public inputs")
     inputs = [_tcap_credit_bytes32(value, f"proof.publicInputs[{index}]") for index, value in enumerate(raw_inputs)]
     if any(int.from_bytes(value, "big") >= 21888242871839275222246405745257275088548364400416034343698204186575808495617 for value in inputs):
         raise ValueError("GPRU hidden-head public inputs must be canonical BN254 field elements")
@@ -2179,6 +2211,11 @@ def _validate_tcap_credit_digest(transition: dict[str, Any]) -> str:
         raise ValueError("GPRU proof Memo input differs from the canonical Memo commitment field")
     if inputs[3] != _tcap_credit_bytes32(transition.get("actionCommitment"), "actionCommitment"):
         raise ValueError("GPRU proof action input differs from the authorized Memo action")
+    memo_prefix = str(transition.get("memoPayload") or "").split(":", 8)
+    if len(memo_prefix) != 9 or memo_prefix[0] != "TSN_GPRU_HEAD_V1":
+        raise ValueError("GPRU Memo is missing its proof-bound balance-delta ciphertext")
+    if tuple(inputs[index].hex() for index in (6, 7, 8, 3, 9, 10, 11)) != tuple(memo_prefix[1:8]):
+        raise ValueError("GPRU Groth16 balance-delta ciphertext inputs do not match the Memo prefix")
 
     expected_digest = hashlib.sha256(b"".join((
         b"TSN_GPRU_TCAP_CREDIT_HIDDEN_HEAD_V1\0",
@@ -2401,7 +2438,7 @@ def _verify_mother_signed_tcap_settlement_message(
     proof_authorization_commitment = _tcap_credit_bytes32(
         proof["authorizationCommitment"], "proof.authorizationCommitment",
     )
-    if (len(public_inputs) != 9 * 32 or len(proof_bytes) != 64 + 128 + 64
+    if (len(public_inputs) != 12 * 32 or len(proof_bytes) != 64 + 128 + 64
             or proof_action_kind != 1 or proof_token_id != token_id or proof_amount != int(str(transition["amountBaseUnits"]))):
         raise HTTPException(422, "GPRU proof payload does not match the canonical TCAP credit instruction layout")
     args = b"".join((

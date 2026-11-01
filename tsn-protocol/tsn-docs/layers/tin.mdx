@@ -1,116 +1,19 @@
 ---
-title: "TIP Layer: Transfer Identity Protocol and TINs"
+title: "TIP and TIN: Transfer Identity"
 sidebarTitle: "TIP and TIN"
-description: "TIP is the Transfer Identity Protocol. It issues and resolves transfer identities, including the 10-digit Transfer Identity Number (TIN), and their payment routes."
+description: "TIP manages transfer identities; a TIN is the 10-digit identity a user can share to receive a transfer."
 ---
 
-**In plain English:** TIP is the Transfer Identity Protocol that manages transfer identities and resolves their payment routes. A TIN is one portable, human-readable 10-digit identity within TIP. A sender can share a TIN and confirm the resolved recipient name before authorizing a transfer, instead of copying a wallet address. The TIN does not hold tokens or replace the owner's wallet authority.
+**TIP (Transfer Identity Protocol)** manages transfer identities and their route information. A **TIN (Transfer Identity Number)** is one 10-digit identity within TIP. A TIN gives a sender a recipient identifier to resolve before authorizing a transfer; it is not a wallet key, token account, or balance container.
 
-## What TIN is (and is not)
+## Identity and wallet recovery
 
-| Wallet address                               | TIN (managed by TIP)                                        |
-| -------------------------------------------- | ---------------------------------------------------------- |
-| Public cryptographic account identifier      | 10-digit payment identity                                  |
-| Identifies a public key or account authority | TIP resolves the route associated with a TIN                |
-| May own token accounts                       | Does not itself hold tokens or act as a private key        |
-| Usually exposed directly                     | Resolved through TIP route metadata; not itself a wallet key |
+The TIP registry keeps identity information encrypted. The owner's recovery record is stored in a separate on-chain PDA owned by the TIN Registrar program, not inside the main TIN registry account. That recovery record contains the owner's public key and an encrypted TIN recovery envelope. When the owner reconnects the wallet, the SDK derives the recovery PDA, fetches the envelope, and decrypts it locally.
 
-TIN is not a private key or token account. A confirmed TIN V1 binds to an owner wallet and encrypted identity data. A sender can use the resolved display name as a payment-confidence check; that name alone is not legal verification or payment authorization.
+This separation means the main registry does not need a standalone owner-public-key field to support wallet recovery. Public account addresses and transaction metadata remain visible on Solana, so this design does not make every part of identity activity unlinkable.
 
-## Registrar program
+## Resolving a recipient
 
-<Note>**Status: Live on Devnet.**</Note>
+An application can use the TSN SDK to resolve the TIN's owner-provided display name and prepare a payment authorization. The display name is a recipient confirmation aid; it is not legal identity verification. The sending wallet still reviews and signs the payment authorization.
 
-The current TIN V1 registry derives its PDA from a keyed lookup commitment,
-not from a public TIN or owner wallet. The trusted issuer and Node share a
-high-entropy `TINS_LOOKUP_SECRET`; there is no all-zero public fallback. The
-secret is required to derive the commitment and decrypt the identity envelope,
-and must never enter a browser, Receiver payload, or Cranker request. The
-program records the owner authorization and encrypted identity; it does not
-generate the random ten-digit number. The trusted issuer generates the TIN,
-checks that its commitment PDA is unused, and submits the owner-authorized
-creation through Receiver, Node verification, and Cranker execution.
-
-The current TIP V1 route stores a versioned GPRU ElGamal scan public key and its key commitment, alongside
-TIP route and policy commitments. The scan key is public and stable for the route; its matching secret
-material stays with the owner. The current TSN credit source invokes GPRU to verify a DNA-key derivation
-proof against the TIP registry. The key commitment detects key/version substitution; it is not proof of
-ownership or a valid balance transition. TIP source also appends route commitments to a shared route root
-used by the GPRU hidden-head Groth16 proof ABI. Node currently cannot produce that proof and fails closed.
-
-Current TIN V1 SDK helpers derive these PDAs:
-
-| Helper | Seeds / derivation |
-| --- | --- |
-| `getTinV1CreationStagingPda` | `tin-v1-create-stage`, owner key, intent hash |
-| `getTinV1OwnerRecoveryPda` | `tin-v1-owner-recovery`, owner key |
-| TIN V1 registry PDA | `tin-v1`, keyed lookup commitment |
-
-## Resolution flow
-
-1. The sender supplies the 10-digit TIN to the application.
-2. The application requests display identity from the TSN Node resolution
-   endpoint; Node derives the registry PDA with its protected secret, validates
-   current TIN V1 state, and decrypts the identity disclosure.
-3. The SDK builds the sender authorization using the TIN and resolved display
-   identity. The sender does not sign a client-supplied route commitment.
-4. At payment ingress, Node independently resolves the current on-chain TIN V1
-   TIP route and constructs the recipient transition from that route.
-
-Resolution is by requested TIN, not public registry enumeration. The endpoint
-returns identity disclosure, never plaintext seeds or child private keys.
-
-## Record classes
-
-| Class              | Examples                                                          | Boundary                                            |
-| ------------------ | ----------------------------------------------------------------- | --------------------------------------------------- |
-| Public             | Program ID and commitment-derived account address                 | Does not expose a wallet-to-TIN index               |
-| Integrity metadata | Owner authorization, route commitments, state version             | Verifiable protocol data, not the plaintext TIN     |
-| Encrypted          | TIN and display name envelope; wallet-protected master-seed data   | Ciphertext stored with the registry                 |
-| Off-chain app data | Optional profile or notification references                       | Stored under the app's own access policy            |
-
-## Ownership and recovery
-
-The owner wallet authorizes TIN creation. The main TIN registry account stores
-an owner commitment and no standalone owner-public-key field. Wallet recovery
-is stored separately in an on-chain PDA owned by the TIN Registrar program;
-it is not stored in the main TIN registry account. The recovery PDA is derived
-from the `tin-v1-owner-recovery` seed and the owner's wallet public key. It
-contains that public key and an encrypted TIN recovery envelope. TIN creation
-creates and writes both accounts.
-
-When the owner reconnects, the SDK derives the recovery PDA from the connected
-wallet, fetches its envelope, and decrypts it locally after a separate
-domain-separated wallet signature. The recovery PDA gives the wallet a lookup
-path without adding the owner public key as a field in the main registry
-account. Previously created master-seed envelopes may still contain an
-`ownerPublicKey` property in plaintext; removing it from the SDK affects newly
-created envelopes and does not rewrite existing on-chain accounts. The raw
-recovery signature, TIN, and display name are not sent to Node or Cranker as
-part of recovery.
-
-The recovery locator does not reveal the TIN or derive the registry PDA. The
-registry is found through its keyed lookup commitment, while the owner PDA
-locates the recovery ciphertext. Registry uniqueness follows from the keyed
-commitment PDA; owner uniqueness follows from the recovery PDA. Receiver and
-Cranker receive the recovery ciphertext and other encrypted fields.
-
-## Related
-
-<CardGroup cols={2}>
-  <Card title="TSNP" icon="network-wired" href="/layers/tsnp">
-    Settlement coordination and epoch treasury.
-  </Card>
-
-<Card title="GPRU" icon="route" href="/layers/gpru">
-  Non-custodial authorization and routing.
-</Card>
-
-<Card title="TCAP" icon="lock" href="/layers/tcap">
-  Private balance accounting.
-</Card>
-
-  <Card title="Architecture" icon="diagram-project" href="/overview/architecture">
-    End-to-end sequence diagram.
-  </Card>
-</CardGroup>
+The hidden-head proof flow that is intended to use TIP route information is not established as an end-to-end settlement capability. See the [SDK identity guide](/developers/private-tin-issuance) for application-level usage. Issuer operations and the registry's exact data contract belong in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

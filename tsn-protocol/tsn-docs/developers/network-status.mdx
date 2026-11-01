@@ -1,27 +1,19 @@
 ---
-title: "Check TSN Network Status Before Signing"
+title: "Check Network Readiness with the SDK"
 sidebarTitle: "Network Status"
-description: "Use the TSN SDK to select reachable services and prevent an application from creating a transaction while settlement dependencies are unavailable."
+description: "Pass application-selected endpoints to the TSN SDK and check readiness before requesting wallet authorization."
 ---
 
-Payment applications should check TSN service availability before asking a
-wallet to sign. The SDK makes the endpoint-selection decision. Node and
-Receiver may use healthy local endpoints before their live services. Solana
-requests use one configured TSN RPC gateway; if it is unavailable, the SDK
-reports RPC offline and stops without switching to another endpoint.
+An application can check that its configured TSN dependencies are reachable before preparing a payment or asking a wallet to sign. The application selects its endpoints and passes them to the SDK.
 
 ```ts
 import { getTsnNetworkStatus } from "@trustlink/tsn-sdk";
 
 const status = await getTsnNetworkStatus({
-  local: {
-    node: "http://127.0.0.1:8000",
-    receiver: "http://127.0.0.1:8010",
-  },
   live: {
-    node: process.env.TSN_NODE_URL ?? null,
-    receiver: "https://tsn-receiver-kappa.vercel.app",
-    rpc: "https://tsn-rpc-gateway.vercel.app",
+    node: process.env.TSN_NODE_URL,
+    receiver: process.env.TSN_RECEIVER_URL,
+    rpc: process.env.TSN_RPC_URL,
   },
 });
 
@@ -32,36 +24,8 @@ if (!status.readyForNativeTransactions) {
 console.log(status.selected);
 ```
 
-Environment variables belong to the application that calls the SDK. The SDK
-does not read a Dapp's `.env` files directly. A Dapp can map
-`TSN_LOCAL_NODE_URL` and `TSN_LOCAL_RECEIVER_URL` into `local`, then pass
-`TSN_NODE_URL` and `TSN_RECEIVER_URL` into `live`. Pass the preferred Solana
-RPC as `live.rpc` (or `local.rpc` if it is the only configured choice); the
-SDK reports its source as `configured` because the endpoint may be local,
-hosted, or another RPC selected by the application.
+`readyForNativeTransactions` reports readiness of the configured dependencies for native TSN actions. It does not authorize a payment, guarantee that a Cranker will accept work, or confirm a Solana transaction. Cross-chain readiness is a separate capability and should not be used as a gate for native transfers.
 
-Set `TSN_RPC_URL` to the application's preferred endpoint. The default is
-`https://tsn-rpc-gateway.vercel.app`; status checks and transaction helpers use
-the same endpoint. An unavailable endpoint blocks Solana actions instead of
-silently switching to another RPC.
+Refresh status when it matters to the user experience, such as before asking for a signature. Environment variables belong to the application; the SDK does not read the application's `.env` file itself.
 
-The result reports the selected source for each service, route count, and the
-number of online Crankers reported by the Node. A Cranker is a worker rather
-than a public HTTP service, so the SDK reads its liveness from the Node's
-heartbeat-backed status response. Cranker liveness is operational information,
-not a client-side authorization gate. A signed intent can be accepted before a
-Cranker claims it, and a Cranker becomes observable when it accepts or
-processes authorized work. If the Node has no recent worker observation, the
-SDK returns `onlineCrankers: null`; applications should display this as
-"discovery on demand," not as "offline" or "not reported." Crankers are not
-located by IP address, and their public network address is not part of the
-application status model.
-
-`readyForNativeTransactions` requires the Node, Receiver, and RPC. It is used
-for private TIN issuance, native TIN payments, and wallet transfers.
-`readyForCrossChainTransactions` additionally requires a registered destination
-route. A missing cross-chain route must not block a native TSN action.
-
-Applications should refresh this status before preparing a payment and again
-before requesting a wallet signature. Status checks do not create a payment,
-move funds, or authorize a settlement operation.
+For service configuration and operations, see the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

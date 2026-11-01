@@ -9,7 +9,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const cli = process.env.SNARKJS_CLI
   ? path.resolve(process.env.SNARKJS_CLI)
   : path.join(root, "node_modules", "snarkjs", "build", "cli.cjs");
-const build = path.join(root, "build", "hidden_head_v1");
+const build = process.env.GPRU_CIRCUIT_BUILD_DIR
+  ? path.resolve(process.env.GPRU_CIRCUIT_BUILD_DIR)
+  : path.join(root, "build", "hidden_head_v1");
 const dev = process.env.GPRU_DEV_SETUP_DIR ? path.resolve(process.env.GPRU_DEV_SETUP_DIR) : path.join(build, "dev");
 const wasm = process.env.GPRU_CIRCUIT_WASM_PATH
   ? path.resolve(process.env.GPRU_CIRCUIT_WASM_PATH)

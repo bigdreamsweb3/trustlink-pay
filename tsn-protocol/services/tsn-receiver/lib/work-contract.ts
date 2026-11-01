@@ -58,6 +58,7 @@ const INTERNAL_KEYS: Record<WorkKind, Set<string>> = {
     "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
     "routeVersion", "routeNonce", "tipRouteVersion",
     "gpruElgamalKeyVersion", "gpruElgamalPublicKey", "gpruElgamalKeyCommitment",
+    "gpruBalanceScanKeyVersion", "gpruBalanceScanPublicKeyX", "gpruBalanceScanPublicKeyY",
     "policyCommitment",
   ]),
 };
@@ -194,6 +195,7 @@ export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, 
           "nonce", "lookupCommitment", "encryptedIdentityEnvelope", "encryptedTinRecovery", "encryptedMasterSeed", "encryptedMetadataHash",
           "routeVersion", "routeNonce", "tipRouteVersion",
           "gpruElgamalKeyVersion", "gpruElgamalPublicKey", "gpruElgamalKeyCommitment",
+          "gpruBalanceScanKeyVersion", "gpruBalanceScanPublicKeyX", "gpruBalanceScanPublicKeyY",
           "policyCommitment",
         ])
       : new Set<string>();

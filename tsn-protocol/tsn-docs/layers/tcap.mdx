@@ -1,29 +1,19 @@
 ---
-title: "TCAP: Transfer Confidential Asset Protocol"
+title: "TCAP: Asset and Settlement Authority"
 sidebarTitle: "TCAP"
-description: "TCAP governs approved assets, reserve liabilities, and atomic shared-root updates."
+description: "TCAP governs accepted assets, reserves, liquidity, and authorized balance-changing settlement."
 ---
 
-# TCAP: Transfer Confidential Asset Protocol
+**TCAP (Transfer Confidential Asset Protocol)** governs the assets and liquidity used for TSN settlement. It checks that an asset is accepted, that the action has the required authorization, and that the applicable reserve conditions are met before applying a balance-changing transition.
 
-TCAP governs approved assets, reserves, and liability accounting. In the current proof-shaped TSN source path, TCAP receives the GPRU hidden-head proof and validates it before changing shared replay state or reserve liabilities.
+For a private-state transition, **GPRU guards the integrity and privacy of the user's state presented to TCAP**. Its proof is intended to show that the hidden state is current and that the proposed change follows from it. TCAP remains the authority over funds and applies the valid, authorized transition atomically; GPRU does not hold the user's assets.
 
-## Atomic hidden-head credit transition in source
+## Balance history
 
-The TSN `register_tcap_credit_authorization_v2` instruction calls TCAP `credit_gpru_memo_v1`. TCAP checks the approved asset, Mother-derived authorization signer, validity window, current shared-root predecessor, next root sequence, pending liability, and reserve solvency. It then invokes GPRU to verify the proof. On success, the same TCAP instruction advances the global root and moves the authorized amount from pending to settled liabilities. A failed check rolls back the transaction.
+The design records encrypted action data in transaction Memo instructions so the owner can reconstruct their history from chain data. A Memo is transaction data, not a private account or a guarantee that the transition is valid. TCAP's on-chain checks and the proof must validate the action before it changes protocol state.
 
-The root is one global TCAP account, not a per-TIN account. The proof is intended to establish that the hidden TIN/asset head is current and advance it while inserting a nullifier. The encrypted Memo remains transaction instruction data; TCAP does not store a per-TIN Memo history or balance snapshot PDA in this path.
+## Current capability boundary
 
-TSNP derives a transition nullifier from the signed reserve-funding transaction and binds it into the authorization digest passed to TCAP. TCAP includes that value in the global-root transition. This does not create a separate spent-funding account, and the shared root does not establish per-TIN ciphertext freshness.
+The hidden-head proof path is not yet established as an end-to-end settlement capability. Confidential debit and exit are not established as available. Solana transaction metadata remains public, and repeated public state references may expose correlation. See the [security overview](/security/threat-model) for these limits.
 
-## Runtime readiness
-
-The current Node settlement authorization endpoint returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`, so this source path cannot yet produce the proof required by TCAP. The circuit has not been compiled or reviewed, there are no generated trusted setup keys or configured prover/witness service, and the GPRU verifier account has not been initialized as part of this work. Do not treat proof-shaped instruction arguments as a live settlement feature.
-
-## Legacy TIN-tip instructions
-
-TCAP still contains older `TCapTinTipV1` instructions. Their presence in source does not make them part of this hidden-head instruction path, and this design does not initialize a per-TIN TCAP tip PDA.
-
-## Debit and exit
-
-The circuit source includes private balance opening and subtraction constraints for debit and exit. Those actions remain disabled until the constraints are compiled and verified, and TSN authorization, TCAP reserve/payout checks, proof generation, nullifier insertion, and shared-root advancement work together in the atomic transaction.
+The full TCAP instruction contract and integration decisions are maintained in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

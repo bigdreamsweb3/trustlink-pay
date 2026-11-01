@@ -95,11 +95,20 @@ template HiddenHeadTransitionV1() {
     signal input successorPortfolioRoot;
     signal input successorBalanceX;
     signal input successorBalanceY;
+    // One-time owner-readable encryption of the Pedersen blinding delta.
+    // The ephemeral public point and encrypted scalar are also committed in
+    // the Memo prefix and exposed as proof inputs; the recipient scan point is
+    // private and authenticated by the TIP route leaf below.
+    signal input encryptedBlindingDelta;
+    signal input deltaEphemeralPublicX;
+    signal input deltaEphemeralPublicY;
 
     // Private TIP membership opening.
     signal input tipLookupCommitment;
     signal input routeKeyCommitment;
     signal input routePolicyCommitment;
+    signal input balanceScanPublicX;
+    signal input balanceScanPublicY;
     signal input tipRouteIndex;
     signal input tipSiblings[32];
 
@@ -130,17 +139,35 @@ template HiddenHeadTransitionV1() {
     signal input authorizationCommitment;
     signal input balanceBlindingDelta;
     signal input balanceBlindingCarry;
+    signal input deltaEphemeralScalar;
+    signal input sharedXReduction;
+    signal input sharedXCarry;
+    signal input encryptedDeltaCarry;
     signal input predecessorBalance;
     signal input predecessorBlinding;
     signal input successorBalance;
     signal input successorBlinding;
 
     signal routeLeaf;
-    component routeHash = Poseidon(3);
+    component routeHash = Poseidon(5);
     routeHash.inputs[0] <== tipLookupCommitment;
     routeHash.inputs[1] <== routeKeyCommitment;
-    routeHash.inputs[2] <== routePolicyCommitment;
+    routeHash.inputs[2] <== balanceScanPublicX;
+    routeHash.inputs[3] <== balanceScanPublicY;
+    routeHash.inputs[4] <== routePolicyCommitment;
     routeLeaf <== routeHash.out;
+
+    component balanceScanPointCheck = BabyCheck();
+    balanceScanPointCheck.x <== balanceScanPublicX;
+    balanceScanPointCheck.y <== balanceScanPublicY;
+    component balanceScanSubgroupCheck = EscalarMulAny(252);
+    balanceScanSubgroupCheck.p[0] <== balanceScanPublicX;
+    balanceScanSubgroupCheck.p[1] <== balanceScanPublicY;
+    for (var i = 0; i < 252; i++) {
+        balanceScanSubgroupCheck.e[i] <== (BABYJUB_SUBORDER >> i) & 1;
+    }
+    balanceScanSubgroupCheck.out[0] === 0;
+    balanceScanSubgroupCheck.out[1] === 1;
 
     component tipPath = SparsePath32();
     tipPath.leaf <== routeLeaf;
@@ -276,6 +303,38 @@ template HiddenHeadTransitionV1() {
     amountPoint.scalar <== amount;
     component deltaPoint = BalanceScalarMul(252, BALANCE_H_X, BALANCE_H_Y);
     deltaPoint.scalar <== balanceBlindingDelta;
+
+    // The one-time ECIES field ciphertext is C = delta + x(e * S) mod q,
+    // where S is the hidden TIP-registered BabyJubjub scan point and e is a
+    // fresh ephemeral scalar. The owner derives the same shared point with
+    // scanSecret * E and recovers delta without disclosing it on-chain.
+    component ephemeralScalarBound = LessThan(252);
+    ephemeralScalarBound.in[0] <== deltaEphemeralScalar;
+    ephemeralScalarBound.in[1] <== BABYJUB_SUBORDER;
+    component ephemeralPublicPoint = BalanceScalarMul(252, BALANCE_G_X, BALANCE_G_Y);
+    ephemeralPublicPoint.scalar <== deltaEphemeralScalar;
+    ephemeralPublicPoint.x === deltaEphemeralPublicX;
+    ephemeralPublicPoint.y === deltaEphemeralPublicY;
+    component sharedPoint = EscalarMulAny(252);
+    sharedPoint.p[0] <== balanceScanPublicX;
+    sharedPoint.p[1] <== balanceScanPublicY;
+    component ephemeralBits = Num2Bits(252);
+    ephemeralBits.in <== deltaEphemeralScalar;
+    for (var i = 0; i < 252; i++) sharedPoint.e[i] <== ephemeralBits.out[i];
+    component sharedXCarryBits = Num2Bits(3);
+    sharedXCarryBits.in <== sharedXCarry;
+    component sharedXMaskBound = LessThan(252);
+    sharedXMaskBound.in[0] <== sharedXReduction;
+    sharedXMaskBound.in[1] <== BABYJUB_SUBORDER;
+    sharedXMaskBound.out === 1;
+    sharedPoint.out[0] === sharedXReduction + sharedXCarry * BABYJUB_SUBORDER;
+    component encryptedDeltaCarryBits = Num2Bits(1);
+    encryptedDeltaCarryBits.in <== encryptedDeltaCarry;
+    encryptedBlindingDelta === balanceBlindingDelta + sharedXReduction - encryptedDeltaCarry * BABYJUB_SUBORDER;
+    component encryptedDeltaBound = LessThan(252);
+    encryptedDeltaBound.in[0] <== encryptedBlindingDelta;
+    encryptedDeltaBound.in[1] <== BABYJUB_SUBORDER;
+    encryptedDeltaBound.out === 1;
     component creditPartial = BabyAdd();
     creditPartial.x1 <== predecessorBalanceX;
     creditPartial.y1 <== predecessorBalanceY;
@@ -352,4 +411,4 @@ template HiddenHeadTransitionV1() {
     newRootHash.out === newGlobalRoot;
 }
 
-component main {public [oldGlobalRoot, newGlobalRoot, memoCommitment, actionCommitment, nullifier, tipRouteRoot, successorPortfolioRoot, successorBalanceX, successorBalanceY]} = HiddenHeadTransitionV1();
+component main {public [oldGlobalRoot, newGlobalRoot, memoCommitment, actionCommitment, nullifier, tipRouteRoot, successorPortfolioRoot, successorBalanceX, successorBalanceY, encryptedBlindingDelta, deltaEphemeralPublicX, deltaEphemeralPublicY]} = HiddenHeadTransitionV1();

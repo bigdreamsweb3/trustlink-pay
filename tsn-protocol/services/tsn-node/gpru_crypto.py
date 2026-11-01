@@ -7,6 +7,60 @@ import hashlib
 import secrets
 from pathlib import Path
 
+BABYJUB_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617
+BABYJUB_SUBORDER = 2736030358979909402780800718157159386076813972158567259200215660948447373041
+BABYJUB_A = 168700
+BABYJUB_D = 168696
+BABYJUB_BASE8 = (
+    5299619240641551281634865583518297030282874472190772894086521144482721001553,
+    16950150798460657717958625567821834550301663161624707787222815936182638968203,
+)
+
+
+def _babyjub_add(left: tuple[int, int], right: tuple[int, int]) -> tuple[int, int]:
+    x1, y1 = left
+    x2, y2 = right
+    product = x1 * x2 * y1 * y2 % BABYJUB_FIELD
+    x = (x1 * y2 + y1 * x2) * pow(1 + BABYJUB_D * product, -1, BABYJUB_FIELD) % BABYJUB_FIELD
+    y = (y1 * y2 - BABYJUB_A * x1 * x2) * pow(1 - BABYJUB_D * product, -1, BABYJUB_FIELD) % BABYJUB_FIELD
+    return x, y
+
+
+def _babyjub_mul(point: tuple[int, int], scalar: int) -> tuple[int, int]:
+    result = (0, 1)
+    base = point
+    while scalar:
+        if scalar & 1:
+            result = _babyjub_add(result, base)
+        base = _babyjub_add(base, base)
+        scalar >>= 1
+    return result
+
+
+def encrypt_balance_blinding_delta_v1(
+    *, scan_public_key_x: bytes, scan_public_key_y: bytes, blinding_delta: int,
+) -> dict[str, int]:
+    """Create the circuit-bound one-time BabyJubjub ciphertext C=delta+x(e*S) mod q."""
+    if len(scan_public_key_x) != 32 or len(scan_public_key_y) != 32:
+        raise ValueError("GPRU balance scan coordinates must be 32 bytes each")
+    scan_public = (int.from_bytes(scan_public_key_x, "big"), int.from_bytes(scan_public_key_y, "big"))
+    x, y = scan_public
+    if x >= BABYJUB_FIELD or y >= BABYJUB_FIELD or (BABYJUB_A * x * x + y * y - 1 - BABYJUB_D * x * x * y * y) % BABYJUB_FIELD:
+        raise ValueError("TIP GPRU balance scan key is not a canonical BabyJubjub point")
+    if _babyjub_mul(scan_public, BABYJUB_SUBORDER) != (0, 1):
+        raise ValueError("TIP GPRU balance scan key is outside the prime-order subgroup")
+    if not 0 < blinding_delta < BABYJUB_SUBORDER:
+        raise ValueError("GPRU balance blinding delta must be a nonzero BabyJubjub scalar")
+    ephemeral_scalar = secrets.randbelow(BABYJUB_SUBORDER - 1) + 1
+    ephemeral_public = _babyjub_mul(BABYJUB_BASE8, ephemeral_scalar)
+    shared = _babyjub_mul(scan_public, ephemeral_scalar)
+    return {
+        "ephemeralScalar": ephemeral_scalar,
+        "ephemeralPublicX": ephemeral_public[0],
+        "ephemeralPublicY": ephemeral_public[1],
+        "encryptedDelta": (blinding_delta + shared[0]) % BABYJUB_SUBORDER,
+    }
+
 
 def _library_path() -> Path:
     crate_dir = Path(__file__).resolve().parents[2] / "programs" / "gpru" / "target" / "node-native"

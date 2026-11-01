@@ -46,6 +46,8 @@
             "pages": [
               "overview/introduction",
               "overview/how-it-works",
+              "overview/architecture",
+              "overview/separation-of-concerns",
               "get-started/faq"
             ]
           },
@@ -57,22 +59,6 @@
               "layers/gpru",
               "layers/tcap",
               "layers/dip"
-            ]
-          },
-          {
-            "group": "Operators",
-            "pages": ["operators/tsn-node", "operators/tsn-cranker"]
-          },
-          {
-            "group": "Concepts",
-            "pages": [
-              "overview/architecture",
-              "overview/separation-of-concerns",
-              "architecture/trust-model",
-              "architecture/identity-and-routing",
-              "architecture/mother-authority",
-              "architecture/node-receiver-cranker",
-              "architecture/epoch-treasury"
             ]
           },
           {
@@ -106,10 +92,7 @@
             "group": "Integration Guides",
             "pages": [
               "developers/payment-intent-lifecycle",
-              "developers/funding-and-accepted-intent",
               "developers/confidential-settlement",
-              "developers/groth16-hidden-head",
-              "developers/tcap-tip-credits",
               "developers/replay-and-retries"
             ]
           },
@@ -117,37 +100,8 @@
             "group": "SDK Reference",
             "pages": [
               "api-reference/sdk/tsn-sdk",
-              "api-reference/sdk/tins/index",
-              "api-reference/sdk/tsn-cranker-sdk"
+              "api-reference/sdk/tins/index"
             ]
-          }
-        ]
-      },
-      {
-        "tab": "API Reference",
-        "groups": [
-          {
-            "group": "API Reference Overview",
-            "pages": [
-              "api-reference/index",
-              "api-reference/authentication",
-              "api-reference/errors"
-            ]
-          },
-          {
-            "group": "RPC Methods",
-            "pages": [
-              "api-reference/rpc/node",
-              "api-reference/rpc/solana-rpc-gateway"
-            ]
-          },
-          {
-            "group": "CLI",
-            "pages": ["api-reference/cli/tsn-cranker"]
-          },
-          {
-            "group": "On-chain Programs",
-            "pages": ["api-reference/on-chain/solana-entrypoints"]
           }
         ]
       },

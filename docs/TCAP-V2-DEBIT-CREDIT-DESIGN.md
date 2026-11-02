@@ -1,6 +1,6 @@
 # TCAP balance transitions and GPRU proof boundary
 
-This document distinguishes the proof-shaped TSNP/TCAP ABI from a working proof-generation system. GPRU is intended to guard the integrity and privacy of the user's private state presented for a balance-changing action, proving that the hidden state is current and the proposed transition follows from it. TCAP governs accepted assets, authorization, reserves, liquidity, and liabilities, and applies a valid transition atomically. Node currently fails closed because the Groth16 prover and witness provider are not configured.
+This document distinguishes the proof-shaped TSNP/TCAP ABI from a working proof-generation system. GPRU is intended to guard the integrity and privacy of the user's private state presented for a balance-changing action, proving that the hidden state is current and the proposed transition follows from it. TCAP governs accepted assets, authorization, reserves, liquidity, and liabilities, and applies a valid transition atomically. Node fails closed when explicit witness/prover settings or matching chain preconditions are unavailable.
 
 ## Current source behavior
 
@@ -10,7 +10,7 @@ The proof is intended to show that the private per-TIN/asset predecessor is the 
 
 ## Hidden-head source path
 
-GPRU contains the verifier entrypoint and Circom source for route membership, hidden-head update, Memo/action binding, nullifier insertion, and Pedersen balance constraints. The active TSNP credit ABI carries the proof through TCAP to GPRU. The circuit has twelve public inputs, including the successor portfolio root and point plus a one-time encrypted blinding delta and ephemeral point. Its Memo prefix binds these values. The proof constrains the ciphertext to the same private delta used in the Pedersen balance transition; the owner-encrypted action record omits the delta. R1CS generation has succeeded, but independent review, matching keys, a validated key converter, witness provider, prover service, initialized verifier, and Devnet proof evidence are not established. Action kind, token ID, and amount are public instruction values.
+GPRU contains the verifier entrypoint and Circom source for route membership, hidden-head update, Memo/action binding, nullifier insertion, and Pedersen balance constraints. The active TSNP credit ABI carries the proof through TCAP to GPRU. The circuit has twelve public inputs, including the successor portfolio root and point plus a one-time encrypted blinding delta and ephemeral point. Its Memo prefix binds these values. The proof constrains the ciphertext to the same private delta used in the Pedersen balance transition; the owner-encrypted action record omits the delta. The local Node witness/prover adapters are implemented, and the November 2 experiment verified the matching November 1 development setup, local proofs and four SBF builds. Runtime configuration, deployed verifier/root state and confirmed settlement are separate gates; see [the dated readiness record](./laboratory/experiments/EXP-20261102-hidden-head.md). Independent review, current verifier initialization and confirmed chain proof execution are not established here. Action kind, token ID, and amount are public instruction values.
 
 ## Required balance-proof contract
 
@@ -20,7 +20,7 @@ TCAP must perform its reserve-liability and replay-state updates atomically with
 
 ## Privacy boundary
 
-The hidden-head design avoids a public per-TIN head account, but uses a single writable TCAP root account. That account appears in each transition using this path, and its sequence and root changes expose global ordering. The zero-linkability goal is therefore not achieved by the current shared-root design. Public funding, exits, timestamps, fee payer, and transaction instruction data remain visible according to their on-chain representation.
+The hidden-head design uses a single writable shared TCAP root rather than a public per-TIN head account. It exposes global transition ordering while hiding the TIN/predecessor witness. The native-credit proof hides the recipient TIN route and private predecessor witness from the on-chain statement. The owner retains private recovery/history material. However, Node derives the published nullifier from the public deposit signature and TCAP program ID, so an observer can compute the funding-to-credit link without a secret. Amount, asset, shared roots, successor point, ciphertext, accounts and timing are also visible, and the authorized Node handles private resolution/witnesses. Direct wallet transfers expose their endpoints; confidential debit and exit require separate execution evidence. The implemented source does not establish general unlinkability, owner-only knowledge or completed live settlement. Required artifact/witness settings and matching chain/verifier state remain runtime gates; see the [canonical privacy record](./laboratory/cryptography.md).
 
 ## Status
 

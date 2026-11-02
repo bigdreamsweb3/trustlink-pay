@@ -1,0 +1,38 @@
+---
+title: "Errors, retries and reconciliation"
+description: "Interpret SDK and service failures without confusing acceptance, funding and settlement."
+---
+
+Errors identify the failed boundary. A plain SDK validation error, a rejected service request, a stale lease and a failed chain transaction require different recovery. Preserve the original request and relevant sanitized work/signature identifiers long enough to reconcile the outcome.
+
+## Invalid recipient or amount
+
+`recipientHash` must be the resolved 32-byte hexadecimal owner hash; the TIN belongs in `recipientTin` and the signed message. Node checks that both refer to the same current recipient. Re-resolve through the trusted identity boundary and rebuild the authorization when the intended recipient changes. Do not replace an owner hash or route after the wallet has approved different terms.
+
+Amount helpers enforce token precision. Registered mint decimals must match the signed token decimals. The native request supports `tcap_deposit_v2`; retired funding modes and user-supplied private transition fields are rejected. The [generated reference](/sdk/api-reference) lists direct source errors, while called dependencies and services can raise additional failures.
+
+## HTTP failures and timeouts
+
+`TsnHttpClient` throws `TSN request failed (<status>): <body>` for non-2xx responses. It does not normalize every server error into a typed exception, impose a generic timeout, retry automatically, or emit lifecycle callbacks. Use the endpoint's actual error shape and your transport policy. A 2xx response identifies accepted work, not confirmed settlement.
+
+For a lost response, reconcile the existing payment/work ID before resubmitting. Receiver uses work kind and payload commitment for idempotency and rejects a conflicting body for an existing ID. Do not automatically create a new payment ID after an uncertain funding submission, as that can obscure an already submitted transaction.
+
+## Stale signed funding
+
+A Cranker can retry the same owner-signed deposit on a configured alternate RPC. It cannot change the blockhash while keeping a valid original signature. When the transaction is expired, obtain fresh wallet approval and signature for rebuilt work. Before rebuilding, check whether the original signature already confirmed on the intended cluster.
+
+## Proof, root and operator readiness
+
+Missing prover configuration or root-indexed snapshots stop Node settlement preparation. The expected witness/proving artifacts must match the active circuit and initialized verifier. A TIP route change or competing TCAP root advance can make a prepared witness stale; operators must reconstruct from current confirmed state rather than relabel an old snapshot.
+
+When funding is `CONFIRMED` and settlement is `REJECTED` for `GPRU_HIDDEN_HEAD_WITNESS_UNAVAILABLE`, preserve that deposit. Repair the matching snapshot, load corrected services and use Receiver's authenticated, version-checked settlement retry; Node must independently verify funding and prepare a fresh proof. A repaired file alone does not requeue rejected work. The operator utility defaults to read-only and requires `--execute` to resume the settlement; no new funding transaction is required.
+
+The exact rejection `TCAP settlement asset is unavailable or its reserve binding is invalid` can also result from the corrected Node asset-offset bug. Operators must load the correction and confirm the actual asset/reserve conditions before using the same guarded retry. Withdrawals being disabled alone does not block native credit. A genuinely inactive, unapproved, paused, deprecated or wrongly bound asset still fails verification and cannot be repaired by another deposit.
+
+The public integration should surface a bounded pending/rejected/failed state and its sanitized reason. Detailed verifier initialization, root activation, key pins and service startup belong in the [internal operator record](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs/laboratory/operations-and-verification.md). A healthy service response does not prove those prerequisites.
+
+## Funding confirmed, settlement incomplete
+
+Native funding and settlement are different transactions. Confirmed funding may coexist with rejected or failed settlement. Use Receiver's `/api/work-status/<funding-work-id>` response to inspect both records and their signatures, then verify chain results. The current hidden-head tutorial does not establish an automatic refund of a successful reserve deposit. Epoch-family refund instructions are separate contracts.
+
+See [lifecycle](/developers/payment-intent-lifecycle), [operator responsibilities](/operators/tsn-node), and [security boundaries](/security/operator-boundaries) when diagnosing the actor that must take the next action.

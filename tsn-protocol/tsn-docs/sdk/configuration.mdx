@@ -1,0 +1,32 @@
+---
+title: "SDK configuration and runtime boundaries"
+description: "Endpoint selection, fetch injection, service authentication and protected configuration."
+---
+
+Applications supply endpoint values explicitly. The SDK does not discover a universal live TSN network or load an application's environment file. Keep the selected cluster and the application's Node, Receiver and RPC endpoint configuration consistent; a response from the wrong cluster is not useful settlement evidence.
+
+## Network probes
+
+`getTsnNetworkStatus` accepts `local`, `live`, `timeoutMs` and `fetchImpl`. Each endpoint map has `node`, `receiver` and `rpc` keys. When both maps are supplied, it prefers a responsive configured local endpoint before a configured live endpoint. Node is probed at `/settlement-networks`, Receiver at `/api/health`, and RPC through JSON-RPC `getHealth`. Default probe timeout is 2,500 milliseconds.
+
+Native readiness requires those core services to respond. Cross-chain readiness additionally requires the Node response to list a destination route. Cranker liveness is a reported worker observation, not a separate public application HTTP endpoint. Neither flag verifies a proof key, active reserve, usable recipient, available worker execution or successful payment.
+
+The complete [network example](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/tsn-docs/sdk/examples/network.ts) is typed against the SDK and tested with injected mock fetch. Use those responses to display service availability, then perform route/asset/payment-specific validation through the actual authorized flow.
+
+## Client authentication and timeout
+
+`TsnHttpClient` accepts `baseUrl`, optional `fetchImpl`, and optional `apiKey`. The key becomes an `x-api-key` header. A configured key is not sender payment authorization, and not every endpoint shares the same access rules. Worker listing/update methods are available in the SDK but require the endpoint's worker policy; applications should not embed privileged keys in browser bundles.
+
+The generic client has no built-in timeout, exponential retry or event emitter. An application may supply a fetch implementation with appropriate cancellation and bounded timeout. A timeout can occur after a request was accepted, so retrying must preserve idempotency and reconcile existing work. Avoid logging response bodies containing private authorization material.
+
+## Protected identity and owner data
+
+`resolveTinV1Identity` requires a Solana connection, TIN and protected lookup secret, with an optional TIP program ID. Run it in a trusted environment that can keep lookup material private. The result includes display name and the owner's commitment hash; it is not legal identity certification. Node independently resolves the current route before preparing settlement.
+
+Owner wallet/recovery/scan material remains in the authorized owner environment. Circuit artifacts, witness directories, Node service credentials, Mother keys and Cranker sessions are operator configuration, documented in the [internal runbooks](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs/team). The application must not replace those roles or submit its own recipient route/proof through a guessed compatibility field.
+
+## Asset precision
+
+Payment helpers take human-readable amounts and convert them using the registered token decimals. `createTcapAssetPaymentAuthorization` reads the active mint/asset entry first. `buildPaymentAuthorizationIntentRequest` takes the token decimals but emits the implementation's numeric request amount; the current API is not an arbitrary-precision JSON amount promise. Reject unsupported precision and avoid computing payment values through uncontrolled floating-point arithmetic.
+
+See the source-derived [network status](/api-reference/sdk/modules/network-status), [client](/api-reference/sdk/modules/client), [payment authorization](/api-reference/sdk/modules/payment-authorization) and [request contracts](/api-reference/sdk/modules/contracts) references for exact fields and return types.

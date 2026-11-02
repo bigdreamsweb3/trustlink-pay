@@ -1,0 +1,28 @@
+---
+title: "Protocol glossary"
+description: "Canonical TSN names and the operational distinctions they describe."
+---
+
+**TSN — Transfer Settlement Network.** The complete infrastructure: protocol programs, Nodes, Receiver, Crankers, SDKs and applications.
+
+**TSNP — Transfer Settlement Network Protocol.** The on-chain settlement protocol program. Its source crate retains `trustlink_escrow`; this public name does not change the program ID or ABI.
+
+**TIP — Transfer Identity Protocol.** Identity ownership, authenticated route discovery and recovery state. **TIN — Transfer Identity Number.** A ten-digit identity managed by TIP, not a wallet private key, legal identity certification or the entire protocol.
+
+**GPRU — Guarded Privacy Routing Unit.** Verification of transaction-specific private routing/state-transition relations presented to TCAP. It does not custody reserve assets.
+
+**TCAP — Transfer Confidential Asset Protocol.** Approved assets, reserve/custody policy and atomic settlement accounting. The current native credit uses a shared commitment root rather than a publicly addressed latest balance per TIN.
+
+**DIP — Deposit Ingress Protocol.** Deposit-ingress boundary and its settlement integration. **CCTP — Circle Cross-Chain Transfer Protocol.** Circle's external protocol, supported only where route code and deployment evidence establish an integration.
+
+**Mother authority.** The authority enforced by TSNP's Mother Escrow in the inspected credit authorization. **Node verification.** A signed service decision over exact work/evidence/execution and lease context. They are separate responsibilities.
+
+**Receiver.** Durable ingress, coordination, leases and sanitized status. **Cranker.** A worker submitting verified, leased, authorized transactions. Acceptance, verification and submission are separate events.
+
+**Funding.** A confirmed reserve deposit creating pending liability. **Credit settlement.** The proof-checked root advance and equal pending-to-settled liability shift. **Confirmation.** A successful transaction result at the chosen Solana commitment level; it must be checked against relevant account state.
+
+**Nullifier.** A one-use value inserted into authenticated replay state. **Commitment.** A cryptographic binding to data/state; its existence does not imply encryption or proof of every associated claim. **Memo.** Public Solana instruction data containing a fixed proof-bound prefix and an owner-encrypted action body.
+
+**Witness snapshot.** Untrusted state data whose recomputed roots must match chain-selected roots before proving. **Development setup.** Circuit-specific test proving/verifying artifacts; successful local verification does not establish a production ceremony or independent audit.
+
+**ZK-PRU.** A retired historical receiving/spending architecture. It must not be used as the current TIN balance or settlement model. See the [internal archive](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs/historical-archive).

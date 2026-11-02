@@ -1,0 +1,272 @@
+---
+title: "receipts/types API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## EncryptedReceiptRecord
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/receipts`. [Implementation, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L17).
+
+### EncryptedReceiptRecord.receiptId
+
+[Source, line 18](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L18).
+
+```ts
+receiptId: string
+```
+
+### EncryptedReceiptRecord.operationId
+
+[Source, line 19](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L19).
+
+```ts
+operationId: string
+```
+
+### EncryptedReceiptRecord.tinCommitment
+
+[Source, line 20](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L20).
+
+```ts
+tinCommitment: string
+```
+
+### EncryptedReceiptRecord.protocolVersion
+
+[Source, line 21](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L21).
+
+```ts
+protocolVersion: "tsn-private-receipt-v1"
+```
+
+### EncryptedReceiptRecord.ciphertext
+
+[Source, line 22](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L22).
+
+```ts
+ciphertext: string
+```
+
+### EncryptedReceiptRecord.nonce
+
+[Source, line 23](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L23).
+
+```ts
+nonce: string
+```
+
+### EncryptedReceiptRecord.authenticationTag
+
+[Source, line 24](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L24).
+
+```ts
+authenticationTag: string
+```
+
+### EncryptedReceiptRecord.encryptionVersion
+
+[Source, line 25](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L25).
+
+```ts
+encryptionVersion: "aes-256-gcm+x25519-hkdf-sha256-v1"
+```
+
+### EncryptedReceiptRecord.aadCommitment
+
+[Source, line 26](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L26).
+
+```ts
+aadCommitment: string
+```
+
+### EncryptedReceiptRecord.integrityCommitment
+
+[Source, line 27](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L27).
+
+```ts
+integrityCommitment: string
+```
+
+### EncryptedReceiptRecord.keyEnvelopes
+
+[Source, line 28](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L28).
+
+```ts
+keyEnvelopes: ReceiptKeyEnvelope[]
+```
+
+### EncryptedReceiptRecord.createdAt
+
+[Source, line 29](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L29).
+
+```ts
+createdAt: string
+```
+
+## PrivateReceiptAad
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/receipts`. [Implementation, line 38](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L38).
+
+### PrivateReceiptAad.protocolVersion
+
+[Source, line 39](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L39).
+
+```ts
+protocolVersion: "tsn-private-receipt-v1"
+```
+
+### PrivateReceiptAad.receiptId
+
+[Source, line 40](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L40).
+
+```ts
+receiptId: string
+```
+
+### PrivateReceiptAad.operationId
+
+[Source, line 41](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L41).
+
+```ts
+operationId: string
+```
+
+### PrivateReceiptAad.tinCommitment
+
+[Source, line 42](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L42).
+
+```ts
+tinCommitment: string
+```
+
+### PrivateReceiptAad.encryptionVersion
+
+[Source, line 43](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L43).
+
+```ts
+encryptionVersion: "aes-256-gcm+x25519-hkdf-sha256-v1"
+```
+
+## ReceiptEncryptionRecipient
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/receipts`. [Implementation, line 32](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L32).
+
+### ReceiptEncryptionRecipient.recipientKeyId
+
+[Source, line 33](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L33).
+
+```ts
+recipientKeyId: string
+```
+
+### ReceiptEncryptionRecipient.recipientType
+
+[Source, line 34](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L34).
+
+```ts
+recipientType: ReceiptKeyRecipientType
+```
+
+### ReceiptEncryptionRecipient.encryptionPublicKey
+
+[Source, line 35](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L35).
+
+```ts
+encryptionPublicKey: JsonWebKey
+```
+
+## ReceiptKeyEnvelope
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/receipts`. [Implementation, line 6](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L6).
+
+### ReceiptKeyEnvelope.recipientKeyId
+
+[Source, line 7](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L7).
+
+```ts
+recipientKeyId: string
+```
+
+### ReceiptKeyEnvelope.recipientType
+
+[Source, line 8](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L8).
+
+```ts
+recipientType: ReceiptKeyRecipientType
+```
+
+### ReceiptKeyEnvelope.wrappedDek
+
+[Source, line 9](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L9).
+
+```ts
+wrappedDek: string
+```
+
+### ReceiptKeyEnvelope.algorithm
+
+[Source, line 10](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L10).
+
+```ts
+algorithm: "x25519-hkdf-sha256-aes-256-gcm-v1"
+```
+
+### ReceiptKeyEnvelope.ephemeralPublicKey
+
+[Source, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L11).
+
+```ts
+ephemeralPublicKey: JsonWebKey
+```
+
+### ReceiptKeyEnvelope.nonce
+
+[Source, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L12).
+
+```ts
+nonce: string
+```
+
+### ReceiptKeyEnvelope.createdAt
+
+[Source, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L13).
+
+```ts
+createdAt: string
+```
+
+### ReceiptKeyEnvelope.revokedAt
+
+[Source, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L14).
+
+```ts
+revokedAt: string | undefined
+```
+
+## ReceiptKeyRecipientType
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/receipts`. [Implementation, line 4](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L4).
+
+```ts
+export type ReceiptKeyRecipientType = "device" | "recovery";
+```
+
+## TSN_PRIVATE_RECEIPT_ENCRYPTION_VERSION
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/receipts`. [Implementation, line 2](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L2).
+
+```ts
+"aes-256-gcm+x25519-hkdf-sha256-v1"
+```
+
+## TSN_PRIVATE_RECEIPT_PROTOCOL_VERSION
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/receipts`. [Implementation, line 1](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/types.ts#L1).
+
+```ts
+"tsn-private-receipt-v1"
+```

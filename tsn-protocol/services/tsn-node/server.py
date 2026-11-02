@@ -68,7 +68,10 @@ from app.services.cross_chain_routes import (
     ready_destination_networks,
     verify_destination_route,
 )
-from dbrix_transaction_record import encrypt_transaction_record_v1, validate_transaction_record_v1
+from dbrix_transaction_record import BN254_SCALAR_MODULUS, encrypt_transaction_record_v1, validate_transaction_record_v1
+from gpru_crypto import derive_node_record_shared_point
+from hidden_head_witness import HiddenHeadWitnessStore, hex_field
+from hidden_head_prover import PUBLIC_SIGNALS, prove_hidden_head_credit
 
 _node_root = Path(__file__).resolve().parent
 # Local development is local-first. The hosted .env remains a fallback for
@@ -511,6 +514,11 @@ def _sign_node_verification(
             },
         }.get(str(work.get("kind") or ""), set())
         execution_payload = {name: verified_payload[name] for name in allowed if name in verified_payload}
+        if work.get("kind") == "SETTLEMENT" and isinstance(execution_payload.get("tcapCreditTransition"), dict):
+            execution_payload["tcapCreditTransition"] = {
+                name: value for name, value in execution_payload["tcapCreditTransition"].items()
+                if name in TCAP_CRANKER_TRANSITION_FIELDS
+            }
     else:
         execution_payload = {}
     attestation: dict[str, Any] = {
@@ -1245,6 +1253,7 @@ async def read_onchain_tin_tip_route(tin: str) -> Optional[dict[str, Any]]:
         ).hexdigest()
         return {
             "tin": str(tin),
+            "lookupCommitment": material["lookupCommitment"],
             "ownerPubkeyHash": material["ownerPubkeyHash"],
             "tipRouteVersion": 1,
             "gpruElgamalKeyVersion": material["gpruElgamalKeyVersion"],
@@ -2407,6 +2416,9 @@ def _verify_mother_signed_tcap_settlement_message(
     transition: dict[str, Any],
 ) -> bytes:
     required_signatures, readonly_signed, readonly_unsigned, account_keys, recent_blockhash, instructions = _parse_solana_v1_message(message)
+    # V1 puts signatures after the message without a signature-count prefix.
+    if len(message) + required_signatures * 64 > SOLANA_V1_TRANSACTION_SIZE_LIMIT:
+        raise HTTPException(422, "Settlement transaction exceeds the Solana v1 4096-byte limit")
     if required_signatures != 2 or readonly_signed != 0 or len(account_keys) < required_signatures:
         raise HTTPException(422, "Settlement transaction must have exactly Cranker and Mother writable signers")
     if account_keys[0] != operator or account_keys[1] != authority:
@@ -2488,7 +2500,7 @@ def _verify_mother_signed_tcap_settlement_message(
         str(tip_route_root), str(gpru_verifier), instructions_sysvar, str(gpru_program),
     }
     memo_payload = str(transition.get("memoPayload") or "")
-    if not re.fullmatch(r"TSN_GPRU_HEAD_V1:[0-9a-f]{64}:[0-9a-f]{64}:[0-9a-f]{64}:[0-9a-f]{64}:[A-Za-z0-9_-]+", memo_payload):
+    if not re.fullmatch(r"TSN_GPRU_HEAD_V1:(?:[0-9a-f]{64}:){7}[A-Za-z0-9_-]+", memo_payload):
         raise HTTPException(422, "Node TCAP transition has an invalid proof-bound DBrix Ledger Memo")
     memo_commitment = hashlib.sha256(memo_payload.encode("ascii")).digest()
     if not hmac.compare_digest(memo_commitment, _tcap_credit_bytes32(transition.get("memoCommitment"), "memoCommitment")):
@@ -2628,8 +2640,8 @@ async def _verify_confirmed_tcap_deposit(
                 matching.append(instruction)
     if len(matching) != 1:
         raise ValueError("Confirmed transaction does not contain the exact signed TCAP V2 deposit instruction")
-    if len(decoded_instructions) != len(signed_instructions):
-        raise ValueError("Confirmed TCAP reserve deposit instruction count differs from the wallet-signed transaction")
+    if decoded_instructions != signed_instructions:
+        raise ValueError("Confirmed TCAP reserve deposit differs from the wallet-signed transaction")
     return {"signature": signature, "slot": int(tx.get("slot") or 0), "amountBaseUnits": str(amount), "mint": token_mint}
 
 
@@ -2654,7 +2666,10 @@ async def _assert_tcap_gpru_credit_program_preconditions(transition: dict[str, A
         raise ValueError("TCAP shared replay root changed while constructing the credit")
     if int(str(transition.get("tcapRootSequence") or "0")) != expected_root_sequence + 1:
         raise ValueError("TCAP shared replay root sequence changed while constructing the credit")
-    addresses = [config_address, root_address, asset_entry_address]
+    reserve_address = str(transition.get("reserveState") or "")
+    if not reserve_address:
+        raise ValueError("TCAP reserve state address is required")
+    addresses = [config_address, root_address, asset_entry_address, reserve_address]
     response = await solana_rpc(
         "getMultipleAccounts", [addresses, {"encoding": "base64", "commitment": "confirmed"}],
     )
@@ -2680,14 +2695,16 @@ async def _assert_tcap_gpru_credit_program_preconditions(transition: dict[str, A
         except (ValueError, binascii.Error) as exc:
             raise ValueError(f"TCAP preflight account data is not valid base64: {address}") from exc
 
-    config_record, root_record, asset_record = decoded
-    if config_record is None or root_record is None or asset_record is None:
-        raise ValueError("TCAP config, shared replay root, or asset entry is missing")
+    config_record, root_record, asset_record, reserve_record = decoded
+    if config_record is None or root_record is None or asset_record is None or reserve_record is None:
+        raise ValueError("TCAP config, shared replay root, asset entry, or reserve is missing")
     config_data = config_record[1]
     if len(config_data) < 244 or config_data[:8] != hashlib.sha256(b"account:TcapGlobalConfigV1").digest()[:8]:
         raise ValueError("TCAP global config has an unsupported account layout")
     if config_data[207] != 0 or config_data[142:174] != bytes(tsn_program):
         raise ValueError("TCAP is paused or does not approve the configured TSN program")
+    if int.from_bytes(config_data[8:10], "little") != 1 or config_data[208:240] != bytes(Pubkey.from_string(root_address)):
+        raise ValueError("TCAP config version or shared-root binding is invalid")
     root_data = root_record[1]
     if len(root_data) != 124 or root_data[:8] != hashlib.sha256(b"account:TcapCommitmentRootStateV1").digest()[:8]:
         raise ValueError("TCAP shared replay root account layout is invalid")
@@ -2699,23 +2716,202 @@ async def _assert_tcap_gpru_credit_program_preconditions(transition: dict[str, A
     ):
         raise ValueError("TCAP shared replay root differs from the authorized predecessor or sequence")
     asset_data = asset_record[1]
-    if len(asset_data) < 48 or asset_data[:8] != hashlib.sha256(b"account:TcapAssetEntryV1").digest()[:8]:
+    if len(asset_data) < 287 or asset_data[:8] != hashlib.sha256(b"account:TcapAssetEntryV1").digest()[:8]:
         raise ValueError("TCAP asset entry has an unsupported account layout")
     if int.from_bytes(asset_data[44:48], "little") != int(transition.get("tokenId") or 0):
         raise ValueError("TCAP asset entry token ID differs from the authorized transition")
+    # TcapAssetEntryV1 places status/risk/deprecated after governance_approval.
+    # CreditGpruMemoV1 requires Active, Approved, !paused and !deprecated;
+    # withdrawal enablement and transfer policies are not credit predicates.
+    if (asset_data[283] != 1 or asset_data[284] != 1 or asset_data[247] != 0 or asset_data[285] != 0
+            or asset_data[148:180] != bytes(Pubkey.from_string(reserve_address))):
+        raise ValueError("TCAP settlement asset is unavailable or its reserve binding is invalid")
+    reserve_data = reserve_record[1]
+    if (len(reserve_data) != 201 or reserve_data[:8] != hashlib.sha256(b"account:TcapReserveStateV1").digest()[:8]
+            or reserve_data[44:76] != bytes(Pubkey.from_string(asset_entry_address)) or reserve_data[189] != 0):
+        raise ValueError("TCAP settlement reserve layout, asset binding, or pause state is invalid")
+    actual, pending, settled, withdrawal, refund = (int.from_bytes(reserve_data[offset:offset + 8], "little") for offset in (140, 148, 156, 164, 172))
+    transfer_pending = int.from_bytes(reserve_data[193:201], "little")
+    liabilities = pending + settled + withdrawal + refund + transfer_pending
+    if pending < int(transition["amountBaseUnits"]) or liabilities > 0xFFFFFFFFFFFFFFFF or actual < liabilities:
+        raise ValueError("TCAP settlement reserve lacks funded pending liabilities or is insolvent")
 
 
-async def _construct_node_owned_tcap_transition(request: CreateIntentRequest, verified_fields: dict[str, Any]) -> dict[str, Any]:
-    """Fail closed until a real Groth16 hidden-head prover is configured."""
-    del request, verified_fields
-    raise HTTPException(
-        status_code=503,
-        detail=(
-            "GPRU_GROTH16_PROVER_NOT_CONFIGURED: settlement requires a proof over "
-            "the current hidden TIN head and authenticated-map witness; the legacy "
-            "per-TIN memo scan cannot establish that the selected memo is latest"
-        ),
+TCAP_CRANKER_TRANSITION_FIELDS = {
+    "commitmentRoot", "previousTcapRoot", "tcapRootSequence", "tokenId", "amountBaseUnits", "nullifier",
+    "validAfterSlot", "expiresAtSlot", "authorizationDigest", "proof", "memoPayload", "memoBodyPayload",
+    "memoLedgerSlots", "memoDocument", "memoCommitment", "successorBalancePoint", "assetEntry", "tcapConfig", "reserveState",
+}
+
+
+SOLANA_V1_TRANSACTION_SIZE_LIMIT = 4096
+
+
+def _tcap_credit_v1_wire_size(memo_payload: str) -> int:
+    # Canonical @dbrix/solana sendInstructionsV1 transport: 42 fixed message
+    # bytes, 15 distinct addresses, two u32 config values, two instruction
+    # headers, 13 authorization account indexes plus one Memo signer index,
+    # the fixed Borsh authorization payload, and two trailing signatures.
+    instruction_bytes = 8 + 32 + 8 + 8 + 32 + 8 + 4 + 8 + 32 + 12 * 32 + 64 + 128 + 64 + 1 + 4 + 8 + 32
+    return 42 + 15 * 32 + 2 * 4 + 2 * 4 + 13 + 1 + instruction_bytes + len(memo_payload.encode("ascii")) + 2 * 64
+
+
+def _assert_tcap_credit_transport_capacity(memo_payload: str) -> None:
+    wire_bytes = _tcap_credit_v1_wire_size(memo_payload)
+    if wire_bytes > SOLANA_V1_TRANSACTION_SIZE_LIMIT:
+        raise ValueError(
+            f"GPRU_SETTLEMENT_TRANSACTION_TOO_LARGE: canonical Solana v1 transaction is {wire_bytes} bytes; "
+            f"maximum is {SOLANA_V1_TRANSACTION_SIZE_LIMIT}"
+        )
+
+
+async def _read_gpru_proof_accounts() -> tuple[str, bytes, int]:
+    tip, tip_bump = Pubkey.find_program_address([b"tip:route-merkle-root:v1"], Pubkey.from_string(TINS_PROGRAM_ID))
+    verifier, verifier_bump = Pubkey.find_program_address([b"gpru:hidden-head-verifier:v1"], Pubkey.from_string(GPRU_PROGRAM_ID))
+    response = await solana_rpc("getMultipleAccounts", [[str(tip), str(verifier)], {"encoding": "base64", "commitment": "confirmed"}])
+    values = (response.get("result") or {}).get("value")
+    if not isinstance(values, list) or len(values) != 2:
+        raise ValueError("GPRU proof accounts are missing")
+    decoded = []
+    for value, owner in zip(values, (TINS_PROGRAM_ID, GPRU_PROGRAM_ID)):
+        if not isinstance(value, dict) or value.get("owner") != owner:
+            raise ValueError("GPRU proof account is missing or has the wrong owner")
+        try:
+            decoded.append(base64.b64decode(value["data"][0], validate=True))
+        except (ValueError, TypeError, KeyError, IndexError, binascii.Error) as exc:
+            raise ValueError("GPRU proof account encoding is invalid") from exc
+    data = decoded[0]
+    if (len(data) < 42 or data[0] != 1 or data[1] != tip_bump or int.from_bytes(data[34:42], "little") == 0
+            or not 0 < int.from_bytes(data[2:34], "big") < BN254_SCALAR_MODULUS):
+        raise ValueError("TIP route root is unavailable or has an unsupported layout")
+    return data[2:34].hex(), decoded[1], verifier_bump
+
+
+async def _settlement_funding_context(funding: dict[str, Any]) -> tuple[CreateIntentRequest, dict[str, Any], dict[str, Any]]:
+    if funding.get("kind") != "AUTHORIZED_FUNDING" or funding.get("status") != "CONFIRMED":
+        raise ValueError("Settlement funding is not confirmed")
+    request = CreateIntentRequest(**(funding.get("payload") or {}))
+    fields = _parse_canonical_message(request.senderAuthorizationMessage, "Payment Intent")
+    _verify_ed25519_signature(public_key=request.senderWallet, message=request.senderAuthorizationMessage.encode("utf-8"), signature_base64=request.senderAuthorizationSignature)
+    if fields.get("Recipient TIN") != request.recipientTin or fields.get("Token Mint") != request.tokenMintAddress or fields.get("Nonce") != request.senderAuthorizationNonce:
+        raise ValueError("Settlement funding differs from its wallet-signed recipient, token, or nonce")
+    asset = await resolve_tcap_registered_asset(request.tokenMintAddress)
+    if fields.get("Token Decimals") != str(asset["decimals"]):
+        raise ValueError("Settlement token decimals differ from the signed payment")
+    amount = ui_amount_to_base_units(fields.get("Amount"), asset["decimals"])
+    if amount != ui_amount_to_base_units(request.amount, asset["decimals"]):
+        raise ValueError("Settlement amount differs from the wallet-signed payment")
+    instructions = _parse_signed_tcap_deposit_instructions(request.senderSignedFundingTransaction)
+    if len(instructions) != 1 or len(instructions[0][1]) != 8:
+        raise ValueError("Settlement requires the exact wallet-signed TCAP deposit")
+    names = ("depositor", "config", "assetEntry", "reserveState", "source", "vault", "mint", "tokenProgram")
+    accounts = dict(zip(names, instructions[0][1]))
+    if accounts["assetEntry"] != asset["assetEntry"] or accounts["tokenProgram"] != asset["tokenProgram"]:
+        raise ValueError("Settlement funding asset differs from the current TCAP registration")
+    context = {"depositAccounts": accounts, "depositAmountBaseUnits": str(amount)}
+    receipt = await _verify_confirmed_tcap_deposit(funding_work=funding, transition=context, wallet=request.senderWallet, token_mint=request.tokenMintAddress)
+    # Stable across retries, root changes, and Node instances. The nullifier
+    # is consumed inside TCAP's authenticated map, not in a Node-local counter.
+    nullifier = hex_field(int.from_bytes(hashlib.sha256(b"TSN_GPRU_CONFIRMED_DEPOSIT_NULLIFIER_V1\0" + bytes(Pubkey.from_string(TCAP_PROGRAM_ID)) + decode_base58(receipt["signature"])).digest(), "big") % BN254_SCALAR_MODULUS)
+    return request, asset, {**context, "receipt": receipt, "nullifier": nullifier}
+
+
+async def _construct_verified_tcap_transition(funding: dict[str, Any]) -> dict[str, Any]:
+    directory = clean_env(os.environ.get("GPRU_HIDDEN_HEAD_WITNESS_DIR"))
+    if not directory:
+        raise RuntimeError("GPRU_HIDDEN_HEAD_WITNESS_UNAVAILABLE: configure the root-indexed snapshot directory")
+    request, asset, funding_context = await _settlement_funding_context(funding)
+    route = await read_onchain_tin_tip_route(request.recipientTin)
+    if not route:
+        raise ValueError("Settlement recipient has no active TIP route")
+    _assert_recipient_hash_matches_owner(request.recipientHash, route["ownerPubkeyHash"])
+    root_address, old_root, root_sequence = await _read_tcap_shared_replay_root()
+    tip_root, verifier_data, verifier_bump = await _read_gpru_proof_accounts()
+    slot_response = await solana_rpc("getSlot", [{"commitment": "confirmed"}])
+    slot = int(slot_response.get("result") or 0)
+    if slot <= 0 or root_sequence == 0xFFFFFFFFFFFFFFFF:
+        raise ValueError("TCAP root sequence or current slot is unavailable")
+    ttl = int(os.environ.get("TSN_GPRU_CREDIT_TTL_SLOTS", "2000"))
+    if not 1 <= ttl <= 10_000:
+        raise ValueError("TCAP credit validity window is out of range")
+    amount = int(funding_context["depositAmountBaseUnits"])
+    transition = {
+        "commitmentRoot": root_address, "previousTcapRoot": old_root.hex(), "tcapRootSequence": str(root_sequence + 1),
+        "tokenId": asset["tokenId"], "amountBaseUnits": str(amount), "nullifier": funding_context["nullifier"],
+        "validAfterSlot": str(slot), "expiresAtSlot": str(slot + ttl),
+        "tcapConfig": funding_context["depositAccounts"]["config"], "assetEntry": asset["assetEntry"],
+        "reserveState": funding_context["depositAccounts"]["reserveState"],
+    }
+    digest = hashlib.sha256(b"".join((
+        b"TSN_GPRU_TCAP_CREDIT_HIDDEN_HEAD_V1\0", bytes(Pubkey.from_string(root_address)), old_root,
+        (root_sequence + 1).to_bytes(8, "little"), slot.to_bytes(8, "little"), (slot + ttl).to_bytes(8, "little"),
+        amount.to_bytes(8, "little"), asset["tokenId"].to_bytes(4, "little"), bytes.fromhex(transition["nullifier"]),
+    ))).digest()
+    transition["authorizationDigest"] = digest.hex()
+    authorization = hex_field(int.from_bytes(digest, "big") % BN254_SCALAR_MODULUS)
+    store = HiddenHeadWitnessStore(Path(directory))
+    prepared = await asyncio.to_thread(store.prepare_credit, old_root=old_root.hex(), tip_root=tip_root, route=route,
+                                       token_id=asset["tokenId"], amount=amount, authorization=authorization, nullifier=transition["nullifier"])
+    witness = prepared["witness"]
+    ephemeral, shared = await asyncio.to_thread(derive_node_record_shared_point, bytes.fromhex(route["gpruElgamalPublicKey"]))
+    dna = secrets.token_bytes(32)
+    binding = {name: hex_field(witness[name]) for name in ("successorPortfolioRoot", "successorBalanceX", "successorBalanceY", "actionCommitment", "authorizationCommitment", "nullifier")}
+    memo = encrypt_transaction_record_v1(
+        record={"version": 1, "recordType": "tsn-gpru-balance-action-v1", "sequence": str(prepared["sequence"]),
+                "previousMemoCommitment": prepared["previousMemoCommitment"], "actionCommitment": binding["actionCommitment"],
+                "authorizationCommitment": authorization, "nullifier": transition["nullifier"], "actionKind": 1,
+                "tokenId": asset["tokenId"], "amountBaseUnits": str(amount)},
+        shared_point=shared, record_ephemeral_public_key=ephemeral, dna=dna,
+        encrypted_blinding_delta=hex_field(witness["encryptedBlindingDelta"]),
+        delta_ephemeral_public_x=hex_field(witness["deltaEphemeralPublicX"]), delta_ephemeral_public_y=hex_field(witness["deltaEphemeralPublicY"]), memo_binding=binding,
     )
+    _assert_tcap_credit_transport_capacity(memo["memoPayload"])
+    store.finish_credit(prepared, memo["memoCommitmentField"])
+    proof = await prove_hidden_head_credit(witness, verifier_data, verifier_bump)
+    transition.update(memo, proof=proof, dna=dna.hex(), actionCommitment=binding["actionCommitment"])
+    _validate_tcap_credit_digest(transition)
+    await _assert_tcap_gpru_credit_program_preconditions(transition)
+    current_tip, current_verifier, current_bump = await _read_gpru_proof_accounts()
+    if current_tip != tip_root or current_verifier != verifier_data or current_bump != verifier_bump:
+        raise ValueError("TIP route root or GPRU verifier changed during proving")
+    await asyncio.to_thread(store.save_candidate, prepared)
+    # No private witness, sequence, paths, prior commitments or delta is part
+    # of the Receiver decision. The full owner record is encrypted in Memo.
+    return transition
+
+
+def _assert_stored_settlement_attestation(work: dict[str, Any], transition: dict[str, Any]) -> None:
+    """Prevent replacing an already verified proof with another valid route's proof."""
+    attestation = (work.get("verification") or {}).get("nodeAttestation")
+    if not isinstance(attestation, dict):
+        raise HTTPException(403, "Settlement Node attestation is missing")
+    public_key = bytes(_node_verification_signing_key().verify_key)
+    execution = {"tcapCreditTransition": {name: value for name, value in transition.items() if name in TCAP_CRANKER_TRANSITION_FIELDS}}
+    commitment = hashlib.sha256(_stable_verification_json(execution).encode("utf-8")).hexdigest()
+    if (attestation.get("version") != 1 or attestation.get("algorithm") != "Ed25519"
+            or attestation.get("workId") != work.get("id") or attestation.get("workKind") != "SETTLEMENT"
+            or attestation.get("decision") != "VERIFIED" or attestation.get("inputPayloadCommitment") != work.get("payloadCommitment")
+            or attestation.get("verificationType") != "TSN_TCAP_GPRU_HIDDEN_HEAD_V1"
+            or attestation.get("keyId") != hashlib.sha256(public_key).hexdigest()[:24]
+            or attestation.get("executionPayloadCommitment") != commitment):
+        raise HTTPException(403, "Settlement proof does not match the Node-attested execution payload")
+    try:
+        signature = base64.b64decode(attestation.get("signatureBase64") or "", validate=True)
+        VerifyKey(public_key).verify(_node_verification_message(attestation), signature)
+    except (ValueError, TypeError, binascii.Error, BadSignatureError) as exc:
+        raise HTTPException(403, "Settlement Node attestation signature is invalid") from exc
+
+
+def _assert_current_settlement_lease(work: dict[str, Any], operator: str) -> None:
+    lease = work.get("crankerLease") or {}
+    if work.get("kind") != "SETTLEMENT" or work.get("status") != "CRANKER_LEASED" or lease.get("owner") != operator:
+        raise HTTPException(403, "Settlement is not leased to this Cranker")
+    try:
+        expires = datetime.fromisoformat(str(lease.get("expiresAt") or "").replace("Z", "+00:00"))
+        if expires <= datetime.now(timezone.utc):
+            raise ValueError("expired")
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(403, "Settlement Cranker lease is expired or invalid") from exc
 
 
 async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
@@ -2762,16 +2958,7 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
         funding_payload = funding.get("payload") or {}
         if funding_payload.get("senderFundingMode") != "tcap_deposit_v2":
             raise ValueError("Settlement is not a TCAP reserve deposit")
-        request = CreateIntentRequest(**funding_payload)
-        message = str(request.senderAuthorizationMessage or "")
-        action = "Cross-Chain Payment Intent" if message.startswith("TSN Cross-Chain Payment Intent\n") else "Payment Intent"
-        signed_fields = _parse_canonical_message(message, action)
-        tin = str(signed_fields.get("Recipient TIN") or "")
-        if not re.fullmatch(r"\d{10}", tin):
-            raise ValueError("Funding authorization does not contain a valid recipient TIN")
-        # This call deliberately fails closed until a configured prover can
-        # supply the authenticated-map witness and Memo-bound Groth16 proof.
-        transition = await _construct_node_owned_tcap_transition(request, {"recipientTin": tin})
+        transition = await _construct_verified_tcap_transition(funding)
         return {
             "verifiedPayload": {"tcapCreditTransition": transition},
             "verificationType": "TSN_TCAP_GPRU_HIDDEN_HEAD_V1",
@@ -2785,6 +2972,96 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
             "verificationType": "TSN_TIN_OPERATION",
         }
     raise ValueError(f"Unsupported Receiver work kind: {kind}")
+
+
+RECEIVER_NODE_LEASE_RENEW_INTERVAL = 15.0
+RECEIVER_NODE_WORK_TIMEOUT = 600.0
+
+
+async def _renew_receiver_node_lease(client: httpx.AsyncClient, headers: dict[str, str], work: dict[str, Any]) -> None:
+    lease = work.get("nodeLease") or {}
+    response = await asyncio.wait_for(receiver_request(
+        client, "PUT", "/api/internal/node/work", headers=headers, json={
+            "id": work["id"], "owner": TSN_NODE_ID, "expectedVersion": work["stateVersion"],
+            "leaseId": lease.get("leaseId") or work["id"],
+            "leaseVersion": lease.get("version") or work["stateVersion"],
+        },
+    ), timeout=10)
+    if response.status_code != 200:
+        raise RuntimeError(f"TSN_RECEIVER_NODE_LEASE_LOST: renewal returned HTTP {response.status_code}")
+    renewed = response.json()
+    renewed_lease = renewed.get("nodeLease") or {}
+    if (renewed.get("id") != work["id"] or renewed.get("stateVersion") != work["stateVersion"]
+            or renewed_lease.get("owner") != TSN_NODE_ID
+            or (renewed_lease.get("leaseId") or work["id"]) != (lease.get("leaseId") or work["id"])
+            or (renewed_lease.get("version") or renewed.get("stateVersion")) != (lease.get("version") or work["stateVersion"])):
+        raise RuntimeError("TSN_RECEIVER_NODE_LEASE_LOST: renewal changed the claim context")
+
+
+async def _verify_and_report_receiver_work(client: httpx.AsyncClient, headers: dict[str, str], work: dict[str, Any]) -> None:
+    lease_context = {
+        "source": "tsn-receiver", "workId": str(work.get("id") or ""),
+        "kind": str(work.get("kind") or ""), "stateVersion": work.get("stateVersion"),
+        "payloadCommitment": str(work.get("payloadCommitment") or ""),
+    }
+    try:
+        evidence = await _verify_receiver_work(work)
+        evidence = {**evidence, "receiverLease": lease_context}
+        status = "VERIFIED"
+    except Exception as exc:
+        logger.warning("Receiver work rejected: id=%s reason=%s", work.get("id"), str(exc))
+        evidence = {"reason": str(exc)[:500], "receiverLease": lease_context}
+        status = "REJECTED"
+    evidence["nodeAttestation"] = _sign_node_verification(
+        work=work, status=status, evidence=evidence,
+        verification_type=str(evidence.get("verificationType") or ""),
+    )
+    response = await receiver_request(client, "PATCH", "/api/internal/node/work", headers=headers, json={
+        "id": work["id"], "owner": TSN_NODE_ID, "expectedVersion": work["stateVersion"],
+        "status": status, "evidence": evidence,
+    })
+    if response.is_error:
+        # Only log Receiver's bounded error code, never its raw response body.
+        try:
+            code = response.json().get("error")
+        except (ValueError, AttributeError):
+            code = None
+        if isinstance(code, str) and re.fullmatch(r"[A-Z][A-Z0-9_]{0,79}", code):
+            logger.error("Receiver decision refused: work_id=%s error=%s", work["id"], code)
+    response.raise_for_status()
+    if TSN_LOCAL_FLOW_LOGS:
+        logger.info("TSN Receiver work transitioned: work_id=%s status=%s verified_payload_commitment=%s",
+                    work["id"], status, lease_context["payloadCommitment"])
+
+
+async def _process_receiver_work_with_lease(client: httpx.AsyncClient, headers: dict[str, str], work: dict[str, Any]) -> None:
+    # Confirm the claim before starting costly work. Renewal runs only while
+    # this work is being verified/reported, never while the queue is idle.
+    await _renew_receiver_node_lease(client, headers, work)
+
+    async def keep_lease():
+        while True:
+            await asyncio.sleep(RECEIVER_NODE_LEASE_RENEW_INTERVAL)
+            await _renew_receiver_node_lease(client, headers, work)
+
+    operation = asyncio.create_task(_verify_and_report_receiver_work(client, headers, work))
+    renewal = asyncio.create_task(keep_lease())
+    try:
+        done, _ = await asyncio.wait({operation, renewal}, timeout=RECEIVER_NODE_WORK_TIMEOUT,
+                                     return_when=asyncio.FIRST_COMPLETED)
+        if operation in done:
+            operation.result()
+        elif renewal in done:
+            renewal.result()
+        else:
+            raise TimeoutError("TSN_RECEIVER_NODE_WORK_TIMEOUT: verification exceeded its processing window")
+    finally:
+        # Lease loss cancels proving/reporting; normal completion cancels renewal.
+        # The prover's cancellation handler terminates its child process.
+        for task in (operation, renewal):
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(operation, renewal, return_exceptions=True)
 
 
 async def receiver_verification_worker() -> None:
@@ -2826,33 +3103,7 @@ async def receiver_verification_worker() -> None:
                             lease_context["workId"], lease_context["kind"],
                             lease_context["stateVersion"], lease_context["payloadCommitment"],
                         )
-                    try:
-                        evidence = await _verify_receiver_work(work)
-                        evidence = {**evidence, "receiverLease": lease_context}
-                        status = "VERIFIED"
-                    except Exception as exc:
-                        logger.warning("Receiver work rejected: id=%s reason=%s", work.get("id"), str(exc))
-                        evidence = {"reason": str(exc)[:500], "receiverLease": lease_context}
-                        status = "REJECTED"
-                    evidence["nodeAttestation"] = _sign_node_verification(
-                        work=work,
-                        status=status,
-                        evidence=evidence,
-                        verification_type=str(evidence.get("verificationType") or ""),
-                    )
-                    result = await receiver_request(client, "PATCH", "/api/internal/node/work", headers=headers, json={
-                        "id": work["id"],
-                        "owner": TSN_NODE_ID,
-                        "expectedVersion": work["stateVersion"],
-                        "status": status,
-                        "evidence": evidence,
-                    })
-                    result.raise_for_status()
-                    if TSN_LOCAL_FLOW_LOGS:
-                        logger.info(
-                            "TSN Receiver work transitioned: work_id=%s status=%s verified_payload_commitment=%s",
-                            lease_context["workId"], status, lease_context["payloadCommitment"],
-                        )
+                    await _process_receiver_work_with_lease(client, headers, work)
                     retry_delay = 2.0
                     consecutive_failures = 0
                 except asyncio.CancelledError:
@@ -2981,16 +3232,55 @@ async def wake_receiver_verification() -> dict[str, Any]:
 
 @app.post("/internal/settlement-authorizations/settlement", dependencies=[Depends(require_worker_api_key)])
 async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any]:
-    """Do not issue a settlement permit until GPRU can prove the hidden current head."""
-    del body
-    raise HTTPException(
-        status_code=503,
-        detail=(
-            "GPRU_GROTH16_PROVER_NOT_CONFIGURED: settlement authorization is disabled "
-            "until the circuit, proving key, current hidden-head witness provider, and "
-            "Memo-bound proof generation are configured"
-        ),
-    )
+    """Reverify the exact stored transition for the current Cranker lease."""
+    work_id, operator = str(body.get("workId") or ""), str(body.get("crankerPubkey") or "")
+    if not work_id or not operator:
+        raise HTTPException(422, "workId and crankerPubkey are required")
+    work = await _receiver_work_by_id(work_id)
+    _assert_current_settlement_lease(work, operator)
+    if (work.get("verification") or {}).get("verificationType") != "TSN_TCAP_GPRU_HIDDEN_HEAD_V1":
+        raise HTTPException(403, "Settlement has no Node-verified hidden-head transition")
+    verified = _receiver_verified_payload(work) or {}
+    transition = verified.get("tcapCreditTransition")
+    if not isinstance(transition, dict):
+        raise HTTPException(422, "Settlement has no stored TCAP transition")
+    _assert_stored_settlement_attestation(work, transition)
+    _assert_tcap_credit_transport_capacity(str(transition.get("memoPayload") or ""))
+    funding_id = str((work.get("payload") or {}).get("intentId") or "")
+    funding = await _receiver_work_by_id(funding_id)
+    _, asset, context = await _settlement_funding_context(funding)
+    if (transition.get("nullifier") != context["nullifier"] or transition.get("amountBaseUnits") != context["depositAmountBaseUnits"]
+            or transition.get("tokenId") != asset["tokenId"] or transition.get("assetEntry") != asset["assetEntry"]
+            or transition.get("reserveState") != context["depositAccounts"]["reserveState"] or transition.get("tcapConfig") != context["depositAccounts"]["config"]):
+        raise HTTPException(403, "Settlement transition differs from its confirmed funding")
+    _validate_tcap_credit_digest(transition)
+    await _assert_tcap_gpru_credit_program_preconditions(transition)
+    tip_root, verifier_data, verifier_bump = await _read_gpru_proof_accounts()
+    proof = transition["proof"]
+    if proof["publicInputs"][5] != tip_root:
+        raise HTTPException(409, "TIP route root changed since settlement verification")
+    witness = {name: int(value, 16) for name, value in zip(PUBLIC_SIGNALS, proof["publicInputs"])}
+    witness.update(assetId=asset["tokenId"], amount=int(context["depositAmountBaseUnits"]), authorizationCommitment=int(proof["authorizationCommitment"], 16))
+    checked = await prove_hidden_head_credit(witness, verifier_data, verifier_bump, existing_proof=proof)
+    if checked != proof:
+        raise HTTPException(403, "Stored TCAP proof differs from the locally verified proof")
+    await _assert_tcap_gpru_credit_program_preconditions(transition)
+    current = await _receiver_work_by_id(work_id)
+    _assert_current_settlement_lease(current, operator)
+    if (current.get("stateVersion") != work.get("stateVersion")
+            or current.get("crankerLease") != work.get("crankerLease")):
+        raise HTTPException(409, "Settlement lease changed during proof verification")
+    lease = current["crankerLease"]
+    expires_at_ts = int(datetime.fromisoformat(lease["expiresAt"].replace("Z", "+00:00")).timestamp())
+    if expires_at_ts <= int(datetime.now(timezone.utc).timestamp()):
+        raise HTTPException(409, "Settlement lease has insufficient time for authorization")
+    return {
+        "kind": "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V2",
+        "transition": transition, "workStateVersion": current["stateVersion"],
+        "leaseId": lease.get("leaseId") or current["id"],
+        "leaseVersion": lease.get("version") or current["stateVersion"],
+        "leaseExpiresAt": lease["expiresAt"], "expiresAtTs": expires_at_ts,
+    }
 
 
 @app.post("/internal/settlement-authorizations/signature", dependencies=[Depends(require_worker_api_key)])
@@ -3024,6 +3314,10 @@ async def sign_settlement_transaction(body: dict[str, Any]) -> dict[str, Any]:
     ])
     if not bool(((blockhash_status.get("result") or {}).get("value"))):
         raise HTTPException(409, "Cranker transaction blockhash is no longer valid; rebuild and request a fresh Mother signature")
+    current_work = await _receiver_work_by_id(settlement_id)
+    _assert_current_settlement_lease(current_work, operator)
+    if current_work.get("stateVersion") != authorization.get("workStateVersion"):
+        raise HTTPException(409, "Settlement lease changed before signing")
     signature = signing_key.sign(message).signature
     return {"authority": authority, "signatureBase64": base64.b64encode(signature).decode("ascii")}
 

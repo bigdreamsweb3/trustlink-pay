@@ -77,6 +77,7 @@ const metadata = {
   circomlibVersion,
   powersOfTauSource: suppliedPotFinal ? path.basename(suppliedPotFinal) : "locally generated development ceremony",
   r1csSha256: await sha256(r1cs),
+  circuitSourceSha256: await sha256(path.join(root, "main.circom")),
   witnessWasmSha256: await sha256(path.join(build, "main_js", "main.wasm")),
   powersOfTauSha256: await sha256(potFinal),
   provingKeySha256: await sha256(zkeyFinal),

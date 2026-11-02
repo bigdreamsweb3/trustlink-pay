@@ -1,0 +1,24 @@
+---
+title: "device/key-fingerprints API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/device/key-fingerprints.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## fingerprintDeviceSigningPublicKey
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/device`. [Implementation, line 3](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/device/key-fingerprints.ts#L3).
+
+```ts
+fingerprintDeviceSigningPublicKey(publicKey: JsonWebKey): Promise<string>
+```
+
+## fingerprintEncryptionPublicKey
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/device`. [Implementation, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/device/key-fingerprints.ts#L12).
+
+```ts
+fingerprintEncryptionPublicKey(publicKey: JsonWebKey, purpose: "device" | "recovery"): Promise<string>
+```

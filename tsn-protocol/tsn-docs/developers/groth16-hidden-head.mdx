@@ -3,12 +3,14 @@ title: "How GPRU Proofs Guard User State"
 description: "A plain-language overview of the zero-knowledge proof intended to protect private state before TCAP settlement."
 ---
 
+The one-time verifier enrollment uses a disabled header, bounded IC-point uploads and commitment-checked enabling so each setup transaction fits Solana's packet limit. The proof statement and verifier account layout remain unchanged. Operators must use the corrected deployed GPRU binary; initialization/root activation and Node witness/artifact configuration are separate readiness steps. The [internal setup runbook](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/GROTH16-PROVER-AND-KEY-ARTIFACTS.md#one-time-verifier-initialization-and-root-activation) records commands and evidence.
+
 GPRU is designed to guard the integrity and privacy of a user's private state as it is presented to TCAP for a balance-changing action. A Groth16 proof lets a verifier check a statement about hidden data without receiving the private data itself.
 
 In this design, the proof is intended to establish that the user's hidden state is current and that the requested change follows from it. TCAP then applies the asset, authorization, and liquidity checks and governs the actual settlement. The proof does not give GPRU custody of the funds or independently authorize a payment.
 
 The proof is one part of a larger protocol contract: the private statement, transaction record, on-chain verifier, and TCAP state transition must all agree. A proof that checks only a different statement would not validate the user's encrypted balance record.
 
-The hidden-head proof flow is not currently established as an end-to-end settlement capability. The circuit, setup ceremony, prover, verifier configuration, and transaction flow require coordinated verification before an application can rely on it. Public transaction fields and repeated state references can still reveal correlation.
+The current native-credit ABI does not encode a plaintext recipient TIN or private predecessor pointer. It uses shared TIP/TCAP roots, and the owner retains private record lineage. Public action fields, encrypted Memo bytes, accounts, signatures, ordering and funding wallets remain observable. That encoding boundary does not establish that metadata or authorized service/application knowledge cannot correlate payments. The complete hidden-head flow and confidential debit/exit remain separate unverified runtime capabilities; see the [security boundary](/security/threat-model).
 
 The circuit and proving-key lifecycle are engineering materials kept in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs), rather than setup instructions for an application integrator.

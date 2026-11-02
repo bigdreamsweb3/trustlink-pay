@@ -1,0 +1,75 @@
+---
+title: "tin-device-key-envelope API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-key-envelope.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## TIN_DEVICE_KEY_ENVELOPE_ALGORITHM
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-device-key-envelope`. [Implementation, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-key-envelope.ts#L11).
+
+```ts
+"x25519-hkdf-sha256-aes-256-gcm"
+```
+
+## TIN_DEVICE_KEY_ENVELOPE_VERSION
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-device-key-envelope`. [Implementation, line 10](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-key-envelope.ts#L10).
+
+```ts
+"tsn-tin-device-key-envelope"
+```
+
+## TinDeviceKeyEnvelope
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-device-key-envelope`. [Implementation, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-key-envelope.ts#L14).
+
+```ts
+export type TinDeviceKeyEnvelope = {
+  version: typeof TIN_DEVICE_KEY_ENVELOPE_VERSION;
+  algorithm: typeof TIN_DEVICE_KEY_ENVELOPE_ALGORITHM;
+  recipientKeyFingerprint: string;
+  ephemeralPublicKey: JsonWebKey;
+  nonceBase64Url: string;
+  wrappedKeyBase64Url: string;
+  aadCommitment: string;
+  /** Stable device binding for long-lived TIN envelopes; omitted by legacy request envelopes. */
+  aadMode?: "request" | "device-envelope";
+};
+```
+
+## unwrapTinThresholdKeyOnDevice
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-device-key-envelope`. [Implementation, line 158](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-key-envelope.ts#L158).
+
+```ts
+unwrapTinThresholdKeyOnDevice(params: { envelope: TinDeviceKeyEnvelope; proof: TinDeviceAccessProof; deviceEncryptionPrivateKey: CryptoKey; aadMode?: "request" | "device-envelope"; }): Promise<Uint8Array<ArrayBuffer>>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN device key envelope does not match the authorized device")
+new Error("TIN device key envelope context has been modified")
+new Error("TIN threshold key response has an invalid length")
+```
+
+## wrapTinThresholdKeyForDevice
+
+Re-encrypts threshold-released key material to the authorized device. The
+protected TIN master seed is never an input to this function.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-device-key-envelope`. [Implementation, line 108](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-key-envelope.ts#L108).
+
+```ts
+wrapTinThresholdKeyForDevice(params: { keyMaterial: Uint8Array; proof: TinDeviceAccessProof; aadMode?: "request" | "device-envelope"; }): Promise<TinDeviceKeyEnvelope>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN threshold key material must be exactly 32 bytes")
+```

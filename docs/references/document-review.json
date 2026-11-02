@@ -1,0 +1,2181 @@
+{
+  "docs/laboratory/experiments/EXP-20261102-verifier-initialization.md": {
+    "status": "CURRENT",
+    "reason": "Source fix, SBF build, six bounded offline tests and dated read-only account/planning observations; no subsequent deployment/enrollment/activation/payment is claimed.",
+    "evidence": [
+      "tsn-protocol/programs/gpru/src/lib.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "scripts/hidden-head-setup.mjs",
+      "scripts/tests/hidden-head-setup.test.mjs"
+    ]
+  },
+  "AGENTS.md": {
+    "status": "CURRENT",
+    "reason": "Active repository instruction/policy, not evidence of runtime behavior.",
+    "evidence": [
+      "AGENTS.md"
+    ]
+  },
+  "README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Current native-credit prose/diagram source-reconciled; preserved historical events and external resources are not re-executed or independently refreshed. Current-flow claims have bounded source scope.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/cryptography.md",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "terminal-dev.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  ".codex/CODEX_CREDIBILITY_PASS_ORDER.md": {
+    "status": "HISTORICAL",
+    "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
+    "evidence": [
+      "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
+      "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md"
+    ]
+  },
+  ".codex/CODEX_INVENTION_STRUCTURE_BRIEF.md": {
+    "status": "CURRENT",
+    "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/cryptography.md",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  ".codex/GPRU_MEMO_DELTA_PROOF_FINDING.md": {
+    "status": "HISTORICAL",
+    "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
+    "evidence": [
+      "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
+      "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md"
+    ]
+  },
+  ".codex/architecture-change-policy.md": {
+    "status": "CURRENT",
+    "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/cryptography.md",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  ".codex/architecture-terminology.md": {
+    "status": "CURRENT",
+    "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/cryptography.md",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  ".codex/documentation-sync-policy.md": {
+    "status": "CURRENT",
+    "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/cryptography.md",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  ".codex/gpru-unlinkable-latest-head.md": {
+    "status": "HISTORICAL",
+    "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
+    "evidence": [
+      "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
+      "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md"
+    ]
+  },
+  ".codex/protocol-cleanup-index.md": {
+    "status": "CURRENT",
+    "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/cryptography.md",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  ".codex/pull-docs.md": {
+    "status": "HISTORICAL",
+    "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
+    "evidence": [
+      "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
+      "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md"
+    ]
+  },
+  ".codex/tsn-verification-prompt.md": {
+    "status": "HISTORICAL",
+    "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
+    "evidence": [
+      "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
+      "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md"
+    ]
+  },
+  "docs/CRANKER-OPERATOR-GUIDE.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/CROSS-NETWORK-PAYMENTS-BUILD-PLAN.md": {
+    "status": "PROPOSED",
+    "reason": "Design/build instructions or external workspace proposal; not adopted native-credit runtime evidence.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md"
+    ]
+  },
+  "docs/CROSS-NETWORK-PAYMENTS-RESEARCH.md": {
+    "status": "EXPERIMENTAL",
+    "reason": "Research/governance direction with explicit implementation limits; not evidence of a live generalized route.",
+    "evidence": [
+      "docs/laboratory/components.md"
+    ]
+  },
+  "docs/CURRENT-ARCHITECTURE.md": {
+    "status": "CURRENT",
+    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+    ]
+  },
+  "docs/DEVNET-BUILD-DEPLOY.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/GETTING-STARTED-LIVE.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/GPRU-PORTFOLIO-PROOF-CONTRACT.md": {
+    "status": "CURRENT",
+    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+    ]
+  },
+  "docs/GROTH16-ON-TSN.md": {
+    "status": "CURRENT",
+    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+    ]
+  },
+  "docs/GROTH16-PROVER-AND-KEY-ARTIFACTS.md": {
+    "status": "CURRENT",
+    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+    ]
+  },
+  "docs/META-DATA-USE-COMPLIANCE.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/NETWORK-SETUP.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/ONE-TIME-TIP-IMPLEMENTATION.md": {
+    "status": "HISTORICAL",
+    "reason": "Explicit historical/superseded label in the document. Retained source instructions may still expose distinct capabilities; this is not a current-credit runbook.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md"
+    ]
+  },
+  "docs/PROJECT-JOURNEY (1).md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/README.md": {
+    "status": "CURRENT",
+    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+    ]
+  },
+  "docs/RPC-GATEWAY.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/SECURITY.md": {
+    "status": "CURRENT",
+    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+    ]
+  },
+  "docs/SERVICE-HOSTING.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/TCAP-FUND-PROTECTION.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/TCAP-V2-DEBIT-CREDIT-DESIGN.md": {
+    "status": "CURRENT",
+    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+    ]
+  },
+  "docs/TCAP-V2-DEVNET.md": {
+    "status": "HISTORICAL",
+    "reason": "Explicit historical/superseded label in the document. Retained source instructions may still expose distinct capabilities; this is not a current-credit runbook.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md"
+    ]
+  },
+  "docs/TCAP-VALUES-EXPLAINED.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/TRUSTLINK-LABS-ORG-PROFILE.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/TSN-DEVNET-EVIDENCE-CAPTURE.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/TSN-FINAL-ARCHITECTURE.md": {
+    "status": "HISTORICAL",
+    "reason": "Explicit historical/superseded label in the document. Retained source instructions may still expose distinct capabilities; this is not a current-credit runbook.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md"
+    ]
+  },
+  "docs/TSN-NODE-AWS-DEPLOYMENT.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/TSN-NODE-KEYS.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/TSN-TIN-CRANKER-DATAFLOW.md": {
+    "status": "RETIRED",
+    "reason": "Document explicitly retires the receiving/spending concept or former TIN APIs. Preserved as history and linked to current replacements.",
+    "evidence": [
+      "docs/ZK-PRU-RETIRED.md",
+      "docs/protocol-flows/tin-creation/README.md"
+    ]
+  },
+  "docs/TSN-TIN-CREATION-INTENT-HANDOFF.md": {
+    "status": "RETIRED",
+    "reason": "Document explicitly retires the receiving/spending concept or former TIN APIs. Preserved as history and linked to current replacements.",
+    "evidence": [
+      "docs/ZK-PRU-RETIRED.md",
+      "docs/protocol-flows/tin-creation/README.md"
+    ]
+  },
+  "docs/TSN-WHITEPAPER.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/WINDOWS-TSN-COMMANDS.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/ZK-PRU-RETIRED.md": {
+    "status": "RETIRED",
+    "reason": "Document explicitly retires the receiving/spending concept or former TIN APIs. Preserved as history and linked to current replacements.",
+    "evidence": [
+      "docs/ZK-PRU-RETIRED.md",
+      "docs/protocol-flows/tin-creation/README.md"
+    ]
+  },
+  "docs/dip-conformance.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/gpru-tcap-route.md": {
+    "status": "CURRENT",
+    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+    ]
+  },
+  "docs/identity-and-tin.md": {
+    "status": "CURRENT",
+    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+    ]
+  },
+  "docs/lit-protocol-in-tsn.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/mentions.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/network-and-runtime.md": {
+    "status": "CURRENT",
+    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+    ]
+  },
+  "docs/operations-and-testing.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/protocol-architecture.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/protocol-tests-tcap-credit-smoke.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/security-model.md": {
+    "status": "CURRENT",
+    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+    ]
+  },
+  "docs/service-coordination-and-quota.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/tcap-confidential-spend-proof-gate.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/tcap-devnet-credit-smoke.md": {
+    "status": "HISTORICAL",
+    "reason": "Explicit historical/superseded label in the document. Retained source instructions may still expose distinct capabilities; this is not a current-credit runbook.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md"
+    ]
+  },
+  "docs/tcap-tin-tip-v1.md": {
+    "status": "HISTORICAL",
+    "reason": "Explicit historical/superseded label in the document. Retained source instructions may still expose distinct capabilities; this is not a current-credit runbook.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md"
+    ]
+  },
+  "docs/tsn-mother-escrow-dna.md": {
+    "status": "HISTORICAL",
+    "reason": "Explicit historical/superseded label in the document. Retained source instructions may still expose distinct capabilities; this is not a current-credit runbook.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md"
+    ]
+  },
+  "docs/tsn-private-view-lit.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/tsn-receiver-node-architecture.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/tsn-receiver-verification-settlement.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/tsn-transaction-explorer.md": {
+    "status": "HISTORICAL",
+    "reason": "Explicit historical/superseded label in the document. Retained source instructions may still expose distinct capabilities; this is not a current-credit runbook.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md"
+    ]
+  },
+  "docs/tsn_docs_dip_deposit_ingress_protocol.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/buidl/dial-buidl.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/buidl/submission-data.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/buidl/submission-notes.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/dip/DIPIngress-design.md": {
+    "status": "PROPOSED",
+    "reason": "Design/build instructions or external workspace proposal; not adopted native-credit runtime evidence.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md"
+    ]
+  },
+  "docs/expo/FROM-ZKPRU-TO-GPRU-TCAP.md": {
+    "status": "HISTORICAL",
+    "reason": "Explicit historical/superseded label in the document. Retained source instructions may still expose distinct capabilities; this is not a current-credit runbook.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md"
+    ]
+  },
+  "docs/expo/TIP-ON-CHAIN-VIEW.md": {
+    "status": "HISTORICAL",
+    "reason": "Explicit historical/superseded label in the document. Retained source instructions may still expose distinct capabilities; this is not a current-credit runbook.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md"
+    ]
+  },
+  "docs/expo/ARC_INTEGRATION/PROTOCOL.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/expo/ARC_INTEGRATION/Starter_ARC_AGENTS.md": {
+    "status": "PROPOSED",
+    "reason": "Design/build instructions or external workspace proposal; not adopted native-credit runtime evidence.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md"
+    ]
+  },
+  "docs/protocol-flows/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/protocol-flows/tin-creation/01-receiver-ingress.md": {
+    "status": "CURRENT",
+    "reason": "Ingress field schema corrected to the current TIP/GPRU key, scan-point and policy fields. Detailed historical operation results are not rerun.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts"
+    ]
+  },
+  "docs/protocol-flows/tin-creation/02-node-verification.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/protocol-flows/tin-creation/03-cranker-lease.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/protocol-flows/tin-creation/04-onchain-finalization.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/protocol-flows/tin-creation/05-evidence.md": {
+    "status": "CURRENT",
+    "reason": "Current daemon branches and source authorization mismatch reconciled; TIN execution has dated independent evidence, while native credit, V1 cluster support and destination payout remain unverified.",
+    "evidence": [
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "docs/laboratory/experiments/EXP-20261102-tin-staged-finalization.md"
+    ]
+  },
+  "docs/protocol-flows/tin-creation/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/team/README.md": {
+    "status": "CURRENT",
+    "reason": "Navigation/category index retained under existing conventions; linked records have their own classification.",
+    "evidence": [
+      "docs/laboratory/README.md"
+    ]
+  },
+  "docs/team/architecture/README.md": {
+    "status": "CURRENT",
+    "reason": "Navigation/category index retained under existing conventions; linked records have their own classification.",
+    "evidence": [
+      "docs/laboratory/README.md"
+    ]
+  },
+  "docs/team/community/README.md": {
+    "status": "CURRENT",
+    "reason": "Navigation/category index retained under existing conventions; linked records have their own classification.",
+    "evidence": [
+      "docs/laboratory/README.md"
+    ]
+  },
+  "docs/team/cross-chain/README.md": {
+    "status": "CURRENT",
+    "reason": "Navigation/category index retained under existing conventions; linked records have their own classification.",
+    "evidence": [
+      "docs/laboratory/README.md"
+    ]
+  },
+  "docs/team/cross-chain/creditcoin-cranker-adapter.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/team/cross-chain/creditcoin-direct-settlement.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/team/cross-chain/creditcoin-navigation.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/team/cross-chain/sdk-cross-chain-facade.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/team/cross-chain/sdk-ui-test.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/team/cross-chain/single-cranker-runtime.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/team/cross-chain/usdset-deployment.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/team/cross-chain/verified-addresses.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/team/operations/README.md": {
+    "status": "CURRENT",
+    "reason": "Navigation/category index retained under existing conventions; linked records have their own classification.",
+    "evidence": [
+      "docs/laboratory/README.md"
+    ]
+  },
+  "docs/team/operations/cranker-tin-operation.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/team/operations/receiver-storage-modes.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/team/protocol/README.md": {
+    "status": "CURRENT",
+    "reason": "Navigation/category index retained under existing conventions; linked records have their own classification.",
+    "evidence": [
+      "docs/laboratory/README.md"
+    ]
+  },
+  "docs/team/security/README.md": {
+    "status": "CURRENT",
+    "reason": "Navigation/category index retained under existing conventions; linked records have their own classification.",
+    "evidence": [
+      "docs/laboratory/README.md"
+    ]
+  },
+  "docs/team/testing/README.md": {
+    "status": "CURRENT",
+    "reason": "Navigation/category index retained under existing conventions; linked records have their own classification.",
+    "evidence": [
+      "docs/laboratory/README.md"
+    ]
+  },
+  "docs/team/testing/prototype-sdk-boundary.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "docs/team/tin/tin-v1-canonical-rules.md": {
+    "status": "CURRENT",
+    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+    ]
+  },
+  "research/Trustlink-Research/README.md": {
+    "status": "HISTORICAL",
+    "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
+    "evidence": [
+      ".codex/architecture-terminology.md",
+      "docs/historical-archive/README.md"
+    ]
+  },
+  "research/Trustlink-Research/SECURITY.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "research/Trustlink-Research/papers/TLR-001/README.md": {
+    "status": "HISTORICAL",
+    "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
+    "evidence": [
+      ".codex/architecture-terminology.md",
+      "docs/historical-archive/README.md"
+    ]
+  },
+  "research/Trustlink-Research/papers/TLR-002/README.md": {
+    "status": "HISTORICAL",
+    "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
+    "evidence": [
+      ".codex/architecture-terminology.md",
+      "docs/historical-archive/README.md"
+    ]
+  },
+  "research/Trustlink-Research/papers/TLR-003/README.md": {
+    "status": "HISTORICAL",
+    "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
+    "evidence": [
+      ".codex/architecture-terminology.md",
+      "docs/historical-archive/README.md"
+    ]
+  },
+  "research/Trustlink-Research/papers/TLR-004/README.md": {
+    "status": "HISTORICAL",
+    "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
+    "evidence": [
+      ".codex/architecture-terminology.md",
+      "docs/historical-archive/README.md"
+    ]
+  },
+  "research/Trustlink-Research/papers/TLR-005/README.md": {
+    "status": "HISTORICAL",
+    "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
+    "evidence": [
+      ".codex/architecture-terminology.md",
+      "docs/historical-archive/README.md"
+    ]
+  },
+  "research/Trustlink-Research/papers/TLR-006/README.md": {
+    "status": "HISTORICAL",
+    "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
+    "evidence": [
+      ".codex/architecture-terminology.md",
+      "docs/historical-archive/README.md"
+    ]
+  },
+  "research/Trustlink-Research/papers/TLR-007/README.md": {
+    "status": "HISTORICAL",
+    "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
+    "evidence": [
+      ".codex/architecture-terminology.md",
+      "docs/historical-archive/README.md"
+    ]
+  },
+  "research/Trustlink-Research/papers/TLR-008/README.md": {
+    "status": "HISTORICAL",
+    "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
+    "evidence": [
+      ".codex/architecture-terminology.md",
+      "docs/historical-archive/README.md"
+    ]
+  },
+  "research/Trustlink-Research/papers/TRL-001/README.md": {
+    "status": "HISTORICAL",
+    "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
+    "evidence": [
+      ".codex/architecture-terminology.md",
+      "docs/historical-archive/README.md"
+    ]
+  },
+  "tsn-protocol/README.md": {
+    "status": "CURRENT",
+    "reason": "Native-credit flow and data boundaries source-reconciled, with distinct retained capabilities, explicit configuration/live-evidence limits and corrected local references.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/cryptography.md",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/programs/gpru/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/programs/gpru/circuits/hidden_head_v1/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/programs/transfer-identity-protocol/tin-registrar/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/programs/transfer-identity-protocol/tin-registrar/docs/phase-1-scope.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/programs/transfer-identity-protocol/tin-registrar/docs/transfer-identity-notes.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/programs/tsn/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/programs/tsn/protocol/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/sdks/tsn-cranker-sdk/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/sdks/tsn-sdk/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/services/tsn-cranker-op-daemon/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/services/tsn-crosschain/contracts/adapters/_template/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/services/tsn-crosschain/docs/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/services/tsn-crosschain/docs/architecture.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/services/tsn-crosschain/docs/attestation-protocol.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/services/tsn-crosschain/docs/attestcoin-sdk-extension.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/services/tsn-crosschain/docs/creditcoin-first-settlement.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/services/tsn-crosschain/docs/creditcoin-integration.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/services/tsn-node/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/services/tsn-receiver/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/services/tsn-rpc-gateway/README.md": {
+    "status": "UNVERIFIED",
+    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
+    "evidence": []
+  },
+  "tsn-protocol/tsn-docs/README.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/about/community-and-governance.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/about/contribute.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/about/current-technology.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/about/engineering-principles.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/about/trustlink-labs.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/about/what-were-building.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/tsn-sdk.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/tins/createTinV1IdentityEnvelope.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/tins/index.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/developers/confidential-settlement.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/developers/getting-started.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/developers/groth16-hidden-head.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/developers/network-status.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/developers/payment-intent-lifecycle.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/developers/private-tin-issuance.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/developers/replay-and-retries.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/get-started/faq.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/layers/dip.mdx": {
+    "status": "EXPERIMENTAL",
+    "reason": "External ingress reference design; diagram expresses intended native enforcement and route-specific deployment remains unverified.",
+    "evidence": [
+      "docs/dip/DIPIngress-design.md",
+      "docs/laboratory/architecture-map.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/layers/gpru.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/layers/tcap.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/layers/tin.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/layers/tsnp.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/operators/tsn-cranker.mdx": {
+    "status": "CURRENT",
+    "reason": "Current daemon branches and source authorization mismatch reconciled; TIN execution has dated independent evidence, while native credit, V1 cluster support and destination payout remain unverified.",
+    "evidence": [
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "docs/laboratory/experiments/EXP-20261102-tin-staged-finalization.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/operators/tsn-node.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/overview/architecture.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/overview/how-it-works.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/overview/introduction.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/overview/separation-of-concerns.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/sdk/index.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/security/authority-and-keys.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/security/fail-closed.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/security/invariants.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/security/operator-boundaries.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/security/replay-protection.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/security/threat-model.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/architecture-map.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/components.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/credit-abi.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/cryptography.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/foundations.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/interface-reference.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/invariants.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/onchain-reference.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/operations-and-verification.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/README.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/technology-reference.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/decisions/ADR-001-authority-and-work.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/decisions/ADR-002-shared-root.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/decisions/ADR-003-delta-binding.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/decisions/ADR-004-documentation-authority.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/decisions/README.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/experiments/EXP-20261101-delta-binding.md": {
+    "status": "VERIFIED",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/experiments/EXP-20261102-hidden-head.md": {
+    "status": "VERIFIED",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/experiments/README.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/historical-archive/README.md": {
+    "status": "CURRENT",
+    "reason": "Current archival index. Linked historical publications retain their original content and status; this index does not promote them as runtime specifications.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/glossary/index.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/sdk/api-reference.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/sdk/configuration.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/sdk/getting-started.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/sdk/integrations.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/sdk/payment-guide.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/sdk/troubleshooting.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/authorization-device-authorization-client.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/authorization-device-authorization.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/authorization-device-permissions.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/authorization-device-registration-challenge.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/authorization-identity-commitments.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/authorization-server-device-registration-challenge.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/authorization-server-device-registration-verifier.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/authorization-server-tins-owner-verifier.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/authorization-server-transient-owner-authorization.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/blockchain-solana-core.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/blockchain-solana-tsn.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/canonical-message.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/client.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/contracts.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/cross-chain.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/device-key-fingerprints.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/device-non-exportable-credentials.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/gpru-babyjub-delta-cipher.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/gpru-balance-history.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/gpru-stealth-keys.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/gpru-transaction-record.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/gpru.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/lit-threshold-provider.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/lit-tin-action-configuration.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/lit-tin-action-contract.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/mempool.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/network-status.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/payment-authorization-server.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/payment-authorization.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/payment-jobs.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/private-view-private-value-element.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/program.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/quote.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/receipts-internal-receipt-envelope.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/receipts-types.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/recovery-history-recovery.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/send-estimate.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/sessions-private-session-request.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/sessions-proof-of-possession.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/sessions-server-private-request-verifier.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/settlement-economics.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/tcap-gpru-credit.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/tcap-one-time-credit.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/tin-device-access.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/tin-device-key-envelope.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/tin-device-key-provider.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/tin-envelopes.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/tin-local-master-seed.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/tin-private-controller.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/tin-threshold-nonce-receipt.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/tins.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/token-registry.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/tsn-exit.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/sdk/modules/wallet-transfer.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
+      "tsn-protocol/sdks/tsn-sdk/package.json",
+      "docs/references/sdk-api-inventory.json"
+    ]
+  },
+  "tsn-protocol/tsn-docs/operators/receiver.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/testing/verification.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/api-reference/services.mdx": {
+    "status": "CURRENT",
+    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  "docs/laboratory/testing-and-evidence.md": {
+    "status": "CURRENT",
+    "reason": "Documentation coverage, bounded test observations and review/continuation policy; no unobserved live execution claimed.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/references/claim-review.json"
+    ]
+  },
+  "docs/laboratory/reconciliation-register.md": {
+    "status": "CURRENT",
+    "reason": "Documentation coverage, bounded test observations and review/continuation policy; no unobserved live execution claimed.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/references/claim-review.json"
+    ]
+  },
+  "docs/DOCUMENTATION_STATUS.md": {
+    "status": "CURRENT",
+    "reason": "Documentation coverage, bounded test observations and review/continuation policy; no unobserved live execution claimed.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/references/claim-review.json"
+    ]
+  },
+  "docs/references/README.md": {
+    "status": "CURRENT",
+    "reason": "Documentation coverage, bounded test observations and review/continuation policy; no unobserved live execution claimed.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/references/claim-review.json"
+    ]
+  },
+  "docs/laboratory/state-and-route-diagrams.md": {
+    "status": "CURRENT",
+    "reason": "Inspected current source relationships; epoch flow explicitly separate and live reachability unverified.",
+    "evidence": [
+      "docs/laboratory/components.md",
+      "docs/laboratory/cryptography.md"
+    ]
+  },
+  ".codex/README.md": {
+    "status": "CURRENT",
+    "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/cryptography.md",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/DOCUMENTATION_MAINTENANCE.md": {
+    "status": "CURRENT",
+    "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/cryptography.md",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md": {
+    "status": "CURRENT",
+    "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/cryptography.md",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/references/CODEX_KNOWLEDGE_INVENTORY.md": {
+    "status": "CURRENT",
+    "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/cryptography.md",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  "docs/laboratory/cranker-transaction-map.md": {
+    "status": "CURRENT",
+    "reason": "Current daemon branches and source authorization mismatch reconciled; TIN execution has dated independent evidence, while native credit, V1 cluster support and destination payout remain unverified.",
+    "evidence": [
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "docs/laboratory/experiments/EXP-20261102-tin-staged-finalization.md"
+    ]
+  },
+  "docs/laboratory/experiments/EXP-20261102-tin-staged-finalization.md": {
+    "status": "VERIFIED",
+    "reason": "Six finalized Devnet transaction observations and active registry/account effects independently read on 2026-11-02; owner recovery and credit not tested.",
+    "evidence": [
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "docs/laboratory/experiments/EXP-20261102-tin-staged-finalization.md"
+    ]
+  }
+}

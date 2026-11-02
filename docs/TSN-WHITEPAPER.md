@@ -1,10 +1,10 @@
 # TSN Infrastructure and TSNP Protocol
 
-## Identity-aware settlement infrastructure and private balance accounting
+## Private, identity-aware settlement infrastructure for stablecoin transfers
 
 ### Abstract
 
-TrustLink Labs is building foundational infrastructure for the **Internet of Value** through **TSN (Transfer Settlement Network)**, a hybrid settlement network designed to make value transfer interoperable, identity-aware, and privacy-preserving across applications and blockchain networks. TSN combines off-chain coordination and verification with on-chain authorization and asset settlement. **TSNP (Transfer Settlement Network Protocol)** is the on-chain settlement protocol within TSN. **TIP** manages transfer identities. **GPRU (Guarded Privacy Routing Unit)** is designed to guard the integrity and privacy of the user's private state presented to **TCAP**. TCAP governs accepted assets, authorization, reserve liquidity, and atomic application of valid transitions; **DIP** defines deposit ingress. Circle's **CCTP** is a separate cross-chain transfer protocol used by supported integrations. The hidden-head proof path remains fail-closed until its prover and witness source are configured and end-to-end verification is complete. Public transaction metadata can still reveal activity and correlation.
+TrustLink Labs is building foundational infrastructure for the **Internet of Value** through **TSN (Transfer Settlement Network)**, a hybrid settlement network designed to make value transfer interoperable, identity-aware, and privacy-preserving across applications and blockchain networks. TSN combines off-chain coordination and verification with on-chain authorization and asset settlement. **TSNP (Transfer Settlement Network Protocol)** is the on-chain settlement protocol within TSN. **TIP** manages transfer identities. **GPRU (Guarded Privacy Routing Unit)** is designed to guard the integrity and privacy of the user's private state presented to **TCAP**. TCAP governs accepted assets, authorization, reserve liquidity, and atomic application of valid transitions; **DIP** defines deposit ingress. Circle's **CCTP** is a separate cross-chain transfer protocol used by supported integrations. The native-credit proof hides the recipient TIN route and private predecessor witness from the on-chain statement. The owner retains private recovery/history material. However, Node derives the published nullifier from the public deposit signature and TCAP program ID, so an observer can compute the funding-to-credit link without a secret. Amount, asset, shared roots, successor point, ciphertext, accounts and timing are also visible, and the authorized Node handles private resolution/witnesses. Direct wallet transfers expose their endpoints; confidential debit and exit require separate execution evidence. The implemented source does not establish general unlinkability, owner-only knowledge or completed live settlement. Required artifact/witness settings and matching chain/verifier state remain runtime gates; see the [canonical privacy record](./laboratory/cryptography.md).
 
 The current source accounting domain is Solana. The repository also contains the Creditcoin-first EVM settlement boundary, Attestcoin route verification, destination vault/executor contracts, and deployment helpers. These source components are not the same as a live production deployment: testnet deployment and real transaction evidence are required before claiming the cross-chain path is operational.
 
@@ -18,7 +18,7 @@ The proof-shaped credit route in source is:
 Sender authorization and funding
     → Receiver ingress acceptance
     → Node TIP resolution and verification
-    → Groth16 proof generation (not configured; fails closed)
+    → Groth16 proof generation (implemented local adapter; explicit configuration required)
     → Cranker submission of authorized work
     → TSNP passes proof to TCAP
     → GPRU verifies hidden-head transition and Memo binding
@@ -35,7 +35,7 @@ service, so the path is not operational.
 
 ## 2. Participants and authority
 
-The owner device holds signing and private recovery material. Receiver accepts and stores authenticated ingress. Node verifies the signed request and resolves TIP. Mother and TSN authorize settlement within their current program contract. Cranker submits the exact authorized transaction and cannot alter its bound fields. The credit ABI carries a proof that GPRU verifies before TCAP advances the shared root. Node currently refuses to issue the settlement authorization because the prover and current hidden-head witness source are not configured.
+The owner device holds signing and private recovery material. Receiver accepts and stores authenticated ingress. Node verifies the signed request and resolves TIP. Mother and TSN authorize settlement within their current program contract. Cranker submits the exact authorized transaction and cannot alter its bound fields. The credit ABI carries a proof that GPRU verifies before TCAP advances the shared root. The local Node witness/prover adapters are implemented, and the November 2 experiment verified the matching November 1 development setup, local proofs and four SBF builds. Runtime configuration, deployed verifier/root state and confirmed settlement are separate gates; see [the dated readiness record](./laboratory/experiments/EXP-20261102-hidden-head.md).
 
 No coordination role grants a spending key or unilateral authority to redirect value.
 

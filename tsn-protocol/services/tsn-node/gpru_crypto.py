@@ -5,6 +5,7 @@ from __future__ import annotations
 import ctypes
 import hashlib
 import secrets
+from functools import lru_cache
 from pathlib import Path
 
 BABYJUB_FIELD = 21888242871839275222246405745257275088548364400416034343698204186575808495617
@@ -49,6 +50,8 @@ def encrypt_balance_blinding_delta_v1(
         raise ValueError("TIP GPRU balance scan key is not a canonical BabyJubjub point")
     if _babyjub_mul(scan_public, BABYJUB_SUBORDER) != (0, 1):
         raise ValueError("TIP GPRU balance scan key is outside the prime-order subgroup")
+    if scan_public == (0, 1):
+        raise ValueError("TIP GPRU balance scan key cannot be the identity")
     if not 0 < blinding_delta < BABYJUB_SUBORDER:
         raise ValueError("GPRU balance blinding delta must be a nonzero BabyJubjub scalar")
     ephemeral_scalar = secrets.randbelow(BABYJUB_SUBORDER - 1) + 1
@@ -59,7 +62,29 @@ def encrypt_balance_blinding_delta_v1(
         "ephemeralPublicX": ephemeral_public[0],
         "ephemeralPublicY": ephemeral_public[1],
         "encryptedDelta": (blinding_delta + shared[0]) % BABYJUB_SUBORDER,
+        "sharedXReduction": shared[0] % BABYJUB_SUBORDER,
+        "sharedXCarry": shared[0] // BABYJUB_SUBORDER,
+        "encryptedDeltaCarry": (blinding_delta + shared[0] % BABYJUB_SUBORDER) // BABYJUB_SUBORDER,
     }
+
+
+def poseidon_v1(values: list[int]) -> int:
+    """Use the same native Poseidon implementation as the on-chain verifier."""
+    if len(values) not in (1, 2, 3, 5) or any(type(v) is not int or not 0 <= v < BABYJUB_FIELD for v in values):
+        raise ValueError("GPRU Poseidon inputs must be canonical BN254 fields")
+    library = _load_library()
+    if not hasattr(library, "tsn_gpru_poseidon_v1"):
+        raise RuntimeError("GPRU native library lacks the hidden-head Poseidon adapter; rebuild the native library")
+    function = library.tsn_gpru_poseidon_v1
+    pointer = ctypes.POINTER(ctypes.c_ubyte)
+    function.argtypes = [pointer, ctypes.c_size_t, pointer]
+    function.restype = ctypes.c_int
+    encoded = b"".join(v.to_bytes(32, "big") for v in values)
+    source = (ctypes.c_ubyte * len(encoded)).from_buffer_copy(encoded)
+    output = (ctypes.c_ubyte * 32)()
+    if function(source, len(values), output) != 0:
+        raise ValueError("GPRU native Poseidon rejected the witness inputs")
+    return int.from_bytes(bytes(output), "big")
 
 
 def _library_path() -> Path:
@@ -71,6 +96,7 @@ def _library_path() -> Path:
     return crate_dir / "release" / "libtsn_gpru_proof_contract.so"
 
 
+@lru_cache(maxsize=1)
 def _load_library() -> ctypes.CDLL:
     library_path = _library_path()
     if not library_path.is_file():

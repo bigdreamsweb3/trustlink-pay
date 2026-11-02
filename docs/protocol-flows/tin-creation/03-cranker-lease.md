@@ -18,7 +18,7 @@ Cranker -> Receiver CRANKER_LEASED verified work -> Solana CreateTin
 **Endpoint:** `POST /tin-operations`
 
 The SDK sends the TIN operation fields defined in
-[01-receiver-ingress.md](tin-creation/01-receiver-ingress.md). The Receiver
+[01-receiver-ingress.md](01-receiver-ingress.md). The Receiver
 authenticates the request, accepts only `TIN_OPERATION`, computes
 `payloadCommitment = SHA-256(canonical JSON payload)`, and stores:
 

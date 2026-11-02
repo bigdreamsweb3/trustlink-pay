@@ -98,7 +98,7 @@ solana confirm <SIGNATURE> --url devnet
 
 # Use comments (#) to explain what each command does.
 
-node scripts/tin-lookup.mjs 8801886318 --rpc https://api.devnet.solana.com
+node scripts/tin-lookup.mjs 5306028334 --rpc https://api.devnet.solana.com
 
 # PROGRAM BUILD/DEPLOY SCRIPTS RUNNER
 
@@ -176,8 +176,63 @@ Run `npm audit` for details.
 [DEBUG] snarkJS: tauG1: 200000
 [DEBUG] snarkJS: tauG1: 300000
 
+
+<!-- Other prcocesses ran -->
+[dev setup] Verify development key against R1CS and Powers of Tau
+[INFO]  snarkJS: Reading r1cs
+[INFO]  snarkJS: Reading tauG1
+[INFO]  snarkJS: Reading tauG2
+[INFO]  snarkJS: Reading alphatauG1
+[INFO]  snarkJS: Reading betatauG1
+[INFO]  snarkJS: Circuit hash: 
+                5245af47 5ec133e3 10ae201c 69e52fe8
+                c9c7b67c 0e5e0e75 92881769 de9f5033
+                78fdde50 53e13692 b63a92df 1c3a976f
+                a04969b5 54859622 84f5ccd6 ce6c19a1
+[INFO]  snarkJS: Circuit Hash: 
+                5245af47 5ec133e3 10ae201c 69e52fe8
+                c9c7b67c 0e5e0e75 92881769 de9f5033
+                78fdde50 53e13692 b63a92df 1c3a976f
+                a04969b5 54859622 84f5ccd6 ce6c19a1
+[INFO]  snarkJS: -------------------------
+[INFO]  snarkJS: contribution #1 LOCAL DEVELOPMENT ONLY:
+                a2f9ff2e 41dda112 9cb84fae b8888793
+                31e13d48 85986299 2ea3c989 75a0f724
+                92a37bae 53e4105d 108e9127 8fad6820
+                f65810af 25b63c88 8146f7eb 91df5995
+[INFO]  snarkJS: -------------------------
+[INFO]  snarkJS: ZKey Ok!
+[dev setup] Export development verification key
+[INFO]  snarkJS: EXPORT VERIFICATION KEY STARTED
+[INFO]  snarkJS: > Detected protocol: groth16
+[INFO]  snarkJS: EXPORT VERIFICATION KEY FINISHED
+[dev setup] Encode the verifier initializer arguments for groth16-solana
+Wrote /mnt/c/Users/codepara/Desktop/trust-link/tsn-protocol/programs/gpru/circuits/hidden_head_v1/build/hidden_head_v1/dev/verifier-init-args.json
+Circuit commitment: b0e01c74246022d1a689587f155d5992b2d2b54e2b49e0dd1b8115303ca17ff4
+Verifying-key commitment: 8f07f8ef1f16729f1d2ab5a7d99684ede8c0f339c0f70b049d023fc3332b3ae1
+Encoded 13 IC points (constant plus 12 public inputs) for the GPRU V1 verifier initializer.
+[dev setup] Ready: /mnt/c/Users/codepara/Desktop/trust-link/tsn-protocol/programs/gpru/circuits/hidden_head_v1/build/hidden_head_v1/dev
+[dev setup] Do not use these artifacts for production or a production Mother verifier initialization.
+bigdream@DESKTOP-FRI99BQ:/mnt/c/Users/codepara/Desktop/trust-link$ 
+
+<!--  -->
+
+Before the XP credit test:
+1. Deploy those four builds, initialize GPRU’s verifier, and activate TCAP’s currently paused root.
+2. Apply the prepared [Node prover settings](C:/Users/codepara/Desktop/trust-link/protocol-test-runs/hidden-head-readiness-20261102/node-prover-settings.env) and start the local services and XP.
+3. Create a fresh recipient TIN and refresh its TIP snapshot. The existing TIN lacks the new balance scan key.
+4. Wallet-authorize a fresh 0.01 Devnet USDC credit. USDC is already Active and Approved.
+I saved the source-bound manifest, snapshots, and [verification report](C:/Users/codepara/Desktop/trust-link/protocol-test-runs/hidden-head-readiness-20261102/README.md). No deployment, service start, or transaction signing/submission was performed; live credit remains unverified.
+
 <!-- BUILDER QUEST -->
 
 - Please explain what tip route root, how it was derived and how is it used across this infra and protocols
 - How does this proving-key work, from how it created with code in program/script to what really happens?
 - What is R1CS? How run the Groth16 setup? and this is zk-snarks right and please which protocol own this zk gpru or tcap or what?
+- What are all this tip snapshot we are talking about where is it needed or coming from who owns it and what is it for?
+
+<!-- TO DO -->
+
+on next grpu circuit setup we need add a security layer that will tsn, the gpru prover system to only interact with a setup circuit or something that is created and signed by authority key... i mean if an impersonator tries to use a circuit setup to trick it will from start becuase that setup was not signed by a valid authority key
+
+WHAT COURSES THIS "TIN CREDIT NODE REJECTED - TSN Node rejected reserve funding: Signed deposit blockhash was not recognized by any configured Solana RPC endpoint; prepare and sign a fresh deposit transaction Settlement work remains RECEIVED."?

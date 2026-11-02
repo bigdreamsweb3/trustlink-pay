@@ -11,3 +11,17 @@ The Node does not itself settle a payment. A Cranker submits authorized work, an
 GPRU guards the integrity and privacy of user state presented to TCAP. TCAP remains responsible for accepted assets, reserves, and atomic settlement. The hidden-head proof path is not yet established end to end.
 
 This site explains protocol roles and application SDK use. Node deployment, configuration, and operational procedures are maintained in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).
+
+## Integration and operating prerequisites
+
+The inspected Node uses authenticated Receiver work leases and signs an allowlisted execution projection. Its verification credential, Receiver worker credential and Mother chain authority have distinct roles. Native credit also requires pinned circuit/WASM/key/metadata artifacts, root-matching witness snapshots, a matching initialized GPRU verifier, active TCAP state and a valid recipient route. A Node HTTP health response does not prove these conditions.
+
+Protect lookup material, decrypted ingress and private witness data in the verification environment. Persist coordination through the configured Receiver state APIs, keep chain/RPC configuration consistent, and retain sanitized decision reasons and confirmed signatures for diagnostics. The source does not establish a permissionless multi-Node consensus or high-availability deployment guarantee.
+
+TIP creation advances its append-only route root. Before credit, its ordered local snapshot must include the new route and reconstruct the exact confirmed root. The root script `scripts/sync-tip-witness.py` extends a verified base snapshot using explicitly ordered active registry accounts; it skips encrypted envelopes, rechecks the confirmed root/count and publishes only with `--write`. It preserves earlier snapshots and signs no transactions. A changed TCAP root needs its own matching state snapshot; changing a filename cannot repair either tree.
+
+The corrected settlement authorization response includes `kind=TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V2`, the exact stored transition, current lease ID/version/expiry and `expiresAtTs` bounded to that lease. Changed, unrelated or expired leases fail. Local tests cover the response contract; they do not establish live chain credit. After a missing-snapshot or the exact repaired TCAP asset-preflight rejection, use Receiver's guarded retry for the already funded settlement after loading corrected services, preserving independent Node verification and confirmed funding.
+
+Node's credit preflight follows the deployed account layout: asset status/risk/deprecation appear after governance approval, separately from deposit/withdrawal/policy flags. Credit requires an Active/Approved, unpaused, nondeprecated asset bound to the reserve; disabled withdrawals do not prohibit credit. Requeueing after the offset correction still requires current account, reserve, root, slot and proof validation.
+
+Use the [Node key guide](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/TSN-NODE-KEYS.md), [storage/lease contracts](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/components.md) and [operator verification procedure](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/operations-and-verification.md) for setup, upgrade evidence and failure recovery. [SDK integration responsibilities](/sdk/integrations) explain how applications interact with this role.

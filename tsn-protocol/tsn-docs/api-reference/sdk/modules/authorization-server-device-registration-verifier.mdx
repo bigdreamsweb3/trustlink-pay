@@ -1,0 +1,140 @@
+---
+title: "authorization/server/device-registration-verifier API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## VerifiedDeviceRegistration
+
+Import from `@trustlink/tsn-sdk/authorization/server`. [Implementation, line 20](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L20).
+
+### VerifiedDeviceRegistration.deviceId
+
+[Source, line 21](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L21).
+
+```ts
+deviceId: string
+```
+
+### VerifiedDeviceRegistration.tinCommitment
+
+[Source, line 22](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L22).
+
+```ts
+tinCommitment: string
+```
+
+### VerifiedDeviceRegistration.ownerIdentityCommitment
+
+[Source, line 23](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L23).
+
+```ts
+ownerIdentityCommitment: string
+```
+
+### VerifiedDeviceRegistration.signingKeyFingerprint
+
+[Source, line 24](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L24).
+
+```ts
+signingKeyFingerprint: string
+```
+
+### VerifiedDeviceRegistration.signingPublicKey
+
+[Source, line 25](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L25).
+
+```ts
+signingPublicKey: JsonWebKey
+```
+
+### VerifiedDeviceRegistration.encryptionKeyFingerprint
+
+[Source, line 26](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L26).
+
+```ts
+encryptionKeyFingerprint: string
+```
+
+### VerifiedDeviceRegistration.encryptionPublicKey
+
+[Source, line 27](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L27).
+
+```ts
+encryptionPublicKey: JsonWebKey
+```
+
+### VerifiedDeviceRegistration.permissions
+
+[Source, line 28](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L28).
+
+```ts
+permissions: string[]
+```
+
+### VerifiedDeviceRegistration.historyRecoveryScope
+
+[Source, line 29](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L29).
+
+```ts
+historyRecoveryScope: "recent" | "all" | "selected" | "future-only"
+```
+
+### VerifiedDeviceRegistration.network
+
+[Source, line 30](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L30).
+
+```ts
+network: string
+```
+
+### VerifiedDeviceRegistration.audience
+
+[Source, line 31](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L31).
+
+```ts
+audience: string
+```
+
+### VerifiedDeviceRegistration.authorizationCommitment
+
+[Source, line 32](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L32).
+
+```ts
+authorizationCommitment: string
+```
+
+### VerifiedDeviceRegistration.authorizedAt
+
+[Source, line 33](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L33).
+
+```ts
+authorizedAt: string
+```
+
+### VerifiedDeviceRegistration.authorizationExpiresAt
+
+[Source, line 34](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L34).
+
+```ts
+authorizationExpiresAt: string
+```
+
+## verifyTsnDeviceRegistration
+
+Import from `@trustlink/tsn-sdk/authorization/server`. [Implementation, line 37](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-verifier.ts#L37).
+
+```ts
+verifyTsnDeviceRegistration(params: { tin: string; deviceId: string; signingPublicKey: JsonWebKey; encryptionPublicKey: JsonWebKey; authorization: DeviceAuthorizationClaims; ownerVerification: TransientOwnerAuthorizationProof; expectedNetwork: string; expectedAudience: string; tinsOwnerVerifier: TinsOwnerVerifier; consumeNonce: (params: { nonce: string; tinCommitment: string; network: string; audience: string; issuedAt: string; expiresAt: string; }) => Promise<boolean>; }): Promise<VerifiedDeviceRegistration>
+```
+
+Direct failure expressions:
+
+```text
+new Error(`Device authorization rejected: ${verification.reason}`)
+new Error( "Device authorization owner commitment does not match the on-chain TINS owner", )
+new Error( "Device authorization challenge is invalid, expired, or already consumed", )
+```

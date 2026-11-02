@@ -1,5 +1,7 @@
 # TrustLink Labs / TSN
 
+The [Laboratory engineering record](docs/laboratory/README.md) connects current architecture, source references, experiments and decisions. The [public SDK handbook](tsn-protocol/tsn-docs/sdk/index.mdx) provides developer guidance, and [documentation status](docs/DOCUMENTATION_STATUS.md) records verification and remaining gaps. Contributors and future Codex sessions use the [documentation maintenance manual](docs/DOCUMENTATION_MAINTENANCE.md).
+
 TrustLink Labs is building foundational infrastructure for the **Internet of
 Value** through **TSN (Transfer Settlement Network)**, a hybrid, identity-aware
 settlement network designed to make value transfer interoperable across
@@ -24,174 +26,180 @@ balance accounting used by the current credit architecture.
 - [TIN ownership and identity](docs/identity-and-tin.md)
 - [Cranker operator guide](docs/CRANKER-OPERATOR-GUIDE.md)
 - [Receiver, Node and settlement verification](docs/tsn-receiver-verification-settlement.md)
-- [GPRU ownership and TCAP custody](docs/GPRU-TCAP-LINK-BREAKING.md)
+- [GPRU ownership and TCAP custody](docs/laboratory/components.md)
 
-TSN coordinates identity resolution, signed payment intents, redacted Receiver
-work, Node verification, leases, and exact transaction submission. GPRU guards
-the integrity and privacy of the user's private state presented to TCAP for a
-balance-changing action: its proof is intended to show that the hidden state is
-current and the proposed transition follows from it. TCAP governs accepted
-assets, authorization, reserves, and liquidity, and applies valid transitions
-atomically. The proof path is not yet operational end to end, and public
-transaction fields and the shared TCAP root can still reveal activity and
-correlation.
+TSN separates identity addressing, sender approval, durable coordination,
+verification and Solana execution. TIP owns identity and route membership;
+Node checks authorization and prepares a root-matching proof; Cranker submits
+permitted transactions. TCAP governs accepted assets, reserves and liabilities
+and calls GPRU before applying the hidden-head transition atomically. Shared
+TIP/TCAP roots replace public per-TIN latest-balance references in this credit
+call, while funding, amounts and transaction metadata remain observable.
 
-## Link-breaking transfer architecture
+## Native wallet-to-TIN credit architecture
 
-The legacy ZK-PRU implementation established the privacy boundary preserved by
-the GPRU/TCAP design: the public funding transaction and the recipient's
-opaque ownership commitment are separate protocol objects. The current V1
-receipt path is legacy compatibility; the V2 source path below is the intended
-architecture and must be deployed before it is used on Devnet.
-
-```text
-TIN identity
-  -> GPRU ownership and route commitment
-  -> TSN Node resolves and verifies the intent
-  -> Cranker funds the governed TSNP/TCAP custody pool
-  -> TSN Node activates the opaque settlement intent
-  -> Cranker vault pays the selected destination
-  -> TSN verifies the proof and reimburses only the leased Cranker
-  -> TCAP advances the GPRU commitment without an intent or receipt PDA
-  -> owner device reads its encrypted balance snapshot
-```
+This diagram describes the current source-bound credit sequence. Deployment,
+initialized roots/verifier/assets, matching witness snapshots and a complete
+payment require separate evidence; the [status record](docs/DOCUMENTATION_STATUS.md)
+keeps dated observations. Epoch Treasury, vault payout and reimbursement are a
+distinct retained instruction family rather than stages of native credit.
 
 ```mermaid
-flowchart TD
-    A["1. Sender chooses recipient TIN, asset, amount and policy"]
-
-    subgraph DEVICE["Authorized sender device"]
-        B["2. TSN SDK resolves the TIN and privacy-receiving-root relationship"]
-        C["3. SDK builds the signed payment intent, route commitment, nonce and expiry"]
-        D["4. Owner signs locally; private roots, GPRU scope and snapshot key remain on device"]
+flowchart TB
+    subgraph DEVICE["1. Sender device — TSN XP and SDK"]
+        direction TB
+        A["Review recipient identity<br/>TIN, display name and resolved owner commitment"]
+        B["Approve canonical payment message<br/>TIN, asset, amount, fee, nonce and expiry"]
+        C["Sign exact TCAP reserve deposit<br/>deposit_asset_v2; wallet-signed wire"]
+        A --> B --> C
     end
 
-    F["5. Frontend submits the signed intent to the TSN Receiver"]
-
-    subgraph RECEIVER["TSN Receiver — durable ingress, leases and evidence"]
-        G["6. Opaque payment work stored as RECEIVED"]
-        H["7. Node-verification work becomes leaseable"]
-        O["15. Funding proof accepted; settlement work activated"]
-        R["24. Redacted status and transaction evidence stored"]
+    subgraph INGRESS["2. TSN Receiver — durable ingress and leases"]
+        direction TB
+        D["Node POST /intents forwards ingress<br/>Authorization and signed deposit"]
+        E["Create AUTHORIZED_FUNDING: RECEIVED<br/>Pre-create linked SETTLEMENT: RECEIVED"]
+        F["Node leases funding verification<br/>Versioned work and authenticated payload"]
+        D --> E --> F
     end
 
-    subgraph VERIFIER["TSN Node and verifier services — decision authority"]
-        I["8. Node leases and verifies the payment intent"]
-        J["9. Node decrypts the route envelope and selects the recipient destination"]
-        P["10. Node verifies signatures, source, amount, token, policy, expiry, commitment and replay"]
-        Q["11. Node creates the settlement intent; inactive until funding is verified"]
-        P2["12. Node confirms the work is valid and leaseable"]
+    subgraph NODE["3. TSN Node — funding verification"]
+        direction TB
+        G["Verify signed message and recipient binding<br/>Registered asset, decimals, exact deposit and simulation"]
+        H["Return signed VERIFIED projection<br/>Cranker receives permitted execution fields"]
+        G --> H
     end
 
-    subgraph FUNDING["Funding transaction"]
-        K["13. Cranker leases the verified payment intent"]
-        L["14. Cranker submits the exact sender-authorized funding transaction"]
-        L2["Only governed funding fields and protocol accounts are public"]
+    subgraph FUNDING["4. First Solana transaction — reserve funding"]
+        direction TB
+        I["Cranker checks attestation and leases funding<br/>Submit unchanged owner-signed wire"]
+        J["TCAP deposit confirms<br/>Reserve assets and pending liability increase"]
+        K["Receiver records funding CONFIRMED<br/>Linked settlement becomes eligible for Node verification"]
+        I --> J --> K
     end
 
-    subgraph SOLANA["Solana — TSN, Epoch Treasury and TCAP programs"]
-        AA["16. TSNP program verifies the funding accounts and exact amount"]
-        M["17. Treasury liability is recorded without a recipient TIN"]
-        V["21. TSN verifies the leased settlement proof and one-time bindings"]
-        W["22. TSN authorizes reimbursement only to the leased Cranker"]
-        X["23. TCAP advances the opaque GPRU commitment; no intent or receipt PDA"]
+    subgraph PROVING["5. TSN Node — independent settlement verification"]
+        direction TB
+        L["Lease linked settlement and recheck funding<br/>Read current TIP root, TCAP root and verifier"]
+        M["Select root-matching witness snapshot<br/>Encrypt owner Memo; prove and verify locally"]
+        N["Return signed VERIFIED settlement<br/>Twelve public inputs and bound Memo"]
+        L --> M --> N
     end
 
-    subgraph SETTLEMENT["Settlement work"]
-        S["18. Receiver publishes the active settlement work"]
-        T["19. Cranker leases and submits the exact settlement from its vault"]
-        T2["Settlement carries the destination and opaque proof, not the sender intent or TIN"]
+    subgraph SUBMISSION["6. Cranker and Mother authority — settlement submission"]
+        direction TB
+        O["Cranker checks attestation and leases settlement<br/>Obtain authorization bound to current lease"]
+        P["Build exact TSNP call followed by Memo<br/>Mother authority co-signs inspected message"]
+        Q["Cranker signs and submits second transaction<br/>Mother authorization is distinct from Node decision signing"]
+        O --> P --> Q
     end
 
-    subgraph PRIVATE["Owner-private balance state"]
-        Y["26. Owner encrypts and persists the new balance snapshot"]
-        Z["27. Owner reads and decrypts the matching snapshot locally"]
+    subgraph PROGRAMS["7. Solana — nested validation and atomic credit"]
+        direction TB
+        subgraph CHECKS["TSNP → TCAP → GPRU"]
+            direction TB
+            R["TSNP checks Mother authority and digest<br/>Invokes TCAP with authorization signer"]
+            S["TCAP checks asset, reserves, slots and shared root<br/>Invokes GPRU before accounting mutation"]
+            T["GPRU checks roots, verifier and Groth16 proof<br/>Binds action and immediately following Memo"]
+            R --> S --> T
+        end
+        U["TCAP atomically advances shared root<br/>Equal pending-to-settled confidential liability shift"]
+        T --> U
     end
 
-    A --> B --> C --> D --> F --> G --> I --> J --> P
-    P -->|"valid"| Q --> P2 --> H --> K --> L --> L2 --> AA --> M --> O --> S --> T --> V --> W --> X --> Y --> Z --> R
-    P -->|"invalid or expired"| REJECT["Reject, requeue or refund according to TSN policy"] --> R
-    T --> T2 --> R
+    subgraph EVIDENCE["8. Confirmation and owner recovery"]
+        direction TB
+        V["Confirm settlement signature and chain result<br/>Reconcile shared root and reserve liabilities"]
+        W["Owner SDK scans and validates encrypted Memo history<br/>Recover action delta and reconcile private balance"]
+        V --> W
+    end
+
+    C -->|"Signed request"| D
+    F --> G
+    H --> I
+    K -->|"Funding confirmation gates proving"| L
+    N --> O
+    Q --> R
+    U --> V
+    G -->|"Invalid authorization or deposit"| X["Reject funding work<br/>No verified Cranker execution"]
+    M -->|"Missing snapshots, artifacts or account prerequisites"| Y["Fail closed; resolve prerequisites<br/>Reverify before settlement submission"]
+    T -->|"Invalid proof or binding"| Z["Credit transaction fails atomically<br/>Earlier confirmed funding remains separate"]
 
     classDef device fill:#edf3ec,stroke:#284c36,color:#17251b;
     classDef receiver fill:#f6f0df,stroke:#8b7131,color:#30240d;
-    classDef verifier fill:#e9efed,stroke:#4e6e60,color:#14241c;
-    classDef cranker fill:#f2eee6,stroke:#6b6254,color:#211f1a;
+    classDef node fill:#e9efed,stroke:#4e6e60,color:#14241c;
+    classDef funding fill:#f2eee6,stroke:#6b6254,color:#211f1a;
     classDef chain fill:#e7eee9,stroke:#1f5038,color:#10251a;
-    classDef private fill:#fbf6e9,stroke:#8b7131,color:#30240d;
-    classDef outcome fill:#fbf6e9,stroke:#8b7131,color:#30240d;
-    class A,B,C,D device;
-    class F,G,H,O,R receiver;
-    class I,J,P,Q,P2 verifier;
-    class K,L,L2,S,T,T2 cranker;
-    class AA,M,V,W,X chain;
-    class Y,Z private;
-    class REJECT outcome;
+    classDef evidence fill:#fbf6e9,stroke:#8b7131,color:#30240d;
+    class A,B,C device;
+    class D,E,F,K receiver;
+    class G,H,L,M,N node;
+    class I,O,P,Q funding;
+    class J,R,S,T,U chain;
+    class V,W,X,Y,Z evidence;
 ```
 
-The device signs the payment intent locally and retains the privacy-receiving
-root, GPRU authorization material, and snapshot key. The Receiver stores only
-authenticated redacted work. The Node resolves the recipient route, creates a
-settlement intent, and activates it only after the funding proof is verified.
-The Cranker pays from its own governed vault; TSN reimburses only the Cranker
-that held the valid lease. The funding and settlement transactions do not
-share an intent ID, recipient TIN, AcceptedIntent account, epoch receipt, or
-TCAP authorization receipt. The V1 receipt path is legacy compatibility; the
-V2 source path is not claimed as deployed until its program upgrade is
-completed.
+The first transaction transfers sender assets into the TCAP reserve; the
+second advances confidential state after independent settlement verification.
+Receiver pre-creates settlement work at ingress but gates verification on
+confirmed funding. Credit does not pay a recipient wallet. If settlement fails,
+its state mutations roll back; the earlier confirmed deposit remains separate.
+An expired owner-signed funding wire requires fresh wallet approval and a
+new signature, and a stale proof/root or lease requires re-verification rather
+than reuse of the old execution projection.
+
+The hidden TIN/head/path witness does not establish full unlinkability. Current
+Node source derives the published credit nullifier from public TCAP program and
+confirmed deposit-signature bytes, allowing a funding-to-credit link. Amount,
+asset, roots, successor point, ciphertext, accounts and timing remain public;
+Node handles sensitive routes and witness material. See [cryptography and privacy](docs/laboratory/cryptography.md)
+for the exact relation and [credit ABI](docs/laboratory/credit-abi.md) for accounts,
+signers, Memo binding and program checks.
 
 ## Core terms and authority boundaries
 
-- **TSN:** Transfer Settlement Network, coordinating authorization, leases,
-  epoch liability and settlement execution.
-- **TIP:** Transfer Identity Protocol, which manages transfer identities and
-  resolves their payment routes.
-- **TIN:** Transfer Identity Number, a 10-digit identity within TIP; it is not
-  a private key, token account or balance.
-- **GPRU:** Guarded Privacy Routing Unit. It guards the integrity and privacy
-  of the user's private state presented to TCAP by verifying the hidden-state
-  transition proof; it does not hold funds.
-- **TCAP:** Transfer Confidential Asset Protocol. It governs accepted assets,
-  authorization, reserves, and liquidity, and applies valid transitions
-  atomically. The hidden-head proof path is not operational end to end yet.
-- **Receiver:** durable ingress, redacted work storage, leases and status
-  evidence; it does not receive plaintext roots or spend keys.
-- **TSN Node:** off-chain verifier that checks signatures, policy, commitments,
-  sequence, expiry, replay material and account bindings.
-- **Mother and Epoch Treasury:** protocol-controlled authorization and aggregate
-  liability boundaries for an epoch.
-- **Cranker:** fee-paying submitter of already authorized work; it cannot change
-  amount, token, recipient binding, commitments, sequence, policy, scope,
-  nullifier or expiry.
-- **TCAP program:** on-chain asset and reserve governance with atomic settlement
-  checks; GPRU verifies the private-state proof TCAP relies on.
+[Architecture terminology](.codex/architecture-terminology.md) owns the names.
+TSN is the complete infrastructure; TSNP is the on-chain authorization program
+whose internal crate remains `trustlink_escrow`. TIP manages TIN identity,
+recovery and route membership. GPRU verifies hidden state/proof relations; TCAP
+owns accepted-asset governance and atomic reserve/liability accounting.
 
-Solana validators provide execution, ordering, consensus and finality. They are
-not TSN Nodes or Crankers; TSN uses Solana and does not replace Solana
-consensus.
+Receiver stores restricted durable work and coordinates leases/status; it does
+not make the Node's verification decision. Node resolves routes and checks
+funding/proofs. Cranker validates the signed execution projection and submits
+the permitted transaction. Mother authority co-signs inspected settlement
+through Mother Escrow; its key/role differs from Node decision signing. Solana
+validators supply execution, ordering, consensus and finality. The
+[component reference](docs/laboratory/components.md) covers SDK, identity,
+epoch/DNA, ingress and external integration responsibilities separately.
 
-## Legacy and privacy-safe TCAP authorization
+## Shared-root credit and retained authorization families
 
-`AcceptedIntentV1`, `EpochCommitmentStateV1`, and
-`TsnAuthorizationReceiptV1` belong to the legacy V1 authorization path. They
-must not be used for new transfers because their public accounts join a TSN
-intent to a TCAP transition. The privacy-safe V2 path carries only the opaque
-tip transition, GPRU scope commitment, replay nullifier, validity window, and
-TSN authorization signer. Replay protection is the monotonic tip sequence plus
-the previous commitment; no per-transfer receipt or nullifier account is
-created.
+Current native credit uses `register_tcap_credit_authorization_v2` through
+TCAP `credit_gpru_memo_v1` and GPRU `verify_hidden_head_transition_v1`.
+TCAP's shared authenticated root tracks hidden state and nullifier updates,
+and credit shifts equal pending liability into settled confidential liability
+after proof validation. No per-TIN latest-tip initialization, recipient token
+account or per-transfer authorization receipt is part of this call.
+
+`AcceptedIntent`, epoch commitments, Settlement DNA, private payout/refund and
+reimbursement remain separate retained capabilities with their own contracts.
+Older receipt/per-TIN tip instructions must not be described as this hidden-head
+credit flow; their unique behavior and state obligations need caller/deployment
+review before removal. See [state and route diagrams](docs/laboratory/state-and-route-diagrams.md).
 
 ## Supported route boundaries
 
-1. **TIN-to-TIN credit:** the current private receiving route through GPRU, TSN
-   authorization and TCAP tip credit.
-2. **Wallet-to-TIN credit:** a public source can be coordinated with the same
-   private receiving and credit boundary when the governed asset path is ready.
-3. **Wallet-to-wallet compatibility:** public settlement remains a separate
-   compatibility route with public chain visibility.
-4. **Debit and exit:** interfaces may exist, but live confidential debit and
-   exit remain proof-gated and disabled. A GPRU signature, hash-only payload or
-   placeholder proof cannot spend or drain liquidity.
+1. **Wallet-to-TIN native credit:** implemented approval/deposit, verification
+   and hidden-head construction/submission path; complete on-chain credit and
+   owner recovery remain separately unverified by this documentation work.
+2. **TIN-funded debit/credit and exit:** retained source/API/proof surfaces need
+   their own enabled-caller, account and execution evidence. Wallet credit does
+   not prove these routes work.
+3. **Wallet-to-wallet and funding commitments:** distinct public transfer and
+   commitment-backed capabilities; preserve their separate account contracts.
+4. **DIP/CCTP and other external routes:** route-specific integrations whose
+   code/configuration/deployment and destination confirmation must be verified
+   individually.
 
 ## Historical architecture boundary
 
@@ -208,9 +216,11 @@ simulation does not prove that a program is deployed. Reviewers should record
 the program ID, cluster, upgrade authority, deployment slot, transaction
 signature and post-transaction account state.
 
-Program-dependent testing is Devnet-only. After any on-chain code or ABI change,
-build the SBF artifact, deploy it to Devnet, verify the deployment slot and only
-then run simulation or live transactions. See [Devnet build and deploy](docs/DEVNET-BUILD-DEPLOY.md), the [TCAP V2 Devnet preparation](docs/TCAP-V2-DEVNET.md), the [TCAP V2 debit and credit design](docs/TCAP-V2-DEBIT-CREDIT-DESIGN.md), and the [legacy TCAP smoke notice](docs/tcap-devnet-credit-smoke.md).
+Program-dependent testing is Devnet-only. After an on-chain code or ABI change,
+build and compare the SBF artifact with the target deployment before testing
+against that program. Program upgrades, initialization and signed tests require
+explicit operator authorization; source/build evidence alone cannot establish
+a matching deployment or current account readiness. See [Devnet build and deploy](docs/DEVNET-BUILD-DEPLOY.md), the [TCAP V2 Devnet preparation](docs/TCAP-V2-DEVNET.md), the [TCAP V2 debit and credit design](docs/TCAP-V2-DEBIT-CREDIT-DESIGN.md), and the [legacy TCAP smoke notice](docs/tcap-devnet-credit-smoke.md).
 
 ## Historical Devnet evidence: first wallet-assisted TIN-to-TIN test
 

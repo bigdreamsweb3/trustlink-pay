@@ -1,0 +1,53 @@
+# Codex knowledge alignment completion record
+
+**Reviewed: 2026-11-02. Scope: repository instruction/reference alignment, permanent documentation workflow and both README architecture diagrams.** The [pre-edit inventory](CODEX_KNOWLEDGE_INVENTORY.md) was written before instruction/README edits. Existing unrelated dirty work was preserved; no application source, program ID, key, deployment configuration or user-managed service was changed by this assignment.
+
+Later correction, 2026-11-02: this report's original schema-3 phrase refers to a mistaken registry/global-state version identification. The current registry is `TinV1Account::VERSION=1`, while global state uses `CURRENT_VERSION=3`; the [successful staged-TIN record](../laboratory/experiments/EXP-20261102-tin-staged-finalization.md) verifies registry version 1. The [transaction map](../laboratory/cranker-transaction-map.md) records the later confirmed funding, snapshot repair and locally tested native authorization-envelope correction.
+
+## Instructions inspected and corrected
+
+Inspected root [AGENTS.md](../../AGENTS.md) and all ten existing `.codex` Markdown references: [architecture-change-policy](../../.codex/architecture-change-policy.md), [architecture-terminology](../../.codex/architecture-terminology.md), [documentation-sync-policy](../../.codex/documentation-sync-policy.md), [CODEX_INVENTION_STRUCTURE_BRIEF](../../.codex/CODEX_INVENTION_STRUCTURE_BRIEF.md), [CODEX_CREDIBILITY_PASS_ORDER](../../.codex/CODEX_CREDIBILITY_PASS_ORDER.md), [GPRU_MEMO_DELTA_PROOF_FINDING](../../.codex/GPRU_MEMO_DELTA_PROOF_FINDING.md), [gpru-unlinkable-latest-head](../../.codex/gpru-unlinkable-latest-head.md), [protocol-cleanup-index](../../.codex/protocol-cleanup-index.md), [pull-docs](../../.codex/pull-docs.md) and [tsn-verification-prompt](../../.codex/tsn-verification-prompt.md). All were updated within their existing purpose or given a historical boundary. Global explainer-writing instructions and relevant installed skills were read and preserved. No other repository instruction file was found in the source scan.
+
+Current guidance now recognizes direct/staged schema-3 TIN registration, twelve-input/thirteen-IC-point Groth16 credit, implemented root-selected witness/local prover adapters, proof-bound owner delta and current program nesting. It separates Receiver acceptance, Node verification, Cranker submission, Mother co-signing and chain confirmation. The root change/removal policy keeps distinct supported capabilities and required one-time migrations without introducing undocumented runtime fallbacks.
+
+Historical SDK/UI creation bans, missing-allocator/prover claims, eight-input layouts, portfolio proposals, fixed commit work orders and standalone-docs stash/pull commands remain as explicitly non-executable records. The Memo finding retains its November 1 checkpoint with later development evidence pointers. ZK-PRU remains retired context. No unperformed test result, team adoption or external deployment was inferred from those records.
+
+## Final hierarchy and workflow
+
+The [official discovery guide](https://learn.chatgpt.com/docs/agent-configuration/agents-md) distinguishes automatically discovered Codex-home/project instructions from explicit references. This repository keeps a single concise root AGENTS entry; `.codex/README.md` routes relevant tasks to current architecture/change/terminology references and clearly identifies historical prompts. The [maintenance manual](../DOCUMENTATION_MAINTENANCE.md) owns the internal/public maintenance procedure. Canonical Laboratory pages remain the technical starting point, and code/account/instruction contracts determine behavior. The inventory records current discovery/configuration observations and their limits; no new profile settings or redundant nested rules were introduced.
+
+A future session reads applicable AGENTS, terminology and the manual, consults canonical architecture/status, inspects source/tests, maps documentation impact, updates the requested internal/public scope and validates it. The manual includes classification criteria, directory/naming conventions, component/SDK/API/experiment/ADR additions, corrections, archives, diagrams, impact mapping, quality checks and completion/continuation without relying on chat history.
+
+## README diagrams and adjacent contracts
+
+Both [root README](../../README.md) and [protocol README](../../tsn-protocol/README.md) now use the established vertical, numbered subgraphs, nested program-validation group, informative multiline labels and muted green/gold classes. They show exact wallet-signed funding, Receiver's pre-created settlement reference, confirmed-funding gate, independent current-root proof preparation, lease-bound Mother co-signing, TSNP → TCAP → GPRU and atomic root/liability mutation, followed by separate chain and owner-recovery evidence. Invalid funding, missing proof prerequisites and failed credit have explicit failure boundaries.
+
+Obsolete epoch/vault payout/reimbursement and per-TIN public TIP initialization were removed from current credit choreography. Their distinct retained capabilities are described separately. The root's original dated wallet-assisted experiment diagram remains historical rather than being rewritten as today's native flow. Protocol README links now target the actual workspace internal docs instead of an assumed remote docs layout.
+
+Privacy claims disclose the public deposit-derived nullifier: public TCAP program/signature inputs permit funding-to-credit linkage. Hidden TIN/predecessor witnesses, encryption and fresh ephemeral values do not establish full unlinkability or owner-only knowledge. Amount, roots, ciphertext, accounts and timing remain observable, and Node handles sensitive routing/witnesses. No cryptographic replacement was invented.
+
+## Files created and updated
+
+Created [DOCUMENTATION_MAINTENANCE.md](../DOCUMENTATION_MAINTENANCE.md), [.codex/README.md](../../.codex/README.md), [pre-edit inventory](CODEX_KNOWLEDGE_INVENTORY.md) and this completion record.
+
+Updated the eleven instruction/reference files listed above, both READMEs, [internal docs index](../README.md), [Laboratory index](../laboratory/README.md), [public handbook entry](../../tsn-protocol/tsn-docs/README.md), [public contribution guide](../../tsn-protocol/tsn-docs/about/contribute.mdx), [reference tooling guide](README.md) and the dated [status record](../DOCUMENTATION_STATUS.md). Documentation tooling [link/inventory checker](tooling/documentation-audit.py) and [syntax validator](tooling/validate-doc-syntax.mjs) were extended to include agent entries and README diagrams; production code was not modified.
+
+Updated review dispositions and regenerated documentation inventory, technical-claim inventory, link, syntax and source-preservation reports in this directory. The original reconstruction report/counts remain dated; new classifications do not retrospectively change what that earlier pass verified. Generated metadata files list their actual checked-out scope and do not automatically certify behavior.
+
+## Validation results
+
+- Expanded `documentation-audit.py check`: **zero local-link/navigation/frontmatter/fence issues**, covering both documentation trees, `.codex` Markdown and AGENTS/root/protocol README entries. One previously broken root README link was corrected to the canonical component record. Remote URLs and anchor fragments were not checked.
+- `validate-doc-syntax.mjs` with MDX 3.1.1, Mermaid 11.12.3 and JSDOM 26.1.0: **99 MDX pages compiled; 36 Mermaid diagrams parsed; zero failures**. This includes both current README diagrams, the retained historical README diagram and the historical proposal diagram. Browser/theme layout and Mintlify rendering were not tested.
+- `documentation-audit.py inventory` and `generate-claim-register.py`: **261 documents** classified and review units regenerated; all **21 explicit evidence selectors** still matched. CURRENT154, UNVERIFIED73, HISTORICAL24, PROPOSED3, EXPERIMENTAL2, RETIRED3 and attributed VERIFIED2. Classification records scoped source knowledge and preserved history, not network maturity.
+- `verify-source-preservation.py`: **267 inspected program/SDK/Receiver/Node/Cranker source files unchanged** against the original local documentation baseline. Generated build outputs are excluded; independent user edits are not attributed automatically.
+- All **seven backtick file references in root AGENTS** resolve. Markdown-link checking additionally covers the supporting reference tree. Discovery was re-scanned and found only root AGENTS within the repository source scope.
+- Five historical prompt/design/finding bodies match the original before-edit text; the root README's dated experiment section and remaining suffix are preserved. Active source guidance excludes the superseded absent-prover assertion. Existing newline style was preserved, including the terminology file's CRLF format.
+- Scoped `git -c core.whitespace=cr-at-eol diff --check` passed; a direct check of new/edited instruction/manual/report/README files found no trailing whitespace. `node --check` passed for the changed syntax validator. Root-wide diff checking still reports the three pre-existing trailing spaces in unrelated `terminal-dev.md` at lines 187, 192 and 216; that file was preserved.
+
+No application build/test, live proof/payment, deployment refresh or service operation was performed for this documentation-only assignment. The checks above establish artifact consistency and preserved source, with the behavioral and presentation limits stated explicitly.
+
+## Remaining engineering and verification boundaries
+
+The public funding-link privacy discrepancy remains unresolved. Current deployed TIP/program/account/verifier/root readiness may change during user-managed deployment; the prior byte comparison is a dated snapshot, not refreshed chain evidence. Complete native credit, live proof compute and validated owner recovery, old TIN migration, generalized debit/exit/epoch/external-route reachability, production ceremony and independent cryptographic audit remain separate work. Diagram parsing does not establish browser layout; remote targets/anchor fragments and Mintlify rendering need their own validation.
+
+For continuation, use the manual and [status ledger](../DOCUMENTATION_STATUS.md). Refresh only evidence required by the next authorized task, inspect unknown capability callers before retirement and retain sanitized outcomes in the existing experiment/decision registers. No commit, push, deployment, transaction signing, service start/stop or publication was performed by this alignment.

@@ -58,6 +58,34 @@ fn route_leaf(
         .map_err(|_| ProgramError::InvalidInstructionData)
 }
 
+fn load_route_root(account: &AccountInfo) -> Result<Box<TipRouteMerkleRootV1>, ProgramError> {
+    // The generated Borsh decoder for the 32-node frontier crosses an SBF
+    // stack boundary. Read the same fixed Borsh layout into heap-backed state
+    // without materializing the nested array decoder's temporary copies.
+    let data = account.try_borrow_data()?;
+    if data.len() < TipRouteMerkleRootV1::LEN
+        || data[TipRouteMerkleRootV1::LEN..].iter().any(|byte| *byte != 0)
+    {
+        return Err(ProgramError::InvalidAccountData);
+    }
+    let mut leaf_count = [0; 8];
+    leaf_count.copy_from_slice(&data[34..42]);
+    let mut root = Box::new(TipRouteMerkleRootV1 {
+        version: data[0],
+        bump: data[1],
+        root: [0; 32],
+        leaf_count: u64::from_le_bytes(leaf_count),
+        frontier: [[0; 32]; TipRouteMerkleRootV1::DEPTH],
+    });
+    root.root.copy_from_slice(&data[2..34]);
+    for (node, bytes) in root.frontier.iter_mut()
+        .zip(data[42..TipRouteMerkleRootV1::LEN].chunks_exact(32))
+    {
+        node.copy_from_slice(bytes);
+    }
+    Ok(root)
+}
+
 pub fn append_route<'a>(
     account: &AccountInfo<'a>,
     payer: &AccountInfo<'a>,
@@ -86,16 +114,16 @@ pub fn append_route<'a>(
             0,
             &seeds,
         )?;
-        TipRouteMerkleRootV1 {
+        Box::new(TipRouteMerkleRootV1 {
             version: TipRouteMerkleRootV1::VERSION,
             bump,
             root: ROUTE_ZERO_HASHES_V1[TipRouteMerkleRootV1::DEPTH],
             leaf_count: 0,
             frontier: [[0; 32]; TipRouteMerkleRootV1::DEPTH],
-        }
+        })
     } else {
         crate::utils::assert_program_owned(account, program_id)?;
-        crate::utils::load_borsh_with_zero_padding(account)?
+        load_route_root(account)?
     };
 
     if root.version != TipRouteMerkleRootV1::VERSION

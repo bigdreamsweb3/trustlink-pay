@@ -1,0 +1,123 @@
+---
+title: "gpru/babyjub-delta-cipher API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/babyjub-delta-cipher.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## BabyJubPointV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/babyjub-delta-cipher.ts#L13).
+
+```ts
+export type BabyJubPointV1 = { x: bigint; y: bigint };
+```
+
+## decodeBabyJubHexV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 143](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/babyjub-delta-cipher.ts#L143).
+
+```ts
+decodeBabyJubHexV1(value: string, label: string): bigint
+```
+
+Direct failure expressions:
+
+```text
+new Error(`${label} must be 32-byte hex`)
+```
+
+## decryptBalanceBlindingDeltaV1
+
+Recover and authenticate the proof-bound blinding delta from a Memo prefix.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 121](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/babyjub-delta-cipher.ts#L121).
+
+```ts
+decryptBalanceBlindingDeltaV1(params: { encryptedDelta: bigint; ephemeralPublicKey: BabyJubPointV1; scanSecret: bigint; }): bigint
+```
+
+Direct failure expressions:
+
+```text
+new Error("GPRU encrypted delta or scan secret is outside the BabyJubjub scalar field")
+```
+
+## deriveGpruBalanceScanKeyV1
+
+Derive the private scan scalar and registered BabyJubjub point from the owner-held master seed.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 86](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/babyjub-delta-cipher.ts#L86).
+
+```ts
+deriveGpruBalanceScanKeyV1(masterSeed: Uint8Array): { secret: bigint; publicKey: BabyJubPointV1; }
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN master seed must contain at least 32 bytes")
+```
+
+## encodeBabyJubFieldHexV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 133](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/babyjub-delta-cipher.ts#L133).
+
+```ts
+encodeBabyJubFieldHexV1(value: bigint): string
+```
+
+Direct failure expressions:
+
+```text
+new Error("BabyJubjub coordinate is outside the base field")
+```
+
+## encodeBabyJubKeyV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 148](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/babyjub-delta-cipher.ts#L148).
+
+```ts
+encodeBabyJubKeyV1(point: BabyJubPointV1): { x: Uint8Array; y: Uint8Array; }
+```
+
+## encodeBabyJubScalarHexV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 138](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/babyjub-delta-cipher.ts#L138).
+
+```ts
+encodeBabyJubScalarHexV1(value: bigint): string
+```
+
+Direct failure expressions:
+
+```text
+new Error("BabyJubjub scalar is outside the subgroup order")
+```
+
+## encryptBalanceBlindingDeltaV1
+
+Encrypt a BabyJubjub scalar using a fresh one-time ECDH point. C = delta + x(e*S) mod subgroup order.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 97](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/babyjub-delta-cipher.ts#L97).
+
+```ts
+encryptBalanceBlindingDeltaV1(params: { delta: bigint; scanPublicKey: BabyJubPointV1; ephemeralScalar?: bigint; }): { encryptedDelta: bigint; ephemeralPublicKey: BabyJubPointV1; ephemeralScalar: bigint; }
+```
+
+Direct failure expressions:
+
+```text
+new Error("GPRU blinding delta must be a nonzero BabyJubjub scalar")
+new Error("GPRU delta ephemeral scalar is outside the BabyJubjub subgroup order")
+```
+
+## isValidBabyJubPointV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 58](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/babyjub-delta-cipher.ts#L58).
+
+```ts
+isValidBabyJubPointV1(point: BabyJubPointV1): boolean
+```

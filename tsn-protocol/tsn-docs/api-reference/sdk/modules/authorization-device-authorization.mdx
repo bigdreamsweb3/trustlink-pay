@@ -1,0 +1,164 @@
+---
+title: "authorization/device-authorization API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## canonicalizeDeviceAuthorizationClaims
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 29](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L29).
+
+```ts
+canonicalizeDeviceAuthorizationClaims(claims: DeviceAuthorizationClaims): DeviceAuthorizationClaims
+```
+
+## DeviceAuthorizationClaims
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 8](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L8).
+
+### DeviceAuthorizationClaims.protocolVersion
+
+[Source, line 9](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L9).
+
+```ts
+protocolVersion: "tsn-device-authorization-v1"
+```
+
+### DeviceAuthorizationClaims.domain
+
+[Source, line 10](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L10).
+
+```ts
+domain: "TSN_OWNER_DEVICE_AUTHORIZATION"
+```
+
+### DeviceAuthorizationClaims.network
+
+[Source, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L11).
+
+```ts
+network: string
+```
+
+### DeviceAuthorizationClaims.tinCommitment
+
+[Source, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L12).
+
+```ts
+tinCommitment: string
+```
+
+### DeviceAuthorizationClaims.ownerIdentityCommitment
+
+[Source, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L13).
+
+```ts
+ownerIdentityCommitment: string
+```
+
+### DeviceAuthorizationClaims.deviceSigningKeyFingerprint
+
+[Source, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L14).
+
+```ts
+deviceSigningKeyFingerprint: string
+```
+
+### DeviceAuthorizationClaims.deviceEncryptionKeyFingerprint
+
+[Source, line 15](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L15).
+
+```ts
+deviceEncryptionKeyFingerprint: string
+```
+
+### DeviceAuthorizationClaims.permissions
+
+[Source, line 16](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L16).
+
+```ts
+permissions: string[]
+```
+
+### DeviceAuthorizationClaims.historyRecoveryScope
+
+[Source, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L17).
+
+```ts
+historyRecoveryScope: HistoryRecoveryScope
+```
+
+### DeviceAuthorizationClaims.selectedReceiptIds
+
+[Source, line 18](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L18).
+
+```ts
+selectedReceiptIds: string[] | undefined
+```
+
+### DeviceAuthorizationClaims.nonce
+
+[Source, line 19](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L19).
+
+```ts
+nonce: string
+```
+
+### DeviceAuthorizationClaims.issuedAt
+
+[Source, line 20](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L20).
+
+```ts
+issuedAt: string
+```
+
+### DeviceAuthorizationClaims.expiresAt
+
+[Source, line 21](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L21).
+
+```ts
+expiresAt: string
+```
+
+### DeviceAuthorizationClaims.audience
+
+[Source, line 22](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L22).
+
+```ts
+audience: string
+```
+
+## HistoryRecoveryScope
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 6](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L6).
+
+```ts
+export type HistoryRecoveryScope = "all" | "recent" | "selected" | "future-only";
+```
+
+## serializeDeviceAuthorization
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 41](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L41).
+
+```ts
+serializeDeviceAuthorization(claims: DeviceAuthorizationClaims): Uint8Array
+```
+
+## TSN_DEVICE_AUTHORIZATION_DOMAIN
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 4](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L4).
+
+```ts
+"TSN_OWNER_DEVICE_AUTHORIZATION"
+```
+
+## TSN_DEVICE_AUTHORIZATION_VERSION
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 3](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization.ts#L3).
+
+```ts
+"tsn-device-authorization-v1"
+```

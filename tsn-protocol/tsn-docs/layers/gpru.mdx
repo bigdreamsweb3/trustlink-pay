@@ -16,8 +16,8 @@ This gives GPRU a verification role, not custody of funds. **TCAP governs accept
 
 These are the design goals of the hidden-head proof. The proof flow is not currently established as an end-to-end settlement capability, so applications must not present it as an active guarantee.
 
-## Privacy limits
+## Identity privacy and public-chain visibility
 
-Proofs do not hide all Solana transaction data. Transaction accounts, signatures, timing, instruction data, and ordering remain public. Repeated public state references or exposed action fields can allow observers to correlate activity; TSN does not claim zero linkability.
+The native-credit ABI hides the recipient route/head witness and does not encode a plaintext TIN or private predecessor pointer. The owner retains its record lineage. Shared roots, public statement fields, encrypted Memo bytes, accounts, timing and funding wallets remain observable; the design does not establish that metadata or authorized Node/application knowledge cannot correlate payments. Confidential debit/exit remains a separate unverified execution path.
 
 For the cryptographic contract, circuit artifacts, and integration decisions, see the [GPRU documentation in the repository](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

@@ -154,7 +154,7 @@ The application backend does not issue a private-data capability and does not
 participate in root or snapshot decryption. Authorizing a new device creates a new
 device session, obtains a fresh wallet authorization, and satisfies the same
 threshold access policy without changing the TIN. See
-[TIN Master-Seed Architecture](./tin-master-seed-architecture.md).
+[TIN Master-Seed Architecture](./laboratory/components.md).
 
 ## What closed Shadow DOM does not prove
 

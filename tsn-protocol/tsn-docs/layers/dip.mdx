@@ -13,8 +13,10 @@ flowchart LR
     P[External payer] --> X[External deposit protocol]
     X --> R[TSN reserve]
     R --> V[TSN verifies deposit and recipient authorization]
-    V --> G[GPRU guards private-state transition]
-    G --> C[TCAP validates asset and applies credit]
+    V --> C[TSNP-authorized TCAP credit]
+    C --> G[GPRU verifies private-state proof]
+    G --> C
+    C --> S[Atomic root and liability transition]
 ```
 
 ## Status and privacy boundary

@@ -16,9 +16,11 @@ TSN separates user authorization, service verification, private-state protection
 | GPRU | Guards the user's private state presented to TCAP. | A proof does not hold funds or replace TCAP checks. |
 | TCAP | Governs accepted assets and applies authorized settlement. | The transition must satisfy the applicable asset, authorization, and liquidity rules. |
 
-## Public-chain visibility
+## Identity privacy and public-chain visibility
 
-Solana exposes transaction signatures, account keys, timing, instruction data, and ordering. Encryption can protect selected payload contents but does not hide those surrounding facts. Shared public references or repeated transaction patterns may allow observers to correlate activity. TSN does not claim zero linkability.
+The native-credit ABI hides the recipient route/head witness and does not encode a plaintext TIN or private predecessor pointer. The owner retains its record lineage. Shared roots, public statement fields, encrypted Memo bytes, accounts, timing and funding wallets remain observable; the design does not establish that metadata or authorized Node/application knowledge cannot correlate payments. Confidential debit/exit remains a separate unverified execution path.
+
+The current Node derives the published credit nullifier from the public deposit signature and TCAP program ID using a domain-separated SHA-256 hash reduced to a BN254 scalar. An observer can recompute the funding-to-credit relationship without a secret. This protects the deposit replay context but limits transaction privacy; it does not reveal the hidden TIN witness by itself. Node also handles private routing/witness preparation, so owner-only knowledge is not established.
 
 ## Capability status
 

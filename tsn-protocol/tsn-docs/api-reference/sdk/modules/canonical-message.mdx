@@ -1,0 +1,164 @@
+---
+title: "canonical-message API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## buildCrossChainPaymentIntentMessage
+
+Cross-chain payment intent. This is intentionally separate from the legacy
+Solana-only Payment Intent format so existing Solana flows are not changed.
+Every destination-sensitive field is inside the user signature.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/canonical-message`. [Implementation, line 267](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L267).
+
+```ts
+buildCrossChainPaymentIntentMessage(params: { intentId: string; amountBaseUnits: bigint | string | number; destinationToken: string; recipientTin: string; feeBaseUnits: bigint | string | number; sender: string; nonce: string; expires: string | Date; destinationNetwork: string; destinationExecutor: string; settlementRouteId: string; }): string
+```
+
+Direct failure expressions:
+
+```text
+new CanonicalMessageError("cross-chain intent fields must not be empty")
+new CanonicalMessageError("Destination Executor must be a 20-byte EVM address")
+```
+
+## buildPaymentIntentMessage
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/canonical-message`. [Implementation, line 211](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L211).
+
+```ts
+buildPaymentIntentMessage(params: { amountBaseUnits: bigint | string | number; tokenMintAddress: string; tokenDecimals: number; recipientTin: string; recipientDisplayName?: string; recipientDisplayNameSource?: "owner-provided" | "not provided"; recipientVerifiedCredentials?: readonly VerifiedRecipientCredential[]; feeBaseUnits: bigint | string | number; sender: string; nonce: string; expires: string | Date; }): string
+```
+
+Direct failure expressions:
+
+```text
+new CanonicalMessageError("Token Mint is required")
+```
+
+## buildTinCreationMessage
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/canonical-message`. [Implementation, line 322](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L322).
+
+```ts
+buildTinCreationMessage(params: { tin: string; displayName: string; privacy?: string; nonce: string; expires: string | Date; }): string
+```
+
+## buildTinWalletBindingMessage
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/canonical-message`. [Implementation, line 338](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L338).
+
+```ts
+buildTinWalletBindingMessage(params: { tin: string; walletPublicKey: string; identityPublicKey: string; programId: string; issuedAt: string | Date; }): string
+```
+
+## CanonicalMessageError
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/canonical-message`. [Implementation, line 4](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L4).
+
+```ts
+new CanonicalMessageError(message: string): CanonicalMessageError
+```
+
+## isCanonicalTsnMessage
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/canonical-message`. [Implementation, line 167](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L167).
+
+```ts
+isCanonicalTsnMessage(message: string): boolean
+```
+
+## parseCrossChainPaymentIntentMessage
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/canonical-message`. [Implementation, line 301](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L301).
+
+```ts
+parseCrossChainPaymentIntentMessage(message: string): { intentId: string; amountBaseUnits: bigint; destinationToken: string; recipientTin: string; feeBaseUnits: bigint; sender: string; nonce: string; expires: Date; destinationNetwork: string; destinationExecutor: string; settlementRouteId: string; }
+```
+
+Direct failure expressions:
+
+```text
+new CanonicalMessageError("Destination Executor must be a 20-byte EVM address")
+```
+
+## parsePaymentIntentMessage
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/canonical-message`. [Implementation, line 241](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L241).
+
+```ts
+parsePaymentIntentMessage(message: string): { tokenMintAddress: string; tokenDecimals: number; amountBaseUnits: bigint; recipientTin: string; recipientDisplayName: string; recipientDisplayNameSource: string; recipientVerifiedCredentials: VerifiedRecipientCredential[]; feeBaseUnits: bigint; sender: string; nonce: string; expires: Date; }
+```
+
+Direct failure expressions:
+
+```text
+new CanonicalMessageError("Token Decimals must be an integer from 0 through 18")
+```
+
+## parseTinCreationMessage
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/canonical-message`. [Implementation, line 364](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L364).
+
+```ts
+parseTinCreationMessage(message: string): { tin: string; displayName: string; privacy: string; nonce: string; expires: Date; }
+```
+
+## parseTinWalletBindingMessage
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/canonical-message`. [Implementation, line 354](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L354).
+
+```ts
+parseTinWalletBindingMessage(message: string): { tin: string; walletPublicKey: string; identityPublicKey: string; programId: string; issuedAt: Date; }
+```
+
+## parseTokenAmountToBaseUnits
+
+Convert a human token amount to integer base units without floating-point rounding.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/canonical-message`. [Implementation, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L17).
+
+```ts
+parseTokenAmountToBaseUnits(value: string | number, decimals?: number, options?: { allowZero?: boolean; }): bigint
+```
+
+Direct failure expressions:
+
+```text
+new CanonicalMessageError("Token decimals must be an integer from 0 through 18")
+new CanonicalMessageError(`Amount must be a plain decimal with at most ${decimals} fractional digits`)
+new CanonicalMessageError(options.allowZero ? "Amount must not be negative" : "Amount must be positive")
+new CanonicalMessageError("Amount is outside the u64 range")
+```
+
+## TSN_CANONICAL_DOMAIN_DISPLAY
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/canonical-message`. [Implementation, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L14).
+
+```ts
+string
+```
+
+## TSN_CANONICAL_DOMAIN_HASH
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/canonical-message`. [Implementation, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L11).
+
+```ts
+string
+```
+
+## VerifiedRecipientCredential
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/canonical-message`. [Implementation, line 171](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L171).
+
+```ts
+export type VerifiedRecipientCredential = {
+  credentialType: string;
+  issuer: string;
+  claims: Record<string, string>;
+};
+```

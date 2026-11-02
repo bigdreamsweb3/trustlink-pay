@@ -1,0 +1,36 @@
+---
+title: "authorization/server/transient-owner-authorization API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/transient-owner-authorization.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## TransientOwnerAuthorizationProof
+
+Import from `@trustlink/tsn-sdk/authorization/server`. [Implementation, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/transient-owner-authorization.ts#L12).
+
+### TransientOwnerAuthorizationProof.signerPublicKey
+
+[Source, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/transient-owner-authorization.ts#L13).
+
+```ts
+signerPublicKey: string
+```
+
+### TransientOwnerAuthorizationProof.signatureBase64
+
+[Source, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/transient-owner-authorization.ts#L14).
+
+```ts
+signatureBase64: string
+```
+
+## verifyTransientOwnerAuthorization
+
+Import from `@trustlink/tsn-sdk/authorization/server`. [Implementation, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/transient-owner-authorization.ts#L17).
+
+```ts
+verifyTransientOwnerAuthorization(params: { authorization: DeviceAuthorizationClaims; ownerVerification: TransientOwnerAuthorizationProof; expectedNetwork: string; expectedTinCommitment: string; expectedAudience: string; expectedDeviceSigningKeyFingerprint: string; expectedDeviceEncryptionKeyFingerprint: string; now?: Date; }): { valid: true; } | { valid: false; reason: string; }
+```

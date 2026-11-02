@@ -1,0 +1,512 @@
+{
+  "schemaVersion": 1,
+  "scope": "Source declarations only; authentication also depends on handler bodies, middleware and configuration.",
+  "nodeEndpoints": [
+    {
+      "method": "POST",
+      "path": "/internal/wake",
+      "function": "wake_receiver_verification",
+      "line": 3155,
+      "signature": "",
+      "returns": "dict[str, Any]",
+      "decoratorOptions": {
+        "dependencies": "[Depends(require_worker_api_key)]"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/internal/settlement-authorizations/settlement",
+      "function": "create_settlement_authorization",
+      "line": 3170,
+      "signature": "body: dict[str, Any]",
+      "returns": "dict[str, Any]",
+      "decoratorOptions": {
+        "dependencies": "[Depends(require_worker_api_key)]"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/internal/settlement-authorizations/signature",
+      "function": "sign_settlement_transaction",
+      "line": 3223,
+      "signature": "body: dict[str, Any]",
+      "returns": "dict[str, Any]",
+      "decoratorOptions": {
+        "dependencies": "[Depends(require_worker_api_key)]"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/",
+      "function": "mempool_status",
+      "line": 3277,
+      "signature": "request: MempoolStatusRequest",
+      "returns": "MempoolStatusResponse",
+      "decoratorOptions": {
+        "response_model": "MempoolStatusResponse"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/threshold-access/nonces/consume",
+      "function": "consume_threshold_access_nonce",
+      "line": 3286,
+      "signature": "request: dict[str, Any]",
+      "returns": "dict[str, Any]",
+      "decoratorOptions": {}
+    },
+    {
+      "method": "POST",
+      "path": "/intents",
+      "function": "post_intent",
+      "line": 3343,
+      "signature": "req: CreateIntentRequest",
+      "returns": "PublicMempoolIntent",
+      "decoratorOptions": {
+        "response_model": "PublicMempoolIntent"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/network/recent-blockhash",
+      "function": "get_network_recent_blockhash",
+      "line": 3386,
+      "signature": "",
+      "returns": "dict[str, Any]",
+      "decoratorOptions": {}
+    },
+    {
+      "method": "GET",
+      "path": "/intents",
+      "function": "list_intents",
+      "line": 3407,
+      "signature": "status: Optional[str]=Query(None)",
+      "returns": "list[PublicMempoolIntent]",
+      "decoratorOptions": {
+        "response_model": "list[PublicMempoolIntent]",
+        "dependencies": "[Depends(require_worker_api_key)]"
+      }
+    },
+    {
+      "method": "PATCH",
+      "path": "/intents/{intent_id}/status",
+      "function": "update_intent_status",
+      "line": 3418,
+      "signature": "intent_id: str=ApiPath(...), body: UpdateStatusRequest=...",
+      "returns": "MempoolIntent",
+      "decoratorOptions": {
+        "response_model": "MempoolIntent",
+        "dependencies": "[Depends(require_worker_api_key)]"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/intent-work",
+      "function": "list_pending_intent_work",
+      "line": 3447,
+      "signature": "limit: int=Query(50, ge=1, le=500)",
+      "returns": "list[IntentWorkItem]",
+      "decoratorOptions": {
+        "response_model": "list[IntentWorkItem]",
+        "dependencies": "[Depends(require_worker_api_key)]"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/metrics",
+      "function": "get_metrics",
+      "line": 3464,
+      "signature": "",
+      "returns": "MetricsResponse",
+      "decoratorOptions": {
+        "response_model": "MetricsResponse"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/crankers/heartbeat",
+      "function": "post_cranker_heartbeat",
+      "line": 3492,
+      "signature": "req: CrankerHeartbeatRequest",
+      "returns": "CrankerHeartbeatRecord",
+      "decoratorOptions": {
+        "response_model": "CrankerHeartbeatRecord",
+        "dependencies": "[Depends(require_worker_api_key)]"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/settlement-networks",
+      "function": "get_settlement_networks",
+      "line": 3512,
+      "signature": "",
+      "returns": "list[dict[str, Any]]",
+      "decoratorOptions": {}
+    },
+    {
+      "method": "GET",
+      "path": "/network/overview",
+      "function": "get_network_overview",
+      "line": 3526,
+      "signature": "",
+      "returns": "NetworkOverviewResponse",
+      "decoratorOptions": {
+        "response_model": "NetworkOverviewResponse"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/epoch/status",
+      "function": "get_epoch_status",
+      "line": 3614,
+      "signature": "",
+      "returns": "EpochStatus",
+      "decoratorOptions": {
+        "response_model": "EpochStatus"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/epoch/close",
+      "function": "close_epoch",
+      "line": 3622,
+      "signature": "",
+      "returns": "EpochCloseResult",
+      "decoratorOptions": {
+        "response_model": "EpochCloseResult",
+        "dependencies": "[Depends(require_worker_api_key)]"
+      }
+    }
+  ],
+  "nodeSchemas": [
+    {
+      "name": "CreateIntentRequest",
+      "line": 1409,
+      "fields": [
+        "paymentId: str = Field(..., description='Unique payment ID')",
+        "intentSeedHash: str = Field(..., description='SHA-256 hex of paymentId')",
+        "recipientHash: str = Field(..., description='Hashed recipient')",
+        "recipientTin: str = Field(..., description='Recipient TIN used for private settlement routing')",
+        "tokenMintAddress: str = Field(..., description='SPL token mint address')",
+        "amount: float = Field(..., description='Payment amount')",
+        "senderWallet: str = Field(..., description='Wallet that signed the TSN payment authorization')",
+        "senderAuthorizationMessage: str = Field(..., description='Canonical TSN payment authorization message')",
+        "senderAuthorizationSignature: str = Field(..., description='Wallet signature over the authorization message')",
+        "senderAuthorizationNonce: str = Field(..., description='Unique authorization nonce')",
+        "senderAuthorizationIssuedAt: Optional[str] = Field(None, description='Authorization issue timestamp')",
+        "senderAuthorizationExpiresAt: Optional[str] = Field(None, description='Authorization expiry timestamp')",
+        "senderFeeAmount: Optional[float] = Field(None, description='Sender-side protocol fee routed to treasury')",
+        "senderSignedFundingTransaction: str = Field(..., description='Owner-signed TCAP deposit_asset_v2 transaction')",
+        "senderFundingMode: Literal['tcap_deposit_v2'] = Field(..., description='Required TCAP V2 funding authority model')",
+        "recipientAmount: Optional[float] = Field(None, description='Amount paid to recipient')",
+        "destinationNetwork: Optional[str] = Field(None, description='Signed destination settlement network for cross-chain exits')",
+        "destinationExecutor: Optional[str] = Field(None, description='Signed destination executor contract for cross-chain exits')",
+        "destinationToken: Optional[str] = Field(None, description='Signed destination-chain ERC-20 settlement token')",
+        "settlementRouteId: Optional[str] = Field(None, description='Signed registered TSN settlement route')",
+        "source: Optional[str] = Field(None)"
+      ]
+    },
+    {
+      "name": "PublicMempoolIntent",
+      "line": 1445,
+      "fields": [
+        "id: str",
+        "paymentId: str",
+        "intentSeedHash: str",
+        "recipientHash: str",
+        "tokenMintAddress: str",
+        "amount: float",
+        "recipientAmount: Optional[float] = None",
+        "source: Optional[str] = None",
+        "status: str",
+        "assignedCrankerPubkey: Optional[str] = None",
+        "fundingTxSig: Optional[str] = None",
+        "settlementTxSig: Optional[str] = None",
+        "settlementResolution: Optional[str] = None",
+        "settlementReason: Optional[str] = None",
+        "postedAt: str",
+        "updatedAt: str"
+      ]
+    },
+    {
+      "name": "SignedLeasePermitRequest",
+      "line": 1473,
+      "fields": [
+        "operatorPubkey: str",
+        "requestedAtTs: int",
+        "requestSignatureBase64: str"
+      ]
+    },
+    {
+      "name": "IntentWorkItem",
+      "line": 1478,
+      "fields": [
+        "intent: MempoolIntent"
+      ]
+    },
+    {
+      "name": "UpdateStatusRequest",
+      "line": 1481,
+      "fields": [
+        "status: str = Field(...)",
+        "assignedCrankerPubkey: Optional[str] = Field(None)",
+        "fundingTxSig: Optional[str] = Field(None)",
+        "settlementTxSig: Optional[str] = Field(None)",
+        "settlementResolution: Optional[str] = Field(None)",
+        "settlementReason: Optional[str] = Field(None)"
+      ]
+    },
+    {
+      "name": "CrankerHeartbeatRequest",
+      "line": 1489,
+      "fields": [
+        "operator_pubkey: str = Field(...)",
+        "cranker_pubkey: Optional[str] = Field(None)",
+        "version: Optional[str] = Field(None)",
+        "source: Optional[str] = Field(None)"
+      ]
+    },
+    {
+      "name": "EpochStatus",
+      "line": 1500,
+      "fields": [
+        "epoch_number: int",
+        "epoch_started_at: str",
+        "next_close_at: str",
+        "intent_count: int",
+        "settlement_count: int"
+      ]
+    },
+    {
+      "name": "EpochCloseResult",
+      "line": 1507,
+      "fields": [
+        "epoch_number: int",
+        "intents_archived: int",
+        "settlements_archived: int",
+        "intents_rolled_over: int = 0",
+        "intents_pruned: int = 0",
+        "settlements_pruned: int = 0",
+        "github_commit_url: str",
+        "new_epoch_number: int",
+        "message: str"
+      ]
+    },
+    {
+      "name": "MempoolStatusRequest",
+      "line": 1518,
+      "fields": [
+        "action: Optional[str] = Field(default='status')"
+      ]
+    },
+    {
+      "name": "MempoolStatusResponse",
+      "line": 1521,
+      "fields": [
+        "status: str = 'ok'",
+        "epoch: EpochStatus"
+      ]
+    },
+    {
+      "name": "IntentToSettlementMetrics",
+      "line": 1525,
+      "fields": [
+        "sample_count: int",
+        "average_ms: float",
+        "min_ms: float",
+        "max_ms: float",
+        "last_ms: float",
+        "updated_at: Optional[str] = None"
+      ]
+    },
+    {
+      "name": "UptimeMetrics",
+      "line": 1533,
+      "fields": [
+        "service_started_at: str",
+        "uptime_seconds: int",
+        "uptime_days: float",
+        "downtime_events: int = 0"
+      ]
+    },
+    {
+      "name": "MetricsResponse",
+      "line": 1539,
+      "fields": [
+        "intent_to_settlement: IntentToSettlementMetrics",
+        "uptime: UptimeMetrics",
+        "active_crankers_last_epoch: int"
+      ]
+    },
+    {
+      "name": "TokenNetworkStatus",
+      "line": 1544,
+      "fields": [
+        "token_mint: str",
+        "token_symbol: Optional[str] = None",
+        "token_name: Optional[str] = None",
+        "unit_price_usd: Optional[float] = None",
+        "vault_token_account: Optional[str] = None",
+        "cranker_vault: Optional[str] = None",
+        "total_vault_liquidity_units: float = 0",
+        "total_vault_liquidity_usd: float = 0",
+        "total_vault_liquidity: float = 0",
+        "total_intent_amount: float",
+        "pending_intent_amount: float",
+        "executed_intent_amount: float",
+        "vault_liquidity_estimate: float",
+        "liquidity_source: str = 'program_scan'"
+      ]
+    },
+    {
+      "name": "NetworkOverviewResponse",
+      "line": 1560,
+      "fields": [
+        "online_crankers_last_epoch: int",
+        "total_crankers_seen: int",
+        "total_vault_liquidity_usd: float",
+        "total_vault_liquidity: float",
+        "tokens: list[TokenNetworkStatus]"
+      ]
+    }
+  ],
+  "receiverHandlers": [
+    {
+      "method": "POST",
+      "path": "/api/cranker/auth/challenge",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/auth/challenge/route.ts",
+      "line": 5,
+      "authReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/cranker/auth/session",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/auth/session/route.ts",
+      "line": 6,
+      "authReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/cranker/settlement-signature",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/settlement-signature/route.ts",
+      "line": 10,
+      "authReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/cranker/wake-token",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/wake-token/route.ts",
+      "line": 13,
+      "authReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/cranker/work",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts",
+      "line": 44,
+      "authReferences": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/cranker/work",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts",
+      "line": 97,
+      "authReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/health/route.ts",
+      "line": 7,
+      "authReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/node/state",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/state/route.ts",
+      "line": 6,
+      "authReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/node/work/retry",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/retry/route.ts",
+      "line": 6,
+      "authReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/node/work",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/route.ts",
+      "line": 6,
+      "authReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/node/work",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/route.ts",
+      "line": 20,
+      "authReferences": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/internal/node/work",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/route.ts",
+      "line": 35,
+      "authReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/work",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/work/route.ts",
+      "line": 6,
+      "authReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/work",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/work/route.ts",
+      "line": 21,
+      "authReferences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/work-status/[id]",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/work-status/[id]/route.ts",
+      "line": 9,
+      "authReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/intents",
+      "file": "tsn-protocol/services/tsn-receiver/app/intents/route.ts",
+      "line": 8,
+      "authReferences": [
+        "assertAuthorizedFundingIngress"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/intents",
+      "file": "tsn-protocol/services/tsn-receiver/app/intents/route.ts",
+      "line": 22,
+      "authReferences": [
+        "assertAuthorizedFundingIngress"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/tin-operations",
+      "file": "tsn-protocol/services/tsn-receiver/app/tin-operations/route.ts",
+      "line": 7,
+      "authReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/tin-operations",
+      "file": "tsn-protocol/services/tsn-receiver/app/tin-operations/route.ts",
+      "line": 11,
+      "authReferences": []
+    }
+  ]
+}

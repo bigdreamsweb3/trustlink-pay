@@ -1,0 +1,50 @@
+---
+title: "tin-local-master-seed API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-local-master-seed.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## decryptTinMasterSeedLocally
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-local-master-seed`. [Implementation, line 87](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-local-master-seed.ts#L87).
+
+```ts
+decryptTinMasterSeedLocally(params: { seedCiphertext: string; seedNonce: string; expectedSeedCiphertextCommitment: string; dataKey: Uint8Array; context: TinLocalMasterSeedContext; }): Promise<Uint8Array<ArrayBuffer>>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN local master-seed ciphertext commitment is invalid")
+new Error("Decrypted TIN master seed has an invalid length")
+```
+
+## encryptTinMasterSeedLocally
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-local-master-seed`. [Implementation, line 55](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-local-master-seed.ts#L55).
+
+```ts
+encryptTinMasterSeedLocally(params: { masterSeed: Uint8Array; dataKey: Uint8Array; context: TinLocalMasterSeedContext; }): Promise<{ seedCiphertext: string; seedNonce: string; seedCiphertextCommitment: string; }>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN master seed must be exactly 32 bytes")
+```
+
+## TinLocalMasterSeedContext
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-local-master-seed`. [Implementation, line 9](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-local-master-seed.ts#L9).
+
+```ts
+export type TinLocalMasterSeedContext = {
+  tin: string;
+  ownerPublicKey: string;
+  routeVersion: number;
+  pruConfigurationHash: string;
+};
+```

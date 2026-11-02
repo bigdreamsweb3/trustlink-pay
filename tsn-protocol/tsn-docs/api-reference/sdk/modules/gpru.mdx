@@ -1,0 +1,130 @@
+---
+title: "gpru API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## createCanonicalGpruAuthorizationMessage
+
+Exact bytes an authorization signer must sign; fields are length-prefixed, not concatenated.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru`. [Implementation, line 89](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru.ts#L89).
+
+```ts
+createCanonicalGpruAuthorizationMessage(input: GpruAuthorization): Uint8Array
+```
+
+## deriveGpruElgamalKeyCommitment
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru`. [Implementation, line 75](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru.ts#L75).
+
+```ts
+deriveGpruElgamalKeyCommitment(version: number, publicKey: Uint8Array): Uint8Array
+```
+
+Direct failure expressions:
+
+```text
+new Error("Unsupported GPRU ElGamal key version")
+new Error("GPRU ElGamal public key must be a nonzero 32-byte value")
+```
+
+## deriveGpruElgamalPublicKey
+
+Derive the versioned GPRU ElGamal public key from owner-held key material.
+The derived secret key stays local and is released with the WASM key objects.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru`. [Implementation, line 55](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru.ts#L55).
+
+```ts
+deriveGpruElgamalPublicKey(masterSeed: Uint8Array): Uint8Array
+```
+
+Direct failure expressions:
+
+```text
+new Error("GPRU ElGamal derivation requires at least 32 bytes of owner key material")
+new Error("Solana zk-sdk returned an invalid GPRU ElGamal public key")
+```
+
+## deriveGpruIdentity
+
+Domain-separated GPRU identity derivation. This output has no token-account semantics.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru`. [Implementation, line 46](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru.ts#L46).
+
+```ts
+deriveGpruIdentity(input: GpruDerivationInput): Uint8Array
+```
+
+## deriveGpruIdentityHex
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru`. [Implementation, line 49](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru.ts#L49).
+
+```ts
+deriveGpruIdentityHex(input: GpruDerivationInput): string
+```
+
+## GPRU_AUTHORIZATION_DOMAIN
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru`. [Implementation, line 7](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru.ts#L7).
+
+```ts
+"TSN_GPRU_AUTHORIZATION_V1"
+```
+
+## GPRU_DERIVATION_DOMAIN
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru`. [Implementation, line 6](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru.ts#L6).
+
+```ts
+"TSN_GPRU_DERIVATION_V1"
+```
+
+## GPRU_ELGAMAL_KEY_VERSION_V1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru`. [Implementation, line 8](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru.ts#L8).
+
+```ts
+1
+```
+
+## GpruAuthorization
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru`. [Implementation, line 18](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru.ts#L18).
+
+```ts
+export type GpruAuthorization = GpruDerivationInput & { gpruIdentity: Uint8Array | string };
+```
+
+## GpruDerivationInput
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru`. [Implementation, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru.ts#L12).
+
+```ts
+export type GpruDerivationInput = {
+  tinPrivacyReceivingRoot: Uint8Array | string;
+  settlementCommitment: Uint8Array | string;
+  epochContext: Uint8Array | string;
+  authorizationScope: Uint8Array | string;
+};
+```
+
+## verifyGpruAuthorizationBinding
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru`. [Implementation, line 95](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru.ts#L95).
+
+```ts
+verifyGpruAuthorizationBinding(input: GpruAuthorization): boolean
+```
+
+## verifyGpruAuthorizationSignature
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru`. [Implementation, line 100](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru.ts#L100).
+
+```ts
+verifyGpruAuthorizationSignature(params: GpruAuthorization & { authorizationPublicKey: Uint8Array | string; signature: Uint8Array | string; }): boolean
+```

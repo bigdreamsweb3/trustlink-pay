@@ -8,12 +8,24 @@ description: "TCAP governs accepted assets, reserves, liquidity, and authorized 
 
 For a private-state transition, **GPRU guards the integrity and privacy of the user's state presented to TCAP**. Its proof is intended to show that the hidden state is current and that the proposed change follows from it. TCAP remains the authority over funds and applies the valid, authorized transition atomically; GPRU does not hold the user's assets.
 
+## How reserve protection works
+
+TCAP tracks the actual assets held for each accepted token and the obligations recognized against those assets. A wallet deposit increases the vault assets and the reserve's funded pending liability together. When a private credit is accepted, TCAP moves the credited amount from pending liability to settled confidential liability. For example, a funded 100 USDC can support an 80 USDC credit, leaving 20 USDC pending and 80 USDC settled; the total recognized obligation remains 100 USDC.
+
+The funding limit is pooled per asset, not restricted to deposits from the same epoch. TCAP rejects a credit when its amount exceeds funded pending liabilities or when recognized liabilities exceed the recorded reserve assets. The proof-gated credit also checks the current shared commitment root and sequence. GPRU verifies the private-state transition; only then does TCAP advance the root and update the liability counters atomically. If a check fails, the transaction rolls back, so the root and reserve accounting are not partially advanced.
+
+Aggregate solvency protects the reserve as a whole, but it cannot by itself prove that one user's private balance is correct. GPRU's proof must bind the exact asset, action, amount, current hidden state, and valid successor, including affordability for a debit or exit. TCAP must apply that same proven amount to its accounting. This is why a proof is not a fund authorization on its own and why the proof statement and TCAP transition must agree.
+
+This example describes aggregate reserve arithmetic; the current Node native-credit contract separately binds the credit to the exact confirmed deposit amount. The reserve is not a per-TIN balance ledger. Encrypted action history is carried in transaction Memo data, while TCAP uses a shared protocol root rather than a public balance account for each TIN. TSNP's operator epoch treasury is separate from TCAP's pooled asset reserve; a credit may settle across an epoch boundary if it remains covered by the pool's funded liabilities.
+
 ## Balance history
 
 The design records encrypted action data in transaction Memo instructions so the owner can reconstruct their history from chain data. A Memo is transaction data, not a private account or a guarantee that the transition is valid. TCAP's on-chain checks and the proof must validate the action before it changes protocol state.
 
 ## Current capability boundary
 
-The hidden-head proof path is not yet established as an end-to-end settlement capability. Confidential debit and exit are not established as available. Solana transaction metadata remains public, and repeated public state references may expose correlation. See the [security overview](/security/threat-model) for these limits.
+The hidden-head proof path is not established as a completed live settlement capability. Confidential debit and exit require separate verification. TCAP uses a shared root rather than a public per-TIN latest-head account, but amount, asset, root progression, nullifier, successor point and ciphertext remain public. See the [security overview](/security/threat-model) for correlation and operator-knowledge limits.
+
+The current source includes the pool-wide pending-liability and reserve-solvency checks on the proof-gated credit path. The complete hidden-head prover, witness, verifier configuration, and settlement flow must be verified before this protection model can be treated as an end-to-end runtime guarantee. Retained debit and exit entrypoints have separate proof, authorization, accounting and payout requirements; their current runtime reachability and complete execution require a dedicated review.
 
 The full TCAP instruction contract and integration decisions are maintained in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

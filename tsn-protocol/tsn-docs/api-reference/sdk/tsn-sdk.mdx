@@ -6,6 +6,8 @@ description: "Reference for the application-facing TypeScript SDK, including net
 
 `@trustlink/tsn-sdk` is the application-facing TypeScript façade. It exports the client, authorization, TIN, cross-chain, wallet-transfer, receipt, recovery, and Solana helpers from `src/index.ts`.
 
+The snippets illustrate integration stages and assume caller-supplied variables. Complete [typed examples](/sdk/payment-guide) and the [full generated reference](/sdk/api-reference) provide verified inputs and signatures.
+
 ## Public modules and functions
 
 The exports below are grouped by source module. The linked source is authoritative for the complete parameter type and return shape.
@@ -18,7 +20,7 @@ The exports below are grouped by source module. The linked source is authoritati
 | `wallet-transfer` | `buildTsnSplTokenTransferTransaction`. |
 | `cross-chain` | `validateCrossChainRecipient`, `validateCreditcoinPayoutAuthorization`, `validateCreditcoinDestination`, `createTinExitReplayKey`, `assertVerifiedDestinationLiquidity`, `CreditcoinRouteClient`, `loadCrossChainUiSnapshot`, `TsnCrossChainClient`. |
 | `tins` | TIN V1 registry lookup, creation-envelope, owner-recovery, creation intent, and submission helpers. The SDK does not expose retired plaintext TIN account decoders or direct-create instruction builders. |
-| Other exported modules | `contracts`, `canonical-message`, `mempool`, `quote`, `send-estimate`, `settlement-economics`, `program`, `token-registry`, `payment-authorization-server`, `payment-jobs`, `sponsored-settlement`, `tsn-exit`, `blockchain/*`, `gpru`, `tin-envelopes`, `tin-device-*`, `receipts`, `authorization`, `recovery`, `sessions`, and `device`. |
+| Other exported modules | `contracts`, `canonical-message`, `mempool`, `quote`, `send-estimate`, `settlement-economics`, `program`, `token-registry`, `payment-authorization-server`, `payment-jobs`, `tsn-exit`, `blockchain/*`, `gpru`, `tin-envelopes`, `tin-device-*`, `receipts`, `authorization`, `recovery`, `sessions`, and `device`. |
 
 ## Network status
 
@@ -56,8 +58,7 @@ const authorization = await createTcapAssetPaymentAuthorization({
   senderIdentity: senderWallet,
   receiverIdentity: `tin:${recipientTin}`,
   recipientDisplayName: recipient.displayName,
-  recipientDisplayNameSource: recipient.displayNameSource,
-  recipientVerifiedCredentials: recipient.verifiedCredentials,
+  recipientDisplayNameSource: recipient.displayName.trim() ? "owner-provided" : "not provided",
   amount,
   senderFeeAmount,
   totalTokenRequiredUi: amount + senderFeeAmount,
@@ -69,7 +70,7 @@ const signature = await wallet.signMessage(
 
 const request = buildPaymentAuthorizationIntentRequest({
   paymentId,
-  recipientHash: recipientTin,
+  recipientHash: recipient.ownerPubkeyHash,
   recipientTin,
   tokenMintAddress: authorization.asset.mint,
   tokenDecimals: authorization.asset.decimals,
@@ -82,7 +83,6 @@ const request = buildPaymentAuthorizationIntentRequest({
   senderFeeAmount,
   senderSignedFundingTransaction,
   senderFundingMode: "tcap_deposit_v2",
-  senderTokenAccount,
   amount,
 });
 const client = new TsnHttpClient({ baseUrl: process.env.TSN_NODE_URL! });

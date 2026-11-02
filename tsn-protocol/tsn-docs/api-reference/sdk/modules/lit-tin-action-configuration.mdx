@@ -1,0 +1,89 @@
+---
+title: "lit-tin-action-configuration API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-configuration.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## assertLitTinActionConfiguration
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-tin-action-configuration`. [Implementation, line 121](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-configuration.ts#L121).
+
+```ts
+assertLitTinActionConfiguration(input: Partial<LitTinActionConfiguration> | null | undefined): LitTinActionConfiguration
+```
+
+Direct failure expressions:
+
+```text
+new Error( `TIN threshold action is not ready: ${readiness.errors.join("; ")}`, )
+```
+
+## getLitTinActionReadiness
+
+Validates only public, immutable action metadata. Account or usage API keys
+are deliberately excluded so they cannot enter frontend state, TIN data,
+evidence, or documentation.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-tin-action-configuration`. [Implementation, line 61](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-configuration.ts#L61).
+
+```ts
+getLitTinActionReadiness(input: Partial<LitTinActionConfiguration> | null | undefined): LitTinActionReadiness
+```
+
+## LIT_TIN_ACTION_REPLAY_MODE
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-tin-action-configuration`. [Implementation, line 2](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-configuration.ts#L2).
+
+```ts
+"ATOMIC_NONCE_REGISTRY"
+```
+
+## LIT_TIN_ACTION_RUNTIME
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-tin-action-configuration`. [Implementation, line 1](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-configuration.ts#L1).
+
+```ts
+"lit-chipotle-action"
+```
+
+## LitTinActionConfiguration
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-tin-action-configuration`. [Implementation, line 4](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-configuration.ts#L4).
+
+```ts
+export type LitTinActionConfiguration = {
+  runtime: typeof LIT_TIN_ACTION_RUNTIME;
+  apiBaseUrl: string;
+  actionCid: string;
+  actionSourceSha256: string;
+  pkpId: string;
+  groupId: string;
+  replayProtection: {
+    mode: typeof LIT_TIN_ACTION_REPLAY_MODE;
+    endpoint: string;
+    audience: string;
+    verifierPublicKey: string;
+  };
+};
+```
+
+## LitTinActionReadiness
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-tin-action-configuration`. [Implementation, line 19](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-configuration.ts#L19).
+
+```ts
+export type LitTinActionReadiness =
+  | {
+      ready: true;
+      status: "READY";
+      configuration: LitTinActionConfiguration;
+    }
+  | {
+      ready: false;
+      status: "BLOCKED_ACTION_CONFIGURATION";
+      errors: string[];
+    };
+```

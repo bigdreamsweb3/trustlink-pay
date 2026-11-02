@@ -28,9 +28,56 @@ stateDiagram-v2
 
 Some flows use separate transactions for funding and the subsequent credit. Each signature confirms only its own transaction. A confirmed funding transaction does not prove that the later TCAP transition completed.
 
+## Current native-credit sequence
+
+The sender approves the canonical message and exact TCAP reserve-deposit transaction. The application builds a request using the resolved owner hash and posts it to Node's `/intents`. Node forwards it to Receiver. Receiver stores idempotent funding work and pre-creates an internal RECEIVED settlement reference; that reference is not executable before confirmed funding.
+
+Node leases funding and checks the sender signature/message, current recipient, registered asset and exact deposit. Its signed decision binds input, evidence, execution projection and lease. Cranker claims only verified funding, independently checks the attestation and submits the unchanged signed deposit. Node rechecks the resulting successful confirmed transaction before preparing settlement.
+
+For settlement, Node resolves the TIP route, reads current roots/verifier, reconstructs root-matching witness snapshots, encrypts the Memo action, generates and verifies a local proof, and rechecks chain preconditions. It signs the exact execution projection. Cranker obtains authorization and Mother co-signing for its current lease, then submits the TSNP call followed by the bound Memo. TSNP invokes TCAP; TCAP invokes GPRU before advancing the shared root and shifting equal liability from pending to settled confidential state.
+
+```mermaid
+sequenceDiagram
+  participant A as Application / wallet
+  participant N as Node
+  participant R as Receiver
+  participant K as Cranker
+  participant S as Solana programs
+  A->>A: Sign canonical message and reserve deposit
+  A->>N: POST /intents
+  N->>R: Persist funding and settlement reference
+  N->>R: Lease funding and report signed VERIFIED decision
+  K->>R: Lease verified funding
+  K->>S: Submit unchanged signed deposit
+  K->>R: Report confirmed funding signature
+  N->>S: Recheck funding, current roots and verifier
+  N->>N: Resolve route, construct witness and verify local proof
+  N->>R: Report signed VERIFIED settlement
+  K->>N: Request active-lease authorization and co-signature
+  K->>S: TSNP to TCAP to GPRU with following Memo
+  S->>S: Atomic credit root and liability transition
+  K->>R: Report confirmed settlement signature
+  A->>R: Inspect both coordination records
+  A->>S: Verify signatures and relevant account state
+```
+
+The sequence describes inspected source behavior. Matching deployment, initialized verifier, active root/reserve, valid recipient and current witness/prover settings are required for live execution. A valid local proof is a separate observation from a confirmed chain settlement.
+
+## Status and reconciliation
+
+Receiver work uses `RECEIVED`, `NODE_VERIFYING`, `VERIFIED`, `REJECTED`, `CRANKER_LEASED`, `SUBMITTED`, `CONFIRMED`, and `FAILED`. SDK intent status uses a separate lower-case vocabulary; applications must read the actual response type instead of equating the two models.
+
+Receiver provides `GET /api/work-status/<funding-work-id>` with operation ID, kind, status, verification type, sanitized decision reason and `result.signature`. Funding status additionally includes a nested `settlement` object with its independent status/result. TIN operation status is supported separately. This is a coordination view; verify successful transaction results and expected TCAP root/reserve changes on the selected cluster.
+
+There is no dedicated `waitForSettlement` or public payment-status polling helper in the current `TsnHttpClient`. Its intent listing/status-update helpers serve worker-authorized endpoints. An application can call the documented Receiver work-status route with its own fetch/timeout policy, without exposing worker credentials.
+
+Owner recovery additionally requires owner-held scan material and validated Memo history. The SDK checks action and predecessor continuity; a scanner must supply complete enough history. A single confirmed signature does not establish that all owner records were indexed or reconstructed.
+
 ## Safe retries
 
 Before retrying, check the transaction signature and the latest status. If a transaction may have succeeded but the response was lost, do not create a replacement payment until its chain result is known. A stale or expired sender-signed transaction must be rebuilt and approved again by the sender; an operator must not modify its authorization.
+
+Already confirmed funding remains distinct if settlement fails. The native-credit path does not establish an automatic refund of that deposit; epoch-family refunds use different permits/accounts. A root change requires proof reconstruction and authorization against current state. See [typed payment examples](/sdk/payment-guide) and [troubleshooting](/sdk/troubleshooting).
 
 GPRU is intended to guard the private state presented to TCAP, while TCAP governs funds and applies authorized changes atomically. That hidden-head proof flow is not established end to end; the lifecycle stages above do not imply that it is enabled.
 

@@ -1,0 +1,85 @@
+---
+title: "authorization/device-authorization-client API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization-client.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## authorizeDevice
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 65](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization-client.ts#L65).
+
+```ts
+authorizeDevice(params: { authorizationServiceUrl: string; tin: string; deviceId: string; signingPublicKey: JsonWebKey; encryptionPublicKey: JsonWebKey; permissions: string[]; historyRecoveryScope: HistoryRecoveryScope; selectedReceiptIds?: string[]; wallet: TsnOwnerMessageSigner; fetch?: typeof fetch; }): Promise<DeviceAuthorizationState>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TSN authorization service returned an unsupported challenge")
+new Error("TSN registration challenge is bound to another TIN")
+```
+
+## DeviceAuthorizationState
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 22](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization-client.ts#L22).
+
+### DeviceAuthorizationState.ownerVerified
+
+[Source, line 23](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization-client.ts#L23).
+
+```ts
+ownerVerified: true
+```
+
+### DeviceAuthorizationState.deviceAuthorized
+
+[Source, line 24](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization-client.ts#L24).
+
+```ts
+deviceAuthorized: true
+```
+
+## getDeviceAuthorizationState
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 59](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization-client.ts#L59).
+
+```ts
+getDeviceAuthorizationState(value: DeviceAuthorizationState): DeviceAuthorizationState
+```
+
+## TsnOwnerMessageSigner
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 27](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization-client.ts#L27).
+
+### TsnOwnerMessageSigner.publicKey
+
+[Source, line 28](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization-client.ts#L28).
+
+```ts
+publicKey: string
+```
+
+### TsnOwnerMessageSigner.signMessage
+
+[Source, line 29](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization-client.ts#L29).
+
+```ts
+signMessage(message: Uint8Array): Promise<Uint8Array>
+```
+
+## verifyOwnerAuthorization
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 47](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/device-authorization-client.ts#L47).
+
+```ts
+verifyOwnerAuthorization(value: unknown): DeviceAuthorizationState
+```
+
+Direct failure expressions:
+
+```text
+new Error("TSN authorization service did not confirm owner and device authorization")
+```

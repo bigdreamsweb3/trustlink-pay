@@ -1,1 +1,9 @@
+# Historical standalone documentation pull prompt
+
+**Status: HISTORICAL, incomplete original prompt.** The text below assumes a standalone docs repository and must not be executed against the populated `tsn-protocol/tsn-docs/` tree. Current inspected Git boundaries do not show a separate docs checkout there, and [pull-tsn-docs.mjs](../scripts/pull-tsn-docs.mjs) deliberately refuses a populated non-standalone directory. Do not automatically stash or pull unrelated dirty work.
+
+Read the [architecture checkout map](../docs/laboratory/architecture-map.md) and [maintenance manual](../docs/DOCUMENTATION_MAINTENANCE.md). If Git synchronization is explicitly requested later, verify the owning repository, remote/default branch, clean-state obligations and exact authorization first. Merely finding this record is not authorization. Its truncated opening is preserved rather than inventing missing original wording.
+
+## Original historical text
+
 ushed changes or opened PRs against our docs repo. Do this: 1. cd to the docs repo root. 2. git fetch --all --prune 3. Check for open PRs authored by "mintlify[bot]" or "mintlify-app[bot]": gh pr list --author "app/mintlify" --state open For each, print title, URL, and changed files (gh pr view <n> --json title,url,files). Do NOT merge — these are: Fix broken links, Fix SEO issues, Update from code changes, Improve docs from user feedback, Fill gaps from assistant conversations. They need human review. 4. On the default branch, if the working tree is clean run: git pull --ff-only Otherwise stash with a labeled message, pull --ff-only, pop the stash, and report conflicts. If fast-forward fails, do NOT force — report ahead/behind counts and last 5 commits on both sides, then stop. 5. After pulling, print files changed since previous HEAD (git diff --name-status OLD_HEAD..HEAD). These come from the auto-merged automations: "Enforce writing style" and "Fix grammar & typos". 6. Do not modify or reformat pulled files.

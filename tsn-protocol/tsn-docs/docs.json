@@ -48,7 +48,8 @@
               "overview/how-it-works",
               "overview/architecture",
               "overview/separation-of-concerns",
-              "get-started/faq"
+              "get-started/faq",
+              "glossary/index"
             ]
           },
           {
@@ -79,7 +80,12 @@
         "groups": [
           {
             "group": "Start Here",
-            "pages": ["sdk/index", "developers/getting-started"]
+            "pages": [
+              "sdk/index",
+              "sdk/getting-started",
+              "sdk/configuration",
+              "developers/getting-started"
+            ]
           },
           {
             "group": "Identity and Network",
@@ -91,16 +97,100 @@
           {
             "group": "Integration Guides",
             "pages": [
+              "sdk/payment-guide",
               "developers/payment-intent-lifecycle",
               "developers/confidential-settlement",
+              "sdk/integrations",
+              "sdk/troubleshooting",
               "developers/replay-and-retries"
             ]
           },
           {
             "group": "SDK Reference",
             "pages": [
+              "sdk/api-reference",
               "api-reference/sdk/tsn-sdk",
-              "api-reference/sdk/tins/index"
+              "api-reference/sdk/tins/index",
+              "api-reference/sdk/tins/createTinV1IdentityEnvelope"
+            ]
+          },
+          {
+            "group": "Source Modules",
+            "pages": [
+              "api-reference/sdk/modules/authorization-device-authorization",
+              "api-reference/sdk/modules/authorization-device-authorization-client",
+              "api-reference/sdk/modules/authorization-device-permissions",
+              "api-reference/sdk/modules/authorization-device-registration-challenge",
+              "api-reference/sdk/modules/authorization-identity-commitments",
+              "api-reference/sdk/modules/authorization-server-device-registration-challenge",
+              "api-reference/sdk/modules/authorization-server-device-registration-verifier",
+              "api-reference/sdk/modules/authorization-server-tins-owner-verifier",
+              "api-reference/sdk/modules/authorization-server-transient-owner-authorization",
+              "api-reference/sdk/modules/blockchain-solana-core",
+              "api-reference/sdk/modules/blockchain-solana-tsn",
+              "api-reference/sdk/modules/canonical-message",
+              "api-reference/sdk/modules/client",
+              "api-reference/sdk/modules/contracts",
+              "api-reference/sdk/modules/cross-chain",
+              "api-reference/sdk/modules/device-key-fingerprints",
+              "api-reference/sdk/modules/device-non-exportable-credentials",
+              "api-reference/sdk/modules/gpru",
+              "api-reference/sdk/modules/gpru-babyjub-delta-cipher",
+              "api-reference/sdk/modules/gpru-balance-history",
+              "api-reference/sdk/modules/gpru-stealth-keys",
+              "api-reference/sdk/modules/gpru-transaction-record",
+              "api-reference/sdk/modules/lit-threshold-provider",
+              "api-reference/sdk/modules/lit-tin-action-configuration",
+              "api-reference/sdk/modules/lit-tin-action-contract",
+              "api-reference/sdk/modules/mempool",
+              "api-reference/sdk/modules/network-status",
+              "api-reference/sdk/modules/payment-authorization",
+              "api-reference/sdk/modules/payment-authorization-server",
+              "api-reference/sdk/modules/payment-jobs",
+              "api-reference/sdk/modules/private-view-private-value-element",
+              "api-reference/sdk/modules/program",
+              "api-reference/sdk/modules/quote",
+              "api-reference/sdk/modules/receipts-internal-receipt-envelope",
+              "api-reference/sdk/modules/receipts-types",
+              "api-reference/sdk/modules/recovery-history-recovery",
+              "api-reference/sdk/modules/send-estimate",
+              "api-reference/sdk/modules/sessions-private-session-request",
+              "api-reference/sdk/modules/sessions-proof-of-possession",
+              "api-reference/sdk/modules/sessions-server-private-request-verifier",
+              "api-reference/sdk/modules/settlement-economics",
+              "api-reference/sdk/modules/tcap-gpru-credit",
+              "api-reference/sdk/modules/tcap-one-time-credit",
+              "api-reference/sdk/modules/tin-device-access",
+              "api-reference/sdk/modules/tin-device-key-envelope",
+              "api-reference/sdk/modules/tin-device-key-provider",
+              "api-reference/sdk/modules/tin-envelopes",
+              "api-reference/sdk/modules/tin-local-master-seed",
+              "api-reference/sdk/modules/tin-private-controller",
+              "api-reference/sdk/modules/tin-threshold-nonce-receipt",
+              "api-reference/sdk/modules/tins",
+              "api-reference/sdk/modules/token-registry",
+              "api-reference/sdk/modules/tsn-exit",
+              "api-reference/sdk/modules/wallet-transfer"
+            ]
+          },
+          {
+            "group": "Testing and Service Interfaces",
+            "pages": [
+              "testing/verification",
+              "api-reference/services"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Operators",
+        "groups": [
+          {
+            "group": "Responsibilities and Integration",
+            "pages": [
+              "operators/tsn-node",
+              "operators/tsn-cranker",
+              "operators/receiver"
             ]
           }
         ]

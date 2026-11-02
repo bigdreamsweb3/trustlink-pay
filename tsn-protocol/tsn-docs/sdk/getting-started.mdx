@@ -1,0 +1,40 @@
+---
+title: "Install and initialize the workspace SDK"
+description: "Package access, supported facilities, client initialization and a first offline integration."
+---
+
+`@trustlink/tsn-sdk@0.1.0` is a private source workspace package. It is not currently published for a public-registry `npm install @trustlink/tsn-sdk`. Developers need access to the repository or a separately supplied built package. The package's `main` and `types` point to `dist`, so source checkout alone is not the built SDK.
+
+## Build in the existing workspace
+
+From a checkout with its dependencies installed, use the root script:
+
+```bash
+npm run tsn:sdk:build
+```
+
+The script builds the TCAP SDK dependency, then the TSN SDK. A separate application can install the built local SDK directory using npm's local-directory dependency mechanism; it must also be able to resolve the TCAP SDK's local dependency. The package is ESM. For build-tool troubleshooting and environment-specific setup, use the [internal operations record](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs/laboratory/operations-and-verification.md).
+
+The manifest does not declare a tested Node/browser version matrix. Modules require the facilities they actually call: fetch, WebCrypto, Solana binary types and, for server modules, Node APIs. The root barrel exports server facilities as well as client helpers. Browser applications must select browser-safe imports or use the repository's browser bundle; importing the root does not guarantee every export is browser-safe.
+
+## Initialize a client
+
+This is an illustrative initialization snippet. The complete [typed client example](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/tsn-docs/sdk/examples/client.ts) takes endpoint and request arguments explicitly.
+
+```ts
+import { TsnHttpClient } from "@trustlink/tsn-sdk/client";
+
+const client = new TsnHttpClient({ baseUrl: nodeUrl, fetchImpl });
+```
+
+The client removes a trailing slash, uses supplied fetch or global fetch, and adds `x-api-key` only when configured. It has generic post/get/patch methods and intent helpers. It does not start services, manage a wallet, read your application's `.env`, or retry failed requests automatically.
+
+## Your first offline integration
+
+Start with [canonical authorization preparation](/sdk/payment-guide). The complete example creates a real SDK message and request with explicit inputs, then lets the caller supply wallet approval. Its offline validation checks the decimal amount, recipient-owner hash and HTTP request shape with mocked transport. These checks establish example behavior without submitting a payment.
+
+After that, configure [service endpoints](/sdk/configuration), integrate a [wallet-approved reserve deposit](/sdk/payment-guide), and implement [status reconciliation](/developers/payment-intent-lifecycle). Live credit additionally requires the matching deployed programs, valid recipient registration, initialized verifier, accepted asset/reserve state and current witness/prover configuration. These dependencies are not checked by client initialization.
+
+## Reference and extension
+
+The [complete API catalog](/sdk/api-reference) lists all discovered public exports and class/interface members. Use [identity guidance](/developers/private-tin-issuance) for trusted lookup and wallet recovery, [troubleshooting](/sdk/troubleshooting) for failures, and [integration boundaries](/sdk/integrations) for merchant, service-provider and operator applications.

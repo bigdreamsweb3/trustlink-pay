@@ -17,3 +17,32 @@ TrustLink Labs welcomes protocol engineers, cryptographers, security researchers
 The TSN SDK is currently a private workspace package. Application-facing documentation here shows its intended use; access to source and package builds is managed through the repository.
 
 For implementation issues, integration discussions, deployment, or service operations, use the repository's [root documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs). This Mintlify site focuses on protocol responsibilities and application SDK behavior.
+
+## Local development and checks
+
+For documentation changes, follow the [documentation maintenance manual](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/DOCUMENTATION_MAINTENANCE.md) and applicable repository instructions. Inspect current source/tests, map internal/public impact, preserve research history and report actual validation; a generated catalog or old discussion does not establish implemented behavior.
+
+The workspace contains a root application/tooling checkout and an independent `tsn-protocol` checkout, plus separate research and pitch-deck repositories. Some source paths appear in overlapping parent checkouts; inspect `git rev-parse --show-toplevel` in the directory you intend to change. Do not assume the public docs directory is another standalone repository or use a pull/reset script to refresh a populated tree.
+
+Use the owning package's manifest and lockfile to install its dependency tree. The SDK requires its TCAP SDK workspace dependency, ESM support and the runtime facilities used by each selected module. Receiver, Node and Cranker have different manifests, environments and test prerequisites. There is no single manifest-declared tested runtime matrix for all components; use the [technology reference](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/technology-reference.md) for declared versus observed versions.
+
+These existing root commands build or test relevant packages:
+
+```bash
+npm run tsn:sdk:build
+npm run tsn:sdk:browser:build
+npm run tsn:receiver:test
+npm run tsn:receiver:build
+node docs/references/tooling/verify-sdk-examples.mjs
+python docs/references/tooling/documentation-audit.py check
+```
+
+Run checks appropriate to the changed contract. The first command builds TCAP SDK and TSN SDK; the browser command builds the application bundle separately. Node tests use Python unittest with package-specific prerequisites. Program integration, deployment and some security/demo scripts can submit transactions; inspect their behavior before running them. The [testing guide](/testing/verification) distinguishes successful local checks from live settlement evidence and records the observed TypeScript-launcher workaround.
+
+## Protocol changes and pull requests
+
+Read the repository's active `AGENTS.md`, `.codex/architecture-terminology.md`, `.codex/architecture-change-policy.md` and `.codex/documentation-sync-policy.md`. Establish account/instruction layout and affected SDK/Receiver/Node/Cranker contracts before changing protocol behavior. Preserve unrelated work, configured IDs and user-managed services. A replacement should remove superseded normal runtime paths after verification; keep required one-time migrations separate and explain them.
+
+A useful pull request describes the concrete trigger, resulting behavior, affected contract boundaries and exact tests run. Report unexecuted chain results and current limitations. Update canonical architecture, ABI, lifecycle, invariants and SDK examples where their contract changed. Regenerate references from source and label proposed or experimental features explicitly. Do not publish secret configuration, private witnesses or raw authorization/session payloads as reproduction evidence.
+
+For a bug report, retain the checkout revision, selected network, affected function/route, sanitized error, expected versus observed behavior and transaction signature where applicable. A timeout needs signature/state reconciliation before being classified as failed settlement. Report security-sensitive details through the repository's actual security policy rather than assuming a contact channel exists. Research proposals belong in the decision/experiment record with a hypothesis, evidence and adoption status.

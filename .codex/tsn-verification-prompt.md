@@ -1,3 +1,11 @@
+# Historical SDK and UI verification handoff
+
+**Status: HISTORICAL; old paths, creation restrictions and test results are a checkpoint, not current requirements.** The original prompt below is retained as a repair record. Its ban on direct TIP creation, missing-allocator assumption and credit-only live assertion are superseded for present architecture. Current TIP source supports direct/staged version-1 registry creation, distinct from global-state version 3. A configured witness/prover path now exists, but a complete native credit still needs current deployment/account/proof and payment evidence.
+
+For current work read [AGENTS.md](../AGENTS.md), [terminology](architecture-terminology.md), [architecture map](../docs/laboratory/architecture-map.md), [TIN issuance](../docs/protocol-flows/tin-creation/README.md) and the [maintenance manual](../docs/DOCUMENTATION_MAINTENANCE.md). Check actual UI routes and package scripts before selecting tests. Old pass/fail counts must not be reported as rerun results. Preserve genuine user approvals, exact signed-wire handling and role separation; this prompt does not authorize any Git or chain action.
+
+## Original historical prompt
+
 # TSN / TrustLink Codex Verification Prompt
 
 You are verifying and repairing the current TrustLink repository. Work from the repository root:

@@ -1,0 +1,138 @@
+---
+title: "mempool API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## HttpTsnMempool
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/mempool`. [Implementation, line 21](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L21).
+
+```ts
+new HttpTsnMempool(baseUrl?: string | undefined, apiKey?: string | undefined): HttpTsnMempool
+```
+
+### HttpTsnMempool.postIntent
+
+[Source, line 34](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L34).
+
+```ts
+postIntent(request: CreateIntentRequest): Promise<PublicTsnMempoolIntent>
+```
+
+### HttpTsnMempool.listIntents
+
+[Source, line 38](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L38).
+
+```ts
+listIntents(params?: { status?: TsnIntentStatus; }): Promise<PublicTsnMempoolIntent[]>
+```
+
+### HttpTsnMempool.listPendingIntentWork
+
+[Source, line 46](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L46).
+
+```ts
+listPendingIntentWork(limit?: number): Promise<TsnIntentWorkItem[]>
+```
+
+### HttpTsnMempool.updateIntentStatus
+
+[Source, line 50](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L50).
+
+```ts
+updateIntentStatus(id: string, status: TsnIntentStatus, patch?: Partial<TsnMempoolIntent>): Promise<TsnMempoolIntent>
+```
+
+### HttpTsnMempool.publishEpochChallenge
+
+[Source, line 57](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L57).
+
+```ts
+publishEpochChallenge(challenge: Omit<TsnEpochChallenge, "id" | "status" | "postedAt" | "updatedAt"> & { id?: string; status?: TsnEpochChallenge["status"]; }): Promise<TsnEpochChallenge>
+```
+
+### HttpTsnMempool.listOpenEpochChallenges
+
+[Source, line 66](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L66).
+
+```ts
+listOpenEpochChallenges(limit?: number): Promise<TsnEpochChallenge[]>
+```
+
+### HttpTsnMempool.updateEpochChallengeStatus
+
+[Source, line 70](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L70).
+
+```ts
+updateEpochChallengeStatus(id: string, status: TsnEpochChallenge["status"], patch?: Partial<TsnEpochChallenge>): Promise<TsnEpochChallenge>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TSN_MEMPOOL_URL is required for HttpTsnMempool")
+```
+
+## TsnMempool
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/mempool`. [Implementation, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L11).
+
+### TsnMempool.postIntent
+
+[Source, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L12).
+
+```ts
+postIntent(request: CreateIntentRequest): Promise<PublicTsnMempoolIntent>
+```
+
+### TsnMempool.listIntents
+
+[Source, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L13).
+
+```ts
+listIntents(params?: { status?: TsnIntentStatus; }): Promise<PublicTsnMempoolIntent[]>
+```
+
+### TsnMempool.listPendingIntentWork
+
+[Source, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L14).
+
+```ts
+listPendingIntentWork(limit?: number): Promise<TsnIntentWorkItem[]>
+```
+
+### TsnMempool.updateIntentStatus
+
+[Source, line 15](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L15).
+
+```ts
+updateIntentStatus(id: string, status: TsnIntentStatus, patch?: Partial<TsnMempoolIntent>): Promise<TsnMempoolIntent>
+```
+
+### TsnMempool.publishEpochChallenge
+
+[Source, line 16](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L16).
+
+```ts
+publishEpochChallenge(challenge: Omit<TsnEpochChallenge, "id" | "status" | "postedAt" | "updatedAt"> & { id?: string; status?: TsnEpochChallenge["status"]; }): Promise<TsnEpochChallenge>
+```
+
+### TsnMempool.listOpenEpochChallenges
+
+[Source, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L17).
+
+```ts
+listOpenEpochChallenges(limit?: number): Promise<TsnEpochChallenge[]>
+```
+
+### TsnMempool.updateEpochChallengeStatus
+
+[Source, line 18](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/mempool.ts#L18).
+
+```ts
+updateEpochChallengeStatus(id: string, status: TsnEpochChallenge["status"], patch?: Partial<TsnEpochChallenge>): Promise<TsnEpochChallenge>
+```

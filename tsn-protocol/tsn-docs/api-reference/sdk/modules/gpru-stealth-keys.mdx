@@ -1,0 +1,59 @@
+---
+title: "gpru/stealth-keys API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/stealth-keys.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## deriveOwnerGpruDnaKeyV1
+
+Recover the one-time private key for a DNA using the owner's stable scan
+secret. The Node creates the ephemeral and one-time public keys; it never
+receives this secret or the owner's scan secret.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 91](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/stealth-keys.ts#L91).
+
+```ts
+deriveOwnerGpruDnaKeyV1(params: { dna: Uint8Array; ephemeralPublicKey: Uint8Array; oneTimePublicKey: Uint8Array; scanSecretKey: Uint8Array; }): GpruDnaOwnerKeyV1
+```
+
+Direct failure expressions:
+
+```text
+new Error("GPRU scan secret key is not a canonical nonzero Solana ElGamal scalar")
+new Error("GPRU DNA key does not match the Node-derived one-time public key")
+```
+
+## GPRU_DNA_ELGAMAL_KEY_VERSION_V1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 7](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/stealth-keys.ts#L7).
+
+```ts
+1
+```
+
+## GpruDnaOwnerKeyV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 20](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/stealth-keys.ts#L20).
+
+```ts
+export type GpruDnaOwnerKeyV1 = GpruDnaPublicKeyV1 & {
+  oneTimeSecretKey: Uint8Array;
+};
+```
+
+## GpruDnaPublicKeyV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/stealth-keys.ts#L12).
+
+```ts
+export type GpruDnaPublicKeyV1 = {
+  version: 1;
+  dna: Uint8Array;
+  ephemeralPublicKey: Uint8Array;
+  oneTimePublicKey: Uint8Array;
+  keyCommitment: Uint8Array;
+};
+```

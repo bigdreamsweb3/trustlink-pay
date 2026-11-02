@@ -57,9 +57,21 @@ pub struct InitializeHiddenHeadVerifierArgsV1 {
     pub beta_g2: [u8; 128],
     pub gamma_g2: [u8; 128],
     pub delta_g2: [u8; 128],
-    /// Heap-backed because the fixed verifying-key point array exceeds the
-    /// SBF stack budget during this one-time initialization instruction.
-    pub ic: Vec<[u8; 64]>,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub struct WriteHiddenHeadVerifierIcArgsV1 {
+    pub start_index: u8,
+    pub points: Vec<[u8; 64]>,
+}
+
+#[derive(Accounts)]
+pub struct ConfigureHiddenHeadVerifierV1<'info> {
+    pub authority: Signer<'info>,
+    /// CHECK: canonical TSN Mother Escrow and its authority are checked by the handler.
+    pub mother_escrow: UncheckedAccount<'info>,
+    #[account(mut, seeds = [hidden_head::GPRU_HIDDEN_HEAD_VERIFIER_SEED], bump = verifier.bump)]
+    pub verifier: Box<Account<'info, hidden_head::GpruHiddenHeadVerifierV1>>,
 }
 
 #[derive(Accounts)]
@@ -104,7 +116,8 @@ pub mod tsn_gpru_proof_contract {
         hidden_head::verify_transition(ctx, args)
     }
 
-    /// Install the versioned Groth16 verifying key under Mother authority.
+    /// Create the disabled verifier and install its fixed key header under Mother authority.
+    /// IC points are uploaded in bounded transactions before commitment-checked enabling.
     /// This is a one-time protocol setup instruction; it stores only global
     /// verifier parameters and no TIN-specific state.
     pub fn initialize_hidden_head_verifier_v1(
@@ -112,5 +125,18 @@ pub mod tsn_gpru_proof_contract {
         args: InitializeHiddenHeadVerifierArgsV1,
     ) -> Result<()> {
         hidden_head::initialize_verifier(ctx, args)
+    }
+
+    pub fn write_hidden_head_verifier_ic_v1(
+        ctx: Context<ConfigureHiddenHeadVerifierV1>,
+        args: WriteHiddenHeadVerifierIcArgsV1,
+    ) -> Result<()> {
+        hidden_head::write_verifier_ic(ctx, args)
+    }
+
+    pub fn enable_hidden_head_verifier_v1(
+        ctx: Context<ConfigureHiddenHeadVerifierV1>,
+    ) -> Result<()> {
+        hidden_head::enable_verifier(ctx)
     }
 }

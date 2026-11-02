@@ -29,7 +29,7 @@ issuer proofs and resolve an identity when explicitly asked to do so.
 The program also creates an owner-indexed recovery PDA containing only the
 wallet-encrypted recovery envelope, and enforces one active TIN per owner.
 After reconnecting, the owner can locate that PDA and decrypt the TIN locally
-with a wallet signature. No plaintext wallet-to-TIN index is needed.
+with the authorized recovery envelope workflow. No plaintext wallet-to-TIN index is needed.
 
 ## Create and resolve
 
@@ -53,8 +53,7 @@ TIP V1 stores a versioned GPRU ElGamal scan public key and its integrity
 commitment, with separate TIP route and policy commitments. The source now
 contains a GPRU derivation primitive: Node can derive a unique per-transaction
 DNA and one-time ElGamal public key, while the owner later derives the
-matching private key locally from owner-held secret material. The primitive
-is not yet connected to a deployable GPRU program or the TCAP settlement ABI.
+matching private key locally from owner-held secret material. The current source connects Node witness/prover preparation and Memo creation to the TSNP/TCAP credit ABI and GPRU verifier CPI. Local proofs/builds are verified separately; matching deployment/configuration and confirmed execution remain required.
 
 The target credit flow has Node resolve TIP and construct the transition,
 Receiver accept and store signed ingress, and Cranker submit immutable Node

@@ -13,6 +13,21 @@ artifact. The helper prints:
 
 > IDL generation skipped due to host toolchain compatibility; deploying SBF artifact only.
 
+## TIP-only retry and visible upload progress
+
+`npm run programs:devnet:deploy:all` runs TIP first, then the separate TSNP/TCAP/GPRU wrapper. A successful TIP build does not establish a successful deploy, and an interrupted TIP stage prevents that invocation from reaching the later wrapper. If the other three binaries already match chain, retry TIP alone from the same configured WSL prompt:
+
+```bash
+ANCHOR_PROVIDER_URL=https://api.devnet.solana.com \
+TRUSTLINK_DEPLOY_TRANSPORT=quic \
+TRUSTLINK_DEPLOY_MAX_SIGN_ATTEMPTS=5 \
+npm run tip:deploy
+```
+
+The TIP script accepts explicit RPC/transport/signing-round overrides while preserving configured wallet and program identity. Its default remains RPC transport with twenty signing rounds. `--use-rpc` sends writes through the RPC provider; QUIC sends through validator TPU connections. The Solana CLI describes each signing round as roughly one blockhash lifetime, about a minute; twenty rounds can therefore mean a long upload retry period. Five rounds bounds that retry budget more tightly, and actual completion depends on network/provider conditions.
+
+Verbose CLI output and a fifteen-second elapsed-time heartbeat distinguish an active child process from a completed result; the heartbeat does not measure upload percentage. RPC/QUIC failures must still be reconciled with deployed program state. A CLI success or byte match does not initialize the verifier, activate a TCAP root, update Node settings or migrate an old TIN. Use the [documentation/verification ledger](DOCUMENTATION_STATUS.md) for the latest dated program observation and remaining first-credit gates.
+
 ## One-click commands
 
 The helper uses the existing cross-platform WSL forwarding pattern. When
@@ -38,7 +53,7 @@ wsl.exe -d Ubuntu
 Then run the npm command inside the Ubuntu prompt. The repository path is
 normally `/mnt/c/Users/codepara/Desktop/trust-link`.
 
-Deploy both programs, TSN first and TCAP (Transfer Confidential Asset Protocol) second:
+Deploy TSNP, TCAP (Transfer Confidential Asset Protocol) and GPRU using the root wrapper:
 
 ```bash
 npm run programs:devnet:deploy

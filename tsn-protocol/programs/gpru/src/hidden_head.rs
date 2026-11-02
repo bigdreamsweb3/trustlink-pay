@@ -33,6 +33,7 @@ use solana_program::{
 use crate::{
     HiddenHeadProofArgsV1, InitializeHiddenHeadVerifierArgsV1,
     InitializeHiddenHeadVerifierV1, VerifyHiddenHeadTransitionV1,
+    ConfigureHiddenHeadVerifierV1, WriteHiddenHeadVerifierIcArgsV1,
 };
 
 pub const GPRU_HIDDEN_HEAD_VERIFIER_SEED: &[u8] = b"gpru:hidden-head-verifier:v1";
@@ -100,16 +101,13 @@ pub fn circuit_commitment_v1() -> [u8; 32] {
     ]).to_bytes()
 }
 
-pub fn verifying_key_commitment_v1(args: &InitializeHiddenHeadVerifierArgsV1) -> [u8; 32] {
-    if args.ic.len() != HIDDEN_HEAD_PUBLIC_INPUTS + 1 {
-        return [0; 32];
-    }
+pub fn verifying_key_commitment_v1(verifier: &GpruHiddenHeadVerifierV1) -> [u8; 32] {
     let mut bytes = Vec::with_capacity(64 + 128 * 3 + 64 * (HIDDEN_HEAD_PUBLIC_INPUTS + 1));
-    bytes.extend_from_slice(&args.alpha_g1);
-    bytes.extend_from_slice(&args.beta_g2);
-    bytes.extend_from_slice(&args.gamma_g2);
-    bytes.extend_from_slice(&args.delta_g2);
-    for point in &args.ic {
+    bytes.extend_from_slice(&verifier.alpha_g1);
+    bytes.extend_from_slice(&verifier.beta_g2);
+    bytes.extend_from_slice(&verifier.gamma_g2);
+    bytes.extend_from_slice(&verifier.delta_g2);
+    for point in &verifier.ic {
         bytes.extend_from_slice(point);
     }
     hashv(&[b"TSN_GPRU_GROTH16_VERIFYING_KEY_V1\0", &bytes]).to_bytes()
@@ -121,23 +119,116 @@ pub fn initialize_verifier(
 ) -> Result<()> {
     validate_mother_authority(&ctx.accounts.mother_escrow, &ctx.accounts.authority)?;
     require!(args.circuit_commitment == circuit_commitment_v1(), HiddenHeadError::InvalidCircuit);
-    require!(args.ic.len() == HIDDEN_HEAD_PUBLIC_INPUTS + 1, HiddenHeadError::InvalidVerifyingKey);
-    require!(args.verifying_key_commitment == verifying_key_commitment_v1(&args), HiddenHeadError::InvalidVerifyingKey);
-    require!(args.ic.iter().all(|point| point.iter().any(|byte| *byte != 0)), HiddenHeadError::InvalidVerifyingKey);
+    require!(args.verifying_key_commitment != [0; 32], HiddenHeadError::InvalidVerifyingKey);
 
     let verifier = &mut ctx.accounts.verifier;
     verifier.version = GpruHiddenHeadVerifierV1::VERSION;
     verifier.authority = ctx.accounts.authority.key();
     verifier.circuit_commitment = args.circuit_commitment;
     verifier.verifying_key_commitment = args.verifying_key_commitment;
-    verifier.enabled = true;
+    // The complete twelve-input key cannot fit in a Solana packet. Keep the
+    // existing account layout disabled until all IC chunks match its commitment.
+    verifier.enabled = false;
     verifier.bump = ctx.bumps.verifier;
     verifier.alpha_g1 = args.alpha_g1;
     verifier.beta_g2 = args.beta_g2;
     verifier.gamma_g2 = args.gamma_g2;
     verifier.delta_g2 = args.delta_g2;
-    verifier.ic.copy_from_slice(&args.ic);
+    verifier.ic = [[0; 64]; HIDDEN_HEAD_PUBLIC_INPUTS + 1];
     Ok(())
+}
+
+fn validate_configuration_authority(
+    ctx: &Context<ConfigureHiddenHeadVerifierV1>,
+) -> Result<()> {
+    validate_mother_authority(&ctx.accounts.mother_escrow, &ctx.accounts.authority)?;
+    require_keys_eq!(ctx.accounts.verifier.authority, ctx.accounts.authority.key(), HiddenHeadError::InvalidAuthority);
+    Ok(())
+}
+
+pub fn write_verifier_ic(
+    ctx: Context<ConfigureHiddenHeadVerifierV1>,
+    args: WriteHiddenHeadVerifierIcArgsV1,
+) -> Result<()> {
+    validate_configuration_authority(&ctx)?;
+    write_ic_points(&mut ctx.accounts.verifier, &args)
+}
+
+fn write_ic_points(verifier: &mut GpruHiddenHeadVerifierV1, args: &WriteHiddenHeadVerifierIcArgsV1) -> Result<()> {
+    require!(!verifier.enabled, HiddenHeadError::InvalidVerifyingKey);
+    let start = usize::from(args.start_index);
+    require!(!args.points.is_empty() && args.points.len() <= 4, HiddenHeadError::InvalidVerifyingKey);
+    require!(start + args.points.len() <= HIDDEN_HEAD_PUBLIC_INPUTS + 1, HiddenHeadError::InvalidVerifyingKey);
+    require!(args.points.iter().all(|point| point.iter().any(|byte| *byte != 0)), HiddenHeadError::InvalidVerifyingKey);
+    verifier.ic[start..start + args.points.len()].copy_from_slice(&args.points);
+    Ok(())
+}
+
+pub fn enable_verifier(ctx: Context<ConfigureHiddenHeadVerifierV1>) -> Result<()> {
+    validate_configuration_authority(&ctx)?;
+    enable_complete_key(&mut ctx.accounts.verifier)
+}
+
+fn enable_complete_key(verifier: &mut GpruHiddenHeadVerifierV1) -> Result<()> {
+    require!(!verifier.enabled, HiddenHeadError::InvalidVerifyingKey);
+    require!(verifier.version == GpruHiddenHeadVerifierV1::VERSION, HiddenHeadError::VerifierUnavailable);
+    require!(verifier.circuit_commitment == circuit_commitment_v1(), HiddenHeadError::InvalidCircuit);
+    require!(verifier.ic.iter().all(|point| point.iter().any(|byte| *byte != 0)), HiddenHeadError::InvalidVerifyingKey);
+    require!(verifier.verifying_key_commitment == verifying_key_commitment_v1(verifier), HiddenHeadError::InvalidVerifyingKey);
+    verifier.enabled = true;
+    Ok(())
+}
+
+#[cfg(test)]
+mod verifier_setup_tests {
+    use super::*;
+
+    fn fixture() -> GpruHiddenHeadVerifierV1 {
+        GpruHiddenHeadVerifierV1 {
+            version: 1, authority: Pubkey::new_unique(), circuit_commitment: circuit_commitment_v1(),
+            verifying_key_commitment: [0; 32], enabled: false, bump: 255,
+            alpha_g1: [1; 64], beta_g2: [2; 128], gamma_g2: [3; 128], delta_g2: [4; 128],
+            ic: [[5; 64]; HIDDEN_HEAD_PUBLIC_INPUTS + 1],
+        }
+    }
+
+    #[test]
+    fn key_remains_disabled_until_complete_and_commitment_checked() {
+        let mut verifier = fixture();
+        verifier.verifying_key_commitment = verifying_key_commitment_v1(&verifier);
+        verifier.ic = [[0; 64]; HIDDEN_HEAD_PUBLIC_INPUTS + 1];
+        assert!(enable_complete_key(&mut verifier).is_err());
+        assert!(!verifier.enabled);
+        for start in (0..HIDDEN_HEAD_PUBLIC_INPUTS + 1).step_by(4) {
+            let count = (HIDDEN_HEAD_PUBLIC_INPUTS + 1 - start).min(4);
+            write_ic_points(&mut verifier, &WriteHiddenHeadVerifierIcArgsV1 { start_index: start as u8, points: vec![[5; 64]; count] }).unwrap();
+        }
+        enable_complete_key(&mut verifier).unwrap();
+        assert!(verifier.enabled);
+        assert!(write_ic_points(&mut verifier, &WriteHiddenHeadVerifierIcArgsV1 { start_index: 0, points: vec![[6; 64]] }).is_err());
+    }
+
+    #[test]
+    fn altered_key_or_circuit_cannot_be_enabled() {
+        let mut verifier = fixture();
+        verifier.verifying_key_commitment = verifying_key_commitment_v1(&verifier);
+        verifier.ic[12][0] ^= 1;
+        assert!(enable_complete_key(&mut verifier).is_err());
+        assert!(!verifier.enabled);
+        verifier.ic[12][0] ^= 1;
+        verifier.circuit_commitment[0] ^= 1;
+        assert!(enable_complete_key(&mut verifier).is_err());
+    }
+
+    #[test]
+    fn invalid_chunks_are_rejected_without_partial_write() {
+        let mut verifier = fixture();
+        for (start_index, points) in [(0, vec![]), (0, vec![[5; 64]; 5]), (12, vec![[5; 64]; 2]), (0, vec![[0; 64]])] {
+            let before = verifier.ic;
+            assert!(write_ic_points(&mut verifier, &WriteHiddenHeadVerifierIcArgsV1 { start_index, points }).is_err());
+            assert_eq!(verifier.ic, before);
+        }
+    }
 }
 
 pub fn verify_transition(

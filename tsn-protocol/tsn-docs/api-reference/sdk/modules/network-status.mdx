@@ -1,0 +1,86 @@
+---
+title: "network-status API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/network-status.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## getTsnNetworkStatus
+
+Checks the TSN service dependencies. Node, Receiver, and the RPC gateway
+prefer a reachable local endpoint, then fall back to the configured live
+endpoint. Cranker liveness is read from the Node route response because the
+Cranker is a worker, not an HTTP service exposed to applications.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 94](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/network-status.ts#L94).
+
+```ts
+getTsnNetworkStatus(params?: TsnNetworkStatusOptions): Promise<TsnNetworkStatus>
+```
+
+## TsnNetworkStatus
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 15](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/network-status.ts#L15).
+
+```ts
+export type TsnNetworkStatus = {
+  checkedAt: string;
+  services: TsnServiceStatus[];
+  selected: Partial<Record<TsnServiceStatus["service"], { source: TsnServiceSource; url: string | null }>>;
+  routeCount: number;
+  onlineCrankers: number | null;
+  /** Node, Receiver, and RPC are reachable for native Solana TSN actions. */
+  readyForNativeTransactions: boolean;
+  /** A registered settlement destination is also required for cross-chain actions. */
+  readyForCrossChainTransactions: boolean;
+  readyForTransactions: boolean;
+};
+```
+
+## TsnNetworkStatusOptions
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 28](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/network-status.ts#L28).
+
+```ts
+export type TsnNetworkStatusOptions = {
+  local?: Partial<Record<"node" | "receiver" | "rpc", string | null>>;
+  live?: Partial<Record<"node" | "receiver" | "rpc", string | null>>;
+  timeoutMs?: number;
+  fetchImpl?: typeof fetch;
+};
+```
+
+## TsnServiceSource
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 1](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/network-status.ts#L1).
+
+```ts
+export type TsnServiceSource = "local" | "live" | "configured" | "none";
+```
+
+## TsnServiceState
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 2](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/network-status.ts#L2).
+
+```ts
+export type TsnServiceState = "online" | "degraded" | "offline" | "unknown";
+```
+
+## TsnServiceStatus
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 4](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/network-status.ts#L4).
+
+```ts
+export type TsnServiceStatus = {
+  service: "node" | "receiver" | "rpc" | "cranker";
+  /** Public architecture role; machine service names remain stable for compatibility. */
+  role: "mother-node" | "receiver" | "rpc-gateway" | "cranker-node";
+  state: TsnServiceState;
+  source: TsnServiceSource;
+  url: string | null;
+  latencyMs: number | null;
+  detail?: string;
+};
+```

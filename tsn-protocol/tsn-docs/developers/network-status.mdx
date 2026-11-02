@@ -6,6 +6,8 @@ description: "Pass application-selected endpoints to the TSN SDK and check readi
 
 An application can check that its configured TSN dependencies are reachable before preparing a payment or asking a wallet to sign. The application selects its endpoints and passes them to the SDK.
 
+This snippet is illustrative; caller variables and credentials must come from the application's configured environment. Complete typed examples and their checks are linked in the [SDK handbook](/sdk/getting-started).
+
 ```ts
 import { getTsnNetworkStatus } from "@trustlink/tsn-sdk";
 
@@ -24,7 +26,7 @@ if (!status.readyForNativeTransactions) {
 console.log(status.selected);
 ```
 
-`readyForNativeTransactions` reports readiness of the configured dependencies for native TSN actions. It does not authorize a payment, guarantee that a Cranker will accept work, or confirm a Solana transaction. Cross-chain readiness is a separate capability and should not be used as a gate for native transfers.
+`readyForNativeTransactions` reports successful reachability probes for the configured dependencies. It does not inspect the verifier, asset flags, recipient schema or witness snapshots required for native credit. It does not authorize a payment, guarantee that a Cranker will accept work, or confirm a Solana transaction. Cross-chain readiness is a separate capability and should not be used as a gate for native transfers.
 
 Refresh status when it matters to the user experience, such as before asking for a signature. Environment variables belong to the application; the SDK does not read the application's `.env` file itself.
 

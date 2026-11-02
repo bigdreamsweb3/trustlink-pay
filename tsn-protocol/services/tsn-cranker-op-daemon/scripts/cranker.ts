@@ -669,7 +669,7 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
   await report(signer, work, "CONFIRMED", {
     signature,
     stage: "TCAP_GPRU_MEMO_CREDIT_V1_CONFIRMED",
-    sequence: String(transition.sequence),
+    sequence: String(transition.tcapRootSequence),
     authorizationDigest: String(transition.authorizationDigest),
   });
 }
@@ -1015,7 +1015,11 @@ async function processTinOperation(
     ],
     data: Buffer.from(instructionData),
   });
-  const tx = new Transaction().add(ownerProof, tinInstruction);
+  const tx = new Transaction().add(
+    ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 }),
+    ownerProof,
+    tinInstruction,
+  );
   const transactionBytes = legacyTransactionWireSize(tx, signer.publicKey);
   crankerLog(
     `TIN creation start workId=${work.id} registry=${registry.toBase58()} recovery=${getTinV1OwnerRecoveryPda(owner, programId).toBase58()} txBytes=${transactionBytes} path=${transactionBytes > 1232 ? "staged" : "direct"} identityBytes=${identityEnvelope.length} recoveryBytes=${recoveryEnvelope.length} seedBytes=${masterSeed.length}`,

@@ -15,6 +15,6 @@ TSN separates identity, authorization, private-state verification, and asset set
 
 ## Limits
 
-The hidden-head proof path is not established end to end. Confidential debit and exit are not established as available. Public transaction data, including accounts, signatures, timing, and instruction data, may reveal activity or correlation; TSN does not claim zero linkability.
+Local hidden-head proof/build evidence does not establish completed live credit. Confidential debit and exit remain unverified as end-to-end capabilities. The native-credit proof hides the TIN route and predecessor witness from the on-chain statement, but its amount, asset, shared roots, nullifier, successor point and encrypted Memo remain public. The published nullifier is derived from public deposit data, so funding and credit can be linked. The Node resolves private routing and constructs the witness, so this boundary does not establish owner-only knowledge or immunity to timing and transaction correlation. Direct wallet transfers expose their endpoints; confidential debit and exit require separate execution evidence. See [the privacy limits](/security/threat-model) for the current encoding and trust assumptions.
 
 Do not infer that a capability is active from a helper, diagram, or program instruction alone. Check the target network and verify the transaction and resulting state. Detailed source-level checks and evidence requirements are maintained in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

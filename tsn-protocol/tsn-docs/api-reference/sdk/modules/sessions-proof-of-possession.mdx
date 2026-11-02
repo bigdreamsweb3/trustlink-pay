@@ -1,0 +1,280 @@
+---
+title: "sessions/proof-of-possession API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## createRequestBodyCommitment
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/sessions/proof-of-possession`. [Implementation, line 44](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L44).
+
+```ts
+createRequestBodyCommitment(body: Uint8Array): Promise<string>
+```
+
+## serializeSessionProof
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/sessions/proof-of-possession`. [Implementation, line 26](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L26).
+
+```ts
+serializeSessionProof(claims: SessionProofClaims): Uint8Array
+```
+
+## SessionProofClaims
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/sessions/proof-of-possession`. [Implementation, line 6](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L6).
+
+### SessionProofClaims.protocolVersion
+
+[Source, line 7](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L7).
+
+```ts
+protocolVersion: "tsn-session-proof-v1"
+```
+
+### SessionProofClaims.domain
+
+[Source, line 8](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L8).
+
+```ts
+domain: "TSN_PRIVATE_REQUEST_PROOF"
+```
+
+### SessionProofClaims.sessionId
+
+[Source, line 9](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L9).
+
+```ts
+sessionId: string
+```
+
+### SessionProofClaims.deviceId
+
+[Source, line 10](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L10).
+
+```ts
+deviceId: string
+```
+
+### SessionProofClaims.deviceSigningKeyFingerprint
+
+[Source, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L11).
+
+```ts
+deviceSigningKeyFingerprint: string
+```
+
+### SessionProofClaims.permission
+
+[Source, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L12).
+
+```ts
+permission: string
+```
+
+### SessionProofClaims.method
+
+[Source, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L13).
+
+```ts
+method: string
+```
+
+### SessionProofClaims.resource
+
+[Source, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L14).
+
+```ts
+resource: string
+```
+
+### SessionProofClaims.bodyCommitment
+
+[Source, line 15](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L15).
+
+```ts
+bodyCommitment: string
+```
+
+### SessionProofClaims.nonce
+
+[Source, line 16](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L16).
+
+```ts
+nonce: string
+```
+
+### SessionProofClaims.issuedAt
+
+[Source, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L17).
+
+```ts
+issuedAt: string
+```
+
+### SessionProofClaims.expiresAt
+
+[Source, line 18](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L18).
+
+```ts
+expiresAt: string
+```
+
+### SessionProofClaims.audience
+
+[Source, line 19](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L19).
+
+```ts
+audience: string
+```
+
+## SignedSessionProof
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/sessions/proof-of-possession`. [Implementation, line 22](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L22).
+
+### SignedSessionProof.signatureBase64Url
+
+[Source, line 23](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L23).
+
+```ts
+signatureBase64Url: string
+```
+
+### SignedSessionProof.protocolVersion
+
+[Source, line 7](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L7).
+
+```ts
+protocolVersion: "tsn-session-proof-v1"
+```
+
+### SignedSessionProof.domain
+
+[Source, line 8](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L8).
+
+```ts
+domain: "TSN_PRIVATE_REQUEST_PROOF"
+```
+
+### SignedSessionProof.sessionId
+
+[Source, line 9](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L9).
+
+```ts
+sessionId: string
+```
+
+### SignedSessionProof.deviceId
+
+[Source, line 10](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L10).
+
+```ts
+deviceId: string
+```
+
+### SignedSessionProof.deviceSigningKeyFingerprint
+
+[Source, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L11).
+
+```ts
+deviceSigningKeyFingerprint: string
+```
+
+### SignedSessionProof.permission
+
+[Source, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L12).
+
+```ts
+permission: string
+```
+
+### SignedSessionProof.method
+
+[Source, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L13).
+
+```ts
+method: string
+```
+
+### SignedSessionProof.resource
+
+[Source, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L14).
+
+```ts
+resource: string
+```
+
+### SignedSessionProof.bodyCommitment
+
+[Source, line 15](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L15).
+
+```ts
+bodyCommitment: string
+```
+
+### SignedSessionProof.nonce
+
+[Source, line 16](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L16).
+
+```ts
+nonce: string
+```
+
+### SignedSessionProof.issuedAt
+
+[Source, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L17).
+
+```ts
+issuedAt: string
+```
+
+### SignedSessionProof.expiresAt
+
+[Source, line 18](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L18).
+
+```ts
+expiresAt: string
+```
+
+### SignedSessionProof.audience
+
+[Source, line 19](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L19).
+
+```ts
+audience: string
+```
+
+## signSessionProof
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/sessions/proof-of-possession`. [Implementation, line 48](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L48).
+
+```ts
+signSessionProof(claims: SessionProofClaims, deviceSigningPrivateKey: CryptoKey): Promise<SignedSessionProof>
+```
+
+## TSN_SESSION_PROOF_DOMAIN
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/sessions/proof-of-possession`. [Implementation, line 4](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L4).
+
+```ts
+"TSN_PRIVATE_REQUEST_PROOF"
+```
+
+## TSN_SESSION_PROOF_VERSION
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/sessions/proof-of-possession`. [Implementation, line 3](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L3).
+
+```ts
+"tsn-session-proof-v1"
+```
+
+## verifySessionProof
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/sessions/proof-of-possession`. [Implementation, line 60](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/proof-of-possession.ts#L60).
+
+```ts
+verifySessionProof(params: { proof: SignedSessionProof; deviceSigningPublicKey: JsonWebKey; expectedSessionId: string; expectedDeviceId: string; expectedPermission: string; expectedMethod: string; expectedResource: string; expectedBodyCommitment: string; expectedAudience: string; sessionExpiresAt: string; deviceStatus: "active" | "revoked" | "expired"; now?: Date; consumeNonce: (nonce: string) => boolean; }): Promise<{ valid: true; } | { valid: false; reason: string; }>
+```

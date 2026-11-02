@@ -1,0 +1,76 @@
+---
+title: "tin-device-key-provider API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-key-provider.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## TSN_DEVICE_ENVELOPE_PROVIDER_ID
+
+Authorized-device envelope adapter used by the TSN-native TIN envelope flow.
+
+The provider never receives a master seed. It generates a random data key,
+wraps that key to the current device's non-exportable X25519 key, and stores
+only the resulting opaque envelope in the TIN. Release is local and fails
+closed when the envelope is addressed to another device.
+
+This adapter never copies a private key between devices and never uses a
+server-held decryption secret. Cross-device re-wrapping is a separate
+owner-authorized migration operation, not a decryption operation.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-device-key-provider`. [Implementation, line 27](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-key-provider.ts#L27).
+
+```ts
+"tsn-device-envelope-v1"
+```
+
+## TsnDeviceEnvelopeTinMasterSeedProvider
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-device-key-provider`. [Implementation, line 80](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-key-provider.ts#L80).
+
+```ts
+new TsnDeviceEnvelopeTinMasterSeedProvider(sessionBinding: string): TsnDeviceEnvelopeTinMasterSeedProvider
+```
+
+### TsnDeviceEnvelopeTinMasterSeedProvider.id
+
+[Source, line 82](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-key-provider.ts#L82).
+
+```ts
+id: "tsn-device-envelope-v1"
+```
+
+### TsnDeviceEnvelopeTinMasterSeedProvider.getDeviceSessionBinding
+
+[Source, line 88](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-key-provider.ts#L88).
+
+```ts
+getDeviceSessionBinding(): Promise<string>
+```
+
+### TsnDeviceEnvelopeTinMasterSeedProvider.protectKey
+
+[Source, line 92](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-key-provider.ts#L92).
+
+```ts
+protectKey(context: TinMasterSeedAccessContext): Promise<{ protectedKey: string; protectedKeyCommitment: string; accessControlHash: string; deviceKeyEnvelope: TinDeviceKeyEnvelope; }>
+```
+
+### TsnDeviceEnvelopeTinMasterSeedProvider.releaseKey
+
+[Source, line 115](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-key-provider.ts#L115).
+
+```ts
+releaseKey(context: TinMasterSeedAccessContext & { protectedKey: string; protectedKeyCommitment: string; accessControlHash: string; }): Promise<TinDeviceKeyEnvelope>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN device session binding is required")
+new Error( "TIN envelope belongs to another device; this authorized device needs a key re-wrap before loading the private balance", )
+new Error("TIN device envelope commitment does not match")
+new Error("TIN device envelope access context does not match")
+```

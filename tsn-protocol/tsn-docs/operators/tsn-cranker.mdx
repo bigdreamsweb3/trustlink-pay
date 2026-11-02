@@ -1,7 +1,7 @@
 ---
 title: "Cranker Role in TSN"
 sidebarTitle: "Cranker"
-description: "A Cranker submits the exact authorized transaction and pays its Solana network fee."
+description: "Cranker submission branches, transaction signers, fee payers and confirmation boundaries."
 ---
 
 A Cranker is an independent transaction-submission role in TSN. It receives work that has already passed the required service checks, submits the authorized transaction to Solana, and reports the resulting signature and status.
@@ -9,3 +9,21 @@ A Cranker is an independent transaction-submission role in TSN. It receives work
 A Cranker cannot change the sender's authorized amount, recipient, asset, or settlement conditions. Its submission is not proof of success; the transaction must confirm on chain. The Cranker does not replace GPRU's private-state guard or TCAP's authority over assets and settlement.
 
 This site documents application SDK use and protocol responsibilities. Operator onboarding, credentials, deployment, and service operation belong in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).
+
+## Execution and evidence requirements
+
+The current daemon authenticates through Receiver's wallet challenge/session mechanism, claims verified work and checks Node's signed execution receipt against its pinned public key and the exact execution projection. It dispatches `AUTHORIZED_FUNDING`, `TIN_OPERATION` and `SETTLEMENT`. The [repository transaction map](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/cranker-transaction-map.md) gives their complete instructions, accounts, transport and retry boundaries.
+
+Funding broadcasts the unchanged sender-signed TCAP deposit. Its payer is already fixed in the signed transaction; the current SDK sets the depositor as payer. Cranker cannot change its blockhash or add fee sponsorship after signing. TIN creation uses Cranker's payer/signature, with owner approval in an Ed25519 instruction, and selects direct or staged legacy transactions at the 1,232-byte limit. Native settlement requires current-lease authorization and Mother co-signing for one TSNP instruction followed by its proof-bound Memo; Cranker pays that transaction's network fee.
+
+The [November 2 TIN record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261102-tin-staged-finalization.md) verified six finalized transactions: initializer, four encrypted uploads and finalizer. Its account allocations and stage closure occurred within the final transaction. It did not test native credit, owner recovery or the installed DBrix V1 transport.
+
+The retained Creditcoin settlement branch submits an EVM hub call from its configured executor wallet and waits for a successful receipt and publication event. Receiver's `CONFIRMED` result describes that hub transaction; destination payout requires separate evidence. Epoch payout/refund/reimbursement and verifier/root setup are separate instruction families, outside this daemon's normal dispatcher.
+
+Operators need the configured wallet/registration policy, service access, RPC context and fee funding for the transactions they submit. A worker cannot refresh an owner-signed blockhash or replace a verified recipient transition. After an uncertain submission, reconcile its signature before repeating the work; matching terminal reports are treated idempotently by Receiver under its contract.
+
+Use the [existing operator runbook](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/CRANKER-OPERATOR-GUIDE.md), [Cranker implementation record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/components.md) and [lifecycle guide](/developers/payment-intent-lifecycle). The daemon reports terminal `CONFIRMED` or `FAILED`; its `tx sent` log is not a Receiver `SUBMITTED` transition. A later report/read failure cannot undo a successful chain transaction, so reconcile known signatures before retrying.
+
+## Native credit handoff status
+
+The November 2 correction adds Cranker's required authorization kind and Receiver's current lease ID/version/expiry to Node's exact verified transition. Node rechecks the stored proof, funding and unchanged lease before returning the envelope. Local handler tests validate this contract; live native settlement and target-cluster DBrix V1 support remain unverified. See the [source-backed correction and recovery record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/cranker-transaction-map.md#nodereceiver-lease-authorization).

@@ -1,0 +1,48 @@
+---
+title: "authorization/server/tins-owner-verifier API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/tins-owner-verifier.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## TinsOwnerVerificationResult
+
+Import from `@trustlink/tsn-sdk/authorization/server`. [Implementation, line 1](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/tins-owner-verifier.ts#L1).
+
+### TinsOwnerVerificationResult.tin
+
+[Source, line 2](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/tins-owner-verifier.ts#L2).
+
+```ts
+tin: string
+```
+
+### TinsOwnerVerificationResult.ownerIdentityCommitment
+
+[Source, line 3](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/tins-owner-verifier.ts#L3).
+
+```ts
+ownerIdentityCommitment: string
+```
+
+### TinsOwnerVerificationResult.tinsAccount
+
+[Source, line 4](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/tins-owner-verifier.ts#L4).
+
+```ts
+tinsAccount: string
+```
+
+## TinsOwnerVerifier
+
+Import from `@trustlink/tsn-sdk/authorization/server`. [Implementation, line 7](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/tins-owner-verifier.ts#L7).
+
+### TinsOwnerVerifier.verifyOwner
+
+[Source, line 8](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/tins-owner-verifier.ts#L8).
+
+```ts
+verifyOwner(params: { tin: string; transientSignerPublicKey: string; }): Promise<TinsOwnerVerificationResult>
+```

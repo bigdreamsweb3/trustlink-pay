@@ -1,0 +1,39 @@
+---
+title: "wallet-transfer API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/wallet-transfer.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## buildTsnSplTokenTransferTransaction
+
+Builds an unsigned SPL transfer transaction for a TSN dApp.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/wallet-transfer`. [Implementation, line 27](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/wallet-transfer.ts#L27).
+
+```ts
+buildTsnSplTokenTransferTransaction(params: TsnSplTokenTransferTransactionParams): Promise<{ transactionBase64: string; senderWallet: string; recipientWallet: string; tokenMintAddress: string; senderTokenAccount: string; recipientTokenAccount: string; amountUi: string; amountBaseUnits: string; tokenDecimals: number; blockhash: string; lastValidBlockHeight: number; }>
+```
+
+Direct failure expressions:
+
+```text
+new Error("Token decimals must be an integer from 0 through 18")
+```
+
+## TsnSplTokenTransferTransactionParams
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/wallet-transfer`. [Implementation, line 9](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/wallet-transfer.ts#L9).
+
+```ts
+export type TsnSplTokenTransferTransactionParams = {
+  senderWallet: string;
+  recipientWallet: string;
+  tokenMintAddress: string;
+  amountUi: string;
+  tokenDecimals: number;
+  rpcUrl: string;
+};
+```

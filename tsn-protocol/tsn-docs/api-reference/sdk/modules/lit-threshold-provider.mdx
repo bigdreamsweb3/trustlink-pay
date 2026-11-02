@@ -1,0 +1,165 @@
+---
+title: "lit-threshold-provider API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## createLitSolanaTinMasterSeedProvider
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-threshold-provider`. [Implementation, line 229](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts#L229).
+
+```ts
+createLitSolanaTinMasterSeedProvider(): Promise<LitSolanaTinMasterSeedProvider>
+```
+
+## LIT_SOLANA_TIN_ACCESS_READINESS
+
+Lit's current Solana AuthSig proves control of a Solana address, but the
+pinned SDK does not provide a verified device-bound capability flow that
+prevents a captured Solana AuthSig from being presented by another client.
+Its normal Solana access-control decryption is directly wallet-gated; the
+local TSN device proof is not evaluated by those threshold nodes.
+Master-seed protection must fail closed until that second factor is enforced
+by the threshold network, not merely checked by this browser process.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-threshold-provider`. [Implementation, line 34](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts#L34).
+
+```ts
+{ readonly status: "BLOCKED_UNVERIFIED_DEVICE_BINDING"; readonly safeForTinMasterSeeds: false; readonly reason: "Pinned Lit Solana access-control decryption does not enforce TSN's authorized-device binding, wallet-plus-device proof, and nonce contract at the threshold network."; }
+```
+
+## LitChipotleTinMasterSeedProvider
+
+Production provider for the immutable Chipotle action. The executor is a
+same-origin frontend-server proxy so the scoped Lit usage credential never
+enters browser state. Requests contain public proofs only; responses contain
+an opaque PKP ciphertext and/or a data key encrypted to the authorized
+device.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-threshold-provider`. [Implementation, line 245](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts#L245).
+
+```ts
+new LitChipotleTinMasterSeedProvider(configuration: LitTinActionConfiguration, executeAction: LitTinActionExecutor, sessionBinding: string): LitChipotleTinMasterSeedProvider
+```
+
+### LitChipotleTinMasterSeedProvider.id
+
+[Source, line 246](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts#L246).
+
+```ts
+id: "lit-chipotle-authorized-device"
+```
+
+### LitChipotleTinMasterSeedProvider.getDeviceSessionBinding
+
+[Source, line 257](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts#L257).
+
+```ts
+getDeviceSessionBinding(): Promise<string>
+```
+
+### LitChipotleTinMasterSeedProvider.protectKey
+
+[Source, line 261](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts#L261).
+
+```ts
+protectKey(params: TinMasterSeedAccessContext): Promise<{ protectedKey: string; protectedKeyCommitment: string; accessControlHash: string; deviceKeyEnvelope: TinDeviceKeyEnvelope; }>
+```
+
+### LitChipotleTinMasterSeedProvider.releaseKey
+
+[Source, line 284](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts#L284).
+
+```ts
+releaseKey(params: TinMasterSeedAccessContext & { protectedKey: string; protectedKeyCommitment: string; accessControlHash: string; }): Promise<TinDeviceKeyEnvelope>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN threshold session binding is required")
+new Error("TIN threshold action returned the wrong operation")
+```
+
+## LitSolanaTinMasterSeedProvider
+
+Browser-only threshold provider. The Lit session key is generated in memory
+and is never placed in localStorage, sessionStorage, TIN data, or an API.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-threshold-provider`. [Implementation, line 87](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts#L87).
+
+```ts
+new LitSolanaTinMasterSeedProvider(client: ThresholdLitClient, sessionKey: SessionKeyPair): LitSolanaTinMasterSeedProvider
+```
+
+### LitSolanaTinMasterSeedProvider.id
+
+[Source, line 88](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts#L88).
+
+```ts
+id: "lit-datil-dev-solana-authorized-device"
+```
+
+### LitSolanaTinMasterSeedProvider.getDeviceSessionBinding
+
+[Source, line 115](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts#L115).
+
+```ts
+getDeviceSessionBinding(): Promise<string>
+```
+
+### LitSolanaTinMasterSeedProvider.protectKey
+
+[Source, line 119](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts#L119).
+
+```ts
+protectKey(params: TinMasterSeedAccessContext): Promise<{ protectedKey: string; protectedKeyCommitment: string; accessControlHash: string; deviceKeyEnvelope: TinDeviceKeyEnvelope; }>
+```
+
+### LitSolanaTinMasterSeedProvider.releaseKey
+
+[Source, line 150](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts#L150).
+
+```ts
+releaseKey(params: TinMasterSeedAccessContext & { protectedKey: string; protectedKeyCommitment: string; accessControlHash: string; }): Promise<TinDeviceKeyEnvelope>
+```
+
+### LitSolanaTinMasterSeedProvider.disconnect
+
+[Source, line 223](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts#L223).
+
+```ts
+disconnect(): Promise<void>
+```
+
+### LitSolanaTinMasterSeedProvider.connect (static)
+
+[Source, line 95](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts#L95).
+
+```ts
+connect(): Promise<LitSolanaTinMasterSeedProvider>
+```
+
+Direct failure expressions:
+
+```text
+new Error("The authorized-device threshold provider requires a browser")
+new Error("TIN threshold access-control policy does not match the owner wallet")
+new Error("TIN wallet authorization belongs to another device session")
+new Error("TIN protected-key commitment is invalid")
+new Error("TIN protected-key payload is invalid")
+```
+
+## LitTinActionExecutor
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-threshold-provider`. [Implementation, line 233](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-threshold-provider.ts#L233).
+
+```ts
+export type LitTinActionExecutor = (
+  request: LitTinActionRequest,
+  configuration: LitTinActionConfiguration,
+) => Promise<LitTinProtectKeyResponse | LitTinReleaseKeyResponse>;
+```

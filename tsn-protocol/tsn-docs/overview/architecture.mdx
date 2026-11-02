@@ -9,11 +9,15 @@ As hybrid infrastructure for the **Internet of Value**, TSN coordinates identity
 
 ```mermaid
 flowchart TD
-    W[Owner or sender wallet] -->|identity and signed intent| I[TIP: Transfer Identity Protocol]
-    I -->|TIN route context| S[TSNP: on-chain settlement protocol]
-    S -->|private-state proof| G[GPRU: guards state integrity and privacy]
-    G -->|verified transition| C[TCAP: asset and reserve authority]
-    C -->|atomic settlement| L[Solana token and protocol state]
+    W[Application and sender wallet] --> N[Node facade and verification]
+    N --> R[Receiver durable ingress and leases]
+    N --> I[TIP identity and route root]
+    R --> K[Cranker verified execution]
+    K --> S[Mother-authorized TSNP call]
+    S --> C[TCAP asset and reserve checks]
+    C --> G[GPRU proof and Memo verification]
+    G --> C
+    C --> L[Atomic shared-root and liability update on Solana]
 ```
 
 ## Responsibility boundaries
@@ -27,6 +31,8 @@ The proof does not grant custody or payment authority to GPRU. Settlement requir
 
 ## Privacy boundary
 
-Encryption and zero-knowledge proofs can protect selected values, but they do not hide the existence or timing of a public-chain transaction. Solana observers can see transaction accounts, signatures, instruction data, and ordering. The current shared TCAP state reference can also provide a correlation point, so TSN does not claim zero linkability.
+The current native-credit proof hides the recipient route/head witness and uses shared TIP/TCAP roots instead of a public latest-balance account per TIN. The owner retains the private record lineage. The credit ABI does not encode a plaintext TIN or private predecessor pointer; that structural property does not prove that public metadata, timing, application records or authorized Node knowledge cannot correlate payments.
 
-The hidden-head proof flow is not currently established as an end-to-end settlement capability. This page describes the protocol's responsibility boundaries, not a claim that every layer is deployed or operational. Source-level design and deployment evidence are maintained in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).
+Solana exposes transaction accounts, signatures, action kind, token ID, amount, roots, nullifier, proof points, encrypted Memo bytes, timing and ordering. Funding wallets and direct wallet transfers expose their endpoints. Confidential debit/exit is a separate unverified execution path; an exit's output wallet and amount would remain public.
+
+The hidden-head proof flow is not currently established as an end-to-end settlement capability. Local proof verification is a separate evidence level from deployed verification and confirmed settlement. See the [complete lifecycle](/developers/payment-intent-lifecycle), [glossary](/glossary/index), and [internal source-backed map](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/architecture-map.md) for detailed ownership, source links and dated observations.

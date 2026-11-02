@@ -8,7 +8,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workspace = join(root, "tsn-protocol/programs/transfer-identity-protocol/tin-registrar/program");
 const anchorPath = join(workspace, "Anchor.toml");
 const anchor = readFileSync(anchorPath, "utf8");
-const configuredRpc = anchor.match(/^cluster\s*=\s*"([^"]+)"/m)?.[1];
+const configuredRpc = process.env.ANCHOR_PROVIDER_URL || anchor.match(/^cluster\s*=\s*"([^"]+)"/m)?.[1];
 const walletConfig = anchor.match(/^wallet\s*=\s*"([^"]+)"/m)?.[1];
 const programId = anchor.match(/^tins_program\s*=\s*"([^"]+)"/m)?.[1];
 if (!configuredRpc || !walletConfig || !programId) {
@@ -23,6 +23,15 @@ const wallet = walletConfig.startsWith("~/")
 const artifact = "target/deploy/tins_program.so";
 const fallbackRpc = "https://api.devnet.solana.com";
 const candidates = [...new Set([configuredRpc, fallbackRpc])];
+const transport = (process.env.TRUSTLINK_DEPLOY_TRANSPORT ?? "rpc").toLowerCase();
+if (!["rpc", "quic"].includes(transport)) {
+  throw new Error("TRUSTLINK_DEPLOY_TRANSPORT must be rpc or quic.");
+}
+const signAttemptsInput = process.env.TRUSTLINK_DEPLOY_MAX_SIGN_ATTEMPTS ?? "20";
+const maxSignAttempts = Number(signAttemptsInput);
+if (!/^\d+$/.test(signAttemptsInput) || !Number.isSafeInteger(maxSignAttempts) || maxSignAttempts < 5) {
+  throw new Error("TRUSTLINK_DEPLOY_MAX_SIGN_ATTEMPTS must be an integer >= 5.");
+}
 
 function rpcLabel(rpc) {
   const url = new URL(rpc);
@@ -83,15 +92,17 @@ if (!selectedRpc) {
 const safeRpc = selectedRpc.replace(/([?&](?:api-key|key|token)=)[^&\s]+/gi, "$1<redacted>");
 console.log(`TIP program deploy RPC: ${safeRpc}`);
 console.log(`TIP program: ${programId}`);
+console.log(`TIP deploy transport: ${transport.toUpperCase()}; max signing rounds: ${maxSignAttempts}`);
 const args = [
   "program", "deploy", artifact,
   "--program-id", programId,
   "--keypair", wallet,
   "--upgrade-authority", wallet,
-  "--max-sign-attempts", "20",
+  "--max-sign-attempts", String(maxSignAttempts),
   "--commitment", "confirmed",
   "--url", selectedRpc,
-  "--use-rpc",
+  transport === "quic" ? "--use-quic" : "--use-rpc",
+  "--verbose",
 ];
 
 function redact(text) {
@@ -116,11 +127,21 @@ function forwardRedacted(stream, destination) {
 
 await new Promise((resolveDeploy, rejectDeploy) => {
   const child = spawn("solana", args, { cwd: workspace, stdio: ["inherit", "pipe", "pipe"] });
+  const startedAt = Date.now();
+  const heartbeat = setInterval(() => {
+    console.log(`TIP Solana CLI still running (${Math.floor((Date.now() - startedAt) / 1000)}s elapsed, ${transport.toUpperCase()} transport); awaiting deployment result.`);
+  }, 15000);
+  heartbeat.unref();
   forwardRedacted(child.stdout, process.stdout);
   forwardRedacted(child.stderr, process.stderr);
-  child.once("error", () => rejectDeploy(new Error("Could not start the Solana CLI for TIP deployment.")));
+  child.once("error", () => {
+    clearInterval(heartbeat);
+    rejectDeploy(new Error("Could not start the Solana CLI for TIP deployment."));
+  });
   child.once("close", (code) => {
+    clearInterval(heartbeat);
     if (code === 0) resolveDeploy();
     else rejectDeploy(new Error(`TIP deployment command exited with status ${code ?? "unknown"}.`));
   });
 });
+console.log(`TIP Solana CLI completed successfully for ${programId}.`);

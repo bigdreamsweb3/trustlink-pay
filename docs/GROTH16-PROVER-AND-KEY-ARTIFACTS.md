@@ -1,6 +1,6 @@
 # GPRU Groth16 prover and key artifacts
 
-This guide explains the proof-generation component used by GPRU's hidden-head V1 contract. The circuit and public-input ABI were recently changed to a single hidden per-TIN head with a nested token commitment map. Previously generated circuit artifacts do not match this source and must be regenerated. The repository does not contain production proving/verifying keys, a witness provider, a prover service, or a verified deployment of the verifier configuration. The Node settlement authorization endpoint therefore fails closed.
+This guide explains the proof-generation component used by the current twelve-input GPRU hidden-head contract. The local Node witness/prover adapters are implemented, and the November 2 experiment verified the matching November 1 development setup, local proofs and four SBF builds. Runtime configuration, deployed verifier/root state and confirmed settlement are separate gates; see [the dated readiness record](./laboratory/experiments/EXP-20261102-hidden-head.md). The older October 31 eight-input setup is incompatible; the verified November 1 development setup is reusable for its matching source. Production keys/ceremony and independent review are not established.
 
 ## What the prover does
 
@@ -8,7 +8,7 @@ The circuit defines the exact statement that GPRU accepts. For one balance-chang
 
 The prover is an off-chain program or service. It receives a valid witness and the circuit-specific proving key, computes the witness, and creates the proof. It cannot make an invalid transition pass: GPRU checks the proof against the verifying key stored in its global verifier PDA, and TCAP invokes that check before changing its shared root or reserve liabilities. If verification or any later TCAP condition fails, Solana rolls back the whole instruction transaction.
 
-The proof does not hide every transaction field. The current ABI exposes the action kind, asset/token ID, amount, nullifier, old and new shared roots, memo commitment, action commitment, TIP route root, and successor Pedersen point. Transaction accounts, timing, and the encrypted Memo bytes are also public chain data. This design hides the per-TIN route/head witness; it does not promise zero linkability.
+The proof is designed to hide the per-TIN route/head witness; protocol-wide shared roots are not individual TIN identifiers. The current ABI exposes the action kind, asset/token ID, amount, nullifier, old and new shared roots, memo commitment, action commitment, TIP route root, and successor Pedersen point. Transaction accounts, timing, and encrypted Memo bytes are also public chain data, but do not provide a public pointer to the hidden TIN or its private predecessor. The proof path remains fail-closed until its artifacts and end-to-end execution are verified, so this design is not yet a verified runtime guarantee.
 
 ## Public-input contract
 
@@ -94,7 +94,7 @@ snarkjs groth16 verify \
   build/hidden_head_v1/public.json build/hidden_head_v1/proof.json
 ```
 
-The measured constraint count fits a power-18 Powers of Tau file. These commands create only a local experimental setup; a one-person local setup is not production ceremony evidence and must not be treated as production key material. The local proof must also be verified with GPRU's Rust verifier and exact point encoding before it is evidence of compatibility.
+The following manual ceremony/proof commands illustrate the toolchain stages; use the circuit package scripts and explicit artifact paths for reproducible development setup. The measured constraint count fits a power-18 Powers of Tau file. These commands create only a local experimental setup; a one-person local setup is not production ceremony evidence and must not be treated as production key material. The local proof must also be verified with GPRU's Rust verifier and exact point encoding before it is evidence of compatibility.
 
 ## Prover request and settlement flow
 
@@ -107,7 +107,7 @@ sequenceDiagram
     participant T as TCAP program
     participant G as GPRU verifier
     N->>P: public action + private route/head witness + memo bytes
-    P-->>N: proof + 9 ordered public inputs
+    P-->>N: proof + 12 ordered public inputs
     N->>C: Mother-authorized transition + proof (only after validation)
     C->>S: exact authorized transaction + Memo instruction
     S->>T: CPI with action, shared-root predecessor, proof
@@ -116,17 +116,35 @@ sequenceDiagram
     T->>T: atomically advance shared root and reserve liabilities
 ```
 
-This is the intended proof path. At present the Node deliberately returns `GPRU_GROTH16_PROVER_NOT_CONFIGURED`, so no valid prover response reaches Cranker. Source-level CPI code is not evidence that the entire sequence builds or runs.
+The local Node witness/prover adapters are implemented, and the November 2 experiment verified the matching November 1 development setup, local proofs and four SBF builds. Runtime configuration, deployed verifier/root state and confirmed settlement are separate gates; see [the dated readiness record](./laboratory/experiments/EXP-20261102-hidden-head.md). The six artifact settings and witness-directory setting must be explicitly applied; local evidence does not prove active service or chain execution.
 
 ## Repository status and completion gates
 
-The repository now includes scripts to create a **local development-only** Powers of Tau/Groth16 setup, export the verifying key into the byte layout required by `groth16-solana 0.0.2`, and calculate/prove/verify when supplied a complete circuit witness. The generated files live under the ignored `build/hidden_head_v1/dev/` directory. This is not a production ceremony or reviewed key. No real witness provider is connected to TIP/TCAP state, the on-chain verifier PDA has not been initialized, and the SDK/Receiver/Node/Cranker path has not passed an end-to-end proof test. Debit and exit must remain disabled until their proof relation, authorization, payout/liquidity checks, and atomic root transition are verified together.
+The repository now includes scripts to create a **local development-only** Powers of Tau/Groth16 setup, export the verifying key into the byte layout required by `groth16-solana 0.0.2`, and calculate/prove/verify when supplied a complete circuit witness. The generated files live under the ignored `build/hidden_head_v1/dev/` directory. This is not a production ceremony or reviewed key. The implemented root-selected witness store and local prover adapter validate chain-root/key bindings. The dated pre-deployment observation found an uninitialized verifier and unapplied Node settings; the complete SDK/Receiver/Node/Cranker chain path remains unverified here. Debit and exit must remain disabled until their proof relation, authorization, payout/liquidity checks, and atomic root transition are verified together.
 
-Do not enable the Node settlement path or deploy a new program build on the basis of these source files alone. Completion requires the artifact pipeline above, program and SDK builds, proof-vector verification, transaction-size/compute checks, security review, and explicit Devnet account/signature evidence.
+Enabling live credit requires the artifact pipeline above, program and SDK builds, proof-vector verification, transaction-size/compute checks, security review, and explicit Devnet account/signature evidence.
 
 ## Devnet program deployment command
 
-After those completion gates pass, deploy the TIP Registrar, TSN, TCAP, and GPRU programs from the repository root with:
+### One-time verifier initialization and root activation
+
+The November 2 setup follow-up found that the original twelve-input verifier initializer encoded **1,356 bytes of instruction data**, exceeding Solana's 1,232-byte transaction packet limit before signatures/accounts. The GPRU setup ABI now creates a disabled verifier with its fixed header, uploads thirteen IC points in chunks of at most four, then enables it only after the complete key matches its circuit/key commitments. Its proof ABI, verifier account layout, program IDs and circuit/proving key are unchanged. The earlier deployed GPRU binary needs a rebuild/redeployment for this initializer change; do not regenerate the matching development setup merely to upload it.
+
+Root setup commands are `gpru:verifier:info`, `gpru:verifier:init:devnet` and `tcap:root:activate:devnet`. Mutations require explicit `--send`; without it the script reads accounts and prints the exact transaction plan. Verifier enrollment is six packets (790, 506, 506, 506, 313, 244 bytes); matching disabled enrollment can be resumed. Enabled keys cannot be overwritten. TCAP activation requires its stored governance signer, a paused sequence-zero root, and uses the existing program instruction to install the canonical empty root and clear the pause. A root with existing transitions is refused.
+
+For this WSL checkout, the observed Mother signer is `FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG` at `tsn-protocol/services/tsn-node/keys/mother-node-keypair.json`; TCAP governance is `78AacdSEWquuus5QyU654C7Gjb6gFb8okLNb8v1hn5MX` at `/home/bigdream/.config/solana/id.json`. Paths/authorities are local observations, not portable defaults. The script rechecks stored authority and refuses a wrong signer. Run these operator commands after deploying the corrected GPRU binary:
+
+```bash
+cd /mnt/c/Users/codepara/Desktop/trust-link
+npm run gpru:program:deploy:devnet
+npm run gpru:verifier:init:devnet -- --rpc https://api.devnet.solana.com --wallet "$PWD/tsn-protocol/services/tsn-node/keys/mother-node-keypair.json" --send
+npm run tcap:root:activate:devnet -- --rpc https://api.devnet.solana.com --wallet /home/bigdream/.config/solana/id.json --send
+npm run gpru:verifier:info -- --rpc https://api.devnet.solana.com
+```
+
+These are user-executed signed operations. The assistant's follow-up performed source fixes, build/tests and read-only account/planning checks; it did not deploy or initialize accounts. See the [setup verification record](laboratory/experiments/EXP-20261102-verifier-initialization.md). Node artifact settings, root-matching snapshots, recipient creation and complete credit/recovery remain separate steps. Legacy config proof flags are not a replacement for the GPRU hidden-head verifier account used by the native credit handler.
+
+For an operator-authorized upgrade, the root script rebuilds and deploys TIP Registrar, TSNP, TCAP and GPRU:
 
 ```sh
 npm run programs:devnet:deploy:all

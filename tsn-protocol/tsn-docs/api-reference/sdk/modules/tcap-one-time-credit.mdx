@@ -1,0 +1,112 @@
+---
+title: "tcap-one-time-credit API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-one-time-credit.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## buildInitializeOneTimeTipInstruction
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 182](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-one-time-credit.ts#L182).
+
+```ts
+buildInitializeOneTimeTipInstruction(fields: { payer: PublicKey; blindedSettlementCommitment: string; policyCommitment: string; tokenId: number; }): TransactionInstruction
+```
+
+## buildInitializeOneTimeTipLiabilityInstruction
+
+Creates only the empty liability slot; the subsequent credit still requires TSN authorization.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 107](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-one-time-credit.ts#L107).
+
+```ts
+buildInitializeOneTimeTipLiabilityInstruction(fields: { payer: PublicKey; tcapConfig: PublicKey; oneTimeTip: PublicKey; assetEntry: PublicKey; reserveState: PublicKey; liability?: PublicKey; }): TransactionInstruction
+```
+
+## buildTcapDepositAssetV2Instruction
+
+Builds TCAP's sender-authorized reserve deposit. Account addresses must come
+from the governed on-chain asset registry, not caller-invented PDAs.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 30](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-one-time-credit.ts#L30).
+
+```ts
+buildTcapDepositAssetV2Instruction(fields: { programId?: PublicKey; depositor: PublicKey; config: PublicKey; assetEntry: PublicKey; reserveState: PublicKey; source: PublicKey; vault: PublicKey; mint: PublicKey; tokenProgram: PublicKey; amount: string | bigint; }): TransactionInstruction
+```
+
+Direct failure expressions:
+
+```text
+new Error("TCAP_DEPOSIT_AMOUNT_MUST_BE_POSITIVE")
+```
+
+## buildTcapTinWalletDepositTransaction
+
+Builds the wallet transaction for first funding of a TIN's TCAP TIP.
+The Node/Cranker flow still validates and submits the fully wallet-signed
+transaction; this helper does not send or sign it.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 64](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-one-time-credit.ts#L64).
+
+```ts
+buildTcapTinWalletDepositTransaction(fields: { depositor: PublicKey; blindedSettlementCommitment: string; policyCommitment: string; tokenId: number; config: PublicKey; assetEntry: PublicKey; reserveState: PublicKey; source: PublicKey; vault: PublicKey; mint: PublicKey; tokenProgram: PublicKey; amount: string | bigint; initializeTip: boolean; }): Transaction
+```
+
+## buildTsnRegisterOneTimeCreditInstruction
+
+Builds the exact TSN CPI wrapper for TCAP credit_one_time_tip.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 151](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-one-time-credit.ts#L151).
+
+```ts
+buildTsnRegisterOneTimeCreditInstruction(fields: TsnOneTimeCreditInstructionParams): TransactionInstruction
+```
+
+## deriveOneTimeCreditPermitDigest
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 130](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-one-time-credit.ts#L130).
+
+```ts
+deriveOneTimeCreditPermitDigest(fields: { currentTip: PublicKey; amount: string; tokenId: number; mint: PublicKey; nonce: string; sequence: string; previousCommitment: string; }): string
+```
+
+## deriveOneTimeTipLiabilityPda
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 99](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-one-time-credit.ts#L99).
+
+```ts
+deriveOneTimeTipLiabilityPda(oneTimeTip: PublicKey, assetEntry: PublicKey): PublicKey
+```
+
+## deriveOneTimeTipPda
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 92](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-one-time-credit.ts#L92).
+
+```ts
+deriveOneTimeTipPda(blindedSettlementCommitment: string): PublicKey
+```
+
+## TCAP_PROGRAM_ID
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 6](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-one-time-credit.ts#L6).
+
+```ts
+PublicKey
+```
+
+## TsnOneTimeCreditInstructionParams
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 141](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-one-time-credit.ts#L141).
+
+```ts
+export type TsnOneTimeCreditInstructionParams = {
+  authority: PublicKey; motherEscrow: PublicKey; tcapConfig: PublicKey;
+  currentTip: PublicKey; assetEntry: PublicKey; reserveState: PublicKey; liability: PublicKey;
+  authorizationDigest: string; validAfterSlot: string; expiresAtSlot: string;
+  newCommitment: string; nonce: string; sequence: string; tokenId: number; amount: string;
+  policyCommitment: string; gpruScopeCommitment: string; previousCommitment: string;
+  sealed: string; sealCommitment: string;
+};
+```

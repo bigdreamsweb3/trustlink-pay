@@ -1,0 +1,166 @@
+---
+title: "gpru/transaction-record API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## assertGpruMemoActionMatchesProofV1
+
+Check the decrypted Memo record against the action values authenticated by the on-chain Groth16 statement.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 195](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L195).
+
+```ts
+assertGpruMemoActionMatchesProofV1(record: GpruBalanceActionRecordV1, proofAction: { actionKind: 1 | 2 | 3; tokenId: number; amountBaseUnits: string; actionCommitment: string; authorizationCommitment: string; nullifier: string; }): void
+```
+
+Direct failure expressions:
+
+```text
+new Error("Decrypted GPRU Memo action does not match the on-chain proof statement")
+```
+
+## decryptGpruLedgerMemoV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 217](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L217).
+
+```ts
+decryptGpruLedgerMemoV1(params: { memoPayload: string; masterSeed: Uint8Array; gpruElgamalPublicKey: Uint8Array; gpruBalanceScanPublicKeyX: Uint8Array; gpruBalanceScanPublicKeyY: Uint8Array; }): GpruBalanceActionRecordV1
+```
+
+Direct failure expressions:
+
+```text
+new Error("GPRU Memo payload must be an unpadded Base64URL Ledger stream")
+new Error("Memo does not contain a valid DBrix GPRU record envelope")
+new Error("Unsupported DBrix GPRU transaction-record envelope version")
+new Error("TIN master seed does not derive the registered GPRU balance scan key")
+new Error("Decrypted GPRU action commitment differs from the proof-bound Memo prefix")
+```
+
+## deriveGpruTransactionRecordKeyV1
+
+Derives the DBrix Secretbox key using the owner's GPRU route key and Node's fresh public ephemeral key.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 82](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L82).
+
+```ts
+deriveGpruTransactionRecordKeyV1(params: { masterSeed: Uint8Array; gpruElgamalPublicKey: Uint8Array; dna: Uint8Array; recordEphemeralPublicKey: Uint8Array; }): Uint8Array
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN master seed must contain at least 32 bytes")
+new Error("TIN master seed does not derive the registered GPRU ElGamal route key")
+```
+
+## GpruBalanceActionRecordV1
+
+Owner-side action after recovering its blinding delta from the proof-bound Memo ciphertext.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 37](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L37).
+
+```ts
+export type GpruBalanceActionRecordV1 = GpruOwnerMemoActionPayloadV1 & {
+  balanceBlindingDelta: string;
+};
+```
+
+## GpruMemoBindingV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 41](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L41).
+
+```ts
+export type GpruMemoBindingV1 = {
+  successorPortfolioRoot: string;
+  successorBalancePoint: { x: string; y: string };
+  actionCommitment: string;
+  encryptedBlindingDelta: string;
+  deltaEphemeralPublicKey: { x: string; y: string };
+};
+```
+
+## GpruOwnerMemoActionPayloadV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 23](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L23).
+
+```ts
+export type GpruOwnerMemoActionPayloadV1 = {
+  version: 1;
+  recordType: "tsn-gpru-balance-action-v1";
+  sequence: string;
+  previousMemoCommitment: string;
+  actionCommitment: string;
+  authorizationCommitment: string;
+  nullifier: string;
+  actionKind: 1 | 2 | 3;
+  tokenId: number;
+  amountBaseUnits: string;
+};
+```
+
+## GpruTransactionRecordEnvelopeV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L13).
+
+```ts
+export type GpruTransactionRecordEnvelopeV1 = {
+  version: 1;
+  algorithm: typeof RECORD_ENVELOPE_ALGORITHM;
+  dna: string;
+  recordEphemeralPublicKey: string;
+  data: string;
+  nonce: string;
+  compression?: "deflate";
+};
+```
+
+## parseGpruMemoBindingV1
+
+Decodes the Base64URL Memo emitted from DBrix Ledger slots and decrypts the owner-only record.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 122](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L122).
+
+```ts
+parseGpruMemoBindingV1(memoPayload: string): GpruMemoBindingV1
+```
+
+Direct failure expressions:
+
+```text
+new Error("Memo does not contain the GPRU portfolio-head V1 binding")
+```
+
+## validateGpruBalanceActionRecordV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 134](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L134).
+
+```ts
+validateGpruBalanceActionRecordV1(value: unknown, recoveredBlindingDelta: bigint): GpruBalanceActionRecordV1
+```
+
+Direct failure expressions:
+
+```text
+new Error("GPRU owner balance action record must be an object")
+new Error("DBrix Memo record must not contain a duplicate blinding delta; recover it from the proof-bound Memo ciphertext")
+new Error("GPRU owner action record contains missing or unsupported fields")
+new Error("Unsupported GPRU owner balance action record")
+new Error("GPRU action sequence must be a positive decimal integer")
+new Error("GPRU predecessor Memo commitment must be 32-byte lowercase hex")
+new Error("GPRU action commitment must be 32-byte lowercase hex")
+new Error("GPRU authorization commitment must be 32-byte lowercase hex")
+new Error("GPRU nullifier must be 32-byte lowercase hex")
+new Error("GPRU Memo, action, authorization, and nullifier values must be canonical BN254 field elements")
+new Error("GPRU action kind must be credit (1), debit (2), or exit (3)")
+new Error("GPRU action tokenId must be a positive u32")
+new Error("GPRU action amount must be a positive decimal integer")
+new Error("GPRU action sequence or amount exceeds u64")
+new Error("GPRU balance blinding delta must be recovered from the proof-bound Memo ciphertext")
+new Error("GPRU blinding delta must be nonzero and inside the BabyJubjub scalar field")
+new Error("First GPRU action must have no predecessor; later actions must name one")
+```

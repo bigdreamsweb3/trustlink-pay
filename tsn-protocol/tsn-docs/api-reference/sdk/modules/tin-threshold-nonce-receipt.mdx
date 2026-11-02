@@ -1,0 +1,60 @@
+---
+title: "tin-threshold-nonce-receipt API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-threshold-nonce-receipt.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## serializeTinThresholdNonceReceipt
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-threshold-nonce-receipt`. [Implementation, line 24](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-threshold-nonce-receipt.ts#L24).
+
+```ts
+serializeTinThresholdNonceReceipt(receipt: Omit<TinThresholdNonceReceipt, "signatureBase64Url">): Uint8Array<ArrayBufferLike>
+```
+
+## TIN_THRESHOLD_NONCE_RECEIPT_DOMAIN
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-threshold-nonce-receipt`. [Implementation, line 8](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-threshold-nonce-receipt.ts#L8).
+
+```ts
+"TSN_TIN_THRESHOLD_NONCE_RECEIPT"
+```
+
+## TinThresholdNonceReceipt
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-threshold-nonce-receipt`. [Implementation, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-threshold-nonce-receipt.ts#L11).
+
+```ts
+export type TinThresholdNonceReceipt = {
+  domain: typeof TIN_THRESHOLD_NONCE_RECEIPT_DOMAIN;
+  operation: "PROTECT_KEY" | "RELEASE_KEY";
+  tin: string;
+  ownerPublicKey: string;
+  resourceCommitment: string;
+  requestNonce: string;
+  consumedAt: string;
+  expiresAt: string;
+  verifierPublicKeyBase64Url: string;
+  signatureBase64Url: string;
+};
+```
+
+## verifyTinThresholdNonceReceipt
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-threshold-nonce-receipt`. [Implementation, line 40](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-threshold-nonce-receipt.ts#L40).
+
+```ts
+verifyTinThresholdNonceReceipt(params: { receipt: TinThresholdNonceReceipt; proof: TinDeviceAccessProof; expectedVerifierPublicKeyBase64Url: string; now?: Date; }): Promise<TinThresholdNonceReceipt>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN threshold nonce receipt does not match the access proof")
+new Error("TIN threshold nonce receipt is expired or has an invalid time")
+new Error("TIN threshold nonce verifier public key is invalid")
+new Error("TIN threshold nonce receipt signature is invalid")
+```

@@ -8,15 +8,21 @@ privacy-preserving across applications and blockchain networks; route
 availability and end-to-end proof support must be checked against current
 implementation evidence.
 
-Across these guides, the protocol boundary is consistent: **GPRU guards the integrity and privacy of the user's private state presented to TCAP for a balance-changing action; TCAP governs the assets and liquidity and applies authorized transitions atomically.** The hidden-head proof path is not operational end to end until its prover, witness source, verifier setup, and execution are verified. Public transaction fields and shared state may still expose activity or correlation.
+Across these guides, the protocol boundary is consistent: **GPRU guards the integrity and privacy of the user's private state presented to TCAP for a balance-changing action; TCAP governs the assets and liquidity and applies authorized transitions atomically.** The native-credit proof hides the recipient TIN route and private predecessor witness from the on-chain statement. The owner retains private recovery/history material. However, Node derives the published nullifier from the public deposit signature and TCAP program ID, so an observer can compute the funding-to-credit link without a secret. Amount, asset, shared roots, successor point, ciphertext, accounts and timing are also visible, and the authorized Node handles private resolution/witnesses. Direct wallet transfers expose their endpoints; confidential debit and exit require separate execution evidence. The implemented source does not establish general unlinkability, owner-only knowledge or completed live settlement. Required artifact/witness settings and matching chain/verifier state remain runtime gates; see the [canonical privacy record](./laboratory/cryptography.md).
 
 For internal team runbooks, start with the categorized [team guide index](./team/README.md).
 The public Mintlify documentation for developers, judges, and users is maintained
 separately under `tsn-protocol/tsn-docs/`.
 
+## Laboratory and engineering record
+
+Use the [documentation maintenance manual](DOCUMENTATION_MAINTENANCE.md) for source-first changes, internal/public placement, status, diagrams and validation. The [Codex reference index](../.codex/README.md) separates current guidance from historical prompts.
+
+The [Laboratory record](./laboratory/README.md) connects foundations, the [canonical source-backed architecture](./laboratory/architecture-map.md), component/function references, cryptography, invariants, experiments, ADRs and technology roles. [Documentation status](./DOCUMENTATION_STATUS.md) records reviewed coverage and outstanding claims; the [historical archive](./historical-archive/README.md) preserves superseded designs at their original paths.
+
 ## Documentation boundary
 
-Mintlify is for public protocol explanations and application-facing SDK guides. Keep source-level architecture discussions, circuit and key setup, integration decisions, deployment steps, service startup, and operator runbooks in this repository's `docs/` folder. When a feature is not available end to end, Mintlify should state that limitation briefly and link here for the engineering record; it should not publish a build diary or local service commands.
+Mintlify contains the public protocol/SDK handbook, testing, service API and operator-facing guidance. Detailed source-level investigations, dated experiments, circuit/key setup, deployment evidence and internal runbooks remain in `docs/`. Public pages link those canonical records and distinguish source capabilities from verified network availability.
 
 Read these documents in order:
 
@@ -25,17 +31,18 @@ Read these documents in order:
 3. [Groth16 proofs in TSN](./GROTH16-ON-TSN.md) — plain-language explanation of the hidden-head proof, keys, privacy boundary, and current runtime status.
 4. [GPRU Groth16 prover and key artifacts](./GROTH16-PROVER-AND-KEY-ARTIFACTS.md) — how circuit-specific keys are created and installed, and which artifacts are still missing.
 5. [TCAP balance-transition boundary](./TCAP-V2-DEBIT-CREDIT-DESIGN.md) — what current credit code checks and what debit/exit proofs still require.
-6. [TSN whitepaper](./TSN-WHITEPAPER.md) — the normative protocol model, security invariants and planned settlement-domain evolution.
-7. [Identity and TIN](./identity-and-tin.md) — the payment identity, owner recovery, resolution and encrypted boundaries.
-8. [Protocol architecture](./protocol-architecture.md) — TSN infrastructure, Solana foundations, authority boundaries and runtime responsibilities.
-9. [Receiver verification and Cranker settlement](./tsn-receiver-verification-settlement.md) — redacted ingress, verification, leases and exact submission.
+6. [How TCAP protects reserve funds](./TCAP-FUND-PROTECTION.md) — custody, funded liabilities, GPRU proof checks, solvency, and fail-closed behavior.
+7. [TSN whitepaper](./TSN-WHITEPAPER.md) — the normative protocol model, security invariants and planned settlement-domain evolution.
+8. [Identity and TIN](./identity-and-tin.md) — the payment identity, owner recovery, resolution and encrypted boundaries.
+9. [Protocol architecture](./protocol-architecture.md) — TSN infrastructure, Solana foundations, authority boundaries and runtime responsibilities.
+10. [Receiver verification and Cranker settlement](./tsn-receiver-verification-settlement.md) — redacted ingress, verification, leases and exact submission.
    The Node's signed verification receipt is checked by both Receiver and Cranker before execution.
-10. [Network and runtime](./network-and-runtime.md) — Receiver, Node, Cranker, programs, PDAs and RPC.
-11. [Security model](./security-model.md) — authority, secret boundaries, replay, revocation and limitations.
-12. [Operations and testing](./operations-and-testing.md) — Devnet evidence, deployment and troubleshooting.
-13. [ZK-PRU retired](./ZK-PRU-RETIRED.md) — architecture history and the replacement rule for implementers.
-14. [Security](./SECURITY.md) — plain-language security principles.
-15. [Metadata use and compliance](./META-DATA-USE-COMPLIANCE.md) — data minimization and privacy handling.
+11. [Network and runtime](./network-and-runtime.md) — Receiver, Node, Cranker, programs, PDAs and RPC.
+12. [Security model](./security-model.md) — authority, secret boundaries, replay, revocation and limitations.
+13. [Operations and testing](./operations-and-testing.md) — Devnet evidence, deployment and troubleshooting.
+14. [ZK-PRU retired](./ZK-PRU-RETIRED.md) — architecture history and the replacement rule for implementers.
+15. [Security](./SECURITY.md) — plain-language security principles.
+16. [Metadata use and compliance](./META-DATA-USE-COMPLIANCE.md) — data minimization and privacy handling.
 
 Supporting references:
 
@@ -48,7 +55,7 @@ Supporting references:
 - [TSN Transaction Explorer](./tsn-transaction-explorer.md)
 - [TSN Private View](./tsn-private-view-lit.md)
 - [Lit Protocol in TSN](./lit-protocol-in-tsn.md)
-- [TIN master-seed architecture](./tin-master-seed-architecture.md) (historical compatibility note)
+- [Historical architecture register](./historical-archive/README.md) — the previously linked master-seed page is absent from this checkout
 - [TSN Receiver, Node and Cranker architecture](./tsn-receiver-node-architecture.md)
 - [Public mentions](./mentions.md)
 - [TIN creation data flow](./TSN-TIN-CRANKER-DATAFLOW.md) — Receiver, Node, Cranker, encryption, validation, and evidence boundaries.
@@ -61,18 +68,21 @@ Supporting references:
 
 - **TSN** is settlement and authorization coordination infrastructure.
 - **TIP** is the Transfer Identity Protocol; **TIN** is one 10-digit Transfer Identity Number within TIP.
-- **GPRU** is a standalone program with one-time ElGamal derivation and a Groth16 hidden-head verifier entrypoint in source. The TSNP/TCAP credit ABI carries the proof-shaped arguments, but Node settlement authorization fails closed until a circuit-specific proving key, matching verifier setup, witness source, and prover service are available. The circuit and cross-service path are not validated end to end.
+- **GPRU** is a standalone verifier program; the current twelve-input circuit and local witness/prover adapters are implemented. The November 2 record verifies matching development artifacts and local proofs/builds. Runtime settings, matching initialized verifier and chain execution remain separate gates.
 - **Epoch Treasury** coordinates aggregate funding and settlement liability.
 - **Mother** provides authorization under the applicable TSNP instruction family; do not infer that epoch `ConfidentialSettlement`/slot instructions are part of the active TIN credit path.
 - **Cranker** submits exact leased work and cannot rewrite the authorization.
-- **TCAP** is the Transfer Confidential Asset Protocol and governs assets, reserves, and liability accounting. The wired TSN credit path advances a single shared TCAP root after GPRU credit validation; it does not persist a per-TIN latest head. TCAP also contains legacy TIN-tip account/instruction code. The hidden-head root-advance instruction is separate and has no current TSN runtime caller.
+- **TCAP** is the Transfer Confidential Asset Protocol and governs assets, reserves, and liability accounting. The wired TSN credit path advances a single shared TCAP root after GPRU credit validation; it does not persist a per-TIN latest head. TCAP also contains legacy TIN-tip account/instruction code. The current credit calls TCAP, which invokes GPRU before its own atomic root/liability update.
 - **ZK-PRU** is retired historical material only. It is not a live receiving, spending or balance architecture; see [ZK-PRU retired](./ZK-PRU-RETIRED.md).
 
 Confidential debits and exits are not established as working end-to-end by the
 current hidden-head source. No active document should describe ZK-PRU as a
-receiving wallet, balance container or spending route. Do not call the hidden
-head fully unlinkable: its transactions all write the same public TCAP root,
-and the present instruction ABI exposes action kind, token ID, and amount.
+receiving wallet, balance container or spending route. Do not describe the
+hidden-head design's unlinkability as a verified runtime capability: its
+transactions all write the same public TCAP root and expose selected action
+fields, while current runtime configuration and confirmed settlement remain separate verification requirements. The shared
+root exposes global ordering but is protocol-wide, not a per-TIN identity
+reference.
 
 All diagrams in active documentation use Mermaid. Historical material is
 labelled explicitly and is not normative for new implementations.
@@ -122,5 +132,4 @@ liquidity asset, finality behavior, explorer pair, supported Attestcoin role,
 route configuration, executor boundary, and the chain-specific failure modes.
 This keeps TSN documentation grounded in settlement routing and
 privacy-aware settlement coordination while preserving the distinction that
-**DeFi decentralizes financial services; DESP decentralizes settlement
-infrastructure.**
+TSN coordinates settlement infrastructure, while TSNP names its on-chain protocol program.

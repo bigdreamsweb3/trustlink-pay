@@ -3,6 +3,29 @@
 use crate::stealth_keys::{derive_node_dna_key_v1, derive_node_record_shared_point_v1};
 use core::ptr;
 
+/// Native-only Poseidon adapter. Match the Solana/Circom BN254 X5 contract;
+/// reject noncanonical inputs rather than reducing caller-selected aliases.
+#[no_mangle]
+pub unsafe extern "C" fn tsn_gpru_poseidon_v1(
+    inputs: *const u8,
+    count: usize,
+    output: *mut u8,
+) -> i32 {
+    if inputs.is_null() || output.is_null() { return 2; }
+    if !matches!(count, 1 | 2 | 3 | 5) { return 1; }
+    let bytes = core::slice::from_raw_parts(inputs, count * 32);
+    let fields: Vec<&[u8]> = bytes.chunks_exact(32).collect();
+    let result = solana_program::poseidon::hashv(
+        solana_program::poseidon::Parameters::Bn254X5,
+        solana_program::poseidon::Endianness::BigEndian,
+        &fields,
+    );
+    match result {
+        Ok(hash) => { ptr::copy_nonoverlapping(hash.to_bytes().as_ptr(), output, 32); 0 }
+        Err(_) => 1,
+    }
+}
+
 /// Derive an ephemeral public key and per-DNA ElGamal public key.
 ///
 /// Returns 0 on success, 1 for invalid input/point, and 2 for null pointers.

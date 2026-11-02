@@ -1,0 +1,38 @@
+---
+title: "Test an integration and interpret evidence"
+description: "Offline SDK checks, service contracts and live settlement evidence."
+---
+
+Start with deterministic preparation and request validation, then test actual services and chain outcomes in the selected environment. A type check verifies imports and arguments; it does not execute wallet approval, network calls or settlement. The documentation examples keep those boundaries explicit so a developer can test the code they actually own.
+
+## Offline examples and source build
+
+From a dependency-installed checkout:
+
+```bash
+npm run tsn:sdk:build
+node docs/references/tooling/verify-sdk-examples.mjs
+node --test tsn-protocol/sdks/tsn-sdk/tests/canonical-payment-route.test.mjs
+```
+
+The example verifier type-checks four complete example files and runs eight offline scenarios using real SDK preparation/client functions with mocked fetch. Those scenarios cover amount conversion and precision, zero fees, owner-hash binding and malformed values, request integrity, HTTP acceptance/errors and service-readiness interpretation. It does not produce live wallet signatures. The wallet-credit example is type-checked only because its asset resolution and signing callbacks require a real caller environment.
+
+During the November 2 documentation run, the root build launcher could not find root TypeScript. The installed SDK compiler successfully built the SDK and its TCAP dependency directly; [the internal operations record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/operations-and-verification.md) retains the exact command and limitation. The three canonical route tests also passed. These are bounded local observations, not a supported runtime compatibility matrix.
+
+## Service-contract tests
+
+Receiver tests check projection/redaction, Node attestation, encrypted envelope and local storage behavior. Node suites check authorization, recipient binding, root-selected witnesses, local proving and transport limits. Cranker tests check its signed execution projection. Run the suites appropriate to changed contracts and inspect their prerequisites before invoking any script that can initialize accounts, fund assets or submit transactions.
+
+The [internal testing record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/testing-and-evidence.md) links the inspected suites and distinguishes earlier local proving/SBF-build results from tests run for documentation. Test-file existence is not a passing test result. Development setup artifacts are not evidence of a production trusted-setup ceremony.
+
+## First live native credit
+
+Verify the selected program binaries, matching verifier account/key commitment, active asset/reserve/root, current recipient scan-key schema and root-matching witness snapshots. Use a fresh canonical wallet message and exact signed deposit. Confirm the actual deposit signature before interpreting the Node-verified proof and Mother-authorized settlement as executable.
+
+Then retain the settlement signature and successful transaction result, expected shared-root sequence/root, pending-to-settled reserve-liability change and the owner's validated record recovery. Record the cluster, slot and commitment level. Funding confirmation, settlement confirmation and owner balance reconstruction establish different facts; a single successful service response cannot establish all three.
+
+Keep captured evidence allowlisted: identifiers, sanitized status, signatures, public state and result summaries. Do not publish private witnesses, raw TIN payloads, scan secrets, session tokens or environment credentials. Route-specific exit/cross-chain verification also needs destination execution and must not inherit native-credit success by assumption.
+
+## Documentation validation
+
+Regenerate SDK/service catalogs after changing public exports or handler declarations, type-check examples, and run the local navigation/link audit. MDX compilation and Mermaid parsing are separate checks from browser theme rendering. The [documentation status ledger](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/DOCUMENTATION_STATUS.md) records exact checks and unresolved coverage.

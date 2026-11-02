@@ -1,0 +1,91 @@
+---
+title: "payment-authorization API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## buildPaymentAuthorizationIntentRequest
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-authorization`. [Implementation, line 184](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L184).
+
+```ts
+buildPaymentAuthorizationIntentRequest(params: { paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; tokenDecimals: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderAuthorizationIssuedAt: string; senderAuthorizationExpiresAt: string; senderFeeAmount?: string | number | null; senderSignedFundingTransaction: string; senderFundingMode: "tcap_deposit_v2"; amount: string | number; destinationNetwork?: string | null; destinationExecutor?: string | null; destinationToken?: string | null; settlementRouteId?: string | null; recipientAmount?: number; source?: string; }): CreateIntentRequest
+```
+
+Direct failure expressions:
+
+```text
+new Error("Payment amount cannot be represented exactly in the TSN intent request")
+new Error("Sender fee cannot be represented exactly in the TSN intent request")
+```
+
+## createCrossChainPaymentAuthorization
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-authorization`. [Implementation, line 145](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L145).
+
+```ts
+createCrossChainPaymentAuthorization(params: { intentId: string; senderWallet: string; senderIdentity: string; receiverIdentity: string; tokenMintAddress: string; destinationToken: string; amount: string | number; senderFeeAmount: string | number; nonce?: string; issuedAt?: string; expiresAt?: string; destinationNetwork: string; destinationExecutor: string; settlementRouteId: string; }): { message: string; nonce: string; issuedAt: string; expiresAt: string; }
+```
+
+Direct failure expressions:
+
+```text
+new Error("recipient TIN is required for canonical TSN payment authorization")
+```
+
+## createPaymentAuthorization
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-authorization`. [Implementation, line 74](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L74).
+
+```ts
+createPaymentAuthorization(params: { senderWallet: string; senderIdentity: string; receiverIdentity: string; recipientDisplayName?: string; recipientDisplayNameSource?: "owner-provided" | "not provided"; recipientVerifiedCredentials?: readonly VerifiedRecipientCredential[]; tokenMintAddress: string; tokenDecimals: number; amount: string | number; senderFeeAmount: string | number; totalTokenRequiredUi: number; nonce?: string; issuedAt?: string; expiresAt?: string; fundingMode?: "tcap_deposit_v2"; }): { message: string; amountBaseUnits: string; feeBaseUnits: string; nonce: string; issuedAt: string; expiresAt: string; }
+```
+
+## createPaymentAuthorizationExpiry
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-authorization`. [Implementation, line 70](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L70).
+
+```ts
+createPaymentAuthorizationExpiry(ttlMs?: number): string
+```
+
+## createPaymentAuthorizationNonce
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-authorization`. [Implementation, line 62](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L62).
+
+```ts
+createPaymentAuthorizationNonce(): string
+```
+
+## createSenderPaymentAuthorizationMessage
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-authorization`. [Implementation, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L17).
+
+```ts
+createSenderPaymentAuthorizationMessage(params: { senderWallet: string; senderIdentity: string; receiverIdentity: string; recipientDisplayName?: string; recipientDisplayNameSource?: "owner-provided" | "not provided"; recipientVerifiedCredentials?: readonly VerifiedRecipientCredential[]; tokenMintAddress: string; tokenDecimals: number; amount: string | number; senderFeeAmount: string | number; totalTokenRequiredUi: number; nonce?: string; issuedAt: string; expiresAt?: string; fundingMode?: "tcap_deposit_v2"; }): string
+```
+
+Direct failure expressions:
+
+```text
+new Error( "recipient TIN is required for canonical TSN payment authorization", )
+```
+
+## createTcapAssetPaymentAuthorization
+
+Resolve the active TCAP asset first, then sign using its registered mint and decimals.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-authorization`. [Implementation, line 115](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L115).
+
+```ts
+createTcapAssetPaymentAuthorization(params: Omit<Parameters<typeof createPaymentAuthorization>[0], "tokenMintAddress" | "tokenDecimals"> & { connection: Connection; depositor: PublicKey; mint: PublicKey; tcapProgramId?: PublicKey; }): Promise<{ asset: { tokenId: number; mint: string; tokenProgram: string; decimals: number; assetEntry: string; }; message: string; amountBaseUnits: string; feeBaseUnits: string; nonce: string; issuedAt: string; expiresAt: string; }>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TOKEN_MINT_ACCOUNT_NOT_FOUND")
+```

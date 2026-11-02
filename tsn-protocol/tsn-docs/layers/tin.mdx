@@ -10,7 +10,7 @@ description: "TIP manages transfer identities; a TIN is the 10-digit identity a 
 
 The TIP registry keeps identity information encrypted. The owner's recovery record is stored in a separate on-chain PDA owned by the TIN Registrar program, not inside the main TIN registry account. That recovery record contains the owner's public key and an encrypted TIN recovery envelope. When the owner reconnects the wallet, the SDK derives the recovery PDA, fetches the envelope, and decrypts it locally.
 
-This separation means the main registry does not need a standalone owner-public-key field to support wallet recovery. Public account addresses and transaction metadata remain visible on Solana, so this design does not make every part of identity activity unlinkable.
+This separation means the main registry does not need a standalone owner-public-key field to support wallet recovery. The current native-credit ABI does not encode a plaintext recipient TIN or private predecessor pointer. It uses shared TIP/TCAP roots, and the owner retains private record lineage. Public action fields, encrypted Memo bytes, accounts, signatures, ordering and funding wallets remain observable. That encoding boundary does not establish that metadata or authorized service/application knowledge cannot correlate payments. The complete hidden-head flow and confidential debit/exit remain separate unverified runtime capabilities; see the [security boundary](/security/threat-model).
 
 ## Resolving a recipient
 

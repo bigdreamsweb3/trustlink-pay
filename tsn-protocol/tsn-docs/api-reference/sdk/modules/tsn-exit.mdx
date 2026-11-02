@@ -1,0 +1,194 @@
+---
+title: "tsn-exit API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## ASSOCIATED_TOKEN_PROGRAM_ID
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tsn-exit`. [Implementation, line 26](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts#L26).
+
+```ts
+PublicKey
+```
+
+## buildExitDebitInstruction
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tsn-exit`. [Implementation, line 133](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts#L133).
+
+```ts
+buildExitDebitInstruction(params: ExitDebitParams): TransactionInstruction
+```
+
+## buildExitDebitTransaction
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tsn-exit`. [Implementation, line 170](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts#L170).
+
+```ts
+buildExitDebitTransaction(params: ExitDebitParams): Transaction
+```
+
+## buildExitPayoutInstruction
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tsn-exit`. [Implementation, line 191](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts#L191).
+
+```ts
+buildExitPayoutInstruction(params: ExitPayoutParams): TransactionInstruction
+```
+
+## buildExitPayoutTransaction
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tsn-exit`. [Implementation, line 233](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts#L233).
+
+```ts
+buildExitPayoutTransaction(params: ExitPayoutParams): Transaction
+```
+
+## DecodedExitDebitEvidence
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tsn-exit`. [Implementation, line 288](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts#L288).
+
+```ts
+export type DecodedExitDebitEvidence = {
+  permitNonce: `0x${string}`;
+  exitCommitment: `0x${string}`;
+  mint: string;
+  amountBaseUnits: bigint;
+  sequence: bigint;
+  sealed: `0x${string}`;
+  sealCommitment: `0x${string}`;
+  sourceDebitSignature: `0x${string}`;
+};
+```
+
+## decodeExitDebitInstructionData
+
+Decode the exact TSN debit instruction emitted by
+`tsn_register_tcap_exit_debit_v1`.
+
+This is a pure decoder. It does not decrypt the sealed TIP, derive a TIN,
+or authorize a payout. The Node must combine this evidence with its
+authenticated sealed-head and TIN commitment readers before creating any
+cross-chain authorization.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tsn-exit`. [Implementation, line 316](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts#L316).
+
+```ts
+decodeExitDebitInstructionData(value: Uint8Array | string): DecodedExitDebitEvidence
+```
+
+Direct failure expressions:
+
+```text
+new Error("not a valid tsn_register_tcap_exit_debit_v1 instruction")
+```
+
+## deriveExitCommitment
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tsn-exit`. [Implementation, line 273](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts#L273).
+
+```ts
+deriveExitCommitment(fields: ExitCommitmentFields): Uint8Array
+```
+
+## deriveExitDestinationAta
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tsn-exit`. [Implementation, line 248](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts#L248).
+
+```ts
+deriveExitDestinationAta(input: { destinationOwner: string | PublicKey; mint: string | PublicKey; tokenProgram?: string | PublicKey; }): PublicKey
+```
+
+## deriveExitPermitPda
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tsn-exit`. [Implementation, line 239](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts#L239).
+
+```ts
+deriveExitPermitPda(input: { permitNonce: Uint8Array | string; }): PublicKey
+```
+
+## ExitCommitmentFields
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tsn-exit`. [Implementation, line 263](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts#L263).
+
+```ts
+export type ExitCommitmentFields = {
+  destinationOwner: string | PublicKey;
+  destination: string | PublicKey;
+  amount: bigint | number | string;
+  mint: string | PublicKey;
+  permitNonce: Uint8Array | string;
+  sourceTip: string | PublicKey;
+  sequence: bigint | number | string;
+};
+```
+
+## ExitDebitParams
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tsn-exit`. [Implementation, line 116](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts#L116).
+
+```ts
+export type ExitDebitParams = {
+  authority: string | PublicKey;
+  motherEscrow: string | PublicKey;
+  tcapConfig: string | PublicKey;
+  tip: string | PublicKey;
+  reserve: string | PublicKey;
+  liability: string | PublicKey;
+  mint: string | PublicKey;
+  permitNonce: Uint8Array | string;
+  destinationCommitment: Uint8Array | string;
+  amount: bigint | number | string;
+  sequence: bigint | number | string;
+  sealed: Uint8Array | string;
+  sealCommitment: Uint8Array | string;
+  sourceDebitSignature: Uint8Array | string;
+};
+```
+
+## ExitPayoutParams
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tsn-exit`. [Implementation, line 176](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts#L176).
+
+```ts
+export type ExitPayoutParams = {
+  authority: string | PublicKey;
+  motherEscrow: string | PublicKey;
+  tcapConfig: string | PublicKey;
+  reserve: string | PublicKey;
+  assetEntry: string | PublicKey;
+  permit: string | PublicKey;
+  reserveAuthority: string | PublicKey;
+  vault: string | PublicKey;
+  destination: string | PublicKey;
+  destinationOwner: string | PublicKey;
+  mint: string | PublicKey;
+  tokenProgram?: string | PublicKey;
+};
+```
+
+## getTcapProgramId
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tsn-exit`. [Implementation, line 33](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts#L33).
+
+```ts
+getTcapProgramId(): PublicKey
+```
+
+Direct failure expressions:
+
+```text
+new Error("TCAP_PROGRAM_ID is required for TSN exit instructions")
+new Error("TCAP_PROGRAM_ID must be a valid Solana public key")
+```
+
+## TSN_PROGRAM_ID
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tsn-exit`. [Implementation, line 23](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tsn-exit.ts#L23).
+
+```ts
+PublicKey
+```

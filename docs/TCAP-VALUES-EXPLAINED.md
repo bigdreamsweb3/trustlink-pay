@@ -22,6 +22,6 @@ The GPRU Circom source describes a private route/head update proof; TCAP contain
 
 ## Privacy limits
 
-The hidden-head design aims to hide which route/head changed, but each update touches the same public writable TCAP root. The repeated account reference and global ordering are visible; this is not zero-linkability. Wallet funding and public exits also retain their normal public transaction metadata.
+The hidden-head design aims to hide which route/head changed. Each update touches the same public writable TCAP root, which reveals global ordering but is shared across users rather than a per-TIN identity reference. Funding and a resulting TIN settlement have no public recipient pointer between them; a TIN-to-wallet exit exposes its output wallet and amount, not the source TIN. The hidden-head proof path is not yet verified end to end, so this design is not a confirmed runtime guarantee.
 
 For the full source contract and verification limits, see [Current architecture](./CURRENT-ARCHITECTURE.md) and [GPRU hidden-head status](./gpru-tcap-route.md).

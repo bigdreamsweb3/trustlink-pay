@@ -1,0 +1,208 @@
+---
+title: "tin-envelopes API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## createTinMasterSeedEnvelope
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 159](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L159).
+
+```ts
+createTinMasterSeedEnvelope(params: { provider: string; tin: string; ownerPublicKey: string; routeVersion: number; pruConfigurationHash: string; resourceCommitment: string; seedCiphertext: string; seedNonce: string; seedCiphertextCommitment: string; protectedKey: string; protectedKeyCommitment: string; accessControlHash: string; }): Promise<TinMasterSeedEnvelope>
+```
+
+## createTinPublicRoutePayload
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 264](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L264).
+
+```ts
+createTinPublicRoutePayload(params: { tin: string; routeVersion: number; routeNonce: string; pruConfigurationHash: string; prus: PruEndpoint[]; }): TinPublicRoutePayload
+```
+
+## decodeTinMasterSeedEnvelope
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 89](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L89).
+
+```ts
+decodeTinMasterSeedEnvelope(value: Uint8Array): TinMasterSeedEnvelope
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN master-seed envelope version is unsupported")
+new Error("TIN master-seed envelope is incomplete")
+```
+
+## decodeTinPublicRouteEnvelope
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 250](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L250).
+
+```ts
+decodeTinPublicRouteEnvelope(value: Uint8Array): TinPublicRouteEnvelope
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN public-route envelope version or algorithm is unsupported")
+new Error("TIN public-route envelope is incomplete")
+```
+
+## encodeTinEnvelope
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 85](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L85).
+
+```ts
+encodeTinEnvelope(value: TinMasterSeedEnvelope | TinPublicRouteEnvelope): Uint8Array<ArrayBuffer>
+```
+
+## encryptTinPublicRoutePayload
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 291](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L291).
+
+```ts
+encryptTinPublicRoutePayload(params: { payload: TinPublicRoutePayload; nodeRoutingPublicKeyBase64: string; }): TinPublicRouteEnvelope
+```
+
+Direct failure expressions:
+
+```text
+new Error("Node routing public key must be exactly 32 bytes")
+```
+
+## serializeTinMasterSeedWalletAuthorization
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 137](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L137).
+
+```ts
+serializeTinMasterSeedWalletAuthorization(params: { tin: string; ownerPublicKey: string; routeVersion: number; pruConfigurationHash: string; resourceCommitment: string; deviceSessionBinding: string; }): Uint8Array<ArrayBufferLike>
+```
+
+## TIN_MASTER_SEED_ACCESS_DOMAIN
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 10](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L10).
+
+```ts
+"TSN_TIN_MASTER_SEED_ACCESS"
+```
+
+## TIN_MASTER_SEED_ENVELOPE_VERSION
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 7](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L7).
+
+```ts
+"tsn-tin-master-seed-envelope"
+```
+
+## TIN_MASTER_SEED_LOCAL_ENCRYPTION_ALGORITHM
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 8](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L8).
+
+```ts
+"aes-256-gcm-local-master-seed"
+```
+
+## TIN_PUBLIC_ROUTE_ENCRYPTION_ALGORITHM
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L12).
+
+```ts
+"x25519-xsalsa20-poly1305"
+```
+
+## TIN_PUBLIC_ROUTE_ENVELOPE_VERSION
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L11).
+
+```ts
+"tsn-tin-public-route-envelope"
+```
+
+## TinMasterSeedEnvelope
+
+The locally encrypted master seed plus an opaque threshold-protected data
+key. The SDK never serializes a device private key, wallet signature, master
+seed, or backend capability into this envelope.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 19](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L19).
+
+```ts
+export type TinMasterSeedEnvelope = {
+  version: typeof TIN_MASTER_SEED_ENVELOPE_VERSION;
+  provider: string;
+  tin: string;
+  routeVersion: number;
+  pruConfigurationHash: string;
+  resourceCommitment: string;
+  seedEncryptionAlgorithm: typeof TIN_MASTER_SEED_LOCAL_ENCRYPTION_ALGORITHM;
+  seedCiphertext: string;
+  seedNonce: string;
+  seedCiphertextCommitment: string;
+  protectedKey: string;
+  protectedKeyCommitment: string;
+  accessControlHash: string;
+  integrityCommitment: string;
+};
+```
+
+## TinPublicRouteEntry
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 36](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L36).
+
+```ts
+export type TinPublicRouteEntry = {
+  index: number;
+  publicKey: string;
+  publicKeyHex: string;
+  state: "PLANNED" | "ACTIVE" | "USED" | "SWEPT";
+};
+```
+
+## TinPublicRouteEnvelope
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 52](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L52).
+
+```ts
+export type TinPublicRouteEnvelope = {
+  version: typeof TIN_PUBLIC_ROUTE_ENVELOPE_VERSION;
+  algorithm: typeof TIN_PUBLIC_ROUTE_ENCRYPTION_ALGORITHM;
+  ephemeralPublicKey: string;
+  nonce: string;
+  ciphertext: string;
+};
+```
+
+## TinPublicRoutePayload
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 43](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L43).
+
+```ts
+export type TinPublicRoutePayload = {
+  version: typeof TIN_PUBLIC_ROUTE_ENVELOPE_VERSION;
+  tin: string;
+  routeVersion: number;
+  routeNonce: string;
+  pruConfigurationHash: string;
+  prus: TinPublicRouteEntry[];
+};
+```
+
+## validateTinMasterSeedEnvelope
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-envelopes`. [Implementation, line 215](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-envelopes.ts#L215).
+
+```ts
+validateTinMasterSeedEnvelope(params: { envelope: TinMasterSeedEnvelope | Uint8Array; tin: string; ownerPublicKey: string; pruConfigurationHash: string; }): Promise<TinMasterSeedEnvelope>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN master-seed envelope identity does not match")
+new Error("TIN master-seed envelope integrity check failed")
+```

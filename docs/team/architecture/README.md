@@ -3,8 +3,10 @@
 Use this category for system boundaries and design authority.
 
 - [Current architecture](../../CURRENT-ARCHITECTURE.md)
-- [Protocol architecture](../../protocol-architecture.md)
-- [Final TSN architecture](../../TSN-FINAL-ARCHITECTURE.md)
+- [Canonical implementation map](../../laboratory/architecture-map.md)
+- [Laboratory component and function records](../../laboratory/components.md)
+- [Protocol architecture](../../protocol-architecture.md) — separate historical epoch instruction family
+- [Final TSN architecture](../../TSN-FINAL-ARCHITECTURE.md) — historical epoch/slot narrative
 - [Receiver, Node, and Cranker architecture](../../tsn-receiver-node-architecture.md)
 - [TSN whitepaper](../../TSN-WHITEPAPER.md)
 

@@ -1,0 +1,37 @@
+---
+title: "token-registry API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/token-registry.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## TsnAllowedToken
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 1](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/token-registry.ts#L1).
+
+```ts
+export type TsnAllowedToken = {
+  mintAddress: string;
+  symbol: string;
+  name: string;
+  decimals?: number;
+};
+```
+
+## tsnGetAllowedSplTokens
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 39](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/token-registry.ts#L39).
+
+```ts
+tsnGetAllowedSplTokens(env: Record<string, string | undefined>): TsnAllowedToken[]
+```
+
+## tsnResolveSplTokenInput
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 56](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/token-registry.ts#L56).
+
+```ts
+tsnResolveSplTokenInput(tokenInput: string, env: Record<string, string | undefined>): TsnAllowedToken
+```

@@ -1,0 +1,89 @@
+---
+title: "tcap-gpru-credit API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## buildTcapGpruWalletDepositTransaction
+
+Builds only the sender-signed reserve deposit. TIP settlement is Node-owned.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 99](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L99).
+
+```ts
+buildTcapGpruWalletDepositTransaction(fields: { accounts: Awaited<ReturnType<typeof resolveTcapGpruDepositAccounts>>; amountBaseUnits: bigint; }): Transaction
+```
+
+## buildTsnRegisterTcapCreditAuthorizationV2Instruction
+
+Mother-authorized memo credit, fenced by TCAP's shared settlement root.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 116](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L116).
+
+```ts
+buildTsnRegisterTcapCreditAuthorizationV2Instruction(fields: { authority: PublicKey; motherEscrow: PublicKey; tcapProgramId?: PublicKey; commitmentRoot: PublicKey; assetEntry: PublicKey; reserveState: PublicKey; config: PublicKey; tipRouteRoot: PublicKey; gpruVerifier: PublicKey; instructions?: PublicKey; gpruProgramId?: PublicKey; authorizationDigest: string; validAfterSlot: string | bigint; expiresAtSlot: string | bigint; previousTcapRoot: string; tcapRootSequence: string | bigint; tokenId: number; amountBaseUnits: string | bigint; nullifier: string; proof: GpruHiddenHeadProofV1; }): TransactionInstruction
+```
+
+Direct failure expressions:
+
+```text
+new Error("TCAP_CONFIG_NOT_CANONICAL")
+```
+
+## GPRU_PROGRAM_ID
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L11).
+
+```ts
+PublicKey
+```
+
+## GPRU_TCAP_PROGRAM_ID
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 8](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L8).
+
+```ts
+PublicKey
+```
+
+## GpruHiddenHeadProofV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 21](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L21).
+
+```ts
+export type GpruHiddenHeadProofV1 = {
+  publicInputs: readonly string[];
+  proofA: string;
+  proofB: string;
+  proofC: string;
+  actionKind: number;
+  tokenId: number;
+  amount: string | bigint;
+  authorizationCommitment: string;
+};
+```
+
+## resolveTcapGpruDepositAccounts
+
+Reads the canonical reserve and vault from TCAP's on-chain asset entry.
+The reserve is never derived from an assetState PDA.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 57](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L57).
+
+```ts
+resolveTcapGpruDepositAccounts(connection: Connection, fields: { depositor: PublicKey; mint: PublicKey; tokenProgram: PublicKey; tcapProgramId: PublicKey; }): Promise<{ depositor: PublicKey; tcapProgramId: PublicKey; config: PublicKey; registry: PublicKey; assetEntry: PublicKey; assetEntryAccount: AccountInfo<Buffer<ArrayBufferLike>>; reserveState: PublicKey; reserveAuthority: PublicKey; source: PublicKey; vault: PublicKey; mint: PublicKey; tokenProgram: PublicKey; tokenId: number; decimals: number; }>
+```
+
+Direct failure expressions:
+
+```text
+new Error("MINT_NOT_REGISTERED_IN_TCAP")
+new Error("TCAP_ASSET_ENTRY_OWNER_MISMATCH")
+new Error("TCAP_ASSET_ENTRY_LAYOUT_INVALID")
+new Error("TCAP_ASSET_ENTRY_BINDING_MISMATCH")
+new Error("TCAP_ASSET_NOT_ACTIVE_FOR_DEPOSITS")
+new Error("TCAP_ASSET_ENTRY_RESERVE_NOT_CONFIGURED")
+```

@@ -11,17 +11,18 @@ establishes that the credit state change executed.
 | Receiver → Node | Stores ingress and leases authenticated work | Receiver acceptance alone does not verify a payment or settle it. |
 | Node → TSN | Resolves TIP, validates work, and prepares authorized transition data | Node verification alone does not move TCAP assets. |
 | Cranker → Solana | Submits the authorized transaction and pays transaction fees | The Cranker cannot change the transaction's authorized fields; submission alone is not confirmation. |
-| TSN → GPRU → TCAP | GPRU is the proof gate for the user's private state and proposed balance transition presented to TCAP; TCAP checks funds and applies an authorized transition atomically | The hidden-head proof is not wired end to end; the active source does not prove that the supplied predecessor is the latest state for that TIN. The shared root and public transaction fields can still correlate activity. |
+| TSNP → TCAP → GPRU | TCAP invokes GPRU's hidden-head proof/Memo verification before its atomic root/liability update | Local proofs and source wiring do not establish deployment, production cryptographic review or confirmed settlement. Public statement fields, ordering and funding wallets remain observable. |
 
 The encrypted Memo is transaction instruction data. TCAP does not store it in a
 per-TIN balance account in the current credit path. Reading transaction
-history requires RPC access or an indexer. GPRU/TCAP hidden-head instructions
-exist separately in source but are not called by the current Node, SDK,
-Cranker, or TSN credit path; their circuit does not establish balance
-arithmetic, debit affordability, or solvency.
+history requires RPC access or an indexer. The current Node witness/prover
+adapters and SDK/Cranker credit callers carry the twelve-input hidden-head
+contract. The circuit constrains hidden membership, balance arithmetic and
+nullifier insertion; TCAP separately checks reserve solvency.
 
-The current source therefore provides authorization checks, a GPRU credit
-relation check, and global replay sequencing. It does not establish
-zero-linkability, an authenticated latest memo per TIN, confidential debit or
-exit, or a complete encrypted-balance proof system. See [Current architecture](./CURRENT-ARCHITECTURE.md)
+The current source provides authorization, hidden-head proof verification and
+shared-root accounting. Local proofs/builds were verified separately; current
+chain/configuration and complete settlement/history recovery remain unverified
+here. Confidential debit/exit and metadata unlinkability must not be inferred
+from source presence. See [Current architecture](./CURRENT-ARCHITECTURE.md)
 and [GPRU/TCAP status](./gpru-tcap-route.md).

@@ -1,0 +1,82 @@
+---
+title: "client API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## TsnHttpClient
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/client`. [Implementation, line 7](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L7).
+
+```ts
+new TsnHttpClient(options: TsnHttpClientOptions): TsnHttpClient
+```
+
+### TsnHttpClient.post
+
+[Source, line 26](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L26).
+
+```ts
+post<TRequest, TResponse>(path: string, body: TRequest): Promise<TResponse>
+```
+
+### TsnHttpClient.get
+
+[Source, line 40](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L40).
+
+```ts
+get<TResponse>(path: string): Promise<TResponse>
+```
+
+### TsnHttpClient.patch
+
+[Source, line 52](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L52).
+
+```ts
+patch<TRequest, TResponse>(path: string, body: TRequest): Promise<TResponse>
+```
+
+### TsnHttpClient.postIntent
+
+[Source, line 66](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L66).
+
+```ts
+postIntent<TRequest, TResponse>(body: TRequest): Promise<TResponse>
+```
+
+### TsnHttpClient.listPendingIntentWork
+
+[Source, line 71](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L71).
+
+```ts
+listPendingIntentWork<TResponse>(limit?: number): Promise<TResponse>
+```
+
+### TsnHttpClient.updateIntentStatus
+
+[Source, line 75](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L75).
+
+```ts
+updateIntentStatus<TRequest, TResponse>(id: string, body: TRequest): Promise<TResponse>
+```
+
+Direct failure expressions:
+
+```text
+new Error(`TSN request failed (${response.status}): ${await response.text()}`)
+```
+
+## TsnHttpClientOptions
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/client`. [Implementation, line 1](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L1).
+
+```ts
+export type TsnHttpClientOptions = {
+  baseUrl: string;
+  fetchImpl?: typeof fetch;
+  apiKey?: string | null;
+};
+```

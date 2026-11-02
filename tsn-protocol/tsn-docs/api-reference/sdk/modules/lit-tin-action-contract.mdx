@@ -1,0 +1,118 @@
+---
+title: "lit-tin-action-contract API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-contract.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## assertSafeLitTinActionRequest
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-tin-action-contract`. [Implementation, line 137](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-contract.ts#L137).
+
+```ts
+assertSafeLitTinActionRequest(value: unknown): asserts value is LitTinActionRequest
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN action request domain or operation is invalid")
+```
+
+## createLitTinProtectKeyRequest
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-tin-action-contract`. [Implementation, line 101](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-contract.ts#L101).
+
+```ts
+createLitTinProtectKeyRequest(params: { pkpId: string; access: TinMasterSeedAccessContext; }): LitTinProtectKeyRequest
+```
+
+## createLitTinReleaseKeyRequest
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-tin-action-contract`. [Implementation, line 116](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-contract.ts#L116).
+
+```ts
+createLitTinReleaseKeyRequest(params: { pkpId: string; access: TinMasterSeedAccessContext; protectedKey: string; protectedKeyCommitment: string; accessControlHash: string; }): LitTinReleaseKeyRequest
+```
+
+## LIT_TIN_ACTION_REQUEST_DOMAIN
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-tin-action-contract`. [Implementation, line 7](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-contract.ts#L7).
+
+```ts
+"TSN_TIN_THRESHOLD_KEY_ACTION"
+```
+
+## LitTinActionRequest
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-tin-action-contract`. [Implementation, line 37](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-contract.ts#L37).
+
+```ts
+export type LitTinActionRequest =
+  | LitTinProtectKeyRequest
+  | LitTinReleaseKeyRequest;
+```
+
+## LitTinProtectKeyRequest
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-tin-action-contract`. [Implementation, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-contract.ts#L14).
+
+```ts
+export type LitTinProtectKeyRequest = {
+  domain: typeof LIT_TIN_ACTION_REQUEST_DOMAIN;
+  operation: "PROTECT_KEY";
+  pkpId: string;
+  access: PublicAccessContext;
+  walletAuthorizationMessageBase64Url: string;
+  walletAuthorizationSignatureBase64Url: string;
+  deviceAccessProof: TinDeviceAccessProof;
+};
+```
+
+## LitTinProtectKeyResponse
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-tin-action-contract`. [Implementation, line 41](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-contract.ts#L41).
+
+```ts
+export type LitTinProtectKeyResponse = {
+  operation: "PROTECT_KEY";
+  protectedKey: string;
+  protectedKeyCommitment: string;
+  accessControlHash: string;
+  deviceKeyEnvelope: TinDeviceKeyEnvelope;
+  nonceReceipt: TinThresholdNonceReceipt;
+};
+```
+
+## LitTinReleaseKeyRequest
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-tin-action-contract`. [Implementation, line 24](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-contract.ts#L24).
+
+```ts
+export type LitTinReleaseKeyRequest = {
+  domain: typeof LIT_TIN_ACTION_REQUEST_DOMAIN;
+  operation: "RELEASE_KEY";
+  pkpId: string;
+  access: PublicAccessContext;
+  walletAuthorizationMessageBase64Url: string;
+  walletAuthorizationSignatureBase64Url: string;
+  deviceAccessProof: TinDeviceAccessProof;
+  protectedKey: string;
+  protectedKeyCommitment: string;
+  accessControlHash: string;
+};
+```
+
+## LitTinReleaseKeyResponse
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/lit-tin-action-contract`. [Implementation, line 50](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/lit-tin-action-contract.ts#L50).
+
+```ts
+export type LitTinReleaseKeyResponse = {
+  operation: "RELEASE_KEY";
+  deviceKeyEnvelope: TinDeviceKeyEnvelope;
+  nonceReceipt: TinThresholdNonceReceipt;
+};
+```

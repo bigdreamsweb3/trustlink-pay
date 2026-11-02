@@ -71,7 +71,7 @@ The TIP registry can associate a TIN with identity metadata, owner authority, ro
 
 ### GPRU and TCAP — current behavior and target integration
 
-The TSNP/TCAP credit ABI carries a GPRU hidden-head Groth16 proof and atomically advances TCAP's shared root and reserve liabilities after verification. Node currently fails closed because the circuit, trusted setup artifacts, witness source, and prover are not configured. Verify the current program binaries and deployment slot on the target cluster before claiming that this source revision is deployed. Confidential debit and exit are not established end to end.
+The TSNP/TCAP credit ABI carries a GPRU hidden-head Groth16 proof and atomically advances TCAP's shared root and reserve liabilities after verification. The local Node witness/prover adapters are implemented, and the November 2 experiment verified the matching November 1 development setup, local proofs and four SBF builds. Runtime configuration, deployed verifier/root state and confirmed settlement are separate gates; see [the dated readiness record](./laboratory/experiments/EXP-20261102-hidden-head.md). Verify the current program binaries and deployment slot on the target cluster before claiming that this source revision is deployed. Confidential debit and exit are not established end to end.
 
 ### TCAP — Transfer Confidential Asset Protocol
 
@@ -145,7 +145,7 @@ Identity, protected receiving, settlement coordination, asset control, SDKs, and
 
 TrustLink Labs is actively developing and testing TSN, TIN, GPRU, TCAP, Token-2022 asset tooling, commitment-based settlement, authorized-device private views, and developer infrastructure on Solana Devnet.
 
-Recurring payments and subscription-provider execution are not presented as active production capabilities. Mainnet readiness, formal cryptographic audits, perfect unlinkability, and confidential debits/exits remain separate milestones.
+Recurring payments and subscription-provider execution are not presented as active production capabilities. Mainnet readiness, formal cryptographic audits, end-to-end verification of the hidden-head privacy path, and confidential debits/exits remain separate milestones.
 
 ## Join the work
 

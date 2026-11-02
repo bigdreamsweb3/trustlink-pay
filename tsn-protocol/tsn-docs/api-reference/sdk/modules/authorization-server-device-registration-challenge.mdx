@@ -1,0 +1,22 @@
+---
+title: "authorization/server/device-registration-challenge API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-challenge.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## createDeviceRegistrationChallenge
+
+Import from `@trustlink/tsn-sdk/authorization/server`. [Implementation, line 8](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/server/device-registration-challenge.ts#L8).
+
+```ts
+createDeviceRegistrationChallenge(params: { tinCommitment: string; network: string; audience: string; now?: Date; ttlMs?: number; }): DeviceRegistrationChallenge
+```
+
+Direct failure expressions:
+
+```text
+new Error( "Device registration challenge TTL must be between one millisecond and ten minutes", )
+```

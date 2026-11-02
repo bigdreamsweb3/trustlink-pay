@@ -1,0 +1,62 @@
+---
+title: "gpru/balance-history API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/balance-history.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## GpruDecryptedMemoActionV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 4](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/balance-history.ts#L4).
+
+```ts
+export type GpruDecryptedMemoActionV1 = {
+  memoPayload: string;
+  record: GpruBalanceActionRecordV1;
+  onChainAction: {
+    actionKind: 1 | 2 | 3;
+    tokenId: number;
+    amountBaseUnits: string;
+    actionCommitment: string;
+    authorizationCommitment: string;
+    nullifier: string;
+  };
+};
+```
+
+## RecoveredGpruBalanceHistoryV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/balance-history.ts#L17).
+
+```ts
+export type RecoveredGpruBalanceHistoryV1 = {
+  version: 1;
+  latestSequence: string;
+  balances: Array<{ tokenId: number; amountBaseUnits: string; blindingScalar: string }>;
+  actions: Array<GpruBalanceActionRecordV1 & { memoCommitment: string }>;
+};
+```
+
+## recoverGpruBalanceHistoryV1
+
+Rebuild owner balances from decrypted Memo actions and validate their private predecessor chain.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 35](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/balance-history.ts#L35).
+
+```ts
+recoverGpruBalanceHistoryV1(input: readonly GpruDecryptedMemoActionV1[], expectedLatestSequence?: string | bigint): RecoveredGpruBalanceHistoryV1
+```
+
+Direct failure expressions:
+
+```text
+new Error("No decrypted GPRU balance actions were supplied")
+new Error("GPRU Memo payload must be text")
+new Error("Decrypted GPRU action commitment differs from the on-chain proof binding")
+new Error(`GPRU Memo history has a sequence gap at ${expectedSequence}`)
+new Error(`GPRU Memo ${sequence} does not link to its decrypted predecessor`)
+new Error(`GPRU decrypted history produces a negative balance for token ${record.tokenId}`)
+new Error(`GPRU Memo history ends at ${latestSequence}; expected ${expectedLatestSequence}`)
+```

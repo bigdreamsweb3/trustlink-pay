@@ -1,0 +1,200 @@
+---
+title: "recovery/history-recovery API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## detectHistoricalPrivateRecords
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 37](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L37).
+
+```ts
+detectHistoricalPrivateRecords(inventory: PrivateHistoryInventory): PrivateHistoryState
+```
+
+## getRecoveryOptions
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 56](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L56).
+
+```ts
+getRecoveryOptions(inventory: PrivateHistoryInventory): RecoveryOption[]
+```
+
+## PrivateHistoryInventory
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L11).
+
+### PrivateHistoryInventory.historicalReceiptCount
+
+[Source, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L12).
+
+```ts
+historicalReceiptCount: number
+```
+
+### PrivateHistoryInventory.accessibleHistoricalReceiptCount
+
+[Source, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L13).
+
+```ts
+accessibleHistoricalReceiptCount: number
+```
+
+### PrivateHistoryInventory.activeApprovingDeviceCount
+
+[Source, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L14).
+
+```ts
+activeApprovingDeviceCount: number
+```
+
+### PrivateHistoryInventory.activeRecoveryCredentialCount
+
+[Source, line 15](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L15).
+
+```ts
+activeRecoveryCredentialCount: number
+```
+
+## PrivateHistoryRecoveryRequest
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 24](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L24).
+
+### PrivateHistoryRecoveryRequest.recoveryRequestId
+
+[Source, line 25](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L25).
+
+```ts
+recoveryRequestId: string
+```
+
+### PrivateHistoryRecoveryRequest.tinCommitment
+
+[Source, line 26](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L26).
+
+```ts
+tinCommitment: string
+```
+
+### PrivateHistoryRecoveryRequest.requestingDeviceId
+
+[Source, line 27](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L27).
+
+```ts
+requestingDeviceId: string
+```
+
+### PrivateHistoryRecoveryRequest.requestingDeviceEncryptionKeyFingerprint
+
+[Source, line 28](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L28).
+
+```ts
+requestingDeviceEncryptionKeyFingerprint: string
+```
+
+### PrivateHistoryRecoveryRequest.scope
+
+[Source, line 29](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L29).
+
+```ts
+scope: HistoryRecoveryScope
+```
+
+### PrivateHistoryRecoveryRequest.selectedReceiptIds
+
+[Source, line 30](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L30).
+
+```ts
+selectedReceiptIds: string[] | undefined
+```
+
+### PrivateHistoryRecoveryRequest.nonce
+
+[Source, line 31](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L31).
+
+```ts
+nonce: string
+```
+
+### PrivateHistoryRecoveryRequest.issuedAt
+
+[Source, line 32](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L32).
+
+```ts
+issuedAt: string
+```
+
+### PrivateHistoryRecoveryRequest.expiresAt
+
+[Source, line 33](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L33).
+
+```ts
+expiresAt: string
+```
+
+### PrivateHistoryRecoveryRequest.status
+
+[Source, line 34](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L34).
+
+```ts
+status: "expired" | "completed" | "approved" | "awaiting-approval" | "revoked"
+```
+
+## PrivateHistoryState
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 3](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L3).
+
+```ts
+export type PrivateHistoryState =
+  | { status: "none" }
+  | { status: "available" }
+  | { status: "recovery-required"; message: "Historical private records found. Authorize secure recovery to restore access on this device." }
+  | { status: "recovery-unavailable"; message: "Historical private records cannot be restored because no authorized device or recovery credential is available." };
+```
+
+## RecoveryMethod
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 9](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L9).
+
+```ts
+export type RecoveryMethod = "authorized-device" | "recovery-credential";
+```
+
+## RecoveryOption
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 18](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L18).
+
+### RecoveryOption.method
+
+[Source, line 19](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L19).
+
+```ts
+method: RecoveryMethod
+```
+
+### RecoveryOption.recommended
+
+[Source, line 20](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L20).
+
+```ts
+recommended: boolean
+```
+
+### RecoveryOption.label
+
+[Source, line 21](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L21).
+
+```ts
+label: string
+```
+
+## validateRecoveryScope
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 67](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/recovery/history-recovery.ts#L67).
+
+```ts
+validateRecoveryScope(request: PrivateHistoryRecoveryRequest): { valid: true; } | { valid: false; reason: string; }
+```

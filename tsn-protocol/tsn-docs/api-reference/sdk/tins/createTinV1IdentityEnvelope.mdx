@@ -35,12 +35,14 @@ export async function createTinV1IdentityEnvelope(params: {
 
 The helper returns a 32-byte lookup commitment and AES-GCM envelope. It throws if the runtime does not expose WebCrypto AES-GCM support.
 
+This invocation is illustrative; the caller provides a generated TIN and a configured secret. Use the complete source-derived signature for runtime validation requirements.
+
 ```ts
 const envelope = await createTinV1IdentityEnvelope({
   tin: generatedTin,
   displayName: "Example",
-  lookupSecret: process.env.TINS_LOOKUP_SECRET,
+  lookupSecret: process.env.TINS_LOOKUP_SECRET!,
 });
 ```
 
-Source: [`tins.ts:598-637`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L598-L637)
+Source: [`tins.ts`](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L799)

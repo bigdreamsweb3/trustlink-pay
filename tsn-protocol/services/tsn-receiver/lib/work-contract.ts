@@ -26,6 +26,7 @@ export type ReceiverWork = {
   verification?: Record<string, unknown> | null;
   result?: Record<string, unknown> | null;
   authorization?: Record<string, unknown> | null;
+  retryHistory?: Record<string, unknown>[];
 };
 
 export type PayloadDelta = {
@@ -204,7 +205,7 @@ export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, 
     const transition = filtered.tcapCreditTransition as Record<string, unknown>;
     const allowed = new Set([
       "commitmentRoot", "previousTcapRoot", "tcapRootSequence", "tokenId", "amountBaseUnits", "nullifier",
-      "validAfterSlot", "expiresAtSlot", "authorizationDigest", "proof", "memoPayload", "memoLedgerSlots",
+      "validAfterSlot", "expiresAtSlot", "authorizationDigest", "proof", "memoPayload", "memoBodyPayload", "memoLedgerSlots",
       "memoDocument", "memoCommitment", "successorBalancePoint", "assetEntry", "tcapConfig", "reserveState",
     ]);
     filtered.tcapCreditTransition = Object.fromEntries(Object.entries(transition).filter(([key]) => allowed.has(key)));

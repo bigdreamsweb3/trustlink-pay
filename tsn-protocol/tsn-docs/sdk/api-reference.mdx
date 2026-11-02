@@ -1,0 +1,71 @@
+---
+title: "Complete SDK API reference"
+description: "Source-derived public exports and class methods, organized by module."
+---
+
+The generated reference covers public root exports and the explicit `package.json` subpaths, including server-only modules. An exported method may still require a configured service, deployed program, or experimental provider. Browser bundles must use only browser-safe modules; the root entry exports server facilities as well.
+
+The checked-out package is `@trustlink/tsn-sdk@0.1.0`. The catalog contains **54 modules, 361 exported symbols and 285 public class/interface members**. Parameters and return types are extracted with TypeScript; direct errors and source links accompany each export.
+
+## Modules
+
+- [authorization/device-authorization](/api-reference/sdk/modules/authorization-device-authorization) — 6 exports.
+- [authorization/device-authorization-client](/api-reference/sdk/modules/authorization-device-authorization-client) — 5 exports.
+- [authorization/device-permissions](/api-reference/sdk/modules/authorization-device-permissions) — 3 exports.
+- [authorization/device-registration-challenge](/api-reference/sdk/modules/authorization-device-registration-challenge) — 2 exports.
+- [authorization/identity-commitments](/api-reference/sdk/modules/authorization-identity-commitments) — 11 exports.
+- [authorization/server/device-registration-challenge](/api-reference/sdk/modules/authorization-server-device-registration-challenge) — 1 exports.
+- [authorization/server/device-registration-verifier](/api-reference/sdk/modules/authorization-server-device-registration-verifier) — 2 exports.
+- [authorization/server/tins-owner-verifier](/api-reference/sdk/modules/authorization-server-tins-owner-verifier) — 2 exports.
+- [authorization/server/transient-owner-authorization](/api-reference/sdk/modules/authorization-server-transient-owner-authorization) — 2 exports.
+- [blockchain/solana-core](/api-reference/sdk/modules/blockchain-solana-core) — 7 exports.
+- [blockchain/solana-tsn](/api-reference/sdk/modules/blockchain-solana-tsn) — 16 exports.
+- [canonical-message](/api-reference/sdk/modules/canonical-message) — 14 exports.
+- [client](/api-reference/sdk/modules/client) — 2 exports.
+- [contracts](/api-reference/sdk/modules/contracts) — 14 exports.
+- [cross-chain](/api-reference/sdk/modules/cross-chain) — 25 exports.
+- [device/key-fingerprints](/api-reference/sdk/modules/device-key-fingerprints) — 2 exports.
+- [device/non-exportable-credentials](/api-reference/sdk/modules/device-non-exportable-credentials) — 6 exports.
+- [gpru](/api-reference/sdk/modules/gpru) — 12 exports.
+- [gpru/babyjub-delta-cipher](/api-reference/sdk/modules/gpru-babyjub-delta-cipher) — 9 exports.
+- [gpru/balance-history](/api-reference/sdk/modules/gpru-balance-history) — 3 exports.
+- [gpru/stealth-keys](/api-reference/sdk/modules/gpru-stealth-keys) — 4 exports.
+- [gpru/transaction-record](/api-reference/sdk/modules/gpru-transaction-record) — 9 exports.
+- [lit-threshold-provider](/api-reference/sdk/modules/lit-threshold-provider) — 5 exports.
+- [lit-tin-action-configuration](/api-reference/sdk/modules/lit-tin-action-configuration) — 6 exports.
+- [lit-tin-action-contract](/api-reference/sdk/modules/lit-tin-action-contract) — 9 exports.
+- [mempool](/api-reference/sdk/modules/mempool) — 2 exports.
+- [network-status](/api-reference/sdk/modules/network-status) — 6 exports.
+- [payment-authorization](/api-reference/sdk/modules/payment-authorization) — 7 exports.
+- [payment-authorization-server](/api-reference/sdk/modules/payment-authorization-server) — 1 exports.
+- [payment-jobs](/api-reference/sdk/modules/payment-jobs) — 4 exports.
+- [private-view/private-value-element](/api-reference/sdk/modules/private-view-private-value-element) — 4 exports.
+- [program](/api-reference/sdk/modules/program) — 5 exports.
+- [quote](/api-reference/sdk/modules/quote) — 2 exports.
+- [receipts/internal/receipt-envelope](/api-reference/sdk/modules/receipts-internal-receipt-envelope) — 3 exports.
+- [receipts/types](/api-reference/sdk/modules/receipts-types) — 7 exports.
+- [recovery/history-recovery](/api-reference/sdk/modules/recovery-history-recovery) — 8 exports.
+- [send-estimate](/api-reference/sdk/modules/send-estimate) — 1 exports.
+- [sessions/private-session-request](/api-reference/sdk/modules/sessions-private-session-request) — 3 exports.
+- [sessions/proof-of-possession](/api-reference/sdk/modules/sessions-proof-of-possession) — 8 exports.
+- [sessions/server/private-request-verifier](/api-reference/sdk/modules/sessions-server-private-request-verifier) — 4 exports.
+- [settlement-economics](/api-reference/sdk/modules/settlement-economics) — 4 exports.
+- [tcap-gpru-credit](/api-reference/sdk/modules/tcap-gpru-credit) — 6 exports.
+- [tcap-one-time-credit](/api-reference/sdk/modules/tcap-one-time-credit) — 10 exports.
+- [tin-device-access](/api-reference/sdk/modules/tin-device-access) — 8 exports.
+- [tin-device-key-envelope](/api-reference/sdk/modules/tin-device-key-envelope) — 5 exports.
+- [tin-device-key-provider](/api-reference/sdk/modules/tin-device-key-provider) — 2 exports.
+- [tin-envelopes](/api-reference/sdk/modules/tin-envelopes) — 17 exports.
+- [tin-local-master-seed](/api-reference/sdk/modules/tin-local-master-seed) — 3 exports.
+- [tin-private-controller](/api-reference/sdk/modules/tin-private-controller) — 14 exports.
+- [tin-threshold-nonce-receipt](/api-reference/sdk/modules/tin-threshold-nonce-receipt) — 4 exports.
+- [tins](/api-reference/sdk/modules/tins) — 26 exports.
+- [token-registry](/api-reference/sdk/modules/token-registry) — 3 exports.
+- [tsn-exit](/api-reference/sdk/modules/tsn-exit) — 15 exports.
+- [wallet-transfer](/api-reference/sdk/modules/wallet-transfer) — 2 exports.
+
+## Maintenance and limits
+
+Regenerate from the workspace root with `node docs/references/tooling/generate-sdk-reference.mjs`. The package's installed TypeScript compiler is required. The output is documentation metadata, not another SDK implementation. Source links point to the existing workspace remote and its main branch; local uncommitted changes may not yet be visible remotely. The internal inventory records the local files and line numbers used.
+
+Signatures are verified against checked-out source. The reference does not imply that every exported integration is exercised end to end. See [SDK troubleshooting](/sdk/troubleshooting) for runtime and confirmation boundaries.

@@ -79,17 +79,23 @@ Receiver ingress accepts the SDK-generated object with these fields:
 | `encryptedMetadataHash`        | string  | 64 hexadecimal characters            |
 | `routeVersion`                 | number  | Positive integer                     |
 | `routeNonce`                   | string  | 64 hexadecimal characters            |
-| `tcapRouteVersion`             | number  | `1`                                  |
-| `tcapRelationshipCommitment`   | string  | 64 hexadecimal characters            |
-| `tcapRelationshipReference`    | string  | 64 hexadecimal characters            |
-| `tcapPolicyCommitment`         | string  | 64 hexadecimal characters            |
+| `tipRouteVersion`              | number  | `1`                                  |
+| `gpruElgamalKeyVersion`        | number  | `1`                                  |
+| `gpruElgamalPublicKey`         | string  | 32-byte public key as hexadecimal     |
+| `gpruElgamalKeyCommitment`     | string  | 64 hexadecimal characters            |
+| `gpruBalanceScanKeyVersion`    | number  | `1`                                  |
+| `gpruBalanceScanPublicKeyX`    | string  | Canonical BabyJubjub field coordinate |
+| `gpruBalanceScanPublicKeyY`    | string  | Canonical BabyJubjub field coordinate |
+| `policyCommitment`             | string  | 64 hexadecimal characters            |
 
 The Receiver allowlists this schema and stores the encrypted identity and
 commitments with the work. It must not store or accept the plaintext TIN,
 display name, legacy `programAssigned` flag, old PRU route fields, or
 `TINS_LOOKUP_SECRET`. Node verification checks the
-length-prefixed intent hash, raw Ed25519 signature, expiry, TCap commitments,
+length-prefixed intent hash, raw Ed25519 signature, expiry, route/key/policy commitments,
 and HMAC issuance proof; the Receiver does not make those protocol decisions.
+
+The schema is derived from [the current SDK submitter](../../../tsn-protocol/sdks/tsn-sdk/src/tins.ts) and [Receiver allowlist](../../../tsn-protocol/services/tsn-receiver/lib/work-contract.ts). Old TCAP relationship fields are not accepted as a compatibility path. The route leaf authenticates the ElGamal key, policy and balance scan point; a new registration changes the shared TIP root used by witnesses.
 
 ## Stored Verification Shape
 

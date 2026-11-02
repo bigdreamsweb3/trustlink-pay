@@ -1,0 +1,42 @@
+---
+title: "Service API boundaries"
+description: "Actual application ingress, worker interfaces, schemas, authorization and errors."
+---
+
+Node and Receiver expose different HTTP routes. Node is the application facade and verifier; Receiver owns durable work and leases. Construct requests with the [typed SDK helpers](/sdk/payment-guide) and consult the [generated local interface reference](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/interface-reference.md) for every discovered route and declared model. The reference parses source without importing a server; it does not publish an invented OpenAPI contract.
+
+## Node: POST /intents
+
+`post_intent` accepts `CreateIntentRequest`, which rejects extra fields. Required fields include payment/seed identifiers, the resolved owner `recipientHash`, `recipientTin`, mint, UI amount, sender wallet, canonical signed message/nonce, exact owner-signed funding transaction and `senderFundingMode: "tcap_deposit_v2"`. Optional authorization timestamps, fee/recipient amounts, source and destination-route fields remain subject to their corresponding verification branch. The model's accepted fields do not establish that every cross-chain route is operational.
+
+Use `buildPaymentAuthorizationIntentRequest` for the exact shape and amount conversion; do not build a request from a retired receipt or escrow example. The sender message signature and deposit signature are distinct authorizations. Node forwards to Receiver with its configured service credential using a 30-second HTTPX timeout. This handler has no declared worker-key dependency; ingress authorization comes from the submitted wallet material and later verification, rather than an assumed public API token.
+
+Success returns `PublicMempoolIntent`, including work/payment identifiers, status, public amount/asset commitments and timestamps. It omits the private recipient TIN and signed funding body. Response acceptance does not prove that the Node verification worker has approved the request. Native funding and settlement result signatures must be reconciled separately.
+
+Schema failures use FastAPI validation responses. Missing Receiver configuration or forwarding failures produce HTTP 503. Receiver rejection statuses propagate with a `detail` message. `TsnHttpClient` throws a plain Error for non-2xx responses and has no generic automatic retry or timeout. Applications should retain identifiers and reconcile uncertain outcomes before resubmitting.
+
+## Receiver ingress and status
+
+`POST /api/work` requires `{ id?, kind, payload }`. External work kinds are checked by `assertExternalWorkKind`; an external caller cannot create arbitrary SETTLEMENT work. Success returns HTTP 201 and an allowlisted coordination projection. Missing kind/payload returns 422, an idempotency conflict returns 409, and other caught input/store failures return 400. This generic interface is a Receiver work contract; it is not the Node `/intents` schema.
+
+`GET /api/work` returns recent sanitized state, bounded rejection diagnostics and result signatures, with its declared short cache headers. The status-by-ID route is another projection and must not be assumed to expose the signed or decrypted work. These views support diagnostics; they do not replace chain confirmation or owner record recovery.
+
+## Node worker and settlement authorization
+
+`/api/internal/node/work` requires the Receiver Node service key. POST leases with `nodeId` and optional supported kinds, GET retrieves with an `id` query, and PATCH applies a versioned Node transition. POST/GET use 401 for unauthorized service requests, 400 for missing required identifiers and 500 for other caught failures; GET also returns 404 for missing work. PATCH maps caught transition/authentication errors to 409 in its actual implementation. Clients must inspect the returned error and reconcile lease state rather than assume all routes use identical status mapping.
+
+The Node's `/internal/settlement-authorizations/settlement` and `/internal/settlement-authorizations/signature` require its worker-key dependency. The first takes `workId` and `crankerPubkey`, checks confirmed funding, current TIP root, locally verified proof and active lease, then returns the authorization. The signature route additionally takes canonical `messageBase64`, validates size/encoding and transaction content, and obtains Mother co-signing. Missing inputs produce 422, oversized signing messages produce 413, invalid authorization/proof/lease bindings produce 403, and stale root, lease or blockhash conditions produce 409. The service cannot authorize an arbitrary caller-selected transition.
+
+The corrected authorization includes `kind=TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V2`, `transition`, `workStateVersion`, `leaseId`, `leaseVersion`, `leaseExpiresAt` and `expiresAtTs`. It preserves the exact verified transition and bounds expiry to the current Receiver lease. Local handler tests check this response and lease changes; live settlement remains unverified.
+
+`POST /api/internal/node/work/retry` requires the Receiver Node service key and JSON `{id, expectedVersion}`. It accepts only an unsubmitted settlement rejection for `GPRU_HIDDEN_HEAD_WITNESS_UNAVAILABLE:` or the exact reason `TCAP settlement asset is unavailable or its reserve binding is invalid`, after repairing the affected verification prerequisite. Original funding must be confirmed, with unchanged settlement payload commitment and deterministic lineage. It archives the rejection, increments the version, returns `{id, status: "RECEIVED", stateVersion}` and wakes independent Node verification. Invalid credentials return 401, malformed inputs 400, absent work 404 and state/funding/reason conflicts 409. This endpoint never requeues funding and can lead to settlement submission after Node verifies again; the operator utility requires explicit `--execute`.
+
+## Cranker authentication and leased execution
+
+Crankers obtain wallet challenge/session authorization and call `/api/cranker/work` with authenticated exact request bytes. POST accepts supported work kinds and enforces the implemented lease rate limit. Settlement leasing obtains Node authorization and attaches it under the expected work version. The returned execution view excludes private ingress routing; PATCH reports an authenticated Cranker transition.
+
+This route maps authentication/session failures to 401, lease rate limiting to 429, availability failures to 503, Node authorization-service rejection to 502 and other caught conflicts to 409. Its explicitly configured Node fallback is used for availability/404/5xx failures; protocol 4xx rejection is not bypassed by selecting another Node. No uniform rate limit for all HTTP routes is claimed.
+
+## Retry and security limits
+
+Read current work state and chain signatures after a lost response. A lease or root conflict needs re-verification; stale owner funding needs a fresh sender-approved transaction. Keep worker/session credentials server-side, verify the same cluster and program IDs across services, and redact raw signed work/private witnesses in diagnostic reports. Public status fields reveal some coordination information, and ingress services can see the data they initially receive. See [trust boundaries](/security/operator-boundaries) and [failure handling](/sdk/troubleshooting).

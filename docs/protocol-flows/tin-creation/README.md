@@ -5,6 +5,13 @@ older `programAssigned: true` flow in historical notes: the TIN program does
 not assign randomness, and owner-derived identity PDAs are retired for new
 issuance.
 
+Current version-1 registry creation binds both the versioned GPRU ElGamal public key and
+the BabyJubjub balance scan public key derived locally by the owner SDK. XP
+carries the scan key version and both coordinates through recovery preparation
+into the SDK creation hash and submitted payload. Private key material stays
+in the owner runtime; Receiver, Node and Cranker receive the public key fields
+and encrypted envelopes required by the existing contract.
+
 ## Current sequence
 
 1. The XP backend uses a CSPRNG to generate a ten-digit TIN.

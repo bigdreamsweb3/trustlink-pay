@@ -12,6 +12,8 @@ The TIP registry keeps identity data encrypted. The owner's recovery record live
 
 TIN resolution uses a protected lookup secret and should run only in an application environment that can keep that secret private. Never put it in browser code, wallet messages, or publicly accessible configuration.
 
+This snippet is illustrative; caller variables and credentials must come from the application's configured environment. Complete typed examples and their checks are linked in the [SDK handbook](/sdk/getting-started).
+
 ```ts
 import { Connection } from "@solana/web3.js";
 import { resolveTinV1Identity } from "@trustlink/tsn-sdk/tins";
@@ -27,6 +29,8 @@ if (!recipient) throw new Error("TIN could not be resolved");
 console.log(recipient.displayName);
 ```
 
-For creation, the connected owner authorizes a TIN identity and recovery envelope through the SDK. The wallet's secret key remains in the wallet; the application handles the returned encrypted data and follows the SDK's request flow.
+For creation, the connected owner authorizes a TIN identity and recovery envelope through the SDK. The wallet's secret key remains in the wallet; the application handles the returned encrypted data and follows the SDK's request flow. Current TIN V1 requests also carry the owner SDK's versioned GPRU ElGamal key commitment and BabyJubjub balance scan public key, including its version and both coordinates. These public fields are bound into the owner creation intent; private key material stays in the owner runtime.
 
 The SDK reference documents the creation and recovery helpers. Issuer-side configuration, request validation, and on-chain staging details are maintained in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).
+
+Creation is complete only after the final TIP transaction is confirmed and its registry account is verified. Oversized requests upload encrypted data through staging transactions before finalization. If finalization fails, those uploads can remain on chain while the registry and recovery records remain absent. After correcting the failure, an expired approval requires a fresh owner-signed creation request.

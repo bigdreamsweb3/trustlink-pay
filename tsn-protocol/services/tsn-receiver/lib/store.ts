@@ -6,6 +6,7 @@ import { decryptPayloadForNode, encryptPayloadForNode } from "./node-envelope";
 import { assertNodeVerificationAttestation } from "./node-verification";
 import { wakeTsnNode } from "./node-wake";
 import { publishCrankerWake } from "./cranker-wake";
+import { snapshotRetryPatch } from "./settlement-retry";
 
 const now = () => new Date().toISOString();
 
@@ -110,6 +111,26 @@ export async function listRecent(limit = 200) {
 export async function getWork(id: string) {
   const snapshot = await workCollection.doc(id).get();
   return snapshot.exists ? snapshot.data() as ReceiverWork : null;
+}
+
+export async function retrySettlementSnapshot(params: { id: string; expectedVersion: number; requestedBy: string }) {
+  const ref = workCollection.doc(params.id);
+  const result = await db.runTransaction(async (transaction: any) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) throw new Error("WORK_NOT_FOUND");
+    const current = snapshot.data() as ReceiverWork;
+    const fundingId = String(current.payload.intentId ?? "");
+    if (!fundingId) throw new Error("SETTLEMENT_FUNDING_REFERENCE_MISMATCH");
+    const funding = await transaction.get(workCollection.doc(fundingId));
+    if (!funding.exists) throw new Error("SETTLEMENT_FUNDING_NOT_CONFIRMED");
+    const patch = snapshotRetryPatch(current, funding.data() as ReceiverWork, params.expectedVersion, params.requestedBy);
+    // Funding, original payload/commitment and rejection history are preserved.
+    // A new Node lease must independently verify chain funding and prove again.
+    transaction.update(ref, patch);
+    return { id: current.id, status: patch.status, stateVersion: patch.stateVersion };
+  });
+  await wakeTsnNode("SETTLEMENT_SNAPSHOT_RETRY");
+  return result;
 }
 
 export async function getWorkForNode(id: string) {
@@ -243,6 +264,32 @@ export const leaseForNode = async (owner: string, supportedKinds?: WorkKind[]) =
 };
 export const leaseForCranker = (owner: string, supportedKinds?: WorkKind[]) =>
   lease("VERIFIED", "CRANKER_LEASED", owner, supportedKinds);
+
+export async function renewNodeLease(params: {
+  id: string; owner: string; expectedVersion: number; leaseId: string; leaseVersion: number;
+}) {
+  const ref = workCollection.doc(params.id);
+  return db.runTransaction(async (transaction: any) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) throw new Error("WORK_NOT_FOUND");
+    const current = snapshot.data() as ReceiverWork;
+    if (current.status !== "NODE_VERIFYING") throw new Error("NODE_LEASE_NOT_ACTIVE");
+    if (current.stateVersion !== params.expectedVersion) throw new Error("STALE_STATE_VERSION");
+    const lease = current.nodeLease;
+    const renewedAt = Date.now();
+    if (!lease || lease.owner !== params.owner
+        || (lease.leaseId ?? current.id) !== params.leaseId
+        || (lease.version ?? current.stateVersion) !== params.leaseVersion
+        || !Number.isFinite(Date.parse(lease.expiresAt)) || Date.parse(lease.expiresAt) <= renewedAt) {
+      throw new Error("LEASE_INVALID");
+    }
+    const nodeLease = { ...lease, expiresAt: new Date(renewedAt + 60_000).toISOString() };
+    // Renewal preserves the claim generation and signed decision context.
+    // Expired, reassigned or completed claims cannot be revived here.
+    transaction.update(ref, { nodeLease, updatedAt: new Date(renewedAt).toISOString() });
+    return { id: current.id, stateVersion: current.stateVersion, nodeLease };
+  });
+}
 
 export async function transition(params: {
   id: string;

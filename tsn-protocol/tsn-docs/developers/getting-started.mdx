@@ -8,6 +8,8 @@ This guide describes the application boundary. Your app configures service URLs,
 
 The TSN SDK is currently a private workspace package. It is not published to the public npm registry. See the [SDK overview](/sdk/index) for package access and the [SDK reference](/api-reference/sdk/tsn-sdk) for exported functions.
 
+The snippets illustrate integration stages and assume caller-supplied variables. Complete [typed examples](/sdk/payment-guide) and the [full generated reference](/sdk/api-reference) provide verified inputs and signatures.
+
 ## Check readiness
 
 Pass the service endpoints selected by your application. A readiness response is not a payment authorization or settlement confirmation.
@@ -64,8 +66,7 @@ const authorization = await createTcapAssetPaymentAuthorization({
   senderIdentity: senderWallet,
   receiverIdentity: `tin:${recipientTin}`,
   recipientDisplayName: recipient.displayName,
-  recipientDisplayNameSource: recipient.displayNameSource,
-  recipientVerifiedCredentials: recipient.verifiedCredentials,
+  recipientDisplayNameSource: recipient.displayName.trim() ? "owner-provided" : "not provided",
   amount,
   senderFeeAmount,
   totalTokenRequiredUi: amount + senderFeeAmount,
@@ -91,7 +92,7 @@ import {
 
 const request = buildPaymentAuthorizationIntentRequest({
   paymentId,
-  recipientHash: recipientTin,
+  recipientHash: recipient.ownerPubkeyHash,
   recipientTin,
   tokenMintAddress: authorization.asset.mint,
   tokenDecimals: authorization.asset.decimals,
@@ -104,7 +105,6 @@ const request = buildPaymentAuthorizationIntentRequest({
   senderFeeAmount,
   senderSignedFundingTransaction,
   senderFundingMode: "tcap_deposit_v2",
-  senderTokenAccount,
   amount,
   source: "my-tsn-app",
 });

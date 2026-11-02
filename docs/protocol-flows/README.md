@@ -8,7 +8,7 @@ evidence proves the stage completed.
 ## Documentation Rule
 
 The Receiver-first lease boundary is documented in
-[receiver-node-cranker-lease.md](receiver-node-cranker-lease.md).
+[../laboratory/architecture-map.md](../laboratory/architecture-map.md).
 
 Document every flow as a sequence of stages:
 

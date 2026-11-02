@@ -1,0 +1,136 @@
+---
+title: "tin-device-access API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-access.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## createTinDeviceAccessProof
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-device-access`. [Implementation, line 95](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-access.ts#L95).
+
+```ts
+createTinDeviceAccessProof(params: { operation: "PROTECT_KEY" | "RELEASE_KEY"; tin: string; ownerPublicKey: string; routeVersion: number; pruConfigurationHash: string; deviceSessionBinding: string; walletAuthorizationMessage: Uint8Array; resourceCommitment: string; device: TinAuthorizedDeviceSigner; now?: Date; }): Promise<{ signatureBase64Url: string; version: "tsn-tin-device-access-proof"; domain: "TSN_TIN_DEVICE_THRESHOLD_ACCESS"; operation: "PROTECT_KEY" | "RELEASE_KEY"; tin: string; ownerPublicKey: string; routeVersion: number; pruConfigurationHash: string; deviceSessionBinding: string; deviceId: string; deviceSigningKeyFingerprint: string; deviceSigningPublicKey: JsonWebKey; deviceEncryptionKeyFingerprint: string; deviceEncryptionPublicKey: JsonWebKey; walletAuthorizationCommitment: string; resourceCommitment: string; requestNonce: string; issuedAt: string; expiresAt: string; }>
+```
+
+Direct failure expressions:
+
+```text
+new Error("Threshold resource commitment must be a 32-byte hexadecimal commitment")
+new Error("Authorized-device proof-of-possession is invalid")
+```
+
+## serializeTinDeviceAccessProof
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-device-access`. [Implementation, line 60](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-access.ts#L60).
+
+```ts
+serializeTinDeviceAccessProof(proof: Omit<TinDeviceAccessProof, "signatureBase64Url">): Uint8Array<ArrayBufferLike>
+```
+
+## TIN_DEVICE_ACCESS_PROOF_DOMAIN
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-device-access`. [Implementation, line 18](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-access.ts#L18).
+
+```ts
+"TSN_TIN_DEVICE_THRESHOLD_ACCESS"
+```
+
+## TIN_DEVICE_ACCESS_PROOF_VERSION
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-device-access`. [Implementation, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-access.ts#L17).
+
+```ts
+"tsn-tin-device-access-proof"
+```
+
+## TinAuthorizedDeviceSigner
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-device-access`. [Implementation, line 20](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-access.ts#L20).
+
+```ts
+export type TinAuthorizedDeviceSigner = {
+  deviceId: string;
+  signingPublicKey: JsonWebKey;
+  signingKeyFingerprint: string;
+  encryptionPublicKey: JsonWebKey;
+  encryptionKeyFingerprint: string;
+  signMessage(message: Uint8Array): Promise<Uint8Array>;
+  /**
+   * Local-only capability backed by the authorized device's non-exportable
+   * X25519 private key. This function must never be serialized or sent over
+   * the network.
+   */
+  unwrapThresholdKey(
+    envelope: TinDeviceKeyEnvelope,
+    proof: TinDeviceAccessProof,
+  ): Promise<Uint8Array>;
+};
+```
+
+## TinDeviceAccessNonceConsumer
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-device-access`. [Implementation, line 154](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-access.ts#L154).
+
+```ts
+export type TinDeviceAccessNonceConsumer = (
+  nonce: string,
+  expiresAt: string,
+) => boolean | Promise<boolean>;
+```
+
+## TinDeviceAccessProof
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-device-access`. [Implementation, line 38](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-access.ts#L38).
+
+```ts
+export type TinDeviceAccessProof = {
+  version: typeof TIN_DEVICE_ACCESS_PROOF_VERSION;
+  domain: typeof TIN_DEVICE_ACCESS_PROOF_DOMAIN;
+  operation: "PROTECT_KEY" | "RELEASE_KEY";
+  tin: string;
+  ownerPublicKey: string;
+  routeVersion: number;
+  pruConfigurationHash: string;
+  deviceSessionBinding: string;
+  deviceId: string;
+  deviceSigningKeyFingerprint: string;
+  deviceSigningPublicKey: JsonWebKey;
+  deviceEncryptionKeyFingerprint: string;
+  deviceEncryptionPublicKey: JsonWebKey;
+  walletAuthorizationCommitment: string;
+  resourceCommitment: string;
+  requestNonce: string;
+  issuedAt: string;
+  expiresAt: string;
+  signatureBase64Url: string;
+};
+```
+
+## verifyTinDeviceAccessRequest
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-device-access`. [Implementation, line 159](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-device-access.ts#L159).
+
+```ts
+verifyTinDeviceAccessRequest(params: { expectedOperation: "PROTECT_KEY" | "RELEASE_KEY"; expectedTin: string; expectedOwnerPublicKey: string; expectedRouteVersion: number; expectedPruConfigurationHash: string; expectedDeviceSessionBinding: string; expectedResourceCommitment: string; walletAuthorizationMessage: Uint8Array; walletAuthorizationSignature: Uint8Array; deviceAccessProof: TinDeviceAccessProof; consumeNonce?: TinDeviceAccessNonceConsumer; now?: Date; }): Promise<{ walletPublicKey: string; deviceId: string; deviceSigningKeyFingerprint: string; deviceEncryptionKeyFingerprint: string; requestNonce: string; expiresAt: string; }>
+```
+
+Direct failure expressions:
+
+```text
+new Error("Threshold resource commitment is invalid")
+new Error("Authorized-device proof version or domain is invalid")
+new Error("Authorized-device proof does not match the threshold request")
+new Error("Main-wallet authorization message does not match the threshold request")
+new Error("Authorized-device proof is not bound to the main-wallet authorization")
+new Error("Main-wallet authorization signature is invalid")
+new Error("Authorized-device signing-key fingerprint is invalid")
+new Error("Authorized-device encryption-key fingerprint is invalid")
+new Error("Threshold session is not bound to the authorized device")
+new Error("Authorized-device proof is expired or has an invalid validity window")
+new Error("Authorized-device signing public key is invalid")
+new Error("Authorized-device signature is invalid")
+new Error("Authorized-device proof nonce was already used")
+```

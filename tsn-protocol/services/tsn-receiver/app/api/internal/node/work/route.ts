@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireService } from "../../../../../lib/auth";
-import { getWorkForNode, leaseForNode, transition } from "../../../../../lib/store";
+import { getWorkForNode, leaseForNode, renewNodeLease, transition } from "../../../../../lib/store";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
@@ -39,5 +39,24 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json(await transition({ ...body, actor: "node" }));
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "ERROR" }, { status: 409 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    requireService(request, "node");
+    const body = await request.json() as Partial<Parameters<typeof renewNodeLease>[0]>;
+    if (typeof body.id !== "string" || !body.id.trim()
+        || typeof body.owner !== "string" || !body.owner.trim()
+        || typeof body.leaseId !== "string" || !body.leaseId.trim()
+        || !Number.isSafeInteger(body.expectedVersion) || Number(body.expectedVersion) < 1
+        || !Number.isSafeInteger(body.leaseVersion) || Number(body.leaseVersion) < 1) {
+      return NextResponse.json({ error: "id, owner, leaseId and positive integer versions are required" }, { status: 400 });
+    }
+    return NextResponse.json(await renewNodeLease(body as Parameters<typeof renewNodeLease>[0]));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "ERROR";
+    const status = message === "UNAUTHORIZED_SERVICE" ? 401 : message === "WORK_NOT_FOUND" ? 404 : 409;
+    return NextResponse.json({ error: message }, { status });
   }
 }

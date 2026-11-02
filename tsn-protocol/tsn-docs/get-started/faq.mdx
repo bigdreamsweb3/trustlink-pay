@@ -23,9 +23,9 @@ No. A proof is one check in the settlement process. It does not grant custody or
 
 It is not established as an end-to-end settlement capability. Confidential debit and exit are also not established as available. Check current capability and network status before relying on a feature.
 
-## Does TSN make transfers completely untraceable?
+## How does privacy differ between TIN and wallet transfers?
 
-No. Encryption can hide selected payload contents, but Solana still exposes transaction accounts, signatures, timing, instruction data, and ordering. Public state references may also allow activity to be correlated. TSN does not claim zero linkability.
+The current native-credit ABI does not encode a plaintext recipient TIN or private predecessor pointer. It uses shared TIP/TCAP roots, and the owner retains private record lineage. Public action fields, encrypted Memo bytes, accounts, signatures, ordering and funding wallets remain observable. That encoding boundary does not establish that metadata or authorized service/application knowledge cannot correlate payments. The complete hidden-head flow and confidential debit/exit remain separate unverified runtime capabilities; see the [security boundary](/security/threat-model).
 
 ## When is a payment complete?
 

@@ -279,6 +279,22 @@ async function handleApi(req, res, url) {
     if (!expectedGpruElgamalKeyCommitment.equals(gpruElgamalKeyCommitmentBytes)) {
       return json(res, 422, { error: "GPRU_ELGAMAL_KEY_COMMITMENT_MISMATCH" });
     }
+    const gpruBalanceScanKeyVersion = Number(body.gpruBalanceScanKeyVersion ?? 0);
+    const gpruBalanceScanPublicKeyX = String(body.gpruBalanceScanPublicKeyX ?? "").toLowerCase();
+    const gpruBalanceScanPublicKeyY = String(body.gpruBalanceScanPublicKeyY ?? "").toLowerCase();
+    if (gpruBalanceScanKeyVersion !== 1
+      || !/^[0-9a-f]{64}$/.test(gpruBalanceScanPublicKeyX) || /^0{64}$/.test(gpruBalanceScanPublicKeyX)
+      || !/^[0-9a-f]{64}$/.test(gpruBalanceScanPublicKeyY) || /^0{64}$/.test(gpruBalanceScanPublicKeyY)) {
+      return json(res, 422, { error: "VERSIONED_GPRU_BALANCE_SCAN_KEY_REQUIRED" });
+    }
+    if (!tsnSdk.isValidBabyJubPointV1({
+      x: BigInt(`0x${gpruBalanceScanPublicKeyX}`),
+      y: BigInt(`0x${gpruBalanceScanPublicKeyY}`),
+    })) {
+      return json(res, 422, { error: "GPRU_BALANCE_SCAN_PUBLIC_KEY_INVALID" });
+    }
+    const gpruBalanceScanPublicKeyXBytes = Buffer.from(gpruBalanceScanPublicKeyX, "hex");
+    const gpruBalanceScanPublicKeyYBytes = Buffer.from(gpruBalanceScanPublicKeyY, "hex");
     const lookupSecret = requireTinLookupSecret();
     const ownerPubkey = new PublicKey(session.wallet);
     const connection = new Connection(await resolveRpcUrl(), "confirmed");
@@ -303,6 +319,7 @@ async function handleApi(req, res, url) {
         encryptedMasterSeed: encryptedMasterSeed.toString("base64"),
         resourceCommitment, gpruElgamalKeyVersion,
         gpruElgamalPublicKey, gpruElgamalKeyCommitment,
+        gpruBalanceScanKeyVersion, gpruBalanceScanPublicKeyX, gpruBalanceScanPublicKeyY,
       };
       const ownerPubkey = new PublicKey(session.wallet);
       const programId = new PublicKey(tinProgramId);
@@ -327,6 +344,9 @@ async function handleApi(req, res, url) {
       gpruElgamalKeyVersion,
       gpruElgamalPublicKey: gpruElgamalPublicKeyBytes,
       gpruElgamalKeyCommitment: gpruElgamalKeyCommitmentBytes,
+      gpruBalanceScanKeyVersion,
+      gpruBalanceScanPublicKeyX: gpruBalanceScanPublicKeyXBytes,
+      gpruBalanceScanPublicKeyY: gpruBalanceScanPublicKeyYBytes,
       policyCommitment: randomBytes(32),
     });
     const intentId = randomUUID();
@@ -360,6 +380,9 @@ async function handleApi(req, res, url) {
       gpruElgamalKeyVersion: built.gpruElgamalKeyVersion,
       gpruElgamalPublicKey: hex(built.gpruElgamalPublicKey),
       gpruElgamalKeyCommitment: hex(built.gpruElgamalKeyCommitment),
+      gpruBalanceScanKeyVersion: built.gpruBalanceScanKeyVersion,
+      gpruBalanceScanPublicKeyX: hex(built.gpruBalanceScanPublicKeyX),
+      gpruBalanceScanPublicKeyY: hex(built.gpruBalanceScanPublicKeyY),
       policyCommitment: hex(built.policyCommitment),
       sdk: "@trustlink/tsn-sdk.buildTinV1Creation",
     });
@@ -542,7 +565,7 @@ async function handleApi(req, res, url) {
     const [reserveAccount, vaultAccount] = await rpc.read((connection) => connection.getMultipleAccountsInfo([
       accounts.reserveState, accounts.vault,
     ], "confirmed"));
-    const { assetEntryAccount: entryAccount, ...accountAddresses } = accounts;
+    const { assetEntryAccount: entryAccount } = accounts;
     const entryData = entryAccount?.data;
     if (!entryAccount || !entryData || !entryAccount.owner.equals(tcapProgram) || entryData.length < 287
       || entryData.subarray(0, 8).toString("hex") !== createHash("sha256").update("account:TcapAssetEntryV1").digest().subarray(0, 8).toString("hex")
@@ -601,13 +624,21 @@ async function handleApi(req, res, url) {
       || !Number.isInteger(latestBlockhash.lastValidBlockHeight)) {
       return json(res, 503, { error: "TSN_NODE_BLOCKHASH_UNAVAILABLE", detail: latestBlockhash.detail ?? latestBlockhash.error ?? "Node returned an invalid blockhash response" });
     }
+    // The resolver also returns fetched account data and numeric token
+    // metadata. Serialize only deposit addresses, after selecting the source.
+    const depositAccounts = {
+      depositor: depositor.toBase58(), config: accounts.config.toBase58(),
+      assetEntry: accounts.assetEntry.toBase58(), reserveState: accounts.reserveState.toBase58(),
+      source: accounts.source.toBase58(), vault: accounts.vault.toBase58(), mint: mint.toBase58(),
+      tokenProgram: tokenProgram.toBase58(), tcapProgramId: tcapProgram.toBase58(),
+    };
     session.pendingTinCredit = {
       recipientTin,
       recipientHash: resolved.ownerPubkeyHash,
       mint: mint.toBase58(),
       amountBaseUnits: amountBaseUnits.toString(),
       expiresAt: Date.now() + 120_000,
-      accounts: Object.fromEntries(Object.entries(accountAddresses).map(([key, value]) => [key, value.toBase58()])),
+      accounts: depositAccounts,
       decimals,
     };
     return json(res, 200, {
@@ -618,12 +649,7 @@ async function handleApi(req, res, url) {
       expiresAtSlot: (latestBlockhash.contextSlot ?? slot) + 300,
       recentBlockhash: latestBlockhash.recentBlockhash,
       lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-      depositAccounts: {
-        depositor: depositor.toBase58(), config: accounts.config.toBase58(),
-        assetEntry: accounts.assetEntry.toBase58(), reserveState: accounts.reserveState.toBase58(),
-        source: accounts.source.toBase58(), vault: accounts.vault.toBase58(), mint: mint.toBase58(),
-        tokenProgram: tokenProgram.toBase58(), tcapProgramId: tcapProgram.toBase58(),
-      },
+      depositAccounts,
       sourceTokenBalance: sourceTokenBalance.toString(),
       sdk: "@trustlink/tsn-sdk.buildTcapGpruWalletDepositTransaction",
     });

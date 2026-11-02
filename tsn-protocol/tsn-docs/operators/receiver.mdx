@@ -1,0 +1,46 @@
+---
+title: "Operate the Receiver"
+description: "Durable ingress, storage, authenticated leases, diagnostics and safe upgrades."
+---
+
+Receiver coordinates accepted work, Node verification, Cranker leases and result reporting. It pre-creates linked settlement work at funding ingress but permits its Node verification only after confirmed funding. Its database state is coordination evidence; successful Solana execution establishes the corresponding funding or settlement change. Read the [payment lifecycle](/developers/payment-intent-lifecycle) before diagnosing an apparently accepted payment.
+
+## Storage and configuration
+
+The implementation selects local storage only when both `TSN_RECEIVER_STORE=file` and `TSN_ALLOW_LOCAL_JSON_STORE=true`. `TSN_RECEIVER_LOCAL_FILE` selects the local JSON file. Firebase operation requires `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL` and `FIREBASE_PRIVATE_KEY`; configure those server-side through the deployment environment. The local implementation supports controlled development and does not establish shared, multi-process production durability.
+
+`TSN_RECEIVER_COLLECTION` and `TSN_RECEIVER_STATE_COLLECTION` identify work and Node state collections. `TSN_RECEIVER_NODE_API_KEY` authenticates Node work/state requests. `TSN_NODE_VERIFICATION_PUBLIC_KEY` verifies Node decisions, while `TSN_RECEIVER_NODE_PAYLOAD_KEY` protects stored Node envelopes. These roles are separate: an API key does not make a decision signature valid. Node primary/fallback URLs, the selected RPC and existing program ID must agree with the worker and chain configuration.
+
+Use the existing [environment example](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/services/tsn-receiver/.env.example) for variable names and the [storage-mode runbook](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/team/operations/receiver-storage-modes.md) for deployment constraints. Example URLs and IDs describe configuration, not verified current availability. Keep private keys, payload keys and service tokens out of browser builds and logs.
+
+## Build, tests and launch
+
+These commands are existing root scripts; execute the launch command only when operating the intended environment:
+
+```bash
+npm run tsn:receiver:test
+npm run tsn:receiver:build
+npm run tsn:receiver:dev
+```
+
+The tests use the package's declared Node test setup. The build and launch require a compatible installed dependency tree and storage configuration. This documentation reconstruction did not start Receiver or execute its production build. The [internal hosting guide](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/SERVICE-HOSTING.md) contains environment-specific hosting procedures that must be reconciled with the current checkout before use.
+
+## Observe and diagnose
+
+After repairing root-selected snapshots or the TCAP asset-layout preflight, `POST /api/internal/node/work/retry` can requeue a settlement rejected with `GPRU_HIDDEN_HEAD_WITNESS_UNAVAILABLE:` or the exact reason `TCAP settlement asset is unavailable or its reserve binding is invalid`. It requires `TSN_RECEIVER_NODE_API_KEY` and JSON `{id, expectedVersion}`. Receiver requires the original confirmed funding, deterministic settlement lineage and unchanged payload commitment, rejects execution state or other rejection reasons, preserves the rejection in `retryHistory` and wakes Node for fresh independent verification. The endpoint never requeues funding. Its local isolated-store/authentication tests passed; a live recovery submission remains unverified.
+
+The root utility `scripts/retry-settlement-snapshot.py` covers those two repaired verification reasons, defaults to read-only inspection and reads the configured Node credential without printing it. Adding `--execute` explicitly requeues settlement and can lead to Cranker submission. Reconcile known signatures before recovery, load corrected services and preserve confirmed funding; do not edit the live JSON store or deposit again to repair settlement verification.
+
+`GET /api/health`, `GET /api/work` and `GET /api/work-status/[id]` provide health or sanitized coordination views. Retain work ID, status, state version, reason and transaction signature when diagnosing failures. Avoid exporting the raw database or decrypted Node payload. A healthy process does not imply that the prover, recipient schema or chain accounts are ready.
+
+Node workers lease through `/api/internal/node/work`; Crankers authenticate through their wallet challenge/session flow and claim through `/api/cranker/work`. Receiver checks the signed Node execution projection before verified work is executable. Cranker lease requests have a specific implemented rate limit; this does not imply that every public Receiver endpoint has the same protection. Read [the service API boundaries](/api-reference/services) for request/error behavior.
+
+For an HTTP 409, check expected state version, lease owner/expiry and the Node attestation projection against current source. Do not turn a rejected decision into VERIFIED by editing stored state. For missing funding confirmation, inspect the original chain signature before reconstructing work; a sender-signed deposit with an expired blockhash needs fresh sender approval. Settlement root changes require Node re-verification against the current root.
+
+## Upgrade and recovery
+
+Preserve durable work and configured identities during upgrades. Reconcile Receiver's payload/attestation projection with Node and Cranker before switching worker versions; compare current root/verifier settings separately from application deployment. Keep any owner schema migration as an explicitly reviewed one-time operation. Never interpret an old local store as proof of the newly deployed program's state.
+
+If a restart is required, take an appropriate protected storage backup and preserve unresolved signatures for reconciliation. A local store reset discards coordination history and belongs to a controlled development procedure, not routine payment recovery. The [internal operations record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/operations-and-verification.md) defines the evidence needed for the first post-upgrade credit.
+
+Receiver receives the original HTTP body before encrypting stored Node work. Its operator can therefore observe sensitive ingress. Public redaction and encrypted storage reduce exposure at specific boundaries; they do not establish operator blindness.

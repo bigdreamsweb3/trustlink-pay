@@ -16,6 +16,8 @@ The `@trustlink/tsn-sdk/tins` module implements the current private TIN V1 contr
 
 ## Local owner recovery
 
+This owner-recovery snippet is illustrative: the caller supplies the wallet, connection, identity and program ID. It was not executed against a live recovery account in this documentation run.
+
 ```ts
 import {
   buildTinV1OwnerRecoveryMessage,
@@ -56,7 +58,7 @@ The recovery signature and decrypted identity must remain on the owner's device.
 
 ## TIN V1 creation and staging
 
-`buildTinV1Creation` validates and hashes the versioned GPRU ElGamal public key, its commitment, and the TIP policy commitment. The owner SDK derives the key from the master seed with Solana's `@solana/zk-sdk`; it never sends the seed in the creation request. `serializeTinV1CreationParams` emits the program instruction data. If the complete transaction does not fit Solana's packet limit, use the staged-instruction serializers for begin, bounded chunks, and finalization; the SDK's `submitTinV1Creation` sends the owner-authorized payload to Receiver and does not submit directly to Solana. New TIP registry accounts use schema version 1 and omit the legacy NaCl key and stored TIP root.
+`buildTinV1Creation` validates and hashes the versioned GPRU ElGamal public key, its commitment, and the TIP policy commitment. The owner SDK derives the key from the master seed with Solana's `@solana/zk-sdk`; it never sends the seed in the creation request. `serializeTinV1CreationParams` emits the program instruction data. If the complete transaction does not fit Solana's packet limit, use the staged-instruction serializers for begin, bounded chunks, and finalization; the SDK's `submitTinV1Creation` sends the owner-authorized payload to Receiver and does not submit directly to Solana. New TIP registry accounts use `TinV1Account::VERSION=1`; global state uses `CURRENT_VERSION=3`. Creation also requires the versioned BabyJubjub balance scan point and policy commitment; those fields participate in the append-only TIP route leaf. The current layout omits the legacy NaCl key and stored per-TIN TIP root.
 
 `getTinV1CreationStagingPda` derives the temporary creation PDA.
 `getTinV1OwnerRecoveryPda` derives the one-per-owner recovery PDA from the
@@ -73,4 +75,4 @@ and decrypts it locally after the owner signs the recovery message.
 
 `createTinV1IdentityEnvelope` takes `tin`, `displayName`, and `lookupSecret`, returning `lookupCommitment` and `encryptedIdentityEnvelope`. The secret must contain at least 16 bytes and remain within trusted issuer/Node configuration. There is no public all-zero lookup-secret fallback and no SDK legacy-account scan or `resolveTinRoute` API.
 
-Source: [`tins.ts`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts), [`index.ts`](https://github.com/Trustlink-Labs/TSN-Protocol/blob/main/tsn-protocol/sdks/tsn-sdk/src/index.ts).
+Source: [`tins.ts`](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts), [`index.ts`](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/index.ts).

@@ -1,0 +1,45 @@
+---
+title: "receipts/internal/receipt-envelope API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/internal/receipt-envelope.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## decryptPrivateReceiptForAuthorizedKey
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/receipts`. [Implementation, line 247](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/internal/receipt-envelope.ts#L247).
+
+```ts
+decryptPrivateReceiptForAuthorizedKey(params: { record: EncryptedReceiptRecord; recipientKeyId: string; recipientPrivateKey: CryptoKey; }): Promise<Uint8Array>
+```
+
+## encryptPrivateReceipt
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/receipts`. [Implementation, line 114](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/internal/receipt-envelope.ts#L114).
+
+```ts
+encryptPrivateReceipt(params: { receiptId: string; operationId: string; tinCommitment: string; plaintext: Uint8Array; recipients: ReceiptEncryptionRecipient[]; createdAt?: string; }): Promise<EncryptedReceiptRecord>
+```
+
+Direct failure expressions:
+
+```text
+new Error("A private receipt requires at least one owner-authorized key envelope")
+new Error("Receipt key-envelope recipient IDs must be unique")
+```
+
+## rewrapPrivateReceiptDek
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/receipts`. [Implementation, line 217](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/receipts/internal/receipt-envelope.ts#L217).
+
+```ts
+rewrapPrivateReceiptDek(params: { record: EncryptedReceiptRecord; approvingRecipientKeyId: string; approvingRecipientPrivateKey: CryptoKey; newRecipient: ReceiptEncryptionRecipient; createdAt?: string; }): Promise<ReceiptKeyEnvelope>
+```
+
+Direct failure expressions:
+
+```text
+new Error("An active key envelope already exists for the recovery recipient")
+```

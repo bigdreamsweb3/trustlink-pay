@@ -22,24 +22,40 @@ from the Cranker's allowlisted work projection. For staged creation, preserve
 all stage transaction signatures and identify the final signature separately;
 the final signature is the transaction that creates the registry account.
 
-## Observed Devnet creation
+## Verified creation on 2026-11-02
 
-The current local Receiver store contains a real `CONFIRMED` TIN V1 work item.
-The observed work ID is
-`d9dd2fe9-7c9b-46fe-a19d-84780df80517`; it reached state version 5, used the
-staged path, and carries four staging transaction signatures plus the final
-creation transaction. The Node attestation is present and its input commitment
-matches the Receiver work commitment.
+The [dated staged-finalization record](../../laboratory/experiments/EXP-20261102-tin-staged-finalization.md)
+maps all six transactions from Receiver work
+`32ccda54-4111-4273-9b48-28bac4b865b1`. Independent read-only chain checks
+found each signature finalized with no transaction error. Tx 6 created the
+active version-1 registry and encrypted owner recovery account, appended the
+shared TIP route leaf and closed the temporary stage. The matching Receiver
+record was `CONFIRMED` at state version 5 with the final signature and five
+staging signatures: initializer plus four uploads.
 
-- Final Solana transaction: [3M6rrtA3weaHFGZwYhASksZTDvknLNU8SZdkXnTzCnTLSnu6psTPfEj599f6vQTirokkUv8H89KkY7TgycfvdvPg](https://explorer.solana.com/tx/3M6rrtA3weaHFGZwYhASksZTDvknLNU8SZdkXnTzCnTLSnu6psTPfEj599f6vQTirokkUv8H89KkY7TgycfvdvPg?cluster=devnet)
-- Registry PDA: `6U5TJ5Ar4rzU748bnE2BAg8T7zzEY5KASeTLrwEoC7JB`
+- Final Solana transaction: [4pthJa9Wn3SmyLfB1TnqUMGPM6tZfMzYBGxpzyBUhBXvxPv1maKRTh3946wgQeB6bP2Lhimt1eCRkhgVdF6SDgLu](https://explorer.solana.com/tx/4pthJa9Wn3SmyLfB1TnqUMGPM6tZfMzYBGxpzyBUhBXvxPv1maKRTh3946wgQeB6bP2Lhimt1eCRkhgVdF6SDgLu?cluster=devnet)
+- Registry PDA: `EZLPHfpq1qiPk5tsYUDM8CEAwavst23mJAGBeBowHFX1`
+- Owner recovery PDA: `7LeUdvbwKuRNWoT1Gb7ebBsmahhgxZAScQv2ft3zQXYL`
 - Program: `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT`
-- Receiver state: `CONFIRMED`
 
-This proves a real TIN V1 creation path completed. It does not prove that a
-wallet can be reverse-indexed to its TIN: the lookup is keyed, and the current
-XP only presents the value in the issuing browser session. Wallet reconnect and
-cross-device recovery need an explicit owner-authorized recovery design.
+Owner envelope decryption and credit settlement were not performed. Current
+[owner recovery guidance](README.md#wallet-recovery-and-resolver-boundary)
+describes the implemented owner-indexed encrypted recovery PDA and SDK
+decryption flow; this issuance result alone does not prove recovery on a new
+device. The [Cranker map](../../laboratory/cranker-transaction-map.md) explains
+all daemon transaction types and the remaining native settlement handoff issue.
+
+## Earlier recorded creation
+
+This page previously recorded Receiver work
+`d9dd2fe9-7c9b-46fe-a19d-84780df80517`, state version 5, four staging
+signatures and final transaction
+[3M6rrtA3weaHFGZwYhASksZTDvknLNU8SZdkXnTzCnTLSnu6psTPfEj599f6vQTirokkUv8H89KkY7TgycfvdvPg](https://explorer.solana.com/tx/3M6rrtA3weaHFGZwYhASksZTDvknLNU8SZdkXnTzCnTLSnu6psTPfEj599f6vQTirokkUv8H89KkY7TgycfvdvPg?cluster=devnet),
+registry `6U5TJ5Ar4rzU748bnE2BAg8T7zzEY5KASeTLrwEoC7JB`, under the same
+TIP program. Its original observation reported `CONFIRMED` with a present Node
+attestation and matching input commitment. That is a separate historical
+snapshot, not the six-transaction run above; it was not independently
+reverified in this task.
 
 ## Capture and handling
 

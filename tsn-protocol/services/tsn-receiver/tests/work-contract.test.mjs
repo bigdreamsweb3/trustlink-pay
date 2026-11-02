@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { generateKeyPairSync, sign } from "node:crypto";
 import { test } from "node:test";
-import { assertExternalWorkKind, assertAuthorizedFundingIngress, compactAuthorizedFundingVerification, createReceivedWork, publicCoordinationPayload } from "../lib/work-contract.ts";
+import { assertExternalWorkKind, assertAuthorizedFundingIngress, compactAuthorizedFundingVerification, crankerExecutionPayload, createReceivedWork, publicCoordinationPayload } from "../lib/work-contract.ts";
 
 function base58(bytes) {
   const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -138,4 +138,15 @@ test("payment ingress requires a valid sender Ed25519 authorization", () => {
 test("public Receiver ingress cannot create settlement or recovery work", () => {
   assert.throws(() => assertExternalWorkKind("SETTLEMENT"), /SETTLEMENT_WORK_INTERNAL_ONLY/);
   assert.doesNotThrow(() => assertExternalWorkKind("AUTHORIZED_FUNDING"));
+});
+
+test("settlement handoff includes the Memo body and removes hidden-head witness data", () => {
+  const transition = {
+    proof: { publicInputs: ["public"] }, memoPayload: "prefix:body", memoBodyPayload: "body", memoLedgerSlots: ["body"],
+    accountSiblings: ["private"], accountPathKey: "private", priorSequence: "private", balanceBlindingDelta: "private",
+    previousMemoCommitment: "private", recipientTin: "private", sequence: "private", witness: { secret: "private" },
+  };
+  assert.deepEqual(crankerExecutionPayload("SETTLEMENT", { tcapCreditTransition: transition }), {
+    tcapCreditTransition: { proof: { publicInputs: ["public"] }, memoPayload: "prefix:body", memoBodyPayload: "body", memoLedgerSlots: ["body"] },
+  });
 });

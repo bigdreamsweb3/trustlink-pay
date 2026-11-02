@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 1,
+  "scope": "Explicit paragraph/code selectors for important contracts and attributed observations; not a complete security audit.",
+  "rules": [
+    {
+      "id": "C-001",
+      "path": "docs/laboratory/architecture-map.md",
+      "contains": "Pre-create internal RECEIVED settlement reference",
+      "status": "CURRENT",
+      "reason": "Diagram preserves actual work creation at ingress and funding-confirmation gating.",
+      "evidence": [
+        "tsn-protocol/services/tsn-receiver/lib/store.ts",
+        "docs/references/syntax-check.json"
+      ]
+    },
+    {
+      "id": "C-002",
+      "path": "docs/laboratory/architecture-map.md",
+      "contains": "GPRU does not receive custody",
+      "status": "CURRENT",
+      "reason": "Native call/asset custody descriptions match inspected handlers.",
+      "evidence": [
+        "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+        "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      ]
+    },
+    {
+      "id": "C-003",
+      "path": "docs/laboratory/cryptography.md",
+      "contains": "The current circuit publishes these twelve fields",
+      "status": "CURRENT",
+      "reason": "Public statement order is source-backed; no live execution implied.",
+      "evidence": [
+        "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
+        "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      ]
+    },
+    {
+      "id": "C-004",
+      "path": "docs/laboratory/cryptography.md",
+      "contains": "C = delta + x(e * S)",
+      "status": "CURRENT",
+      "reason": "Ciphertext relation matches circuit/recovery source; no general security proof claimed.",
+      "evidence": [
+        "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
+        "tsn-protocol/sdks/tsn-sdk/src/gpru/babyjub-delta-cipher.ts"
+      ]
+    },
+    {
+      "id": "C-005",
+      "path": "docs/laboratory/invariants.md",
+      "contains": "subtracts the same amount from pending liability",
+      "status": "CURRENT",
+      "reason": "Accounting changes follow successful proof verification in TCAP handler.",
+      "evidence": [
+        "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs"
+      ]
+    },
+    {
+      "id": "C-006",
+      "path": "docs/laboratory/invariants.md",
+      "contains": "approve a fresh authorization and sign a rebuilt deposit",
+      "status": "CURRENT",
+      "reason": "Owner transaction signature binds the blockhash and exact message.",
+      "evidence": [
+        "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+        "tsn-protocol/services/tsn-node/server.py"
+      ]
+    },
+    {
+      "id": "C-007",
+      "path": "docs/laboratory/components.md",
+      "contains": "`HiddenHeadWitnessStore.prepare_credit`",
+      "status": "CURRENT",
+      "reason": "Root-selected witness construction and candidate behavior are implemented.",
+      "evidence": [
+        "tsn-protocol/services/tsn-node/hidden_head_witness.py"
+      ]
+    },
+    {
+      "id": "C-008",
+      "path": "tsn-protocol/tsn-docs/sdk/payment-guide.mdx",
+      "contains": "request's `recipientHash`",
+      "status": "CURRENT",
+      "reason": "Recipient hash is the resolved owner commitment, not TIN.",
+      "evidence": [
+        "tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts",
+        "tsn-protocol/services/tsn-node/server.py"
+      ]
+    },
+    {
+      "id": "C-009",
+      "path": "tsn-protocol/tsn-docs/developers/network-status.mdx",
+      "contains": "`readyForNativeTransactions` reports",
+      "status": "CURRENT",
+      "reason": "Readiness is reachability; account/proof installation is not probed.",
+      "evidence": [
+        "tsn-protocol/sdks/tsn-sdk/src/network-status.ts"
+      ]
+    },
+    {
+      "id": "C-010",
+      "path": "docs/laboratory/testing-and-evidence.md",
+      "contains": "Four complete documentation examples passed",
+      "status": "VERIFIED",
+      "reason": "Documentation-run typechecking and eight offline mock-transport scenarios passed; live wallet callbacks excluded.",
+      "evidence": [
+        "docs/references/tooling/verify-sdk-examples.mjs",
+        "tsn-protocol/tsn-docs/sdk/examples"
+      ]
+    },
+    {
+      "id": "C-011",
+      "path": "docs/laboratory/testing-and-evidence.md",
+      "contains": "canonical-payment-route suite passed all three tests",
+      "status": "VERIFIED",
+      "reason": "Direct SDK compiler succeeded and canonical-payment-route suite passed during this task.",
+      "evidence": [
+        "docs/laboratory/operations-and-verification.md",
+        "tsn-protocol/sdks/tsn-sdk/tests/canonical-payment-route.test.mjs"
+      ]
+    },
+    {
+      "id": "C-012",
+      "path": "docs/laboratory/experiments/EXP-20261102-hidden-head.md",
+      "contains": "The two artifacts matched",
+      "status": "VERIFIED",
+      "reason": "Attributed to earlier readiness experiment; not rerun during docs reconstruction.",
+      "evidence": [
+        "protocol-test-runs/hidden-head-readiness-20261102/readiness-evidence.json"
+      ]
+    },
+    {
+      "id": "C-013",
+      "path": "docs/laboratory/experiments/EXP-20261102-hidden-head.md",
+      "contains": "`ZKey Ok!`",
+      "status": "VERIFIED",
+      "reason": "Attributed development zkey/local-test results from preserved readiness experiment.",
+      "evidence": [
+        "protocol-test-runs/hidden-head-readiness-20261102/README.md",
+        "protocol-test-runs/hidden-head-readiness-20261102/readiness-evidence.json"
+      ]
+    },
+    {
+      "id": "C-014",
+      "path": "docs/laboratory/experiments/EXP-20261102-hidden-head.md",
+      "contains": "Four SBF builds succeeded",
+      "status": "VERIFIED",
+      "reason": "Attributed earlier SBF results; no new deployment or IDL result claimed.",
+      "evidence": [
+        "protocol-test-runs/hidden-head-readiness-20261102/README.md"
+      ]
+    },
+    {
+      "id": "C-015",
+      "path": "docs/laboratory/experiments/EXP-20261102-hidden-head.md",
+      "contains": "2026-11-02T08:57:35.987Z",
+      "status": "VERIFIED",
+      "reason": "Dated pre-deployment chain observation only; may be stale after user deployment.",
+      "evidence": [
+        "protocol-test-runs/hidden-head-readiness-20261102/readiness-evidence.json"
+      ]
+    },
+    {
+      "id": "C-016",
+      "path": "docs/laboratory/experiments/EXP-20261102-hidden-head.md",
+      "contains": "On-chain proof verification, actual compute consumption",
+      "status": "UNVERIFIED",
+      "reason": "No successful live settlement or owner recovery observed in this task.",
+      "evidence": [
+        "protocol-test-runs/hidden-head-readiness-20261102/README.md"
+      ]
+    },
+    {
+      "id": "C-017",
+      "path": "docs/historical-archive/README.md",
+      "contains": "[ZK-PRU](../ZK-PRU-RETIRED.md) is explicitly retired",
+      "status": "RETIRED",
+      "reason": "Explicitly retired architecture is preserved, not deleted.",
+      "evidence": [
+        "docs/ZK-PRU-RETIRED.md",
+        ".codex/architecture-terminology.md"
+      ]
+    },
+    {
+      "id": "C-018",
+      "path": "docs/historical-archive/README.md",
+      "contains": "independent Git checkout",
+      "status": "HISTORICAL",
+      "reason": "Research publication naming conflicts with current source; papers preserved unchanged.",
+      "evidence": [
+        "research/Trustlink-Research/README.md",
+        ".codex/architecture-terminology.md"
+      ]
+    },
+    {
+      "id": "C-019",
+      "path": "tsn-protocol/tsn-docs/operators/receiver.mdx",
+      "contains": "both `TSN_RECEIVER_STORE=file`",
+      "status": "CURRENT",
+      "reason": "Local mode needs both explicit flags per Firebase module.",
+      "evidence": [
+        "tsn-protocol/services/tsn-receiver/lib/firebase.ts"
+      ]
+    },
+    {
+      "id": "C-020",
+      "path": "tsn-protocol/tsn-docs/api-reference/services.mdx",
+      "contains": "PATCH maps caught transition/authentication errors to 409",
+      "status": "CURRENT",
+      "reason": "Documented actual inconsistent route status mapping without changing source.",
+      "evidence": [
+        "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/route.ts"
+      ]
+    },
+    {
+      "id": "C-021",
+      "path": "docs/laboratory/cryptography.md",
+      "contains": "All of those inputs are public.",
+      "status": "CURRENT",
+      "reason": "Public deposit-derived nullifier permits funding-to-credit linkage by source construction; no live experiment claimed.",
+      "evidence": [
+        "tsn-protocol/services/tsn-node/server.py",
+        "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+      ]
+    },
+    {
+      "id": "C-022",
+      "path": "docs/laboratory/experiments/EXP-20261102-tin-staged-finalization.md",
+      "contains": "all six transaction errors null and all six signatures finalized",
+      "status": "VERIFIED",
+      "reason": "Read-only metadata/status checks of the six public Devnet signatures; no recovery or credit claim.",
+      "evidence": [
+        "protocol-test-runs/cranker-transaction-map-20261102/evidence.json"
+      ]
+    },
+    {
+      "id": "C-023",
+      "path": "docs/laboratory/cranker-transaction-map.md",
+      "contains": "the current SDK sets the depositor as payer",
+      "status": "CURRENT",
+      "reason": "Fee payer fixed by current deposit builder and unchanged wire submission.",
+      "evidence": [
+        "tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts",
+        "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+      ]
+    },
+    {
+      "id": "C-024",
+      "path": "docs/laboratory/cranker-transaction-map.md",
+      "contains": "The corrected `create_settlement_authorization()` returns",
+      "status": "CURRENT",
+      "reason": "Corrected Node envelope includes the current Receiver lease fields and daemon kind; local handler tests cover binding and lease changes, with no live settlement executed.",
+      "evidence": [
+        "tsn-protocol/services/tsn-node/server.py",
+        "tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts",
+        "tsn-protocol/services/tsn-receiver/lib/store.ts",
+        "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+        "tsn-protocol/services/tsn-node/tests/test_hidden_head_authorization.py"
+      ]
+    },
+    {
+      "id": "C-025",
+      "path": "docs/laboratory/experiments/EXP-20261102-tin-staged-finalization.md",
+      "contains": "matching `TinV1Account::VERSION`",
+      "status": "VERIFIED",
+      "reason": "Current state constants and captured registry header agree; older layout compatibility not inferred.",
+      "evidence": [
+        "tsn-protocol/programs/transfer-identity-protocol/tin-registrar/program/src/state.rs",
+        "protocol-test-runs/cranker-transaction-map-20261102/evidence.json"
+      ]
+    },
+    {
+      "id": "C-026",
+      "path": "docs/laboratory/cranker-transaction-map.md",
+      "contains": "createTransactionMessage({version: 1})",
+      "status": "CURRENT",
+      "reason": "Locally installed DBrix code inspected; target-cluster acceptance not established.",
+      "evidence": [
+        "tsn-protocol/services/tsn-cranker-op-daemon/node_modules/@dbrix/solana/dist/index.js"
+      ]
+    }
+  ]
+}

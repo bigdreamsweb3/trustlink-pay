@@ -353,6 +353,9 @@
           gpruElgamalKeyVersion: ownerSeed.gpruElgamalKeyVersion,
           gpruElgamalPublicKey: bytesToHex(ownerSeed.gpruElgamalPublicKey),
           gpruElgamalKeyCommitment: bytesToHex(ownerSeed.gpruElgamalKeyCommitment),
+          gpruBalanceScanKeyVersion: ownerSeed.gpruBalanceScanKeyVersion,
+          gpruBalanceScanPublicKeyX: bytesToHex(ownerSeed.gpruBalanceScanPublicKeyX),
+          gpruBalanceScanPublicKeyY: bytesToHex(ownerSeed.gpruBalanceScanPublicKeyY),
         };
         prepared = await api("/api/tsn/sdk/prepare-tin", {
           method: "POST",

@@ -1,0 +1,36 @@
+---
+title: "Prepare a wallet-authorized TIN credit"
+description: "Real SDK message, deposit and intent construction with explicit signing and settlement boundaries."
+---
+
+A native TIN credit uses two approvals: the canonical payment message and the exact TCAP reserve-deposit transaction. The sender reviews the recipient TIN, token, amount, fee and expiry before signing. Node later resolves the recipient route and prepares the proof-backed settlement; the application does not construct a hidden recipient transition itself.
+
+## Resolve the display identity and owner hash
+
+In a trusted lookup environment, use `resolveTinV1Identity`. Verify the returned identity before preparing payment. Keep lookup credentials on that trusted side and return only appropriate display/commitment information to the application. The request's `recipientHash` is the resolved `ownerPubkeyHash`, a 64-character hexadecimal value. Passing the ten-digit TIN there fails request validation.
+
+## Prepare the message
+
+The complete [authorization example](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/tsn-docs/sdk/examples/authorization.ts) uses real SDK functions and explicit input types. Its `prepareIntent` function returns the message/nonce/expiry and a `withWalletApproval` callback that builds the actual request after approval. The example is type-checked and exercised offline; its mock signatures are not live payment authorizations.
+
+For a live asset, use `createTcapAssetPaymentAuthorization` rather than guessing mint decimals or token ID. It reads the mint and governed TCAP asset entry, validates active deposit policy and returns message plus resolved asset metadata. The pure example assumes those asset facts were already resolved by the application; it does not certify supplied token facts.
+
+## Construct and sign the reserve deposit
+
+The complete [wallet-credit example](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/tsn-docs/sdk/examples/credit-deposit.ts) uses `resolveTcapGpruDepositAccounts` and `buildTcapGpruWalletDepositTransaction`. It sets a supplied recent blockhash, requests the caller's message/transaction signatures and returns the signed results. It does not submit funds. The example is type-checked; live wallet signing, RPC asset resolution and settlement execution are not asserted by its offline validation.
+
+Use a recent blockhash from the selected Node/RPC context and record its validity information. The Node exposes `/network/recent-blockhash`; an application calling that endpoint must handle its documented HTTP errors. Serialize the fully signed deposit using Solana's required signature checks and encode the message signature and deposit wire in the format expected by the request builder.
+
+The deposit amount follows the current Node contract's authorized payment amount. Do not invent a fee-transfer instruction or add extra instructions to that signed deposit: Node checks the exact deposit instruction/account shape. Fee policy and any separately supported payment family must be documented from its actual contract.
+
+## Submit approved work
+
+Call `buildPaymentAuthorizationIntentRequest` with the signed message details, `recipientHash: recipient.ownerPubkeyHash`, token/decimals, UI amount, fee and exact wallet-signed deposit, using `senderFundingMode: "tcap_deposit_v2"`. The complete [client example](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/tsn-docs/sdk/examples/client.ts) uses the real generic return type and `TsnHttpClient.postIntent`.
+
+The Node facade forwards ingress to Receiver. The returned record means accepted coordination work. Receiver pre-creates a linked settlement reference, but its verification is gated on confirmed funding. Cranker must submit the deposit unchanged; Node must then verify the actual successful funding signature before the proof-backed settlement can proceed.
+
+## Confirm and recover
+
+Follow [payment lifecycle and status](/developers/payment-intent-lifecycle), verify funding and settlement separately, and reconcile the expected TCAP root/reserve changes on the selected cluster. An owner also needs validated Memo history and private scan/recovery material to reconstruct the credited balance. Service readiness, accepted work and a single decryptable Memo do not establish all of those conditions.
+
+Confidential debit/exit and arbitrary cross-chain routes are not established end to end by this tutorial. Use the [integration boundary guide](/sdk/integrations) and route-specific evidence before extending a credit integration.

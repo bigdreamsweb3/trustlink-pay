@@ -1,0 +1,375 @@
+---
+title: "tins API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## buildTinOwnerIntentMessage
+
+Build the wallet-displayable message for a TIN owner intent.
+
+Solana wallets such as Phantom intentionally reject arbitrary binary
+messages that look like a transaction payload. The owner commitment stays
+the exact 32-byte `intentHash`; the wallet signs this deterministic UTF-8
+wrapper, and verifiers bind it to the recomputed commitment.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 547](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L547).
+
+```ts
+buildTinOwnerIntentMessage(intentHash: Buffer | Uint8Array): Buffer
+```
+
+## buildTinV1Creation
+
+Prepare a private TIN V1 creation. The raw TIN and lookup secret are used
+only to create the encrypted envelope and keyed commitment; callers submit
+the returned payload without either plaintext value.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 952](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L952).
+
+```ts
+buildTinV1Creation(params: { ownerPubkey: PublicKey; lookupCommitment: Buffer | Uint8Array; encryptedTinRecovery: Buffer | Uint8Array; encryptedIdentityEnvelope: Buffer | Uint8Array; encryptedMasterSeed: Buffer | Uint8Array; encryptedMetadataHash?: Buffer | Uint8Array; routeVersion?: bigint | number; routeNonce?: Buffer | Uint8Array; tipRouteVersion: number; gpruElgamalPublicKey: Buffer | Uint8Array; gpruElgamalKeyCommitment: Buffer | Uint8Array; policyCommitment: Buffer | Uint8Array; gpruElgamalKeyVersion: 1; gpruBalanceScanKeyVersion: 1; gpruBalanceScanPublicKeyX: Buffer | Uint8Array; gpruBalanceScanPublicKeyY: Buffer | Uint8Array; expiryTs?: bigint | number; nonce?: Buffer | Uint8Array; }): { nonce: Buffer<ArrayBuffer>; intentHash: Buffer<ArrayBuffer>; instructionData: Buffer<ArrayBuffer>; ownerPubkey: PublicKey; lookupCommitment: Buffer<ArrayBufferLike> | Uint8Array<ArrayBufferLike>; encryptedTinRecovery: Buffer<ArrayBufferLike> | Uint8Array<ArrayBufferLike>; encryptedIdentityEnvelope: Buffer<ArrayBufferLike> | Uint8Array<ArrayBufferLike>; encryptedMasterSeed: Buffer<ArrayBufferLike> | Uint8Array<ArrayBufferLike>; encryptedMetadataHash: Buffer<ArrayBuffer>; routeVersion: bigint; routeNonce: Buffer<ArrayBuffer>; tipRouteVersion: 1; gpruElgamalKeyVersion: 1; gpruElgamalPublicKey: Buffer<ArrayBufferLike> | Uint8Array<ArrayBufferLike>; gpruElgamalKeyCommitment: Buffer<ArrayBufferLike> | Uint8Array<ArrayBufferLike>; gpruBalanceScanKeyVersion: 1; gpruBalanceScanPublicKeyX: Buffer<ArrayBufferLike> | Uint8Array<ArrayBufferLike>; gpruBalanceScanPublicKeyY: Buffer<ArrayBufferLike> | Uint8Array<ArrayBufferLike>; policyCommitment: Buffer<ArrayBufferLike> | Uint8Array<ArrayBufferLike>; expiryTs: bigint; }
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN V1 creation requires the active TIP route version")
+new Error("TIN V1 creation requires a valid versioned GPRU ElGamal key commitment")
+new Error("nonce must be 32 bytes")
+new Error("routeNonce must be 32 bytes")
+new Error("nonce must equal the signed routeNonce")
+```
+
+## buildTinV1OwnerRecoveryMessage
+
+Canonical wallet-signature message used locally to derive the key for the
+encrypted TIN recovery record. This signature does not authorize a
+transaction.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 345](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L345).
+
+```ts
+buildTinV1OwnerRecoveryMessage(owner: PublicKey | string, programId?: PublicKey | string | null): Buffer
+```
+
+## createOwnerIntentSignatureInstruction
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 573](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L573).
+
+```ts
+createOwnerIntentSignatureInstruction(params: { ownerPubkey: PublicKey; intentHash: Buffer | Uint8Array; signature: Buffer | Uint8Array; message?: Buffer | Uint8Array; }): TransactionInstruction
+```
+
+## createTinV1IdentityEnvelope
+
+Build the encrypted identity fields required by CreateTinV1. The TIN is
+the private lookup material; only its commitment is returned.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 799](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L799).
+
+```ts
+createTinV1IdentityEnvelope(params: { tin: bigint | number | string; displayName: string; lookupSecret: Uint8Array | string; }): Promise<{ lookupCommitment: Uint8Array<ArrayBufferLike>; encryptedIdentityEnvelope: Buffer<ArrayBuffer>; }>
+```
+
+Direct failure expressions:
+
+```text
+new Error("lookupSecret is required for TIN V1 identity creation")
+new Error("lookupSecret must contain at least 16 bytes")
+```
+
+## createTinV1OwnerIntentHash
+
+Build the canonical owner intent for a private TIN V1 registry record.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 896](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L896).
+
+```ts
+createTinV1OwnerIntentHash(params: { ownerPubkey: PublicKey; lookupCommitment: Buffer | Uint8Array; encryptedTinRecovery: Buffer | Uint8Array; encryptedIdentityEnvelope: Buffer | Uint8Array; encryptedMasterSeed: Buffer | Uint8Array; encryptedMetadataHash: Buffer | Uint8Array; routeVersion: bigint | number; routeNonce: Buffer | Uint8Array; tipRouteVersion: number; gpruElgamalPublicKey: Buffer | Uint8Array; gpruElgamalKeyCommitment: Buffer | Uint8Array; policyCommitment: Buffer | Uint8Array; gpruElgamalKeyVersion: 1; gpruBalanceScanKeyVersion: 1; gpruBalanceScanPublicKeyX: Buffer | Uint8Array; gpruBalanceScanPublicKeyY: Buffer | Uint8Array; expiryTs: bigint | number; }): Buffer<ArrayBuffer>
+```
+
+Direct failure expressions:
+
+```text
+new Error("routeVersion must be positive")
+```
+
+## createTinV1OwnerRecoveryEnvelope
+
+Encrypt a new owner's TIN locally for the owner-indexed recovery PDA.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 407](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L407).
+
+```ts
+createTinV1OwnerRecoveryEnvelope(params: { tin: string; displayName: string; owner: PublicKey | string; signature: Buffer | Uint8Array; programId?: PublicKey | string | null; }): Promise<Uint8Array>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN_OWNER_RECOVERY_TIN_INVALID")
+new Error("TIN_OWNER_RECOVERY_DISPLAY_NAME_INVALID")
+```
+
+## decryptTinV1OwnerRecoveryEnvelope
+
+Decrypt the owner-recovery record locally after wallet signing.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 431](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L431).
+
+```ts
+decryptTinV1OwnerRecoveryEnvelope(params: { encryptedEnvelope: Buffer | Uint8Array; owner: PublicKey | string; signature: Buffer | Uint8Array; programId?: PublicKey | string | null; }): Promise<{ tin: string; displayName?: string; }>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN_OWNER_RECOVERY_ENVELOPE_UNSUPPORTED")
+new Error("TIN_OWNER_RECOVERY_ENVELOPE_MALFORMED")
+new Error("TIN_OWNER_RECOVERY_TIN_INVALID")
+new Error("TIN_OWNER_RECOVERY_DISPLAY_NAME_INVALID")
+```
+
+## DEFAULT_TIP_PROGRAM_ID
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 15](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L15).
+
+```ts
+"TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT"
+```
+
+## getTinsGlobalStatePda
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 257](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L257).
+
+```ts
+getTinsGlobalStatePda(programId?: PublicKey | string | null): PublicKey
+```
+
+## getTinsProgramPublicKey
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 72](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L72).
+
+```ts
+getTinsProgramPublicKey(programId?: PublicKey | string | null): PublicKey
+```
+
+## getTinV1CreationStagingPda
+
+PDA that holds one in-progress, owner-authorized staged TIN creation.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 277](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L277).
+
+```ts
+getTinV1CreationStagingPda(owner: PublicKey, intentHash: Uint8Array, programId?: PublicKey | string | null): PublicKey
+```
+
+## getTinV1OwnerRecoveryEnvelope
+
+Read the encrypted owner recovery envelope from its owner-indexed TIP PDA.
+The TIN remains encrypted; the wallet signature used to decrypt it stays on
+the owner's device.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 302](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L302).
+
+```ts
+getTinV1OwnerRecoveryEnvelope(params: { connection: Connection; ownerPubkey: PublicKey | string; programId?: PublicKey | string | null; }): Promise<Uint8Array | null>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN_OWNER_RECOVERY_ACCOUNT_PROGRAM_MISMATCH")
+new Error("TIN_OWNER_RECOVERY_ACCOUNT_MALFORMED")
+new Error("TIN_OWNER_RECOVERY_ACCOUNT_BINDING_MISMATCH")
+```
+
+## getTinV1OwnerRecoveryMessageForEnvelope
+
+Return the same stable message that was signed when the recovery envelope
+was created. The envelope is checked for a supported TIN V1 format first.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 365](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L365).
+
+```ts
+getTinV1OwnerRecoveryMessageForEnvelope(encryptedEnvelope: Buffer | Uint8Array, owner: PublicKey | string, programId?: PublicKey | string | null): Buffer
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN_OWNER_RECOVERY_ENVELOPE_UNSUPPORTED")
+```
+
+## getTinV1OwnerRecoveryPda
+
+Owner-indexed locator used only for wallet-authorized TIN recovery.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 289](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L289).
+
+```ts
+getTinV1OwnerRecoveryPda(owner: PublicKey, programId?: PublicKey | string | null): PublicKey
+```
+
+## getTinV1RegistryPda
+
+Derive the private V1 registry PDA from a TIN and the configured lookup key.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 79](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L79).
+
+```ts
+getTinV1RegistryPda(params: { tin: bigint | number | string; lookupSecret: Uint8Array | string; programId?: PublicKey | string | null; }): [PublicKey, number]
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN must contain exactly 10 digits")
+new Error("lookupSecret must contain at least 16 bytes")
+```
+
+## getTipRouteMerkleRootV1Pda
+
+One TIP-wide append-only route-membership root shared by all TINs.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 267](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L267).
+
+```ts
+getTipRouteMerkleRootV1Pda(programId?: PublicKey | string | null): PublicKey
+```
+
+## resolveTinV1Identity
+
+Resolve the owner-provided identity directly from the TIP V1 registry RPC account.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 144](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L144).
+
+```ts
+resolveTinV1Identity(params: { connection: Connection; tin: bigint | number | string; lookupSecret: Uint8Array | string; programId?: PublicKey | string | null; }): Promise<{ tin: string; displayName: string; displayNameSource: string; ownerPubkeyHash: string; verifiedCredentials: string[]; registryPda: string; gpruBalanceScanKeyVersion: number; gpruBalanceScanPublicKeyX: string; gpruBalanceScanPublicKeyY: string; } | null>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN_REGISTRY_PROGRAM_MISMATCH")
+new Error("TIN_REGISTRY_V1_ACCOUNT_BINDING_MISMATCH")
+new Error("TIN_REGISTRY_LOOKUP_COMMITMENT_MISMATCH")
+new Error("TIN_REGISTRY_ROUTE_VERSION_UNSUPPORTED")
+new Error("TIN_REGISTRY_GPRU_KEY_COMMITMENT_MISMATCH")
+new Error("TIN_REGISTRY_GPRU_BALANCE_SCAN_KEY_INVALID")
+new Error("TIN_REGISTRY_IDENTITY_ENVELOPE_MALFORMED")
+new Error("TIN_REGISTRY_IDENTITY_DECRYPTION_FAILED")
+new Error("TIN_REGISTRY_IDENTITY_BINDING_MISMATCH")
+```
+
+## serializeTinV1CreationChunkParams
+
+Serialize instruction 20: append one bounded encrypted-data chunk.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 745](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L745).
+
+```ts
+serializeTinV1CreationChunkParams(params: { kind: "identity" | "master_seed" | "owner_recovery"; offset: number; bytes: Buffer | Uint8Array; }): Buffer<ArrayBuffer>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN V1 creation chunk offset must be a non-negative safe integer")
+```
+
+## serializeTinV1CreationCloseParams
+
+Serialize instruction 22: recover expired staged-creation rent.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 768](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L768).
+
+```ts
+serializeTinV1CreationCloseParams(params: { intentHash: Buffer | Uint8Array; }): Buffer<ArrayBuffer>
+```
+
+## serializeTinV1CreationFinalizeParams
+
+Serialize instruction 21: finalize by the creation intent hash.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 761](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L761).
+
+```ts
+serializeTinV1CreationFinalizeParams(params: { intentHash: Buffer | Uint8Array; }): Buffer<ArrayBuffer>
+```
+
+## serializeTinV1CreationParams
+
+Serialize a Node-verified CreateTinV1 payload without receiving the lookup
+secret. Plaintext lookup material remains on the owner side.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 590](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L590).
+
+```ts
+serializeTinV1CreationParams(params: { ownerPubkey: PublicKey; lookupCommitment: Buffer | Uint8Array; encryptedTinRecovery: Buffer | Uint8Array; encryptedIdentityEnvelope: Buffer | Uint8Array; encryptedMasterSeed: Buffer | Uint8Array; encryptedMetadataHash: Buffer | Uint8Array; routeVersion: bigint | number; routeNonce: Buffer | Uint8Array; tipRouteVersion: 1; gpruElgamalPublicKey: Buffer | Uint8Array; gpruElgamalKeyCommitment: Buffer | Uint8Array; policyCommitment: Buffer | Uint8Array; gpruElgamalKeyVersion: 1; gpruBalanceScanKeyVersion: 1; gpruBalanceScanPublicKeyX: Buffer | Uint8Array; gpruBalanceScanPublicKeyY: Buffer | Uint8Array; intentHash: Buffer | Uint8Array; expiryTs: bigint | number; }): Buffer<ArrayBuffer>
+```
+
+Direct failure expressions:
+
+```text
+new Error("routeVersion must be positive")
+new Error("TIN creation requires a valid versioned GPRU ElGamal key commitment and TIP policy commitment")
+new Error("intentHash does not match CreateTinV1 payload")
+```
+
+## serializeTinV1CreationStageParams
+
+Serialize instruction 19: initialize a bounded, intent-bound TIN V1 stage.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 679](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L679).
+
+```ts
+serializeTinV1CreationStageParams(params: { ownerPubkey: PublicKey; lookupCommitment: Buffer | Uint8Array; intentHash: Buffer | Uint8Array; encryptedIdentityEnvelopeLength: number; encryptedTinRecoveryLength: number; encryptedMasterSeedLength: number; encryptedMetadataHash: Buffer | Uint8Array; routeVersion: bigint | number; routeNonce: Buffer | Uint8Array; tipRouteVersion: 1; gpruElgamalPublicKey: Buffer | Uint8Array; gpruElgamalKeyCommitment: Buffer | Uint8Array; policyCommitment: Buffer | Uint8Array; gpruElgamalKeyVersion: 1; gpruBalanceScanKeyVersion: 1; gpruBalanceScanPublicKeyX: Buffer | Uint8Array; gpruBalanceScanPublicKeyY: Buffer | Uint8Array; expiryTs: bigint | number; }): Buffer<ArrayBuffer>
+```
+
+Direct failure expressions:
+
+```text
+new Error(`${field} is invalid`)
+new Error("TIN creation stage requires a valid versioned GPRU ElGamal key commitment and TIP policy commitment")
+```
+
+## submitTinV1Creation
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 839](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L839).
+
+```ts
+submitTinV1Creation(params: { ingressUrl: string; prepared: ReturnType<typeof buildTinV1Creation>; intentId: string; ownerPubkey: PublicKey | string; ownerSignature: Uint8Array | string; lookupIssuanceProof: string; ownerIntentMessage: string; }): Promise<any>
+```
+
+Direct failure expressions:
+
+```text
+new Error("The signed, human-readable TIN owner intent message is required")
+new Error(body?.detail ?? body?.error ?? `TIN V1 creation rejected (${response.status})`)
+```
+
+## TINS_PROGRAM_SALT
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L17).
+
+```ts
+"TINS_SALT_2026"
+```
+
+## validateTinTipRoute
+
+Validate the public TIP route associated with a TIN. The
+privacy-receiving root, snapshot key, and any spend authority remain on the
+owner device; only these commitments are safe to pass through coordination
+services.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 36](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L36).
+
+```ts
+validateTinTipRoute(params: { tipRouteVersion: number; gpruElgamalKeyVersion?: number; gpruElgamalPublicKey?: Uint8Array | null; gpruElgamalKeyCommitment?: Uint8Array | null; gpruBalanceScanKeyVersion?: number; gpruBalanceScanPublicKeyX?: Uint8Array | null; gpruBalanceScanPublicKeyY?: Uint8Array | null; policyCommitment?: Uint8Array | null; }): boolean
+```

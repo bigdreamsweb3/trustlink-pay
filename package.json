@@ -86,6 +86,9 @@
     "gpru:program:id": "echo 6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR",
     "gpru:program:build:devnet": "node scripts/devnet-program-deploy.mjs build gpru",
     "gpru:program:deploy:devnet": "TRUSTLINK_DEPLOY_TRANSPORT=rpc TRUSTLINK_DEPLOY_RECOVERY_ROUNDS=1 node scripts/devnet-program-deploy.mjs deploy gpru",
+    "gpru:verifier:info": "node scripts/hidden-head-setup.mjs status",
+    "gpru:verifier:init:devnet": "node scripts/hidden-head-setup.mjs init-verifier",
+    "tcap:root:activate:devnet": "node scripts/hidden-head-setup.mjs activate-root",
     "// === GPRU Groth16 Development Prover ===": "Compile the hidden-head circuit and create local development-only Groth16 artifacts.",
     "gpru:circuit:install": "npm --prefix tsn-protocol/programs/gpru/circuits/hidden_head_v1 ci",
     "gpru:circuit:compile": "npm --prefix tsn-protocol/programs/gpru/circuits/hidden_head_v1 run circuit:compile",
@@ -168,7 +171,7 @@
     "git:pull:all": "git pull --rebase origin main",
     "git:pull:protocol": "git fetch tsn-protocol main",
     "git:push:current": "git branch -M main && git push -u origin main",
-    "git:push:tsn-protocol": "git subtree push --prefix=tsn-protocol tsn-protocol main",
+    "git:push:tsn-protocol": "npm --prefix tsn-protocol run git:commit:push:all",
     "git:commit:push:all": "git add -A && git diff --cached --quiet && echo No changes to commit || (git commit -m \"Something just got updated!\" && npm run git:push:current)"
   },
   "dependencies": {

@@ -1,0 +1,115 @@
+---
+title: "authorization/identity-commitments API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/identity-commitments.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## createAuthorizationCommitment
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/identity-commitments.ts#L17).
+
+```ts
+createAuthorizationCommitment(serializedAuthorization: Uint8Array): Promise<string>
+```
+
+## createOwnerIdentityCommitment
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/identity-commitments.ts#L13).
+
+```ts
+createOwnerIdentityCommitment(ownerPublicKey: string): Promise<string>
+```
+
+## createTinCommitment
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 9](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/identity-commitments.ts#L9).
+
+```ts
+createTinCommitment(tin: string): Promise<string>
+```
+
+## deriveDevnetTestPolicyCommitment
+
+Controlled Devnet-only policy binding for the named test identity.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 56](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/identity-commitments.ts#L56).
+
+```ts
+deriveDevnetTestPolicyCommitment(ownerPublicKey: string, identityLabel?: string): Promise<string>
+```
+
+## deriveDevnetTestPrivacyReceivingRootCommitment
+
+Controlled Devnet identity only. This deterministic fixture is intentionally
+labelled and must not be described as production wallet recovery. It lets
+the Devnet lab reproduce one owner-device root from a public wallet key and
+an explicit test identity label without using random bytes.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 43](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/identity-commitments.ts#L43).
+
+```ts
+deriveDevnetTestPrivacyReceivingRootCommitment(ownerPublicKey: string, identityLabel?: string): Promise<string>
+```
+
+## deriveDevnetTestTcapGenesisCommitment
+
+Controlled Devnet-only nonzero genesis commitment for a new TCap tip.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 68](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/identity-commitments.ts#L68).
+
+```ts
+deriveDevnetTestTcapGenesisCommitment(ownerPublicKey: string, policyCommitment: string, identityLabel?: string): Promise<string>
+```
+
+## derivePrivacyReceivingRootCommitment
+
+Commits owner-device privacy-receiving-root material without exposing the
+material itself. Production callers must supply root material held by the
+authorized device; this function does not derive a spend key or balance.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 29](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/identity-commitments.ts#L29).
+
+```ts
+derivePrivacyReceivingRootCommitment(rootMaterial: Uint8Array | string): Promise<string>
+```
+
+Direct failure expressions:
+
+```text
+new Error("privacy_receiving_root_material_must_be_nonempty_hex")
+```
+
+## TSN_DEVNET_TEST_POLICY_COMMITMENT_DOMAIN
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 6](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/identity-commitments.ts#L6).
+
+```ts
+"TSN_DEVNET_TEST_POLICY_COMMITMENT_V1"
+```
+
+## TSN_DEVNET_TEST_PRIVACY_ROOT_MATERIAL_DOMAIN
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 5](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/identity-commitments.ts#L5).
+
+```ts
+"TSN_DEVNET_TEST_PRIVACY_ROOT_MATERIAL_V1"
+```
+
+## TSN_DEVNET_TEST_TCAP_GENESIS_COMMITMENT_DOMAIN
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 7](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/identity-commitments.ts#L7).
+
+```ts
+"TSN_DEVNET_TEST_TCAP_GENESIS_COMMITMENT_V1"
+```
+
+## TSN_PRIVACY_RECEIVING_ROOT_COMMITMENT_DOMAIN
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/authorization`. [Implementation, line 4](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/authorization/identity-commitments.ts#L4).
+
+```ts
+"TSN_PRIVACY_RECEIVING_ROOT_COMMITMENT_V1"
+```

@@ -1,0 +1,890 @@
+---
+title: "cross-chain API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## assertVerifiedDestinationLiquidity
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 140](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L140).
+
+```ts
+assertVerifiedDestinationLiquidity(route: DestinationLiquidityRoute, observation: VerifiedDestinationLiquidity, requestedAmount: bigint, nowSeconds?: bigint): void
+```
+
+Direct failure expressions:
+
+```text
+new Error("destination route is disabled")
+new Error("liquidity observation route mismatch")
+new Error("invalid destination payout vault")
+new Error("invalid destination settlement token")
+new Error("verified destination liquidity is insufficient")
+new Error("verified destination liquidity has expired")
+```
+
+## AttestationStatus
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L14).
+
+```ts
+export type AttestationStatus =
+  | "not_requested"
+  | "queued"
+  | "anchored"
+  | "verified"
+  | "failed";
+```
+
+## ATTESTCOIN_BLOCK_PROVER_PRECOMPILE
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 5](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L5).
+
+```ts
+"0x0000000000000000000000000000000000000FD2"
+```
+
+## createTinExitReplayKey
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 105](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L105).
+
+```ts
+createTinExitReplayKey(input: Pick<TinExitAttestationInput, "sealedTipHeadHash" | "amount" | "tinHash" | "exitCommitment">): string
+```
+
+## CREDITCOIN_SETTLEMENT_NETWORK
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 21](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L21).
+
+```ts
+"creditcoin-testnet"
+```
+
+## CreditcoinDestination
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 69](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L69).
+
+### CreditcoinDestination.network
+
+[Source, line 70](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L70).
+
+```ts
+network: "creditcoin-testnet"
+```
+
+### CreditcoinDestination.address
+
+[Source, line 71](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L71).
+
+```ts
+address: `0x${string}`
+```
+
+### CreditcoinDestination.token
+
+[Source, line 72](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L72).
+
+```ts
+token: string
+```
+
+## CreditcoinLiquidityState
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 186](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L186).
+
+### CreditcoinLiquidityState.availableAmount
+
+[Source, line 187](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L187).
+
+```ts
+availableAmount: bigint
+```
+
+### CreditcoinLiquidityState.sourceBlock
+
+[Source, line 188](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L188).
+
+```ts
+sourceBlock: bigint
+```
+
+### CreditcoinLiquidityState.observedAt
+
+[Source, line 189](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L189).
+
+```ts
+observedAt: bigint
+```
+
+### CreditcoinLiquidityState.validUntil
+
+[Source, line 190](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L190).
+
+```ts
+validUntil: bigint
+```
+
+### CreditcoinLiquidityState.nonce
+
+[Source, line 191](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L191).
+
+```ts
+nonce: bigint
+```
+
+### CreditcoinLiquidityState.queryId
+
+[Source, line 192](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L192).
+
+```ts
+queryId: `0x${string}`
+```
+
+### CreditcoinLiquidityState.isFresh
+
+[Source, line 193](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L193).
+
+```ts
+isFresh: boolean
+```
+
+## CreditcoinPayoutAuthorization
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 36](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L36).
+
+### CreditcoinPayoutAuthorization.settlementId
+
+[Source, line 37](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L37).
+
+```ts
+settlementId: string
+```
+
+### CreditcoinPayoutAuthorization.sealedTipHeadHash
+
+[Source, line 38](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L38).
+
+```ts
+sealedTipHeadHash: string
+```
+
+### CreditcoinPayoutAuthorization.tinHash
+
+[Source, line 39](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L39).
+
+```ts
+tinHash: string
+```
+
+### CreditcoinPayoutAuthorization.exitCommitment
+
+[Source, line 40](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L40).
+
+```ts
+exitCommitment: string
+```
+
+### CreditcoinPayoutAuthorization.destinationNetwork
+
+[Source, line 41](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L41).
+
+```ts
+destinationNetwork: "creditcoin-testnet"
+```
+
+### CreditcoinPayoutAuthorization.recipient
+
+[Source, line 42](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L42).
+
+```ts
+recipient: `0x${string}`
+```
+
+### CreditcoinPayoutAuthorization.amount
+
+[Source, line 43](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L43).
+
+```ts
+amount: bigint
+```
+
+### CreditcoinPayoutAuthorization.nonce
+
+[Source, line 44](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L44).
+
+```ts
+nonce: bigint
+```
+
+### CreditcoinPayoutAuthorization.deadline
+
+[Source, line 45](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L45).
+
+```ts
+deadline: bigint
+```
+
+### CreditcoinPayoutAuthorization.merchantOverride
+
+[Source, line 46](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L46).
+
+```ts
+merchantOverride: boolean
+```
+
+## CreditcoinRouteClient
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 250](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L250).
+
+```ts
+new CreditcoinRouteClient(config: CreditcoinRouteClientConfig): CreditcoinRouteClient
+```
+
+### CreditcoinRouteClient.readRoute
+
+[Source, line 279](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L279).
+
+```ts
+readRoute(): Promise<CreditcoinRouteState>
+```
+
+### CreditcoinRouteClient.readLiquidity
+
+[Source, line 305](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L305).
+
+```ts
+readLiquidity(): Promise<CreditcoinLiquidityState>
+```
+
+### CreditcoinRouteClient.readEvidence
+
+[Source, line 319](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L319).
+
+```ts
+readEvidence(): Promise<CreditcoinRouteEvidence>
+```
+
+Direct failure expressions:
+
+```text
+new Error(`Creditcoin RPC HTTP ${response.status}`)
+new Error(body.error?.message ?? "Creditcoin RPC returned no result")
+new Error(`expected Creditcoin chain ${this.config.expectedChainId}, received ${chainId}`)
+```
+
+## CreditcoinRouteClientConfig
+
+Live Creditcoin route evidence for terminal runners and the TSN test UI.
+
+The Node may mirror route identity for fast admission, but this client reads
+the route registry and liquidity observation directly from Creditcoin. It
+never accepts a token or executor address as runtime authority from UI data.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 163](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L163).
+
+### CreditcoinRouteClientConfig.rpcUrl
+
+[Source, line 164](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L164).
+
+```ts
+rpcUrl: string
+```
+
+### CreditcoinRouteClientConfig.registry
+
+[Source, line 165](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L165).
+
+```ts
+registry: `0x${string}`
+```
+
+### CreditcoinRouteClientConfig.routeId
+
+[Source, line 166](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L166).
+
+```ts
+routeId: `0x${string}`
+```
+
+### CreditcoinRouteClientConfig.expectedChainId
+
+[Source, line 167](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L167).
+
+```ts
+expectedChainId: bigint | undefined
+```
+
+### CreditcoinRouteClientConfig.explorerBaseUrl
+
+[Source, line 168](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L168).
+
+```ts
+explorerBaseUrl: string | undefined
+```
+
+## CreditcoinRouteEvidence
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 196](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L196).
+
+### CreditcoinRouteEvidence.status
+
+[Source, line 197](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L197).
+
+```ts
+status: "ready" | "blocked"
+```
+
+### CreditcoinRouteEvidence.route
+
+[Source, line 198](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L198).
+
+```ts
+route: CreditcoinRouteState
+```
+
+### CreditcoinRouteEvidence.liquidity
+
+[Source, line 199](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L199).
+
+```ts
+liquidity: CreditcoinLiquidityState
+```
+
+### CreditcoinRouteEvidence.logs
+
+[Source, line 200](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L200).
+
+```ts
+logs: string[]
+```
+
+### CreditcoinRouteEvidence.explorerLinks
+
+[Source, line 201](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L201).
+
+```ts
+explorerLinks: { registry: string; token: string; vault: string; }
+```
+
+### CreditcoinRouteEvidence.failure
+
+[Source, line 202](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L202).
+
+```ts
+failure: string | undefined
+```
+
+## CreditcoinRouteState
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 171](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L171).
+
+### CreditcoinRouteState.chainId
+
+[Source, line 172](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L172).
+
+```ts
+chainId: bigint
+```
+
+### CreditcoinRouteState.routeId
+
+[Source, line 173](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L173).
+
+```ts
+routeId: `0x${string}`
+```
+
+### CreditcoinRouteState.enabled
+
+[Source, line 174](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L174).
+
+```ts
+enabled: boolean
+```
+
+### CreditcoinRouteState.payoutVault
+
+[Source, line 175](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L175).
+
+```ts
+payoutVault: `0x${string}`
+```
+
+### CreditcoinRouteState.settlementToken
+
+[Source, line 176](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L176).
+
+```ts
+settlementToken: `0x${string}`
+```
+
+### CreditcoinRouteState.destinationNetwork
+
+[Source, line 177](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L177).
+
+```ts
+destinationNetwork: `0x${string}`
+```
+
+### CreditcoinRouteState.destinationChainId
+
+[Source, line 178](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L178).
+
+```ts
+destinationChainId: bigint
+```
+
+### CreditcoinRouteState.destinationExecutor
+
+[Source, line 179](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L179).
+
+```ts
+destinationExecutor: `0x${string}`
+```
+
+### CreditcoinRouteState.outbox
+
+[Source, line 180](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L180).
+
+```ts
+outbox: `0x${string}`
+```
+
+### CreditcoinRouteState.tokenName
+
+[Source, line 181](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L181).
+
+```ts
+tokenName: string | undefined
+```
+
+### CreditcoinRouteState.tokenSymbol
+
+[Source, line 182](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L182).
+
+```ts
+tokenSymbol: string | undefined
+```
+
+### CreditcoinRouteState.tokenDecimals
+
+[Source, line 183](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L183).
+
+```ts
+tokenDecimals: number | undefined
+```
+
+## CrossChainNetwork
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 8](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L8).
+
+```ts
+export type CrossChainNetwork =
+  | "solana-devnet"
+  | "creditcoin-testnet"
+  | "base-sepolia"
+  | "ethereum-sepolia";
+```
+
+## CrossChainRecipient
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 23](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L23).
+
+```ts
+export type CrossChainRecipient =
+  | { kind: "tin"; tinHash: `0x${string}` }
+  | { kind: "wallet"; address: `0x${string}` };
+```
+
+## CrossChainUiSnapshot
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 365](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L365).
+
+### CrossChainUiSnapshot.status
+
+[Source, line 366](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L366).
+
+```ts
+status: "ready" | "blocked"
+```
+
+### CrossChainUiSnapshot.logs
+
+[Source, line 367](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L367).
+
+```ts
+logs: string[]
+```
+
+### CrossChainUiSnapshot.nodeRoutes
+
+[Source, line 368](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L368).
+
+```ts
+nodeRoutes: unknown[]
+```
+
+### CrossChainUiSnapshot.creditcoin
+
+[Source, line 369](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L369).
+
+```ts
+creditcoin: CreditcoinRouteEvidence
+```
+
+## DestinationLiquidityRoute
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 121](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L121).
+
+### DestinationLiquidityRoute.routeId
+
+[Source, line 122](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L122).
+
+```ts
+routeId: `0x${string}`
+```
+
+### DestinationLiquidityRoute.network
+
+[Source, line 123](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L123).
+
+```ts
+network: VerifiedDestinationEvm
+```
+
+### DestinationLiquidityRoute.sourceChainKey
+
+[Source, line 124](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L124).
+
+```ts
+sourceChainKey: bigint
+```
+
+### DestinationLiquidityRoute.sourceLiquidityEmitter
+
+[Source, line 125](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L125).
+
+```ts
+sourceLiquidityEmitter: `0x${string}`
+```
+
+### DestinationLiquidityRoute.payoutVault
+
+[Source, line 126](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L126).
+
+```ts
+payoutVault: `0x${string}`
+```
+
+### DestinationLiquidityRoute.settlementToken
+
+[Source, line 127](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L127).
+
+```ts
+settlementToken: `0x${string}`
+```
+
+### DestinationLiquidityRoute.enabled
+
+[Source, line 128](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L128).
+
+```ts
+enabled: boolean
+```
+
+## loadCrossChainUiSnapshot
+
+One UI-facing preflight that mirrors the terminal order:
+Node route gate first, then live Creditcoin registry/liquidity evidence.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 376](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L376).
+
+```ts
+loadCrossChainUiSnapshot(input: { nodeUrl: string; route: CreditcoinRouteClientConfig; }): Promise<CrossChainUiSnapshot>
+```
+
+Direct failure expressions:
+
+```text
+new Error(`Node route gate HTTP ${response.status}`)
+```
+
+## TinExitAttestationInput
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 75](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L75).
+
+### TinExitAttestationInput.settlementId
+
+[Source, line 76](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L76).
+
+```ts
+settlementId: string
+```
+
+### TinExitAttestationInput.sourceNetwork
+
+[Source, line 77](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L77).
+
+```ts
+sourceNetwork: "solana-devnet"
+```
+
+### TinExitAttestationInput.destinationNetwork
+
+[Source, line 78](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L78).
+
+```ts
+destinationNetwork: "creditcoin-testnet"
+```
+
+### TinExitAttestationInput.sealedTipHeadHash
+
+[Source, line 79](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L79).
+
+```ts
+sealedTipHeadHash: string
+```
+
+### TinExitAttestationInput.amount
+
+[Source, line 80](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L80).
+
+```ts
+amount: bigint
+```
+
+### TinExitAttestationInput.tinHash
+
+[Source, line 81](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L81).
+
+```ts
+tinHash: string
+```
+
+### TinExitAttestationInput.exitCommitment
+
+[Source, line 82](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L82).
+
+```ts
+exitCommitment: string
+```
+
+## TinExitAttestationReceipt
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 85](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L85).
+
+### TinExitAttestationReceipt.status
+
+[Source, line 86](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L86).
+
+```ts
+status: AttestationStatus
+```
+
+### TinExitAttestationReceipt.settlementId
+
+[Source, line 87](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L87).
+
+```ts
+settlementId: string
+```
+
+### TinExitAttestationReceipt.destinationNetwork
+
+[Source, line 88](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L88).
+
+```ts
+destinationNetwork: "creditcoin-testnet"
+```
+
+### TinExitAttestationReceipt.creditcoinTransaction
+
+[Source, line 89](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L89).
+
+```ts
+creditcoinTransaction: string | undefined
+```
+
+### TinExitAttestationReceipt.sourceAnchorTransaction
+
+[Source, line 90](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L90).
+
+```ts
+sourceAnchorTransaction: string | undefined
+```
+
+## TsnCrossChainClient
+
+Application-facing TSN cross-chain façade.
+
+This class coordinates calls to the existing Node and registry reader. It
+deliberately does not sign Solana transactions, submit EVM transactions,
+generate Attestcoin proofs, or choose an executor. Those responsibilities
+remain with the Solana programs, Node, Attestcoin contracts, and Crankers.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 408](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L408).
+
+```ts
+new TsnCrossChainClient(input: { nodeUrl: string; route: CreditcoinRouteClientConfig; apiKey?: string | null; fetchImpl?: typeof fetch; }): TsnCrossChainClient
+```
+
+### TsnCrossChainClient.getSettlementNetworks
+
+Returns only routes admitted by the running Node gate.
+
+[Source, line 431](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L431).
+
+```ts
+getSettlementNetworks(): Promise<unknown>
+```
+
+### TsnCrossChainClient.preflight
+
+Runs the same Node-gate then Creditcoin-registry preflight used by the UI.
+
+[Source, line 436](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L436).
+
+```ts
+preflight(): Promise<CrossChainUiSnapshot>
+```
+
+### TsnCrossChainClient.submitDebitIntent
+
+Submits an already signed TSN debit intent to the Node.
+
+[Source, line 444](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L444).
+
+```ts
+submitDebitIntent(request: CreateIntentRequest): Promise<TsnMempoolIntent>
+```
+
+### TsnCrossChainClient.readCreditcoinEvidence
+
+Reads live Creditcoin route and liquidity evidence without submitting a transaction.
+
+[Source, line 455](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L455).
+
+```ts
+readCreditcoinEvidence(): Promise<CreditcoinRouteEvidence>
+```
+
+### TsnCrossChainClient.createCrankerHandoff
+
+Produces the exact handoff object a Cranker may submit. The SDK never
+broadcasts it; a Cranker must enforce its own network and signer policy.
+
+[Source, line 463](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L463).
+
+```ts
+createCrankerHandoff(input: { authorization: CreditcoinPayoutAuthorization; signature: string; }): { network: typeof CREDITCOIN_SETTLEMENT_NETWORK; authorization: CreditcoinPayoutAuthorization; signature: string; }
+```
+
+Direct failure expressions:
+
+```text
+new Error("cross-chain debit intent must target an enabled TSN destination")
+new Error("cross-chain debit intent requires registry-bound executor, token, and route ID")
+```
+
+## validateCreditcoinDestination
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 93](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L93).
+
+```ts
+validateCreditcoinDestination(destination: CreditcoinDestination): CreditcoinDestination
+```
+
+Direct failure expressions:
+
+```text
+new Error("Creditcoin destination must be a 20-byte EVM address")
+new Error("Creditcoin destination token is required")
+```
+
+## validateCreditcoinPayoutAuthorization
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 49](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L49).
+
+```ts
+validateCreditcoinPayoutAuthorization(authorization: CreditcoinPayoutAuthorization): CreditcoinPayoutAuthorization
+```
+
+Direct failure expressions:
+
+```text
+new Error("Creditcoin payout recipient must be a 20-byte EVM address")
+new Error(`${field} must be a bytes32 value`)
+new Error("only the Creditcoin settlement rail is enabled")
+new Error("payout amount and deadline must be positive")
+```
+
+## validateCrossChainRecipient
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 27](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L27).
+
+```ts
+validateCrossChainRecipient(recipient: CrossChainRecipient): CrossChainRecipient
+```
+
+## VerifiedDestinationEvm
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 119](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L119).
+
+```ts
+export type VerifiedDestinationEvm = "base" | "ethereum";
+```
+
+## VerifiedDestinationLiquidity
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/cross-chain`. [Implementation, line 131](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L131).
+
+### VerifiedDestinationLiquidity.routeId
+
+[Source, line 132](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L132).
+
+```ts
+routeId: `0x${string}`
+```
+
+### VerifiedDestinationLiquidity.queryId
+
+[Source, line 133](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L133).
+
+```ts
+queryId: `0x${string}`
+```
+
+### VerifiedDestinationLiquidity.availableAmount
+
+[Source, line 134](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L134).
+
+```ts
+availableAmount: bigint
+```
+
+### VerifiedDestinationLiquidity.sourceBlock
+
+[Source, line 135](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L135).
+
+```ts
+sourceBlock: bigint
+```
+
+### VerifiedDestinationLiquidity.validUntil
+
+[Source, line 136](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L136).
+
+```ts
+validUntil: bigint
+```
+
+### VerifiedDestinationLiquidity.nonce
+
+[Source, line 137](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L137).
+
+```ts
+nonce: bigint
+```

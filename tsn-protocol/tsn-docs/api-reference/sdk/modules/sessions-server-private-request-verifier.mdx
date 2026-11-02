@@ -1,0 +1,172 @@
+---
+title: "sessions/server/private-request-verifier API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## TsnAuthorizedDeviceVerificationRecord
+
+Import from `@trustlink/tsn-sdk/sessions/server`. [Implementation, line 10](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L10).
+
+### TsnAuthorizedDeviceVerificationRecord.deviceId
+
+[Source, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L11).
+
+```ts
+deviceId: string
+```
+
+### TsnAuthorizedDeviceVerificationRecord.tinCommitment
+
+[Source, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L12).
+
+```ts
+tinCommitment: string
+```
+
+### TsnAuthorizedDeviceVerificationRecord.signingKeyFingerprint
+
+[Source, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L13).
+
+```ts
+signingKeyFingerprint: string
+```
+
+### TsnAuthorizedDeviceVerificationRecord.signingPublicKey
+
+[Source, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L14).
+
+```ts
+signingPublicKey: JsonWebKey
+```
+
+### TsnAuthorizedDeviceVerificationRecord.encryptionKeyFingerprint
+
+[Source, line 15](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L15).
+
+```ts
+encryptionKeyFingerprint: string
+```
+
+### TsnAuthorizedDeviceVerificationRecord.permissions
+
+[Source, line 16](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L16).
+
+```ts
+permissions: string[]
+```
+
+### TsnAuthorizedDeviceVerificationRecord.status
+
+[Source, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L17).
+
+```ts
+status: "expired" | "revoked" | "active"
+```
+
+## TsnPrivateSessionVerificationRecord
+
+Import from `@trustlink/tsn-sdk/sessions/server`. [Implementation, line 20](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L20).
+
+### TsnPrivateSessionVerificationRecord.sessionId
+
+[Source, line 21](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L21).
+
+```ts
+sessionId: string
+```
+
+### TsnPrivateSessionVerificationRecord.tinCommitment
+
+[Source, line 22](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L22).
+
+```ts
+tinCommitment: string
+```
+
+### TsnPrivateSessionVerificationRecord.deviceId
+
+[Source, line 23](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L23).
+
+```ts
+deviceId: string
+```
+
+### TsnPrivateSessionVerificationRecord.permissions
+
+[Source, line 24](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L24).
+
+```ts
+permissions: string[]
+```
+
+### TsnPrivateSessionVerificationRecord.audience
+
+[Source, line 25](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L25).
+
+```ts
+audience: string
+```
+
+### TsnPrivateSessionVerificationRecord.expiresAt
+
+[Source, line 26](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L26).
+
+```ts
+expiresAt: string
+```
+
+### TsnPrivateSessionVerificationRecord.status
+
+[Source, line 27](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L27).
+
+```ts
+status: "expired" | "revoked" | "active"
+```
+
+## verifyTsnAuthorizedPrivateRequest
+
+Import from `@trustlink/tsn-sdk/sessions/server`. [Implementation, line 111](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L111).
+
+```ts
+verifyTsnAuthorizedPrivateRequest(params: { sessionToken: string; proof: SignedSessionProof; permission: string; method: string; resource: string; bodyCommitment: string; expectedAudience: string; findSessionByToken: (token: string) => Promise<TsnPrivateSessionVerificationRecord | null>; findDevice: (deviceId: string) => Promise<TsnAuthorizedDeviceVerificationRecord | null>; consumeNonce: (params: { nonce: string; deviceId: string; sessionId: string; purpose: string; expiresAt: string; }) => Promise<boolean>; }): Promise<{ session: TsnPrivateSessionVerificationRecord; device: TsnAuthorizedDeviceVerificationRecord; }>
+```
+
+Direct failure expressions:
+
+```text
+new Error("Private session is invalid or expired")
+new Error("Private session audience mismatch")
+new Error("Private session permission denied")
+new Error("Authorized device was not found")
+new Error("Authorized device permission denied")
+new Error("Private session TIN binding mismatch")
+new Error("Private request uses an unregistered signing key")
+new Error(`Private request rejected: ${verification.reason}`)
+new Error("Private request nonce has already been consumed")
+```
+
+## verifyTsnPrivateSessionCreation
+
+Import from `@trustlink/tsn-sdk/sessions/server`. [Implementation, line 30](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/sessions/server/private-request-verifier.ts#L30).
+
+```ts
+verifyTsnPrivateSessionCreation(params: { request: PrivateSessionCreationRequest; proof: SignedSessionProof; device: TsnAuthorizedDeviceVerificationRecord; expectedAudience: string; expectedResource: string; maxTtlMs?: number; now?: Date; consumeNonce: (params: { nonce: string; deviceId: string; sessionId: string; purpose: string; expiresAt: string; }) => Promise<boolean>; }): Promise<{ permissions: string[]; }>
+```
+
+Direct failure expressions:
+
+```text
+new Error("Authorized device is not active")
+new Error("Device is not permitted to create private sessions")
+new Error("Private session device mismatch")
+new Error("Private session audience mismatch")
+new Error("Private session proof uses an unregistered signing key")
+new Error("Private session requests a permission not granted to this device")
+new Error("Private session timing is invalid")
+new Error(`Private session rejected: ${verification.reason}`)
+new Error("Private session proof nonce has already been consumed")
+```

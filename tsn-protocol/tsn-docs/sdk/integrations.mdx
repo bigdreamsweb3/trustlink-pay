@@ -1,0 +1,28 @@
+---
+title: "Integration responsibilities"
+description: "Merchant, payment provider, Node, Cranker and advanced integration boundaries."
+---
+
+The SDK exports several integration surfaces, but exported code is not evidence of a deployed route or production service. Choose the workflow that the application can actually authorize and verify.
+
+## Merchant applications
+
+A merchant app presents a resolved recipient identity, accepted token, amount, fee and expiry; obtains the sender wallet's message and deposit approvals; submits the canonical request; and reconciles funding/settlement signatures. Keep the merchant order ID separate from settlement proof. The [payment guide](/sdk/payment-guide) provides typed preparation helpers; application UX, wallet callbacks and reconciliation storage remain application responsibilities.
+
+## Payment service providers
+
+A provider protects trusted identity lookup material and service credentials, selects a consistent cluster/RPC context, implements bounded transport timeouts and reconciles idempotent work. Display identity is not legal verification, and storing a payment status does not create settlement finality. Providers must not treat Node verification as permission to alter the sender's approved amount, recipient or deposit bytes.
+
+## Node integrations
+
+The inspected Node service performs work verification and proof preparation behind authenticated Receiver leases. An integrator must implement the exact execution projection/attestation contract, protected keys, current chain checks and proof/witness bindings. Node authorization remains an explicit trusted boundary; no permissionless consensus Node API is established by this handbook. Use the [Node role guide](/operators/tsn-node) and internal implementation record.
+
+## Cranker integrations
+
+The daemon and separate Cranker SDK implement worker registration, wallet session authorization, leased execution and reports. A worker verifies the Node attestation and submits the permitted transaction using the correct signers. It cannot replace owner approval. [Cranker responsibilities](/operators/tsn-cranker) link the operational contracts and current setup runbook.
+
+## Advanced and cross-chain integrations
+
+Device/session/recovery/private-view exports and GPRU record helpers support specific privacy/owner-access tasks; some require a configured provider or complete external history. Lit components and Lit Protocol threshold actions have distinct roles. [The API catalog](/sdk/api-reference) exposes their real signatures without promising all providers are live.
+
+Cross-chain, exit and liquidity APIs require route-specific contracts, authorization, accepted assets, liquidity proofs and source/destination confirmations. The current native-credit tutorial does not establish confidential debit/exit or arbitrary EVM delivery end to end. Follow the [internal cross-chain records](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs/team/cross-chain) and preserve source and destination transaction evidence separately.

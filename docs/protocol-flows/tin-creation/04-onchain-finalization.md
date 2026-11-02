@@ -23,12 +23,19 @@ instructions instead of constructing an oversized transaction:
 3. **Finalize** with the owner's Ed25519 proof instruction followed by the
    program's finalize instruction. The program checks that every byte has been
    written, reuses the same `CreateTinV1` validation path, creates the
-   commitment-derived `TinV1Account` and owner-recovery PDA, and closes the
-   staging account.
+   commitment-derived `TinV1Account` and owner-recovery PDA, appends the
+   authenticated route to TIP's shared membership root, and closes the staging
+   account. These finalization changes commit atomically.
 4. **Verify the result** by reading the registry account from the configured
    Solana RPC and checking its program owner, V1 layout/status, and lookup
    commitment. The Cranker reports the transaction signature, registry address,
    and optional staging transaction signatures to the Receiver.
+
+Both direct creation and staged finalization request 1,400,000 compute units
+before the owner proof and TIP instruction. Packet-size selection includes
+this budget instruction. The shared-root append uses the existing 1,066-byte
+Borsh layout; its fixed fields and frontier are decoded into heap-backed state
+to avoid the nested-array decoder's SBF stack failure on an existing root.
 
 If a staged attempt expires before finalization, an authorized Cranker can
 close the expired staging account to recover its rent. This does not create a
@@ -41,6 +48,12 @@ reported. It reaches `CONFIRMED` only after the Cranker confirms Solana and
 verifies the resulting registry account. The XP can then show the TIN to the
 owner session. A successful staging transaction alone is not TIN issuance; the
 finalize transaction and registry account are required.
+
+A preflight failure at finalization leaves previously confirmed staging
+uploads on chain but creates no registry or recovery record and does not
+advance the membership root. Receiver marks that work `FAILED`. If its owner
+approval has expired, obtain a fresh signed creation request; changing the
+old request's expiry would invalidate its approved hash.
 
 Cranker logs include the work ID, stage label, serialized transaction size,
 signature, confirmation, registry address, and account validation result. Do

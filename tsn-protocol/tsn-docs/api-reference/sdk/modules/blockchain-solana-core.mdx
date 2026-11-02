@@ -1,0 +1,71 @@
+---
+title: "blockchain/solana-core API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-core.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## estimateTransactionFeeLamports
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-core`. [Implementation, line 80](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-core.ts#L80).
+
+```ts
+estimateTransactionFeeLamports(connection: Connection, transaction: Transaction): Promise<number>
+```
+
+## getConnection
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-core`. [Implementation, line 55](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-core.ts#L55).
+
+```ts
+getConnection(rpcUrl?: string): Connection
+```
+
+## getEscrowAuthorityKeypair
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-core`. [Implementation, line 15](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-core.ts#L15).
+
+```ts
+getEscrowAuthorityKeypair(secretKeyValue?: string | null): Keypair
+```
+
+Direct failure expressions:
+
+```text
+new Error("Missing secret key")
+new Error("Invalid secret key format")
+```
+
+## getEscrowConfigState
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-core`. [Implementation, line 85](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-core.ts#L85).
+
+```ts
+getEscrowConfigState(): Promise<{ treasuryOwner: string | null; } | null>
+```
+
+## getProgramId
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-core`. [Implementation, line 76](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-core.ts#L76).
+
+```ts
+getProgramId(): PublicKey
+```
+
+## instructionDiscriminator
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-core`. [Implementation, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-core.ts#L11).
+
+```ts
+instructionDiscriminator(name: string): Buffer<ArrayBuffer>
+```
+
+## TOKEN_PROGRAM_ID
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-core`. [Implementation, line 9](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-core.ts#L9).
+
+```ts
+PublicKey
+```

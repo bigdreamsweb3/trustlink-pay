@@ -1,0 +1,149 @@
+---
+title: "blockchain/solana-tsn API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## getTsnCrankerPda
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 47](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L47).
+
+```ts
+getTsnCrankerPda(params: { motherEscrow: PublicKey; operator: PublicKey; }): PublicKey
+```
+
+## getTsnCrankerVaultAuthorityPda
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 61](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L61).
+
+```ts
+getTsnCrankerVaultAuthorityPda(params: { crankerVault: PublicKey; }): PublicKey
+```
+
+## getTsnCrankerVaultPda
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 54](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L54).
+
+```ts
+getTsnCrankerVaultPda(params: { cranker: PublicKey; tokenMint: PublicKey; }): PublicKey
+```
+
+## getTsnCrankerVaultTokenPda
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 68](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L68).
+
+```ts
+getTsnCrankerVaultTokenPda(params: { crankerVault: PublicKey; }): PublicKey
+```
+
+## getTsnLiquidityPositionPda
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 75](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L75).
+
+```ts
+getTsnLiquidityPositionPda(params: { crankerVault: PublicKey; funder: PublicKey; }): PublicKey
+```
+
+## getTsnMotherEscrowPda
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 38](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L38).
+
+```ts
+getTsnMotherEscrowPda(): PublicKey
+```
+
+## getTsnVerifierPda
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 43](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L43).
+
+```ts
+getTsnVerifierPda(): PublicKey
+```
+
+## sha256Bytes
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 34](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L34).
+
+```ts
+sha256Bytes(input: string): Buffer
+```
+
+## tsnFetchMotherEscrowOnChain
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 293](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L293).
+
+```ts
+tsnFetchMotherEscrowOnChain(rpcUrl?: string): Promise<{ valid: false; reason: "account-too-small"; address: string; owner: string; lamports: number; executable: boolean; dataLength: number; discriminatorHex: string; } | { valid: false; reason: "wrong-discriminator"; expectedDiscriminatorHex: string; address: string; owner: string; lamports: number; executable: boolean; dataLength: number; discriminatorHex: string; } | { valid: true; authority: string; tinsProgramId: string; protocolSeed: Buffer<ArrayBuffer>; epochSeconds: bigint; leaseSeconds: bigint; feeSplitCrankerBps: number; feeSplitLpBps: number; feeSplitTreasuryBps: number; tinFeeSplitVerifyCrankerBps: number; tinFeeSplitSubmitCrankerBps: number; tinFeeSplitTeamBps: number; tinFeeSplitReservePoolBps: number; epochId: bigint; lastEpochSettledTs: bigint; bump: number; address: string; owner: string; lamports: number; executable: boolean; dataLength: number; discriminatorHex: string; } | null>
+```
+
+## tsnFundCrankerOnChain
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 240](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L240).
+
+```ts
+tsnFundCrankerOnChain(params: { funder: Keypair; operator: PublicKey; tokenMint: PublicKey; funderTokenAccount: PublicKey; amountBaseUnits: bigint; rpcUrl?: string; }): Promise<{ mode: "devnet"; signature: string; }>
+```
+
+## tsnInitializeCrankerVaultOnChain
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 233](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L233).
+
+```ts
+tsnInitializeCrankerVaultOnChain(params: { payer?: Keypair; operator: PublicKey; tokenMint: PublicKey; rpcUrl?: string; secretKey?: string | null; }): Promise<{ mode: "mock"; signature: string | null; } | { mode: "devnet"; signature: string; }>
+```
+
+## tsnInitializeMotherEscrowOnChain
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 105](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L105).
+
+```ts
+tsnInitializeMotherEscrowOnChain(params: { authority?: Keypair; tinsProgramId: PublicKey; protocolSeed32: Buffer; epochSeconds: bigint; leaseSeconds: bigint; feeSplitCrankerBps?: number | null; feeSplitLpBps?: number | null; feeSplitTreasuryBps?: number | null; rpcUrl?: string; secretKey?: string | null; }): Promise<{ mode: "mock"; signature: string | null; motherEscrow?: undefined; } | { mode: "devnet"; signature: string | null; motherEscrow: string; } | { mode: "devnet"; signature: string; motherEscrow?: undefined; }>
+```
+
+Direct failure expressions:
+
+```text
+new Error( `TSN mother escrow is initialized with TIP program ${existing.tinsProgramId}, not ${params.tinsProgramId.toBase58()}.`, )
+new Error( `TSN mother escrow ${motherEscrow.toBase58()} already exists but is not readable as the current MotherEscrow layout (${reason}). Deploy a fresh TSN program id or add a migration/close instruction for this PDA before running init-mother again.`, )
+```
+
+## tsnMigrateMotherEscrowOnChain
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 166](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L166).
+
+```ts
+tsnMigrateMotherEscrowOnChain(params: { authority?: Keypair; tinsProgramId: PublicKey; protocolSeed32: Buffer; epochSeconds: bigint; leaseSeconds: bigint; feeSplitCrankerBps?: number | null; feeSplitLpBps?: number | null; feeSplitTreasuryBps?: number | null; rpcUrl?: string; secretKey?: string | null; }): Promise<{ mode: "mock"; signature: string | null; } | { mode: "devnet"; signature: string; }>
+```
+
+Direct failure expressions:
+
+```text
+new Error( `TSN mother escrow ${motherEscrow.toBase58()} is already valid. Only invalid accounts can be migrated.`, )
+```
+
+## tsnRegisterCrankerOnChain
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 219](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L219).
+
+```ts
+tsnRegisterCrankerOnChain(params: { operator?: Keypair; rpcUrl?: string; secretKey?: string | null; }): Promise<{ mode: "mock"; signature: string | null; } | { mode: "devnet"; signature: string | null; }>
+```
+
+## tsnSetCrankerFundingPolicyOnChain
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 227](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L227).
+
+```ts
+tsnSetCrankerFundingPolicyOnChain(params: { operator: Keypair; allowExternalFunding: boolean; rpcUrl?: string; }): Promise<{ mode: "devnet"; signature: string; }>
+```
+
+## tsnWithdrawCrankerFundsOnChain
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/blockchain/solana-tsn`. [Implementation, line 246](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/blockchain/solana-tsn.ts#L246).
+
+```ts
+tsnWithdrawCrankerFundsOnChain(params: { funder: Keypair; operator: PublicKey; tokenMint: PublicKey; funderTokenAccount: PublicKey; amountBaseUnits: bigint; rpcUrl?: string; }): Promise<{ mode: "devnet"; signature: string; }>
+```

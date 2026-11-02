@@ -1,0 +1,54 @@
+---
+title: "program API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/program.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## assertVerifiedTsnProgramId
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/program`. [Implementation, line 10](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/program.ts#L10).
+
+```ts
+assertVerifiedTsnProgramId(programId: { toBase58(): string; } | string): string
+```
+
+Direct failure expressions:
+
+```text
+new Error( `Unverified TSN program id ${resolved}. This SDK only supports verified ${VERIFIED_TSN_PROGRAM_LABEL} ${VERIFIED_TSN_PROGRAM_ID} on ${VERIFIED_TSN_CLUSTER}. Update the TSN package to use a newer verified program.`, )
+```
+
+## getVerifiedTsnProgramId
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/program`. [Implementation, line 6](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/program.ts#L6).
+
+```ts
+getVerifiedTsnProgramId(): string
+```
+
+## VERIFIED_TSN_CLUSTER
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/program`. [Implementation, line 3](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/program.ts#L3).
+
+```ts
+"devnet"
+```
+
+## VERIFIED_TSN_PROGRAM_ID
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/program`. [Implementation, line 1](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/program.ts#L1).
+
+```ts
+"TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V"
+```
+
+## VERIFIED_TSN_PROGRAM_LABEL
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/program`. [Implementation, line 4](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/program.ts#L4).
+
+```ts
+"trustlink-escrow-tsn"
+```

@@ -17,6 +17,8 @@ balance accounting used by the current credit architecture.
 
 ## TrustLink Labs resources
 
+- [Build and operate your own TSN](docs/RUN-YOUR-OWN-TSN.md)
+
 - [Earlier hosted TrustLink Pay application](https://trustlink-pay.vercel.app/)
 - [TSN research blog](https://tsn-protocol.blogspot.com/)
 - [TrustLink Labs GitHub organization](https://github.com/Trustlink-Labs)
@@ -49,8 +51,8 @@ flowchart TB
     subgraph DEVICE["1. Sender device — TSN XP and SDK"]
         direction TB
         A["Review recipient identity<br/>TIN, display name and resolved owner commitment"]
-        B["Approve canonical payment message<br/>TIN, asset, amount, fee, nonce and expiry"]
-        C["Sign exact TCAP reserve deposit<br/>deposit_asset_v2; wallet-signed wire"]
+        B["Create private funding note; approve payment<br/>TIN, asset, amount, fee, nonce, expiry and note commitment"]
+        C["Refresh blockhash after amount approval<br/>Sign exact TCAP reserve deposit<br/>deposit_private_funding_v1; wallet-signed wire"]
         A --> B --> C
     end
 
@@ -72,16 +74,16 @@ flowchart TB
     subgraph FUNDING["4. First Solana transaction — reserve funding"]
         direction TB
         I["Cranker checks attestation and leases funding<br/>Submit unchanged owner-signed wire"]
-        J["TCAP deposit confirms<br/>Reserve assets and pending liability increase"]
+        J["TCAP verifies exact vault transfer delta<br/>Append funded leaf; increase assets and pending liability atomically"]
         K["Receiver records funding CONFIRMED<br/>Linked settlement becomes eligible for Node verification"]
         I --> J --> K
     end
 
     subgraph PROVING["5. TSN Node — independent settlement verification"]
         direction TB
-        L["Lease linked settlement and recheck funding<br/>Read current TIP root, TCAP root and verifier"]
-        M["Select root-matching witness snapshot<br/>Encrypt owner Memo; prove and verify locally"]
-        N["Return signed VERIFIED settlement<br/>Twelve public inputs and bound Memo"]
+        L["Lease linked settlement and recheck funding<br/>Read TIP, TCAP state/funding roots and V2 verifier"]
+        M["Synchronize membership and select matching state<br/>Prove funding, asset/amount and secret-derived nullifier; bind Memo"]
+        N["Return signed VERIFIED settlement<br/>Thirteen public inputs and bound Memo"]
         L --> M --> N
     end
 
@@ -98,17 +100,17 @@ flowchart TB
         subgraph CHECKS["TSNP → TCAP → GPRU"]
             direction TB
             R["TSNP checks Mother authority and digest<br/>Invokes TCAP with authorization signer"]
-            S["TCAP checks asset, reserves, slots and shared root<br/>Invokes GPRU before accounting mutation"]
+            S["TCAP checks asset, reserves, slots and shared root<br/>Invokes GPRU before root and epoch mutation"]
             T["GPRU checks roots, verifier and Groth16 proof<br/>Binds action and immediately following Memo"]
             R --> S --> T
         end
-        U["TCAP atomically advances shared root<br/>Equal pending-to-settled confidential liability shift"]
+        U["TCAP atomically advances shared root<br/>Append blinded epoch digest; reserve unchanged"]
         T --> U
     end
 
     subgraph EVIDENCE["8. Confirmation and owner recovery"]
         direction TB
-        V["Confirm settlement signature and chain result<br/>Reconcile shared root and reserve liabilities"]
+        V["Confirm settlement signature and chain result<br/>Reconcile shared root and owner action"]
         W["Owner SDK scans and validates encrypted Memo history<br/>Recover action delta and reconcile private balance"]
         V --> W
     end
@@ -120,6 +122,9 @@ flowchart TB
     N --> O
     Q --> R
     U --> V
+    U --> AA["Grouped accepted-credit openings<br/>Node proves complete 2–64-credit epoch"]
+    AA --> AB["Receiver verifies and leases accounting work<br/>Cranker obtains Mother signature and submits"]
+    AB --> AC["TCAP and separate GPRU epoch verifier<br/>One authenticated liability reclassification"]
     G -->|"Invalid authorization or deposit"| X["Reject funding work<br/>No verified Cranker execution"]
     M -->|"Missing snapshots, artifacts or account prerequisites"| Y["Fail closed; resolve prerequisites<br/>Reverify before settlement submission"]
     T -->|"Invalid proof or binding"| Z["Credit transaction fails atomically<br/>Earlier confirmed funding remains separate"]
@@ -136,6 +141,9 @@ flowchart TB
     class I,O,P,Q funding;
     class J,R,S,T,U chain;
     class V,W,X,Y,Z evidence;
+    class AA node;
+    class AB receiver;
+    class AC chain;
 ```
 
 The first transaction transfers sender assets into the TCAP reserve; the
@@ -147,13 +155,7 @@ An expired owner-signed funding wire requires fresh wallet approval and a
 new signature, and a stale proof/root or lease requires re-verification rather
 than reuse of the old execution projection.
 
-The hidden TIN/head/path witness does not establish full unlinkability. Current
-Node source derives the published credit nullifier from public TCAP program and
-confirmed deposit-signature bytes, allowing a funding-to-credit link. Amount,
-asset, roots, successor point, ciphertext, accounts and timing remain public;
-Node handles sensitive routes and witness material. See [cryptography and privacy](docs/laboratory/cryptography.md)
-for the exact relation and [credit ABI](docs/laboratory/credit-abi.md) for accounts,
-signers, Memo binding and program checks.
+The private-credit replacement proves exact funded-note asset/amount membership with secret-derived nullifiers and fresh blinded amount commitments. It omits public note/leaf/index/opening and plaintext credit amount. Pool capture needs two positive unspent members and two wallet sources; zero-value actors cannot qualify it. Separate epoch totals, deposits, token/roots/points/ciphertext/timing and Node knowledge remain observable or trusted. Full unlinkability and recipient-registry privacy remain unproven. [November 7 offline validation](docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md) passed real credit/epoch proofs; SBF build, rekey/epoch activation and complete live flow remain unverified.
 
 ## Core terms and authority boundaries
 
@@ -174,12 +176,7 @@ epoch/DNA, ingress and external integration responsibilities separately.
 
 ## Shared-root credit and retained authorization families
 
-Current native credit uses `register_tcap_credit_authorization_v2` through
-TCAP `credit_gpru_memo_v1` and GPRU `verify_hidden_head_transition_v1`.
-TCAP's shared authenticated root tracks hidden state and nullifier updates,
-and credit shifts equal pending liability into settled confidential liability
-after proof validation. No per-TIN latest-tip initialization, recipient token
-account or per-transfer authorization receipt is part of this call.
+Current experimental native credit uses `tsn_register_tcap_credit_authorization_v3` → TCAP `credit_gpru_memo_v2` → GPRU `verify_hidden_head_transition_v2`. It advances the authenticated head/nullifier root and blinded epoch transcript with no tokens moving or liability counters changing. Separate Node/Receiver/Cranker epoch work proves the complete 2–64-credit total before TCAP reclassifies existing pending obligations once. No recipient token account or identity initialization is part of credit.
 
 `AcceptedIntent`, epoch commitments, Settlement DNA, private payout/refund and
 reimbursement remain separate retained capabilities with their own contracts.
@@ -190,8 +187,9 @@ review before removal. See [state and route diagrams](docs/laboratory/state-and-
 ## Supported route boundaries
 
 1. **Wallet-to-TIN native credit:** implemented approval/deposit, verification
-   and hidden-head construction/submission path; complete on-chain credit and
-   owner recovery remain separately unverified by this documentation work.
+   and hidden-head construction/submission path, with one independently finalized
+   Devnet credit in the baseline. Owner recovery and the replacement sender's live
+   HTTP confirmation remain separately unverified.
 2. **TIN-funded debit/credit and exit:** retained source/API/proof surfaces need
    their own enabled-caller, account and execution evidence. Wallet credit does
    not prove these routes work.

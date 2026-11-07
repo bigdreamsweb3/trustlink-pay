@@ -93,32 +93,32 @@ convert the older Devnet config account. Running the bootstrap before this
 upgrade produces `InstructionFallbackNotFound`; that means the old bytecode is
 still deployed and no migration occurred.
 
-Verify the deployed program after the upgrade and record the new `Last Deployed
-In Slot` value before continuing:
+Verify the deployed program after the upgrade and record `Last Deployed
+In Slot`, program authority and matching binary evidence before continuing:
 
 ```bash
 solana program show tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF \
   --url "$ANCHOR_PROVIDER_URL"
 ```
 
-Only after the slot changes should you run the config migration/bootstrap.
+Only after verifying the intended binary and actual old account layout should you perform a required config migration. The historical bootstrap below is separate from current native funded-note setup.
 
 ## Current credit source and hidden-head status
 
 The TSN CPI wrapper and TCAP shared-root Memo-credit instruction are present in
 source. Verify the affected program builds and the matching binaries are
-deployed before treating this as a live transfer path. The existing `tcap:credit:bootstrap:devnet` and
-`tcap:credit:devnet` commands are legacy V1 receipt smoke tests; they now fail
-closed unless `TCAP_ALLOW_LEGACY_V1=1` is explicitly set. Do not set that flag
-for a new transfer.
+deployed before treating this as a live transfer path. The retained legacy V1 receipt smoke helpers require
+`TCAP_ALLOW_LEGACY_V1=1` and are not current root-package credit aliases.
+Do not enable them for a new funded-note transfer.
 
-The current TSN credit caller verifies the Mother authorization, invokes
-GPRU's DNA-key and encrypted-credit checks, then calls TCAP's Memo-credit
-instruction to advance the shared commitment root. It does not use a
-per-TIN TCAP tip. GPRU/TCAP hidden-head instructions are separate source and
-are not invoked by Node, SDK, Cranker, or this TSN caller. A successful build
-or deploy does not prove an end-to-end payment; require a confirmed settlement
-signature and resulting chain state.
+The current funded-note path verifies the unchanged sender deposit, confirms
+funding, then uses Node's root-selected witness/prover and Mother-authorized
+TSNP -> TCAP -> GPRU validation. TCAP changes shared state and liability
+classification only after proof verification. The funding root, thirteen-input
+V2 verifier/key and persistent Node artifacts require separate initialization.
+Use [Build and operate your own TSN](RUN-YOUR-OWN-TSN.md) for the complete
+sequence and [the credit ABI](laboratory/credit-abi.md) for account constraints.
+Compilation and deployment remain separate from a live credit.
 
 The deploy helper uses RPC submission, `confirmed` commitment, and 20 signing
 attempts by default because large SBF upgrades can exceed a single blockhash
@@ -141,7 +141,9 @@ path. Never publish the signer file or its seed phrase.
 Do not run these commands against localnet. After deployment, run only Devnet
 preflight, simulation and explicitly approved Devnet transactions.
 
-## TCAP credit bootstrap defaults
+## Historical TCAP credit bootstrap defaults
+
+The following retained epoch/AcceptedIntent fixture describes a separate historical smoke-test family. Its commands are not the current funded-note installation procedure and are not present as root-package credit aliases. Use [the current operator guide](RUN-YOUR-OWN-TSN.md) for new native credits.
 
 `npm run tcap:credit:bootstrap:devnet` is retained only as a legacy migration
 diagnostic and is fail-closed by default. It automatically loads the checked-in

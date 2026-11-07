@@ -1,0 +1,130 @@
+---
+title: "gpru/funding-note API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## assertFundingNoteV1
+
+Require the exact four-field opening and recompute its nonzero commitment.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 33](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L33).
+
+```ts
+assertFundingNoteV1(value: FundingNoteV1): FundingNoteV1
+```
+
+Direct failure expressions:
+
+```text
+new Error("Funding note must contain exactly version, secret, blinding and commitment")
+new Error("Funding note opening does not match its commitment")
+```
+
+## canonicalFundingFieldHex
+
+Validate 32-byte BN254 scalar hex; zero is permitted only when explicitly requested for blinding.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L14).
+
+```ts
+canonicalFundingFieldHex(value: string, label?: string, allowZero?: boolean): string
+```
+
+Direct failure expressions:
+
+```text
+new Error(`${label} must be 32-byte hex`)
+new Error(`${label} must be a ${allowZero ? "" : "nonzero "}canonical BN254 scalar`)
+```
+
+## createFundingNoteV1
+
+Generate before signing; no secret is inserted into the public deposit or credit.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 59](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L59).
+
+```ts
+createFundingNoteV1(): FundingNoteV1
+```
+
+## deriveFundedLeafV1
+
+Poseidon4(leaf domain, note commitment, registered token ID, actual transferred amount).
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 65](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L65).
+
+```ts
+deriveFundedLeafV1(noteCommitment: string, tokenId: number, amountBaseUnits: bigint): string
+```
+
+Direct failure expressions:
+
+```text
+new Error("Funded leaf token or amount is outside its on-chain range")
+```
+
+## deriveFundingNoteCommitmentV1
+
+Poseidon3(note domain, nonzero secret, canonical blinding). Blinding may be zero.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 26](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L26).
+
+```ts
+deriveFundingNoteCommitmentV1(secret: string, blinding: string): string
+```
+
+## deriveFundingNullifierV1
+
+Poseidon2(nullifier domain, nonzero secret); public deposit signatures do not enter this relation.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 73](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L73).
+
+```ts
+deriveFundingNullifierV1(secret: string): string
+```
+
+## FundingNoteV1
+
+Private opening: keep in sender memory and restricted payment ingress only.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L11).
+
+```ts
+export type FundingNoteV1 = { version: 1; secret: string; blinding: string; commitment: string };
+```
+
+## GPRU_FUNDED_LEAF_DOMAIN_V1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 7](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L7).
+
+```ts
+7345779629200698683464734587914033020491313n
+```
+
+## GPRU_FUNDING_FIELD_MODULUS
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 5](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L5).
+
+```ts
+21888242871839275222246405745257275088548364400416034343698204186575808495617n
+```
+
+## GPRU_FUNDING_NOTE_DOMAIN_V1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 6](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L6).
+
+```ts
+1880519585075378862971854540099064911735248433n
+```
+
+## GPRU_FUNDING_NULLIFIER_DOMAIN_V1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 8](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L8).
+
+```ts
+2067653150050877929286087838257825941301032058674988668465n
+```

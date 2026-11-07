@@ -115,6 +115,21 @@ new Error("TIN_OWNER_RECOVERY_TIN_INVALID")
 new Error("TIN_OWNER_RECOVERY_DISPLAY_NAME_INVALID")
 ```
 
+## decodeTinV1RegistryAccount
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tins`. [Implementation, line 101](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L101).
+
+```ts
+decodeTinV1RegistryAccount(data: Uint8Array): { version: number; bump: number; status: number; reserved: Buffer<ArrayBuffer>; lookupCommitment: Buffer<ArrayBuffer>; ownerCommitment: Buffer<ArrayBuffer>; encryptedIdentityEnvelope: Buffer<ArrayBuffer>; encryptedMasterSeed: Buffer<ArrayBuffer>; createdAt: Buffer<ArrayBuffer>; encryptedMetadataHash: Buffer<ArrayBuffer>; routeVersion: bigint; routeNonce: Buffer<ArrayBuffer>; tipRouteVersion: number; gpruElgamalKeyVersion: number; gpruElgamalPublicKey: Buffer<ArrayBuffer>; gpruElgamalKeyCommitment: Buffer<ArrayBuffer>; gpruBalanceScanKeyVersion: number; gpruBalanceScanPublicKeyX: Buffer<ArrayBuffer>; gpruBalanceScanPublicKeyY: Buffer<ArrayBuffer>; policyCommitment: Buffer<ArrayBuffer>; }
+```
+
+Direct failure expressions:
+
+```text
+new Error(`TIN_REGISTRY_MALFORMED_AT_${label}`)
+new Error("TIN_REGISTRY_HAS_NONZERO_TRAILING_DATA")
+```
+
 ## decryptTinV1OwnerRecoveryEnvelope
 
 Decrypt the owner-recovery record locally after wallet signing.

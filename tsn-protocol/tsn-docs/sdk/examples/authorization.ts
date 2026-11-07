@@ -1,4 +1,5 @@
 import { createPaymentAuthorization, buildPaymentAuthorizationIntentRequest } from "@trustlink/tsn-sdk/payment-authorization";
+import { assertFundingNoteV1, type FundingNoteV1 } from "@trustlink/tsn-sdk";
 
 // Pure preparation: no RPC, signing, submission, service start, or secret lookup.
 export function prepareIntent(input: {
@@ -14,7 +15,10 @@ export function prepareIntent(input: {
   nonce: string;
   issuedAt: string;
   expiresAt: string;
+  fundingNote: FundingNoteV1;
 }) {
+  // The caller created this private note before approving its matching deposit.
+  const fundingNote = assertFundingNoteV1(input.fundingNote);
   const authorization = createPaymentAuthorization({
     senderWallet: input.senderWallet,
     senderIdentity: input.senderWallet,
@@ -27,7 +31,8 @@ export function prepareIntent(input: {
     nonce: input.nonce,
     issuedAt: input.issuedAt,
     expiresAt: input.expiresAt,
-    fundingMode: "tcap_deposit_v2",
+    fundingMode: "tcap_funded_note_v1",
+    fundingNoteCommitment: fundingNote.commitment,
   });
   return {
     authorization,
@@ -47,7 +52,8 @@ export function prepareIntent(input: {
         senderAuthorizationExpiresAt: authorization.expiresAt,
         senderFeeAmount: input.fee,
         senderSignedFundingTransaction: signedDepositBase64,
-        senderFundingMode: "tcap_deposit_v2",
+        senderFundingMode: "tcap_funded_note_v1",
+        fundingNote,
         amount: input.amount,
         source: "documentation-example",
       });

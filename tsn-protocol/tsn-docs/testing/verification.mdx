@@ -15,7 +15,7 @@ node docs/references/tooling/verify-sdk-examples.mjs
 node --test tsn-protocol/sdks/tsn-sdk/tests/canonical-payment-route.test.mjs
 ```
 
-The example verifier type-checks four complete example files and runs eight offline scenarios using real SDK preparation/client functions with mocked fetch. Those scenarios cover amount conversion and precision, zero fees, owner-hash binding and malformed values, request integrity, HTTP acceptance/errors and service-readiness interpretation. It does not produce live wallet signatures. The wallet-credit example is type-checked only because its asset resolution and signing callbacks require a real caller environment.
+The example verifier type-checks five complete example files and runs nine offline scenarios using real SDK preparation/client functions with mocked fetch. They cover amount conversion/precision, zero fees, owner-hash binding, malformed values, request integrity, HTTP acceptance/errors, readiness interpretation and funding-note authorization binding. Wallet-credit RPC/signing callbacks and the owner-balance example remain type-checked only; no live signatures are produced.
 
 During the November 2 documentation run, the root build launcher could not find root TypeScript. The installed SDK compiler successfully built the SDK and its TCAP dependency directly; [the internal operations record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/operations-and-verification.md) retains the exact command and limitation. The three canonical route tests also passed. These are bounded local observations, not a supported runtime compatibility matrix.
 
@@ -27,9 +27,9 @@ The [internal testing record](https://github.com/bigdreamsweb3/trustlink-pay/blo
 
 ## First live native credit
 
-Verify the selected program binaries, matching verifier account/key commitment, active asset/reserve/root, current recipient scan-key schema and root-matching witness snapshots. Use a fresh canonical wallet message and exact signed deposit. Confirm the actual deposit signature before interpreting the Node-verified proof and Mother-authorized settlement as executable.
+Verify selected binaries, explicit credit rekey and the separate epoch-verifier key, active asset/reserve/roots, current recipient scan schema and root-matching snapshots. Use positive notes from two wallet sources and persistent protected amount openings. Confirm exact fresh wallet-signed funding, qualified sealed-pool capture/release and lease-bound Mother authorization before interpreting a locally verified proof as executable.
 
-Then retain the settlement signature and successful transaction result, expected shared-root sequence/root, pending-to-settled reserve-liability change and the owner's validated record recovery. Record the cluster, slot and commitment level. Funding confirmation, settlement confirmation and owner balance reconstruction establish different facts; a single successful service response cannot establish all three.
+Retain the credit signature and successful result, expected shared-root sequence/digest and owner-validated commitment opening/history. Individual credit must leave reserve assets/liabilities unchanged. Separately verify a complete 2–64-credit epoch proof, one aggregate pending-to-settled reclassification, preserved custody/total liabilities and rejection of repeated accounting. A singleton carries forward. Record cluster, slot and commitment level; funding, credit, accounting and owner recovery establish distinct facts.
 
 Keep captured evidence allowlisted: identifiers, sanitized status, signatures, public state and result summaries. Do not publish private witnesses, raw TIN payloads, scan secrets, session tokens or environment credentials. Route-specific exit/cross-chain verification also needs destination execution and must not inherit native-credit success by assumption.
 

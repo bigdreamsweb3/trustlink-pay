@@ -6,7 +6,7 @@
       "method": "POST",
       "path": "/internal/wake",
       "function": "wake_receiver_verification",
-      "line": 3155,
+      "line": 3456,
       "signature": "",
       "returns": "dict[str, Any]",
       "decoratorOptions": {
@@ -17,7 +17,7 @@
       "method": "POST",
       "path": "/internal/settlement-authorizations/settlement",
       "function": "create_settlement_authorization",
-      "line": 3170,
+      "line": 3550,
       "signature": "body: dict[str, Any]",
       "returns": "dict[str, Any]",
       "decoratorOptions": {
@@ -28,7 +28,7 @@
       "method": "POST",
       "path": "/internal/settlement-authorizations/signature",
       "function": "sign_settlement_transaction",
-      "line": 3223,
+      "line": 3606,
       "signature": "body: dict[str, Any]",
       "returns": "dict[str, Any]",
       "decoratorOptions": {
@@ -39,7 +39,7 @@
       "method": "POST",
       "path": "/",
       "function": "mempool_status",
-      "line": 3277,
+      "line": 3660,
       "signature": "request: MempoolStatusRequest",
       "returns": "MempoolStatusResponse",
       "decoratorOptions": {
@@ -50,7 +50,7 @@
       "method": "POST",
       "path": "/threshold-access/nonces/consume",
       "function": "consume_threshold_access_nonce",
-      "line": 3286,
+      "line": 3669,
       "signature": "request: dict[str, Any]",
       "returns": "dict[str, Any]",
       "decoratorOptions": {}
@@ -59,7 +59,7 @@
       "method": "POST",
       "path": "/intents",
       "function": "post_intent",
-      "line": 3343,
+      "line": 3726,
       "signature": "req: CreateIntentRequest",
       "returns": "PublicMempoolIntent",
       "decoratorOptions": {
@@ -70,7 +70,7 @@
       "method": "GET",
       "path": "/network/recent-blockhash",
       "function": "get_network_recent_blockhash",
-      "line": 3386,
+      "line": 3769,
       "signature": "",
       "returns": "dict[str, Any]",
       "decoratorOptions": {}
@@ -79,7 +79,7 @@
       "method": "GET",
       "path": "/intents",
       "function": "list_intents",
-      "line": 3407,
+      "line": 3790,
       "signature": "status: Optional[str]=Query(None)",
       "returns": "list[PublicMempoolIntent]",
       "decoratorOptions": {
@@ -91,7 +91,7 @@
       "method": "PATCH",
       "path": "/intents/{intent_id}/status",
       "function": "update_intent_status",
-      "line": 3418,
+      "line": 3801,
       "signature": "intent_id: str=ApiPath(...), body: UpdateStatusRequest=...",
       "returns": "MempoolIntent",
       "decoratorOptions": {
@@ -103,7 +103,7 @@
       "method": "GET",
       "path": "/intent-work",
       "function": "list_pending_intent_work",
-      "line": 3447,
+      "line": 3830,
       "signature": "limit: int=Query(50, ge=1, le=500)",
       "returns": "list[IntentWorkItem]",
       "decoratorOptions": {
@@ -115,7 +115,7 @@
       "method": "GET",
       "path": "/metrics",
       "function": "get_metrics",
-      "line": 3464,
+      "line": 3847,
       "signature": "",
       "returns": "MetricsResponse",
       "decoratorOptions": {
@@ -126,7 +126,7 @@
       "method": "POST",
       "path": "/crankers/heartbeat",
       "function": "post_cranker_heartbeat",
-      "line": 3492,
+      "line": 3875,
       "signature": "req: CrankerHeartbeatRequest",
       "returns": "CrankerHeartbeatRecord",
       "decoratorOptions": {
@@ -138,7 +138,7 @@
       "method": "GET",
       "path": "/settlement-networks",
       "function": "get_settlement_networks",
-      "line": 3512,
+      "line": 3895,
       "signature": "",
       "returns": "list[dict[str, Any]]",
       "decoratorOptions": {}
@@ -147,7 +147,7 @@
       "method": "GET",
       "path": "/network/overview",
       "function": "get_network_overview",
-      "line": 3526,
+      "line": 3909,
       "signature": "",
       "returns": "NetworkOverviewResponse",
       "decoratorOptions": {
@@ -158,7 +158,7 @@
       "method": "GET",
       "path": "/epoch/status",
       "function": "get_epoch_status",
-      "line": 3614,
+      "line": 3997,
       "signature": "",
       "returns": "EpochStatus",
       "decoratorOptions": {
@@ -169,7 +169,7 @@
       "method": "POST",
       "path": "/epoch/close",
       "function": "close_epoch",
-      "line": 3622,
+      "line": 4005,
       "signature": "",
       "returns": "EpochCloseResult",
       "decoratorOptions": {
@@ -181,7 +181,7 @@
   "nodeSchemas": [
     {
       "name": "CreateIntentRequest",
-      "line": 1409,
+      "line": 1431,
       "fields": [
         "paymentId: str = Field(..., description='Unique payment ID')",
         "intentSeedHash: str = Field(..., description='SHA-256 hex of paymentId')",
@@ -196,8 +196,9 @@
         "senderAuthorizationIssuedAt: Optional[str] = Field(None, description='Authorization issue timestamp')",
         "senderAuthorizationExpiresAt: Optional[str] = Field(None, description='Authorization expiry timestamp')",
         "senderFeeAmount: Optional[float] = Field(None, description='Sender-side protocol fee routed to treasury')",
-        "senderSignedFundingTransaction: str = Field(..., description='Owner-signed TCAP deposit_asset_v2 transaction')",
-        "senderFundingMode: Literal['tcap_deposit_v2'] = Field(..., description='Required TCAP V2 funding authority model')",
+        "senderSignedFundingTransaction: str = Field(..., description='Owner-signed TCAP private funded-note deposit transaction')",
+        "senderFundingMode: Literal['tcap_funded_note_v1'] = Field(..., description='Required proof-bound private funding authority model')",
+        "fundingNote: dict[str, Any] = Field(..., repr=False, description='Private note opening restricted to Node verification')",
         "recipientAmount: Optional[float] = Field(None, description='Amount paid to recipient')",
         "destinationNetwork: Optional[str] = Field(None, description='Signed destination settlement network for cross-chain exits')",
         "destinationExecutor: Optional[str] = Field(None, description='Signed destination executor contract for cross-chain exits')",
@@ -208,7 +209,7 @@
     },
     {
       "name": "PublicMempoolIntent",
-      "line": 1445,
+      "line": 1468,
       "fields": [
         "id: str",
         "paymentId: str",
@@ -230,7 +231,7 @@
     },
     {
       "name": "SignedLeasePermitRequest",
-      "line": 1473,
+      "line": 1496,
       "fields": [
         "operatorPubkey: str",
         "requestedAtTs: int",
@@ -239,14 +240,14 @@
     },
     {
       "name": "IntentWorkItem",
-      "line": 1478,
+      "line": 1501,
       "fields": [
         "intent: MempoolIntent"
       ]
     },
     {
       "name": "UpdateStatusRequest",
-      "line": 1481,
+      "line": 1504,
       "fields": [
         "status: str = Field(...)",
         "assignedCrankerPubkey: Optional[str] = Field(None)",
@@ -258,7 +259,7 @@
     },
     {
       "name": "CrankerHeartbeatRequest",
-      "line": 1489,
+      "line": 1512,
       "fields": [
         "operator_pubkey: str = Field(...)",
         "cranker_pubkey: Optional[str] = Field(None)",
@@ -268,7 +269,7 @@
     },
     {
       "name": "EpochStatus",
-      "line": 1500,
+      "line": 1523,
       "fields": [
         "epoch_number: int",
         "epoch_started_at: str",
@@ -279,7 +280,7 @@
     },
     {
       "name": "EpochCloseResult",
-      "line": 1507,
+      "line": 1530,
       "fields": [
         "epoch_number: int",
         "intents_archived: int",
@@ -294,14 +295,14 @@
     },
     {
       "name": "MempoolStatusRequest",
-      "line": 1518,
+      "line": 1541,
       "fields": [
         "action: Optional[str] = Field(default='status')"
       ]
     },
     {
       "name": "MempoolStatusResponse",
-      "line": 1521,
+      "line": 1544,
       "fields": [
         "status: str = 'ok'",
         "epoch: EpochStatus"
@@ -309,7 +310,7 @@
     },
     {
       "name": "IntentToSettlementMetrics",
-      "line": 1525,
+      "line": 1548,
       "fields": [
         "sample_count: int",
         "average_ms: float",
@@ -321,7 +322,7 @@
     },
     {
       "name": "UptimeMetrics",
-      "line": 1533,
+      "line": 1556,
       "fields": [
         "service_started_at: str",
         "uptime_seconds: int",
@@ -331,7 +332,7 @@
     },
     {
       "name": "MetricsResponse",
-      "line": 1539,
+      "line": 1562,
       "fields": [
         "intent_to_settlement: IntentToSettlementMetrics",
         "uptime: UptimeMetrics",
@@ -340,7 +341,7 @@
     },
     {
       "name": "TokenNetworkStatus",
-      "line": 1544,
+      "line": 1567,
       "fields": [
         "token_mint: str",
         "token_symbol: Optional[str] = None",
@@ -360,7 +361,7 @@
     },
     {
       "name": "NetworkOverviewResponse",
-      "line": 1560,
+      "line": 1583,
       "fields": [
         "online_crankers_last_epoch: int",
         "total_crankers_seen: int",
@@ -401,16 +402,30 @@
     },
     {
       "method": "POST",
+      "path": "/api/cranker/work/retry",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/work/retry/route.ts",
+      "line": 7,
+      "authReferences": []
+    },
+    {
+      "method": "PUT",
       "path": "/api/cranker/work",
       "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts",
-      "line": 44,
+      "line": 10,
+      "authReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/cranker/work",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts",
+      "line": 62,
       "authReferences": []
     },
     {
       "method": "PATCH",
       "path": "/api/cranker/work",
       "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts",
-      "line": 97,
+      "line": 123,
       "authReferences": []
     },
     {
@@ -421,9 +436,30 @@
       "authReferences": []
     },
     {
+      "method": "GET",
+      "path": "/api/internal/node/coordination",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/coordination/route.ts",
+      "line": 5,
+      "authReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/node/coordination",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/coordination/route.ts",
+      "line": 9,
+      "authReferences": []
+    },
+    {
       "method": "POST",
       "path": "/api/internal/node/state",
       "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/state/route.ts",
+      "line": 6,
+      "authReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/node/work/reconcile",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/reconcile/route.ts",
       "line": 6,
       "authReferences": []
     },
@@ -453,6 +489,13 @@
       "path": "/api/internal/node/work",
       "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/route.ts",
       "line": 35,
+      "authReferences": []
+    },
+    {
+      "method": "PUT",
+      "path": "/api/internal/node/work",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/route.ts",
+      "line": 45,
       "authReferences": []
     },
     {

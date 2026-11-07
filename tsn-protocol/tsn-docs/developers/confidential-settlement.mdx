@@ -12,7 +12,11 @@ flowchart LR
     A --> T[TCAP checks asset, authorization and liabilities]
     T --> G[GPRU verifies roots, Memo and proof]
     G --> T
-    T --> S[Atomic root and liability update]
+    T --> S[Atomic root and blinded epoch-transcript update]
+    S --> E[Node prepares complete epoch proof]
+    E --> R[Receiver verifies and leases accounting work]
+    R --> K[Cranker submits Mother-authorized accounting]
+    K --> Q[TCAP/GPRU verify aggregate and reclassify liabilities]
 ```
 
 The proof does not make GPRU a custodian and does not replace TCAP's settlement checks. Encrypted Memo records can preserve transaction details for the owner to recover, while the on-chain proof and authorization establish whether a state transition is valid.
@@ -21,6 +25,6 @@ The proof does not make GPRU a custodian and does not replace TCAP's settlement 
 
 The hidden-head proof flow is not established as an end-to-end settlement capability. Do not represent confidential credit, debit, or exit as available based only on a source file, SDK helper, or transaction submission. Confirm the applicable transaction on the target cluster.
 
-The native-credit proof hides the TIN route and predecessor witness from the on-chain statement, but its amount, asset, shared roots, nullifier, successor point and encrypted Memo remain public. The published nullifier is derived from public deposit data, so funding and credit can be linked. The Node resolves private routing and constructs the witness, so this boundary does not establish owner-only knowledge or immunity to timing and transaction correlation. Direct wallet transfers expose their endpoints; confidential debit and exit require separate execution evidence. See [the privacy limits](/security/threat-model) for the current encoding and trust assumptions.
+The experimental native-credit statement uses a secret-derived funded-note nullifier and a freshly blinded amount commitment. It omits the plaintext amount, note opening and private route/predecessor witness; individual credit updates shared head/root and epoch transcript without changing reserve liabilities. Public deposits, epoch totals, assets, roots, successor points, accounts, ciphertext and timing can still correlate payments. Node knows private openings and routes, and recipient-registry/head linkage remains unresolved. Matching deployed binaries/keys and live multiwallet accounting remain unverified; see [the privacy limits](/security/threat-model).
 
 The proof statement, Memo format, verifier, and service integration are documented in the [repository's GPRU and TCAP technical notes](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

@@ -28,7 +28,8 @@ test("TCAP wallet deposit instruction matches deposit_asset_v2 ABI and account o
   assert.equal(instruction.keys[0].isSigner, true);
   assert.equal(instruction.keys[4].isWritable, true);
   assert.equal(instruction.keys[5].isWritable, true);
-  assert.equal(instruction.keys[6].isWritable, true);
+  // DepositAssetV2's mint constraint is readonly; only source/vault/reserve mutate.
+  assert.equal(instruction.keys[6].isWritable, false);
 });
 
 test("first TIN deposit initializes its TIP before depositing; later deposits omit initialization", () => {

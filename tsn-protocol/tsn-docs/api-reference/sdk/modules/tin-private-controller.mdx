@@ -9,7 +9,7 @@ This reference is generated from the checked-out TypeScript exports. Types and s
 
 ## buildTinV1OwnerEncryptionMessage
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 47](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L47).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-private-controller`. [Implementation, line 47](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L47).
 
 ```ts
 buildTinV1OwnerEncryptionMessage(params: { ownerPublicKey: string; displayName: string; } & ({ resourceCommitment: string; nonce?: never; } | { nonce: Uint8Array; resourceCommitment?: never; })): Uint8Array<ArrayBuffer>
@@ -24,7 +24,7 @@ new Error("resourceCommitment must be 32-byte hex")
 
 ## configureTinMasterSeedThresholdProvider
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 220](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L220).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-private-controller`. [Implementation, line 220](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L220).
 
 ```ts
 configureTinMasterSeedThresholdProvider(provider: TinMasterSeedThresholdProvider | null): void
@@ -32,7 +32,7 @@ configureTinMasterSeedThresholdProvider(provider: TinMasterSeedThresholdProvider
 
 ## createTinPrivateIdentity
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 304](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L304).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-private-controller`. [Implementation, line 304](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L304).
 
 ```ts
 createTinPrivateIdentity(params: { tin: string; routeVersion: number; routeNonce: string; ownerWallet: TinOwnerWallet; nodeRoutingPublicKeyBase64: string; masterSeed?: Uint8Array; }): Promise<{ pruConfigurationHash: string; encryptedMasterSeed: Uint8Array<ArrayBuffer>; encryptedPublicRouteEnvelope: Uint8Array<ArrayBuffer>; publicRoute: TinPublicRoutePayload; }>
@@ -44,7 +44,7 @@ Creates the owner-recoverable seed envelope for a new TIN V1 intent.
 The seed and signature-derived key stay in this runtime; only the encrypted
 envelope is returned for inclusion in the owner-authorized creation intent.
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 106](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L106).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-private-controller`. [Implementation, line 106](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L106).
 
 ```ts
 createTinV1OwnerSeedEnvelope(params: { ownerWallet: TinOwnerWallet; displayName: string; nonce: Uint8Array; }): Promise<{ resourceCommitment: string; encryptedMasterSeed: Uint8Array<ArrayBuffer>; gpruElgamalKeyVersion: 1; gpruElgamalPublicKey: Uint8Array<ArrayBufferLike>; gpruElgamalKeyCommitment: Uint8Array<ArrayBufferLike>; gpruBalanceScanKeyVersion: 1; gpruBalanceScanPublicKeyX: Uint8Array<ArrayBufferLike>; gpruBalanceScanPublicKeyY: Uint8Array<ArrayBufferLike>; }>
@@ -52,7 +52,7 @@ createTinV1OwnerSeedEnvelope(params: { ownerWallet: TinOwnerWallet; displayName:
 
 ## getTinMasterSeedThresholdProvider
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 226](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L226).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-private-controller`. [Implementation, line 226](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L226).
 
 ```ts
 getTinMasterSeedThresholdProvider(): TinMasterSeedThresholdProvider
@@ -66,7 +66,7 @@ new Error( "Authorized-device threshold encryption is not configured. TIN privat
 
 ## loadTinPrivateTokenBalances
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 722](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L722).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-private-controller`. [Implementation, line 722](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L722).
 
 ```ts
 loadTinPrivateTokenBalances(params: { tin: string; pruConfigurationHash: string; envelope: TinMasterSeedEnvelope | Uint8Array; ownerWallet: TinOwnerWallet; authorizedDevice?: TinAuthorizedDeviceSigner; thresholdProvider?: TinMasterSeedThresholdProvider; connection: Connection; tokens: TinBalanceTokenInput[]; signal?: AbortSignal; onProgress?: (message: string) => void; }): Promise<{ tokenBalances: { mint: string; decimals: number; balanceBaseUnits: string; }[]; pruBalances: { pruIndex: number; publicKey: string; mint: string; balanceBaseUnits: string; }[]; pruCount: number; activePruCount: number; nonZeroPruCount: number; }>
@@ -82,7 +82,7 @@ new DOMException("Aborted", "AbortError")
 
 Stable, reproducible wallet approval used to encrypt a TIN seed for later recovery.
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 84](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L84).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-private-controller`. [Implementation, line 84](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L84).
 
 ```ts
 prepareTinV1OwnerSeedAccess(params: { ownerPublicKey: string; displayName: string; nonce: Uint8Array; }): Promise<{ resourceCommitment: string; message: string; }>
@@ -100,7 +100,7 @@ Re-encrypt an existing TIN seed for wallet-owned, any-device access without
 changing its derived PRUs. A legacy device is used only once to open its old
 envelope; it is never made part of the new envelope.
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 391](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L391).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-private-controller`. [Implementation, line 391](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L391).
 
 ```ts
 rewrapTinPrivateIdentityForWalletOwner(params: { tin: string; pruConfigurationHash: string; envelope: TinMasterSeedEnvelope | Uint8Array; ownerWallet: TinOwnerWallet; routeVersion: number; routeNonce: string; nodeRoutingPublicKeyBase64: string; authorizedDevice?: TinAuthorizedDeviceSigner; thresholdProvider?: TinMasterSeedThresholdProvider; }): Promise<{ pruConfigurationHash: string; encryptedMasterSeed: Uint8Array<ArrayBuffer>; encryptedPublicRouteEnvelope: Uint8Array<ArrayBuffer>; publicRoute: TinPublicRoutePayload; }>
@@ -116,7 +116,7 @@ new Error( "The existing TIN seed does not match its registered PRU route", )
 
 ## TinBalanceTokenInput
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 717](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L717).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-private-controller`. [Implementation, line 717](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L717).
 
 ```ts
 export type TinBalanceTokenInput = {
@@ -127,7 +127,7 @@ export type TinBalanceTokenInput = {
 
 ## TinMasterSeedAccessContext
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 183](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L183).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-private-controller`. [Implementation, line 183](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L183).
 
 ```ts
 export type TinMasterSeedAccessContext = {
@@ -149,7 +149,7 @@ The provider protects only a random data-encryption key. The master seed is
 encrypted and decrypted locally by this controller and is never an input to
 a threshold provider, Lit Action, TSN Node, backend, or Cranker.
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 200](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L200).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-private-controller`. [Implementation, line 200](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L200).
 
 ### TinMasterSeedThresholdProvider.id
 
@@ -185,7 +185,7 @@ releaseKey(params: TinMasterSeedAccessContext & { protectedKey: string; protecte
 
 ## TinOwnerWallet
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 42](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L42).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-private-controller`. [Implementation, line 42](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L42).
 
 ```ts
 export type TinOwnerWallet = {
@@ -196,7 +196,7 @@ export type TinOwnerWallet = {
 
 ## unlockTinPrivateRoute
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 511](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L511).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-private-controller`. [Implementation, line 511](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L511).
 
 ```ts
 unlockTinPrivateRoute(params: { tin: string; pruConfigurationHash: string; envelope: TinMasterSeedEnvelope | Uint8Array; ownerWallet: TinOwnerWallet; authorizedDevice?: TinAuthorizedDeviceSigner; thresholdProvider?: TinMasterSeedThresholdProvider; }): Promise<{ prus: TinPublicRouteEntry[]; }>
@@ -217,7 +217,7 @@ the connected wallet to authorize access, verifies the envelope bindings,
 and clears both the derived key and seed when the callback completes.
 Callers should use this instead of exporting or persisting the seed.
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 634](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L634).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-private-controller`. [Implementation, line 634](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts#L634).
 
 ```ts
 withTinOwnerMasterSeed<T>(params: { tin: string; displayName: string; pruConfigurationHash: string; envelope: TinMasterSeedEnvelope | Uint8Array; ownerWallet: TinOwnerWallet; }, use: (masterSeed: Uint8Array) => Promise<T>): Promise<T>

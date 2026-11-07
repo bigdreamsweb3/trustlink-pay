@@ -98,7 +98,7 @@ export function getTinV1RegistryPda(params: {
   );
 }
 
-function decodeTinV1RegistryAccount(data: Uint8Array) {
+export function decodeTinV1RegistryAccount(data: Uint8Array) {
   const bytes = Buffer.from(data);
   let offset = 0;
   const take = (length: number, label: string) => {

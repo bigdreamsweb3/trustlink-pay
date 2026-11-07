@@ -17,6 +17,7 @@ The exports below are grouped by source module. The linked source is authoritati
 | `client` | `TsnHttpClient` with `post`, `get`, `patch`, `postIntent`, `listPendingIntentWork`, `updateIntentStatus`. |
 | `network-status` | `getTsnNetworkStatus`; `TsnNetworkStatus`, `TsnServiceStatus`, and option types. |
 | `payment-authorization` | `createSenderPaymentAuthorizationMessage`, `createPaymentAuthorizationNonce`, `createPaymentAuthorizationExpiry`, `createPaymentAuthorization`, `createTcapAssetPaymentAuthorization`, `createCrossChainPaymentAuthorization`, `buildPaymentAuthorizationIntentRequest`. `createTcapAssetPaymentAuthorization` resolves the active TCAP asset and its token ID/decimals before producing the signed payment message. Submit the resulting request with `TsnHttpClient.postIntent`; there is no `submitPaymentAuthorizationToMempool` helper. |
+| `gpru/funding-note` | `createFundingNoteV1`, `assertFundingNoteV1`, canonical field validation and Poseidon note/leaf/nullifier derivation. The sender signs the commitment and sends the private opening only through restricted ingress. |
 | `wallet-transfer` | `buildTsnSplTokenTransferTransaction`. |
 | `cross-chain` | `validateCrossChainRecipient`, `validateCreditcoinPayoutAuthorization`, `validateCreditcoinDestination`, `createTinExitReplayKey`, `assertVerifiedDestinationLiquidity`, `CreditcoinRouteClient`, `loadCrossChainUiSnapshot`, `TsnCrossChainClient`. |
 | `tins` | TIN V1 registry lookup, creation-envelope, owner-recovery, creation intent, and submission helpers. The SDK does not expose retired plaintext TIN account decoders or direct-create instruction builders. |
@@ -48,8 +49,12 @@ import {
   TsnHttpClient,
   buildPaymentAuthorizationIntentRequest,
   createTcapAssetPaymentAuthorization,
+  createFundingNoteV1,
+  type CreateIntentRequest,
+  type PublicTsnMempoolIntent,
 } from "@trustlink/tsn-sdk";
 
+const fundingNote = createFundingNoteV1();
 const authorization = await createTcapAssetPaymentAuthorization({
   connection: new Connection(rpcUrl, "confirmed"),
   depositor: new PublicKey(senderWallet),
@@ -61,8 +66,9 @@ const authorization = await createTcapAssetPaymentAuthorization({
   recipientDisplayNameSource: recipient.displayName.trim() ? "owner-provided" : "not provided",
   amount,
   senderFeeAmount,
-  totalTokenRequiredUi: amount + senderFeeAmount,
-  fundingMode: "tcap_deposit_v2",
+  totalTokenRequiredUi,
+  fundingMode: "tcap_funded_note_v1",
+  fundingNoteCommitment: fundingNote.commitment,
 });
 const signature = await wallet.signMessage(
   new TextEncoder().encode(authorization.message),
@@ -76,20 +82,21 @@ const request = buildPaymentAuthorizationIntentRequest({
   tokenDecimals: authorization.asset.decimals,
   senderWallet,
   senderAuthorizationMessage: authorization.message,
-  senderAuthorizationSignature: signatureBase64,
+  senderAuthorizationSignature: Buffer.from(signature).toString("base64"),
   senderAuthorizationNonce: authorization.nonce,
   senderAuthorizationIssuedAt: authorization.issuedAt,
   senderAuthorizationExpiresAt: authorization.expiresAt,
   senderFeeAmount,
   senderSignedFundingTransaction,
-  senderFundingMode: "tcap_deposit_v2",
+  senderFundingMode: "tcap_funded_note_v1",
+  fundingNote,
   amount,
 });
 const client = new TsnHttpClient({ baseUrl: process.env.TSN_NODE_URL! });
-const intent = await client.postIntent(request);
+const intent = await client.postIntent<CreateIntentRequest, PublicTsnMempoolIntent>(request);
 ```
 
-The application separately constructs and wallet-signs the reserve deposit transaction. Node resolves the TIN's current TIP route itself; do not add route commitments or the protected lookup secret to the sender authorization or intent request. Current Node validation accepts `tcap_deposit_v2`, not retired wallet-only or PRU funding modes.
+The application separately constructs and wallet-signs `deposit_private_funding_v1` with `buildTcapGpruWalletDepositTransaction`, using `fundingNoteCommitment: fundingNote.commitment` and the resolver's canonical funding-root account. Both approvals must bind the same commitment. Keep the opening in memory, exclude it from logs and persistent browser storage, and send it only through the configured protected ingress route; the SDK does not create browser-to-Node sealed encryption. Node resolves the TIN's current TIP route itself, so recipient route commitments and the protected lookup secret are excluded from the sender request. Current native validation requires `tcap_funded_note_v1`; see the [payment guide](/sdk/payment-guide) for deployment prerequisites and separate funding/settlement checks.
 
 ## TIN V1 lookup and recovery
 

@@ -1,7 +1,7 @@
 import { createHash, createPublicKey, randomUUID, verify as verifySignature } from "node:crypto";
 
-/** Sender-signed, Node-verified epoch-treasury funding work. */
-export type WorkKind = "AUTHORIZED_FUNDING" | "SETTLEMENT" | "TIN_OPERATION";
+/** Sender-signed, Node-verified reserve funding and separate settlement work. */
+export type WorkKind = "AUTHORIZED_FUNDING" | "SETTLEMENT" | "TIN_OPERATION" | "TCAP_FUNDING_POOL" | "TCAP_EPOCH_ACCOUNTING";
 export type WorkStatus =
   | "RECEIVED"
   | "NODE_VERIFYING"
@@ -26,6 +26,7 @@ export type ReceiverWork = {
   verification?: Record<string, unknown> | null;
   result?: Record<string, unknown> | null;
   authorization?: Record<string, unknown> | null;
+  deferredUntil?: string;
   retryHistory?: Record<string, unknown>[];
 };
 
@@ -37,7 +38,7 @@ export type PayloadDelta = {
 
 /** Work kinds that may be accepted from an untrusted HTTP caller. */
 export function assertExternalWorkKind(kind: WorkKind): void {
-  if (kind === "SETTLEMENT") throw new Error(`${kind}_WORK_INTERNAL_ONLY`);
+  if (!["AUTHORIZED_FUNDING", "TIN_OPERATION"].includes(kind)) throw new Error(`${kind}_WORK_INTERNAL_ONLY`);
 }
 
 const AUTHORIZED_FUNDING_KEYS = new Set([
@@ -45,11 +46,14 @@ const AUTHORIZED_FUNDING_KEYS = new Set([
   "tokenMintAddress", "amount", "recipientAmount", "senderWallet", "senderAuthorizationMessage",
   "senderAuthorizationSignature", "senderAuthorizationNonce", "senderAuthorizationIssuedAt", "senderAuthorizationExpiresAt",
   "senderFeeAmount", "senderSignedFundingTransaction", "senderFundingMode",
+  "fundingNote",
   "destinationNetwork", "destinationExecutor", "destinationToken", "settlementRouteId",
   "source",
 ]);
 const INTERNAL_KEYS: Record<WorkKind, Set<string>> = {
   AUTHORIZED_FUNDING: new Set(["paymentId", "recipientHash", "tokenMintAddress", "amount", "nodeEncryptedPayload"]),
+  TCAP_FUNDING_POOL: new Set(["assetEntry", "reserveState", "tcapConfig", "root"]),
+  TCAP_EPOCH_ACCOUNTING: new Set(["assetEntry", "reserveState", "tcapConfig", "accountingEpoch"]),
   SETTLEMENT: new Set(["paymentId", "intentId", "recipientHash", "source", "nodeEncryptedPayload"]),
   // Exact private TIN V1 creation payload accepted from the SDK.
   TIN_OPERATION: new Set([
@@ -86,7 +90,23 @@ function decodeBase58(value: string): Buffer {
 
 export function assertAuthorizedFundingIngress(payload: Record<string, unknown>): void {
   assertAllowlisted(payload, AUTHORIZED_FUNDING_KEYS, "authorizedFunding");
-  if (payload.senderFundingMode !== "tcap_deposit_v2") throw new Error("LEGACY_FUNDING_MODE_RETIRED_TCAP_DEPOSIT_V2_REQUIRED");
+  if (payload.senderFundingMode !== "tcap_funded_note_v1") throw new Error("FUNDED_NOTE_FUNDING_MODE_REQUIRED");
+  const fundingNote = payload.fundingNote;
+  if (!fundingNote || typeof fundingNote !== "object" || Array.isArray(fundingNote)) {
+    throw new Error("FUNDED_NOTE_PRIVATE_OPENING_REQUIRED");
+  }
+  const note = fundingNote as Record<string, unknown>;
+  assertAllowlisted(note, new Set(["version", "secret", "blinding", "commitment"]), "fundingNote");
+  const scalarModulus = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
+  if (note.version !== 1) throw new Error("INVALID_FUNDED_NOTE_PRIVATE_OPENING");
+  for (const field of ["secret", "blinding", "commitment"]) {
+    const value = note[field];
+    if (typeof value !== "string" || !/^[a-f0-9]{64}$/i.test(value)
+        || BigInt(`0x${value}`) >= scalarModulus
+        || (field !== "blinding" && BigInt(`0x${value}`) === 0n)) {
+      throw new Error("INVALID_FUNDED_NOTE_PRIVATE_OPENING");
+    }
+  }
   if (typeof payload.senderSignedFundingTransaction !== "string" || !payload.senderSignedFundingTransaction.trim()) {
     throw new Error("OWNER_SIGNED_TCAP_DEPOSIT_REQUIRED");
   }
@@ -188,6 +208,8 @@ export function verifiedPayloadForWork(work: ReceiverWork): Record<string, unkno
 export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, unknown>): Record<string, unknown> {
   const allowed = kind === "AUTHORIZED_FUNDING"
     ? new Set(["senderSignedFundingTransaction", "senderFundingMode"])
+    : kind === "TCAP_FUNDING_POOL" ? new Set(["tcapFundingPool"])
+    : kind === "TCAP_EPOCH_ACCOUNTING" ? new Set(["tcapEpochAccounting"])
     : kind === "SETTLEMENT"
       ? new Set(["tcapCreditTransition"])
       : kind === "TIN_OPERATION"
@@ -204,13 +226,55 @@ export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, 
   if (kind === "SETTLEMENT" && filtered.tcapCreditTransition && typeof filtered.tcapCreditTransition === "object") {
     const transition = filtered.tcapCreditTransition as Record<string, unknown>;
     const allowed = new Set([
-      "commitmentRoot", "previousTcapRoot", "tcapRootSequence", "tokenId", "amountBaseUnits", "nullifier",
+      "commitmentRoot", "fundingRootAccount", "previousTcapRoot", "tcapRootSequence", "tokenId", "amountCommitment", "accountingEpoch", "nullifier",
       "validAfterSlot", "expiresAtSlot", "authorizationDigest", "proof", "memoPayload", "memoBodyPayload", "memoLedgerSlots",
       "memoDocument", "memoCommitment", "successorBalancePoint", "assetEntry", "tcapConfig", "reserveState",
     ]);
-    filtered.tcapCreditTransition = Object.fromEntries(Object.entries(transition).filter(([key]) => allowed.has(key)));
+    const publicTransition = Object.fromEntries(Object.entries(transition).filter(([key]) => allowed.has(key)));
+    if (publicTransition.proof && typeof publicTransition.proof === "object" && !Array.isArray(publicTransition.proof)) {
+      const allowedProof = new Set(["publicInputs", "proofA", "proofB", "proofC", "actionKind", "tokenId", "amountCommitment", "authorizationCommitment"]);
+      publicTransition.proof = Object.fromEntries(Object.entries(publicTransition.proof as Record<string, unknown>).filter(([key]) => allowedProof.has(key)));
+    }
+    filtered.tcapCreditTransition = publicTransition;
+  }
+  for (const [coordinationKind,field] of [["TCAP_FUNDING_POOL","tcapFundingPool"],["TCAP_EPOCH_ACCOUNTING","tcapEpochAccounting"]]) {
+    const value=filtered[field];
+    if(kind!==coordinationKind || !value || typeof value!=="object" || Array.isArray(value))continue;
+    const allowed=new Set(["assetEntry","reserveState","tcapConfig",...(kind==="TCAP_FUNDING_POOL"
+      ? ["root","eligibleNoteCount","sourceWalletCount","releaseSlot"] : ["accountingEpoch","total","proof"])]);
+    const projection=Object.fromEntries(Object.entries(value).filter(([key])=>allowed.has(key)));
+    if(projection.proof && typeof projection.proof==="object" && !Array.isArray(projection.proof)) {
+      const fields=new Set(["publicInputs","proofA","proofB","proofC"]);
+      projection.proof=Object.fromEntries(Object.entries(projection.proof).filter(([key])=>fields.has(key)));
+    }
+    filtered[field]=projection;
   }
   return filtered;
+}
+
+/** Bind authorization to the verified public transition before storing or returning it. */
+export function crankerAuthorizationForWork(work: ReceiverWork, authorization: Record<string, unknown>): Record<string, unknown> {
+  if (work.kind === "TCAP_FUNDING_POOL" || work.kind === "TCAP_EPOCH_ACCOUNTING") {
+    const field = work.kind === "TCAP_FUNDING_POOL" ? "tcapFundingPool" : "tcapEpochAccounting";
+    const expected = crankerExecutionPayload(work.kind, verifiedPayloadForWork(work) ?? {})[field];
+    const transition = crankerExecutionPayload(work.kind, { [field]: authorization.transition })[field];
+    if (authorization.kind !== "TSN_TCAP_COORDINATION_AUTHORIZATION_V1" || !expected || payloadCommitment(expected) !== payloadCommitment(transition)) throw new Error("PRIVATE_COORDINATION_AUTHORIZATION_MISMATCH");
+    const allowed = new Set(["kind", "transition", "workStateVersion", "leaseId", "leaseVersion", "leaseExpiresAt", "expiresAtTs"]);
+    return { ...Object.fromEntries(Object.entries(authorization).filter(([key]) => allowed.has(key) && key !== "transition")), transition };
+  }
+  if (/^TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V[12]$/.test(String(authorization.kind))) throw new Error("RETIRED_CREDIT_AUTHORIZATION");
+  if (authorization.kind !== "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3") return authorization;
+  const received = authorization.transition;
+  if (work.kind !== "SETTLEMENT" || !received || typeof received !== "object" || Array.isArray(received)) {
+    throw new Error("SETTLEMENT_AUTHORIZATION_TRANSITION_REQUIRED");
+  }
+  const expected = crankerExecutionPayload("SETTLEMENT", verifiedPayloadForWork(work) ?? {}).tcapCreditTransition;
+  const transition = crankerExecutionPayload("SETTLEMENT", { tcapCreditTransition: received }).tcapCreditTransition;
+  if (!expected || payloadCommitment(expected) !== payloadCommitment(transition)) {
+    throw new Error("SETTLEMENT_AUTHORIZATION_TRANSITION_MISMATCH");
+  }
+  const allowed = new Set(["kind", "workStateVersion", "leaseId", "leaseVersion", "leaseExpiresAt", "expiresAtTs"]);
+  return { ...Object.fromEntries(Object.entries(authorization).filter(([key]) => allowed.has(key))), transition };
 }
 
 export function payloadCommitment(value: unknown): string {

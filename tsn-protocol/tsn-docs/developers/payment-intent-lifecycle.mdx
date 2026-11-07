@@ -34,7 +34,7 @@ The sender approves the canonical message and exact TCAP reserve-deposit transac
 
 Node leases funding and checks the sender signature/message, current recipient, registered asset and exact deposit. Its signed decision binds input, evidence, execution projection and lease. Cranker claims only verified funding, independently checks the attestation and submits the unchanged signed deposit. Node rechecks the resulting successful confirmed transaction before preparing settlement.
 
-For settlement, Node resolves the TIP route, reads current roots/verifier, reconstructs root-matching witness snapshots, encrypts the Memo action, generates and verifies a local proof, and rechecks chain preconditions. It signs the exact execution projection. Cranker obtains authorization and Mother co-signing for its current lease, then submits the TSNP call followed by the bound Memo. TSNP invokes TCAP; TCAP invokes GPRU before advancing the shared root and shifting equal liability from pending to settled confidential state.
+After positive funded notes from at least two wallet sources qualify, Node prepares sealed-pool work for Receiver verification and Cranker submission. Its immutable funding root and common adaptive release window govern settlement eligibility; zero-value actors cannot qualify it. Node resolves the TIP route, reads current roots/verifier/epoch, reconstructs the witness, encrypts the owner action and generates/reverifies the private-amount proof. Cranker obtains current-lease Mother co-signing, then submits the TSNP call and bound Memo. TSNP invokes TCAP/GPRU before atomically advancing shared head/root and blinded epoch transcript, without tokens moving or reserve liabilities changing.
 
 ```mermaid
 sequenceDiagram
@@ -50,18 +50,24 @@ sequenceDiagram
   K->>R: Lease verified funding
   K->>S: Submit unchanged signed deposit
   K->>R: Report confirmed funding signature
-  N->>S: Recheck funding, current roots and verifier
+  N->>S: Recheck funding and seal qualified pool through leased Cranker work
+  N->>N: Wait for common release window
+  N->>S: Read current shared root, epoch and matching verifier
   N->>N: Resolve route, construct witness and verify local proof
   N->>R: Report signed VERIFIED settlement
   K->>N: Request active-lease authorization and co-signature
   K->>S: TSNP to TCAP to GPRU with following Memo
-  S->>S: Atomic credit root and liability transition
+  S->>S: Atomic credit root and blinded epoch-transcript transition
   K->>R: Report confirmed settlement signature
   A->>R: Inspect both coordination records
-  A->>S: Verify signatures and relevant account state
+  A->>S: Verify signatures, state and owner recovery
+  N->>N: Prove all 2–64 ordered epoch openings
+  N->>R: Create verified epoch accounting work
+  K->>S: Submit one Mother-authorized aggregate accounting
+  S->>S: Reclassify authenticated total and preserve custody/backing
 ```
 
-The sequence describes inspected source behavior. Matching deployment, initialized verifier, active root/reserve, valid recipient and current witness/prover settings are required for live execution. A valid local proof is a separate observation from a confirmed chain settlement.
+The sequence describes the experimental source contract. Node creates separate TCAP_EPOCH_ACCOUNTING work for every complete 2–64-credit transcript; Receiver coordinates verification/leases and Cranker submits one proof-verified aggregate reclassification. A singleton carries forward. Matching binaries, explicit credit rekey, separate epoch-verifier enrollment, active reserve/roots and persistent prover/opening settings are required. Offline proofs and host tests do not establish SBF execution or live accounting.
 
 ## Status and reconciliation
 

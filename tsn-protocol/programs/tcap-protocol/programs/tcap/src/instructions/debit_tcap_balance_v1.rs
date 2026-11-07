@@ -121,6 +121,7 @@ mod tests {
             previous_commitment: [3; 32], new_commitment: [4; 32], sequence: 1,
             token_id: 2, policy_commitment: [5; 32], gpru_scope_commitment: [6; 32],
             nullifier: [7; 32], debit_amount: 1,
+            sealed: [8; 48], seal_commitment: [9; 32],
         };
         assert!(args.debit_amount > 0);
     }

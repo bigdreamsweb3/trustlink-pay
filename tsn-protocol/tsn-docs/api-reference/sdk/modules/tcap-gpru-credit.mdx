@@ -7,29 +7,70 @@ This reference is generated from the checked-out TypeScript exports. Types and s
 
 [Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
 
-## buildTcapGpruWalletDepositTransaction
+## buildTcapAccountCreditEpochV1Instruction
 
-Builds only the sender-signed reserve deposit. TIP settlement is Node-owned.
+Aggregate accounting has no Memo and changes liabilities once for a complete verified epoch.
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 99](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L99).
-
-```ts
-buildTcapGpruWalletDepositTransaction(fields: { accounts: Awaited<ReturnType<typeof resolveTcapGpruDepositAccounts>>; amountBaseUnits: bigint; }): Transaction
-```
-
-## buildTsnRegisterTcapCreditAuthorizationV2Instruction
-
-Mother-authorized memo credit, fenced by TCAP's shared settlement root.
-
-Import from `@trustlink/tsn-sdk`. [Implementation, line 116](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L116).
+Import from `@trustlink/tsn-sdk`. [Implementation, line 177](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L177).
 
 ```ts
-buildTsnRegisterTcapCreditAuthorizationV2Instruction(fields: { authority: PublicKey; motherEscrow: PublicKey; tcapProgramId?: PublicKey; commitmentRoot: PublicKey; assetEntry: PublicKey; reserveState: PublicKey; config: PublicKey; tipRouteRoot: PublicKey; gpruVerifier: PublicKey; instructions?: PublicKey; gpruProgramId?: PublicKey; authorizationDigest: string; validAfterSlot: string | bigint; expiresAtSlot: string | bigint; previousTcapRoot: string; tcapRootSequence: string | bigint; tokenId: number; amountBaseUnits: string | bigint; nullifier: string; proof: GpruHiddenHeadProofV1; }): TransactionInstruction
+buildTcapAccountCreditEpochV1Instruction(f: { authority: PublicKey; mother: PublicKey; config: PublicKey; assetEntry: PublicKey; reserveState: PublicKey; epoch: PublicKey; total: bigint; proof: GpruTcapEpochProofV1; }): TransactionInstruction
 ```
 
 Direct failure expressions:
 
 ```text
+new Error("INVALID_CREDIT_EPOCH_TOTAL_OR_PROOF")
+```
+
+## buildTcapGpruWalletDepositTransaction
+
+Builds only the sender-signed reserve deposit. TIP settlement is Node-owned.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 100](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L100).
+
+```ts
+buildTcapGpruWalletDepositTransaction(fields: { accounts: Awaited<ReturnType<typeof resolveTcapGpruDepositAccounts>>; amountBaseUnits: bigint; fundingNoteCommitment: string; }): Transaction
+```
+
+Direct failure expressions:
+
+```text
+new Error("TCAP_DEPOSIT_AMOUNT_MUST_BE_POSITIVE_U64")
+new Error("TCAP_FUNDING_ROOT_NOT_CANONICAL")
+```
+
+## buildTcapSealFundingPoolV1Instruction
+
+Capture a chain-current funded root; later deposits cannot change this pool account.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 189](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L189).
+
+```ts
+buildTcapSealFundingPoolV1Instruction(f: { authority: PublicKey; mother: PublicKey; config: PublicKey; assetEntry: PublicKey; root: string; eligibleNoteCount: bigint; sourceWalletCount: number; releaseSlot: bigint; }): TransactionInstruction
+```
+
+Direct failure expressions:
+
+```text
+new Error("FUNDING_POOL_REQUIRES_REAL_DISTINCT_SOURCES")
+```
+
+## buildTsnRegisterTcapCreditAuthorizationV3Instruction
+
+Mother-authorized memo credit, fenced by TCAP's shared settlement root.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 129](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L129).
+
+```ts
+buildTsnRegisterTcapCreditAuthorizationV3Instruction(fields: { authority: PublicKey; motherEscrow: PublicKey; tcapProgramId?: PublicKey; commitmentRoot: PublicKey; assetEntry: PublicKey; reserveState: PublicKey; config: PublicKey; tipRouteRoot: PublicKey; fundingRootAccount: PublicKey; accountingEpoch: PublicKey; gpruVerifier: PublicKey; instructions?: PublicKey; gpruProgramId?: PublicKey; authorizationDigest: string; validAfterSlot: string | bigint; expiresAtSlot: string | bigint; previousTcapRoot: string; tcapRootSequence: string | bigint; tokenId: number; amountCommitment: string; nullifier: string; proof: GpruHiddenHeadProofV2; }): TransactionInstruction
+```
+
+Direct failure expressions:
+
+```text
+new Error("PRIVATE_CREDIT_PROOF_ACTION_MISMATCH")
+new Error("TCAP_FUNDING_ROOT_NOT_CANONICAL")
 new Error("TCAP_CONFIG_NOT_CANONICAL")
 ```
 
@@ -49,21 +90,29 @@ Import from `@trustlink/tsn-sdk`. [Implementation, line 8](https://github.com/bi
 PublicKey
 ```
 
-## GpruHiddenHeadProofV1
+## GpruHiddenHeadProofV2
 
 Import from `@trustlink/tsn-sdk`. [Implementation, line 21](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L21).
 
 ```ts
-export type GpruHiddenHeadProofV1 = {
+export type GpruHiddenHeadProofV2 = {
   publicInputs: readonly string[];
   proofA: string;
   proofB: string;
   proofC: string;
   actionKind: number;
   tokenId: number;
-  amount: string | bigint;
+  amountCommitment: string;
   authorizationCommitment: string;
 };
+```
+
+## GpruTcapEpochProofV1
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 175](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L175).
+
+```ts
+export type GpruTcapEpochProofV1={publicInputs:readonly string[];proofA:string;proofB:string;proofC:string};
 ```
 
 ## resolveTcapGpruDepositAccounts
@@ -74,7 +123,7 @@ The reserve is never derived from an assetState PDA.
 Import from `@trustlink/tsn-sdk`. [Implementation, line 57](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L57).
 
 ```ts
-resolveTcapGpruDepositAccounts(connection: Connection, fields: { depositor: PublicKey; mint: PublicKey; tokenProgram: PublicKey; tcapProgramId: PublicKey; }): Promise<{ depositor: PublicKey; tcapProgramId: PublicKey; config: PublicKey; registry: PublicKey; assetEntry: PublicKey; assetEntryAccount: AccountInfo<Buffer<ArrayBufferLike>>; reserveState: PublicKey; reserveAuthority: PublicKey; source: PublicKey; vault: PublicKey; mint: PublicKey; tokenProgram: PublicKey; tokenId: number; decimals: number; }>
+resolveTcapGpruDepositAccounts(connection: Connection, fields: { depositor: PublicKey; mint: PublicKey; tokenProgram: PublicKey; tcapProgramId: PublicKey; }): Promise<{ depositor: PublicKey; tcapProgramId: PublicKey; config: PublicKey; registry: PublicKey; assetEntry: PublicKey; assetEntryAccount: AccountInfo<Buffer<ArrayBufferLike>>; reserveState: PublicKey; reserveAuthority: PublicKey; source: PublicKey; vault: PublicKey; mint: PublicKey; tokenProgram: PublicKey; fundingRootAccount: PublicKey; tokenId: number; decimals: number; }>
 ```
 
 Direct failure expressions:

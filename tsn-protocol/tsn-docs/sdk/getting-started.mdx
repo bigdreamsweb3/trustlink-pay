@@ -35,6 +35,27 @@ Start with [canonical authorization preparation](/sdk/payment-guide). The comple
 
 After that, configure [service endpoints](/sdk/configuration), integrate a [wallet-approved reserve deposit](/sdk/payment-guide), and implement [status reconciliation](/developers/payment-intent-lifecycle). Live credit additionally requires the matching deployed programs, valid recipient registration, initialized verifier, accepted asset/reserve state and current witness/prover configuration. These dependencies are not checked by client initialization.
 
+## Read the owner balance in one call
+
+Use the browser-safe `@trustlink/tsn-sdk/tin-owner-balance` subpath. Supply your Solana connection, connected wallet, TIN and authenticated identity transport; the SDK performs ownership authorization, registry validation, local seed unlock and finalized owner-history recovery.
+
+```ts
+import { loadTinOwnerBalanceV1 } from "@trustlink/tsn-sdk/tin-owner-balance";
+
+const balance = await loadTinOwnerBalanceV1({
+  connection,
+  ownerWallet: wallet,
+  tin,
+  identityClient,
+});
+```
+
+`identityClient` implements `post(path, body)` for the existing owner identity challenge service. It must provide the application's authenticated session transport for `/owner-tin-identity-challenge` and `/owner-tin-identity`; protocol-tests hosts these beneath `/api/tsn/sdk` with wallet session and CSRF headers. This owner lookup service is separate from the Node's intent endpoint. An application holding verified owner context can provide `registry`, `programId` and `displayName` instead of `identityClient`; the SDK checks it against the finalized TIP account.
+
+The SDK accepts wallets with a string or Solana public key and `signMessage` returning either signature bytes or `{ signature }`. Results include exact `balanceBaseUnits` strings, governed mint/decimals, owner/global sequence and action count. Format those amounts for display in your application. The [typed balance example](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/tsn-docs/sdk/examples/tin-balance.ts) uses the exported parameter type.
+
+Set `cacheAuthorization: true` to reuse local access on refresh. The SDK caches the reusable authorization signature in device memory, decrypts and erases the seed per read, and invalidates access on wallet disconnect or account events. Call `clearTinOwnerBalanceAccessV1(wallet)` on application logout or for adapters without those events. HTTP receives only the one-time lookup signature. An unavailable or incomplete history rejects the read; show a read error instead of treating it as zero. Correct owner ciphertext remains required, and this API does not authorize spending or exit.
+
 ## Reference and extension
 
 The [complete API catalog](/sdk/api-reference) lists all discovered public exports and class/interface members. Use [identity guidance](/developers/private-tin-issuance) for trusted lookup and wallet recovery, [troubleshooting](/sdk/troubleshooting) for failures, and [integration boundaries](/sdk/integrations) for merchant, service-provider and operator applications.

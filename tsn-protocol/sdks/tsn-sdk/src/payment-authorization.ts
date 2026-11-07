@@ -9,12 +9,15 @@ import {
   type VerifiedRecipientCredential,
 } from "./canonical-message.js";
 import type { Connection, PublicKey } from "@solana/web3.js";
+import { assertFundingNoteV1, type FundingNoteV1 } from "./gpru/funding-note.js";
+import { parsePaymentIntentMessage, parseCrossChainPaymentIntentMessage } from "./canonical-message.js";
 import {
   GPRU_TCAP_PROGRAM_ID,
   resolveTcapGpruDepositAccounts,
 } from "./tcap-gpru-credit.js";
 
 export function createSenderPaymentAuthorizationMessage(params: {
+  fundingNoteCommitment: string;
   senderWallet: string;
   senderIdentity: string;
   receiverIdentity: string;
@@ -30,7 +33,7 @@ export function createSenderPaymentAuthorizationMessage(params: {
   nonce?: string;
   issuedAt: string;
   expiresAt?: string;
-  fundingMode?: "tcap_deposit_v2";
+  fundingMode?: "tcap_funded_note_v1";
 }) {
   const recipientTin =
     params.receiverIdentity.match(/(?:^|\|)tin:(\d+)/)?.[1] ??
@@ -44,6 +47,7 @@ export function createSenderPaymentAuthorizationMessage(params: {
   const amountBaseUnits = parseTokenAmountToBaseUnits(params.amount, decimals);
   const feeBaseUnits = parseTokenAmountToBaseUnits(params.senderFeeAmount, decimals, { allowZero: true });
   return buildPaymentIntentMessage({
+    fundingNoteCommitment: params.fundingNoteCommitment,
     amountBaseUnits,
     tokenMintAddress: params.tokenMintAddress,
     tokenDecimals: decimals,
@@ -72,6 +76,7 @@ export function createPaymentAuthorizationExpiry(ttlMs = 5 * 60_000) {
 }
 
 export function createPaymentAuthorization(params: {
+  fundingNoteCommitment: string;
   senderWallet: string;
   senderIdentity: string;
   receiverIdentity: string;
@@ -87,7 +92,7 @@ export function createPaymentAuthorization(params: {
   nonce?: string;
   issuedAt?: string;
   expiresAt?: string;
-  fundingMode?: "tcap_deposit_v2";
+  fundingMode?: "tcap_funded_note_v1";
 }) {
   const nonce = params.nonce ?? createPaymentAuthorizationNonce();
   const issuedAt = params.issuedAt ?? new Date().toISOString();
@@ -143,6 +148,7 @@ export async function createTcapAssetPaymentAuthorization(
 }
 
 export function createCrossChainPaymentAuthorization(params: {
+  fundingNoteCommitment: string;
   intentId: string;
   senderWallet: string;
   senderIdentity: string;
@@ -166,6 +172,7 @@ export function createCrossChainPaymentAuthorization(params: {
     params.receiverIdentity.match(/^tin:(\d+)/)?.[1];
   if (!recipientTin) throw new Error("recipient TIN is required for canonical TSN payment authorization");
   const message = buildCrossChainPaymentIntentMessage({
+    fundingNoteCommitment: params.fundingNoteCommitment,
     intentId: params.intentId,
     amountBaseUnits: parseTokenAmountToBaseUnits(params.amount, 6),
     destinationToken: params.destinationToken,
@@ -195,7 +202,8 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   senderAuthorizationExpiresAt: string;
   senderFeeAmount?: string | number | null;
   senderSignedFundingTransaction: string;
-  senderFundingMode: "tcap_deposit_v2";
+  senderFundingMode: "tcap_funded_note_v1";
+  fundingNote: FundingNoteV1;
   amount: string | number;
   destinationNetwork?: string | null;
   destinationExecutor?: string | null;
@@ -204,6 +212,12 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   recipientAmount?: number;
   source?: string;
 }): CreateIntentRequest {
+  const fundingNote = assertFundingNoteV1(params.fundingNote);
+  const signedMessage = params.senderAuthorizationMessage.startsWith("TSN Cross-Chain Payment Intent\n")
+    ? parseCrossChainPaymentIntentMessage(params.senderAuthorizationMessage) : parsePaymentIntentMessage(params.senderAuthorizationMessage);
+  if (signedMessage.fundingNoteCommitment !== fundingNote.commitment) {
+    throw new Error("Funding note commitment differs from the sender-signed payment intent");
+  }
   const decimals = params.tokenDecimals;
   const amountBaseUnits = parseTokenAmountToBaseUnits(params.amount, decimals);
   const requestAmount = Number(params.amount);
@@ -228,6 +242,7 @@ export function buildPaymentAuthorizationIntentRequest(params: {
       senderFeeAmount: params.senderFeeAmount == null ? null : requestFee,
       senderSignedFundingTransaction: params.senderSignedFundingTransaction,
       senderFundingMode: params.senderFundingMode,
+      fundingNote,
       recipientHash: params.recipientHash,
       recipientTin: params.recipientTin,
       tokenMintAddress: params.tokenMintAddress,

@@ -1,14 +1,21 @@
+import { deriveCreditAmountCommitmentV2 } from "./credit-amount.js";
 import { decrypt, type EncryptedData } from "@dbrix/core";
 import { decodeLedgerSlots } from "@dbrix/ledger";
 import { sha256 } from "@noble/hashes/sha256";
 import { bytesToHex, hexToBytes } from "@noble/hashes/utils";
 import { ristretto255 } from "@noble/curves/ed25519.js";
 import { ConfidentialKeys, ElGamalPubkey } from "@solana/zk-sdk";
+import nacl from "tweetnacl";
 import { decryptBalanceBlindingDeltaV1, deriveGpruBalanceScanKeyV1, decodeBabyJubHexV1 } from "./babyjub-delta-cipher.js";
 
 const RECORD_KEY_DOMAIN = new TextEncoder().encode("DBRIX_GPRU_TRANSACTION_RECORD_KEY_V1\0");
 const RECORD_ENVELOPE_ALGORITHM = "dbrix-core-secretbox-v1";
 const SCALAR_ORDER = ristretto255.Point.Fn.ORDER;
+
+/** A well-framed owner record that cannot authenticate under this owner's key. */
+export class GpruMemoAuthenticationErrorV1 extends Error {
+  constructor() { super("GPRU Memo does not authenticate under this owner key"); }
+}
 
 export type GpruTransactionRecordEnvelopeV1 = {
   version: 1;
@@ -21,8 +28,10 @@ export type GpruTransactionRecordEnvelopeV1 = {
 };
 
 export type GpruOwnerMemoActionPayloadV1 = {
-  version: 1;
-  recordType: "tsn-gpru-balance-action-v1";
+  version: 1 | 2;
+  recordType: "tsn-gpru-balance-action-v1" | "tsn-gpru-balance-action-v2";
+  amountCommitment?: string;
+  amountBlinding?: string;
   sequence: string;
   previousMemoCommitment: string;
   actionCommitment: string;
@@ -135,13 +144,14 @@ export function validateGpruBalanceActionRecordV1(value: unknown, recoveredBlind
   if (!value || typeof value !== "object") throw new Error("GPRU owner balance action record must be an object");
   const record = value as Partial<GpruOwnerMemoActionPayloadV1>;
   const expectedKeys = ["version", "recordType", "sequence", "previousMemoCommitment", "actionCommitment", "authorizationCommitment", "nullifier", "actionKind", "tokenId", "amountBaseUnits"];
+  if (record.version === 2) expectedKeys.push("amountCommitment", "amountBlinding");
   if (Object.prototype.hasOwnProperty.call(value, "balanceBlindingDelta")) {
     throw new Error("DBrix Memo record must not contain a duplicate blinding delta; recover it from the proof-bound Memo ciphertext");
   }
   if (Object.keys(value).sort().join("|") !== expectedKeys.sort().join("|")) {
     throw new Error("GPRU owner action record contains missing or unsupported fields");
   }
-  if (record.version !== 1 || record.recordType !== "tsn-gpru-balance-action-v1") {
+  if (!((record.version === 1 && record.recordType === "tsn-gpru-balance-action-v1") || (record.version === 2 && record.recordType === "tsn-gpru-balance-action-v2"))) {
     throw new Error("Unsupported GPRU owner balance action record");
   }
   if (!/^[1-9][0-9]*$/u.test(String(record.sequence))) throw new Error("GPRU action sequence must be a positive decimal integer");
@@ -176,9 +186,11 @@ export function validateGpruBalanceActionRecordV1(value: unknown, recoveredBlind
   if ((sequence === 1n) !== (predecessor === "0".repeat(64))) {
     throw new Error("First GPRU action must have no predecessor; later actions must name one");
   }
+  if (record.version === 2 && deriveCreditAmountCommitmentV2(Number(record.tokenId), BigInt(record.amountBaseUnits!), String(record.amountBlinding), String(record.nullifier)) !== record.amountCommitment) throw new Error("PRIVATE_CREDIT_OPENING_MISMATCH");
   return {
-    version: 1,
-    recordType: "tsn-gpru-balance-action-v1",
+    version: record.version!,
+    recordType: record.recordType!,
+    ...(record.version === 2 ? { amountCommitment: record.amountCommitment, amountBlinding: record.amountBlinding } : {}),
     sequence: sequence.toString(),
     previousMemoCommitment: predecessor,
     actionCommitment: record.actionCommitment!.toLowerCase(),
@@ -197,7 +209,8 @@ export function assertGpruMemoActionMatchesProofV1(
   proofAction: {
     actionKind: 1 | 2 | 3;
     tokenId: number;
-    amountBaseUnits: string;
+    amountBaseUnits?: string;
+    amountCommitment?: string;
     actionCommitment: string;
     authorizationCommitment: string;
     nullifier: string;
@@ -206,7 +219,9 @@ export function assertGpruMemoActionMatchesProofV1(
   const validated = record;
   if (validated.actionKind !== proofAction.actionKind
       || validated.tokenId !== proofAction.tokenId
-      || validated.amountBaseUnits !== BigInt(proofAction.amountBaseUnits).toString()
+      || (proofAction.amountCommitment !== undefined
+          ? validated.version !== 2 || validated.amountCommitment !== proofAction.amountCommitment
+          : validated.version !== 1 || proofAction.amountBaseUnits === undefined || validated.amountBaseUnits !== BigInt(proofAction.amountBaseUnits).toString())
       || validated.actionCommitment !== proofAction.actionCommitment.toLowerCase()
       || validated.authorizationCommitment !== proofAction.authorizationCommitment.toLowerCase()
       || validated.nullifier !== proofAction.nullifier.toLowerCase()) {
@@ -250,6 +265,26 @@ export function decryptGpruLedgerMemoV1(params: {
     recordEphemeralPublicKey,
   });
   try {
+    // DBrix 0.1.2's low-level Secretbox error precedes its typed error
+    // classification. Authenticate explicitly so a shared-root reader can
+    // distinguish another owner's ciphertext from malformed/unsupported data.
+    const base64Bytes = (value: string, label: string) => {
+      if (typeof value !== "string" || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)) {
+        throw new Error(`GPRU Memo ${label} must use canonical Base64`);
+      }
+      return Uint8Array.from(atob(value), character => character.charCodeAt(0));
+    };
+    if (envelope.compression !== undefined && envelope.compression !== "deflate") {
+      throw new Error("Unsupported GPRU Memo compression");
+    }
+    const nonce = base64Bytes(envelope.nonce, "nonce");
+    const ciphertext = base64Bytes(envelope.data, "ciphertext");
+    if (nonce.length !== nacl.secretbox.nonceLength || ciphertext.length < nacl.secretbox.overheadLength + 1) {
+      throw new Error("Malformed GPRU Memo nonce or ciphertext length");
+    }
+    const authenticated = nacl.secretbox.open(ciphertext, nonce, key);
+    if (authenticated === null) throw new GpruMemoAuthenticationErrorV1();
+    authenticated.fill(0);
     const record = decrypt<unknown>(
       { data: envelope.data, nonce: envelope.nonce, ...(envelope.compression ? { compression: envelope.compression } : {}) } satisfies EncryptedData,
       key,

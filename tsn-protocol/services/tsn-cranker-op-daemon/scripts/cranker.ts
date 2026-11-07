@@ -6,7 +6,6 @@ import { resolve } from "node:path";
 import {
   createKeyPairTransactionSigner,
   createRemoteTransactionSigner,
-  sendInstructionsV1,
 } from "@dbrix/solana";
 import {
   Connection,
@@ -25,12 +24,16 @@ import {
   getTsnCrankerPda,
 } from "../../../sdks/tsn-sdk/src/blockchain/solana-tsn.js";
 import {
-  buildTsnRegisterTcapCreditAuthorizationV2Instruction,
+  buildTsnRegisterTcapCreditAuthorizationV3Instruction,
+  buildTcapAccountCreditEpochV1Instruction, buildTcapSealFundingPoolV1Instruction,
   GPRU_PROGRAM_ID,
   GPRU_TCAP_PROGRAM_ID as TCAP_PROGRAM_ID,
 } from "../../../sdks/tsn-sdk/src/tcap-gpru-credit.js";
 import { resolveSolanaRpcUrls } from "../../../sdks/tsn-sdk/src/rpc.js";
 import { createDbrixSettlementMemoInstruction } from "../src/dbrix/settlement-memo.js";
+import { sendSettlementV1 } from "../src/dbrix/settlement-transport.js";
+import { ConfirmedReceiptReportPending, RetryableConfirmedReportError, confirmedReportAvailabilityError, sendConfirmedWorkReport } from "../src/receiver/confirmed-report.js";
+import { assertSealedFundingPool } from "../src/dbrix/funding-root.js";
 import {
   getTinsGlobalStatePda,
   getTipRouteMerkleRootV1Pda,
@@ -49,7 +52,7 @@ dotenv.config({ path: resolve(process.cwd(), ".env") });
 
 type Work = {
   id: string;
-  kind: "AUTHORIZED_FUNDING" | "SETTLEMENT" | "TIN_OPERATION";
+  kind: "AUTHORIZED_FUNDING" | "SETTLEMENT" | "TIN_OPERATION" | "TCAP_FUNDING_POOL" | "TCAP_EPOCH_ACCOUNTING";
   stateVersion: number;
   status: string;
   payloadCommitment: string;
@@ -59,6 +62,7 @@ type Work = {
     nodeAttestation?: Record<string, unknown> | null;
   } | null;
   authorization?: Record<string, unknown> | null;
+  result?: Record<string, unknown> | null;
   crankerLease?: { leaseId?: string; expiresAt?: string; version?: number } | null;
 };
 
@@ -128,6 +132,7 @@ function verifyNodeAttestation(work: Work) {
       "senderAuthorizationMessage", "senderAuthorizationSignature", "senderAuthorizationNonce",
     ],
     SETTLEMENT: ["tcapCreditTransition"],
+    TCAP_FUNDING_POOL: ["tcapFundingPool"], TCAP_EPOCH_ACCOUNTING: ["tcapEpochAccounting"],
     TIN_OPERATION: [
       "intentId", "intentType", "ownerPubkey", "ownerSignature", "ownerIntentHash",
       "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry", "nonce", "lookupCommitment",
@@ -368,9 +373,10 @@ const hex64 = (value: unknown, field: string) => {
 
 async function receiverRequest<T>(
   signer: Keypair,
-  method: "POST" | "PATCH",
+  method: "POST" | "PATCH" | "PUT",
   body: Record<string, unknown>,
   path = "/api/cranker/work",
+  signal?: AbortSignal,
 ): Promise<T> {
   const bodyText = JSON.stringify(body);
   const publicKey = signer.publicKey.toBase58();
@@ -383,10 +389,13 @@ async function receiverRequest<T>(
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ publicKey }),
+        signal,
       });
     } catch (error) {
+      if (signal) throw error;
       throw new Error(`Receiver challenge request failed: ${error instanceof Error ? error.message : String(error)}`);
     }
+    if (signal && confirmedReportAvailabilityError(challenge.status)) throw new RetryableConfirmedReportError("Receiver challenge temporarily unavailable");
     if (!challenge.ok) throw new Error(`Receiver challenge failed (${challenge.status}): ${(await challenge.text()).slice(0, 300)}`);
     const challengeData = await challenge.json() as { nonce?: string };
     if (!challengeData.nonce) throw new Error("Receiver challenge is malformed");
@@ -398,7 +407,9 @@ async function receiverRequest<T>(
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ publicKey, nonce: challengeData.nonce, timestamp, signature: proof }),
+      signal,
     });
+    if (signal && confirmedReportAvailabilityError(response.status)) throw new RetryableConfirmedReportError("Receiver session temporarily unavailable");
     if (!response.ok) throw new Error(`Receiver session request failed (${response.status}): ${(await response.text()).slice(0, 300)}`);
     const data = await response.json() as { sessionId?: string; token?: string; expiresAt?: string };
     const expiresAtMs = Date.parse(String(data.expiresAt ?? ""));
@@ -444,6 +455,7 @@ async function receiverRequest<T>(
         "x-cranker-signature": signature,
       },
       body: bodyText,
+      signal,
     });
     const responseText = await response.text();
     if (response.status === 401 && /CRANKER_SESSION_(?:INVALID|EXPIRED)/.test(responseText) && attempt === 0) {
@@ -451,7 +463,15 @@ async function receiverRequest<T>(
       continue;
     }
     session.lastUsedAtMs = Date.now();
-    if (!response.ok) throw new Error(`Receiver request failed (${response.status}): ${responseText.slice(0, 300)}`);
+    if (!response.ok) {
+      let rejection: { detail?: unknown; error?: unknown } = {};
+      try { rejection = JSON.parse(responseText) as { detail?: unknown; error?: unknown }; } catch { /* Keep unstructured failures descriptive. */ }
+      if (response.status === 409 && rejection.detail === "TCAP_FUNDING_ROOT_CHANGED_BEFORE_SETTLEMENT") {
+        throw new Error("TCAP_FUNDING_ROOT_CHANGED_BEFORE_SETTLEMENT");
+      }
+      if (signal && confirmedReportAvailabilityError(response.status, rejection.error)) throw new RetryableConfirmedReportError("Receiver receipt verification temporarily unavailable");
+      throw new Error(`Receiver request failed (${response.status}): ${responseText.slice(0, 300)}`);
+    }
     return JSON.parse(responseText) as T;
   }
   throw new Error("Receiver session could not be renewed");
@@ -461,7 +481,7 @@ async function lease(signer: Keypair): Promise<Work | null> {
   const response = await receiverRequest<{ work: Work | null }>(
     signer,
     "POST",
-    { supportedKinds: ["AUTHORIZED_FUNDING", "SETTLEMENT", "TIN_OPERATION"] },
+    { supportedKinds: ["AUTHORIZED_FUNDING", "SETTLEMENT", "TIN_OPERATION", "TCAP_FUNDING_POOL", "TCAP_EPOCH_ACCOUNTING"] },
   );
   return response.work;
 }
@@ -474,13 +494,18 @@ async function report(
 ) {
   const signature = typeof evidence.signature === "string" ? ` signature=${evidence.signature}` : "";
   crankerLog(`work report start id=${work.id} kind=${work.kind} status=${status}${signature}`);
-  await receiverRequest(signer, "PATCH", {
+  const send = (signal?: AbortSignal) => receiverRequest(signer, "PATCH", {
     id: work.id,
     owner: signer.publicKey.toBase58(),
     expectedVersion: work.stateVersion,
     status,
     evidence,
-  });
+  }, "/api/cranker/work", signal);
+  if (status === "CONFIRMED" && typeof evidence.signature === "string") {
+    await sendConfirmedWorkReport(send, work.id, evidence.signature);
+  } else {
+    await send();
+  }
   crankerLog(`work report accepted id=${work.id} status=${status}`);
 }
 
@@ -493,7 +518,7 @@ async function processAuthorizedFunding(
   const encoded = payload?.senderSignedFundingTransaction;
   if (typeof encoded !== "string" || !encoded)
     throw new Error("Node did not provide the owner-signed TCAP deposit transaction");
-  if (payload?.senderFundingMode !== "tcap_deposit_v2") throw new Error("Legacy funding modes are retired; expected TCAP deposit V2");
+  if (payload?.senderFundingMode !== "tcap_funded_note_v1") throw new Error("TCAP funded-note deposit is required");
   let connection = createSolanaConnection(rpcUrl);
   const wire = Buffer.from(encoded, "base64");
   if (!wire.length || wire.toString("base64") !== encoded) throw new Error("Owner-signed TCAP deposit is not valid base64 transaction data");
@@ -529,8 +554,30 @@ async function processAuthorizedFunding(
   crankerLog(`TCAP deposit confirmed workId=${work.id} signature=${signature}`);
   await report(signer, work, "CONFIRMED", {
     signature,
-    stage: "TCAP_DEPOSIT_ASSET_V2_CONFIRMED",
+    stage: "TCAP_PRIVATE_FUNDING_V1_CONFIRMED",
   });
+}
+
+async function processPrivateCoordination(signer: Keypair, work: Work, rpcUrl: string) {
+  const auth = work.authorization;
+  const value = auth?.transition as Record<string, any> | undefined;
+  if (auth?.kind !== "TSN_TCAP_COORDINATION_AUTHORIZATION_V1" || !value
+      || String(auth.leaseId) !== (work.crankerLease?.leaseId ?? work.id)
+      || Number(auth.leaseVersion) !== Number(work.crankerLease?.version ?? work.stateVersion)
+      || String(auth.leaseExpiresAt) !== work.crankerLease?.expiresAt
+      || Number(auth.expiresAtTs) <= Math.floor(Date.now()/1000)) throw new Error("PRIVATE_COORDINATION_AUTHORIZATION_INVALID");
+  const field = work.kind === "TCAP_FUNDING_POOL" ? "tcapFundingPool" : "tcapEpochAccounting";
+  if (stableJson(value) !== stableJson(work.verification?.verifiedPayload?.[field])) throw new Error("PRIVATE_COORDINATION_ATTESTATION_MISMATCH");
+  const mother = await tsnFetchMotherEscrowOnChain(rpcUrl);
+  if (!mother?.valid || !mother.authority) throw new Error("Mother authority unavailable");
+  const authority = new PublicKey(mother.authority);
+  const common = { authority, mother:new PublicKey(mother.address), config:new PublicKey(String(value.tcapConfig)), assetEntry:new PublicKey(String(value.assetEntry)) };
+  const instruction = work.kind === "TCAP_FUNDING_POOL"
+    ? buildTcapSealFundingPoolV1Instruction({ ...common, root:String(value.root), eligibleNoteCount:BigInt(value.eligibleNoteCount), sourceWalletCount:Number(value.sourceWalletCount), releaseSlot:BigInt(value.releaseSlot) })
+    : buildTcapAccountCreditEpochV1Instruction({ ...common, reserveState:new PublicKey(String(value.reserveState)), epoch:new PublicKey(String(value.accountingEpoch)), total:BigInt(value.total), proof:value.proof });
+  const label = work.kind === "TCAP_FUNDING_POOL" ? "TCAP_FUNDING_POOL_V1" : "TCAP_EPOCH_ACCOUNTING_V1";
+  const signature = await sendMotherNodeCoSignedInstruction(rpcUrl,signer,authority,work,instruction,label);
+  await report(signer,work,"CONFIRMED",{signature,stage:label+"_CONFIRMED"});
 }
 
 async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
@@ -560,7 +607,7 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     });
     return;
   }
-  if (!auth || auth.kind !== "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V2")
+  if (!auth || auth.kind !== "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3")
     throw new Error("Settlement has no verified TCAP GPRU credit authorization");
   const transition = auth.transition as Record<string, unknown> | undefined;
   if (!transition) throw new Error("Node TCAP V2 credit transition is missing");
@@ -579,11 +626,14 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
   const assetEntry = new PublicKey(String(transition.assetEntry ?? ""));
   const tcapConfig = new PublicKey(String(transition.tcapConfig ?? ""));
   const reserveState = new PublicKey(String(transition.reserveState ?? ""));
+  const fundingRootAccount = new PublicKey(String(transition.fundingRootAccount ?? ""));
+  const [canonicalFundingRoot] = PublicKey.findProgramAddressSync([Buffer.from("tcap:sealed-funding:v1"), assetEntry.toBuffer(), Buffer.from(String((transition.proof as Record<string, unknown>).publicInputs && ((transition.proof as Record<string, unknown>).publicInputs as string[])[12]), "hex")], TCAP_PROGRAM_ID);
+  if (!fundingRootAccount.equals(canonicalFundingRoot)) throw new Error("TCAP_FUNDING_ROOT_NOT_CANONICAL");
   const tipProgramId = new PublicKey("TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT");
   const [tipRouteRoot] = PublicKey.findProgramAddressSync([Buffer.from("tip:route-merkle-root:v1")], tipProgramId);
   const [gpruVerifier] = PublicKey.findProgramAddressSync([Buffer.from("gpru:hidden-head-verifier:v1")], GPRU_PROGRAM_ID);
   const proof = transition.proof as Record<string, unknown> | undefined;
-  if (!proof || !Array.isArray(proof.publicInputs) || proof.publicInputs.length !== 12) {
+  if (!proof || !Array.isArray(proof.publicInputs) || proof.publicInputs.length !== 13) {
     throw new Error("Node TCAP transition is missing the Groth16 hidden-head proof");
   }
   const publicInputs = proof.publicInputs.map((value) => String(value));
@@ -591,7 +641,7 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
   const successorBalancePoint = { x: publicInputs[7]!, y: publicInputs[8]! };
   const actionCommitment = publicInputs[3]!;
   const connection = createSolanaConnection(rpcUrl);
-  const instruction = buildTsnRegisterTcapCreditAuthorizationV2Instruction({
+  const instruction = buildTsnRegisterTcapCreditAuthorizationV3Instruction({
     authority,
     motherEscrow: new PublicKey(mother.address),
     config: tcapConfig,
@@ -605,6 +655,8 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     tokenId: Number(transition.tokenId),
     nullifier: String(transition.nullifier ?? ""),
     reserveState,
+    fundingRootAccount,
+    accountingEpoch: new PublicKey(String(transition.accountingEpoch)),
     tipRouteRoot,
     gpruVerifier,
     proof: {
@@ -614,10 +666,10 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
       proofC: String(proof.proofC ?? ""),
       actionKind: Number(proof.actionKind),
       tokenId: Number(proof.tokenId),
-      amount: String(proof.amount ?? ""),
+      amountCommitment: String(proof.amountCommitment ?? ""),
       authorizationCommitment: String(proof.authorizationCommitment ?? ""),
     },
-    amountBaseUnits: String(transition.amountBaseUnits ?? ""),
+    amountCommitment: String(transition.amountCommitment ?? ""),
   });
   const settlementInstructions = [instruction];
   const memoDocument = transition.memoDocument;
@@ -647,14 +699,16 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     throw new Error("TCAP_SHARED_REPLAY_ROOT_CHANGED_BEFORE_SETTLEMENT");
   }
   const expectedNextRoot = Buffer.from(hex32(publicInputs[1]!, "proof.publicInputs[1]"));
+  const fundingRootBefore = await connection.getAccountInfo(fundingRootAccount, "confirmed");
+  assertSealedFundingPool(fundingRootBefore, fundingRootAccount, assetEntry, Number(transition.tokenId), publicInputs[12]!);
   settlementInstructions.push(memoInstruction);
   const signature = await sendMotherNodeCoSignedInstruction(
     rpcUrl,
     signer,
     authority,
-    work.id,
+    work,
     settlementInstructions,
-    "TCAP_GPRU_MEMO_CREDIT_V1",
+    "TCAP_GPRU_MEMO_CREDIT_V2",
   );
   const rootAfter = await connection.getAccountInfo(commitmentRoot, "confirmed");
   const rootData = rootAfter?.data;
@@ -668,7 +722,7 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
   crankerLog(`TCAP GPRU credit confirmed workId=${work.id} signature=${signature} rootSequence=${String(transition.tcapRootSequence)} tokenId=${String(transition.tokenId)}`);
   await report(signer, work, "CONFIRMED", {
     signature,
-    stage: "TCAP_GPRU_MEMO_CREDIT_V1_CONFIRMED",
+    stage: "TCAP_GPRU_MEMO_CREDIT_V2_CONFIRMED",
     sequence: String(transition.tcapRootSequence),
     authorizationDigest: String(transition.authorizationDigest),
   });
@@ -749,7 +803,7 @@ async function sendMotherNodeCoSignedInstruction(
   rpcUrl: string,
   signer: Keypair,
   motherAuthority: PublicKey,
-  workId: string,
+  work: Work,
   instructions: TransactionInstruction | TransactionInstruction[],
   label: string,
 ) {
@@ -759,7 +813,7 @@ async function sendMotherNodeCoSignedInstruction(
     const motherSigning = await receiverRequest<{ authority: string; signatureBase64: string }>(
       signer,
       "POST",
-      { workId, messageBase64 },
+      { workId: work.id, messageBase64 },
       "/api/cranker/settlement-signature",
     );
     if (motherSigning.authority !== motherAuthority.toBase58()) {
@@ -773,9 +827,16 @@ async function sendMotherNodeCoSignedInstruction(
     return Uint8Array.from(signature);
   });
   crankerLog(`tx submit step=${label} format=v1 signer=Mother-Node`);
-  const signature = await sendInstructionsV1(
+  const signature = await sendSettlementV1(
     Array.isArray(instructions) ? instructions : [instructions],
-    { payerSigner, additionalSigners: [motherSigner], rpcUrl },
+    { payerSigner, additionalSigners: [motherSigner], rpcUrl, onSigned: async submission => {
+      // Retain identity in memory even if Receiver's acknowledgement is lost.
+      work.result = { ...submission, stage: `${label}_SIGNED` };
+      await receiverRequest(signer, "PUT", {
+        id: work.id, expectedVersion: work.stateVersion, evidence: work.result,
+      });
+      crankerLog(`tx signed and recorded step=${label} signature=${submission.signature} bytes=${submission.wireBytes}/4096 transport=HTTP`);
+    } },
   );
   crankerLog(`tx sent and confirmed step=${label} signature=${signature}`);
   return signature;
@@ -1099,10 +1160,33 @@ async function main() {
           await processAuthorizedFunding(signer, work, rpcUrl);
         else if (work.kind === "TIN_OPERATION")
           await processTinOperation(signer, work, rpcUrl);
+        else if (work.kind === "TCAP_FUNDING_POOL" || work.kind === "TCAP_EPOCH_ACCOUNTING") await processPrivateCoordination(signer, work, rpcUrl);
         else await processSettlement(signer, work, rpcUrl);
       } catch (error) {
+        if (error instanceof ConfirmedReceiptReportPending) {
+          crankerLog(error.message);
+          continue;
+        }
         crankerLog(`work processing failed id=${work.id} kind=${work.kind} error=${error instanceof Error ? error.message : String(error)}`);
+        if (["SETTLEMENT","TCAP_FUNDING_POOL","TCAP_EPOCH_ACCOUNTING"].includes(work.kind) && !work.result?.signature
+            && error instanceof Error && ["TCAP_FUNDING_ROOT_CHANGED_BEFORE_SETTLEMENT",
+              "TCAP_SHARED_REPLAY_ROOT_CHANGED_BEFORE_SETTLEMENT","TCAP_POOL_CAPTURE_STALE",
+              "TCAP_CREDIT_EPOCH_CHANGED_BEFORE_SETTLEMENT","TCAP_EPOCH_ALREADY_ACCOUNTED",
+              "TCAP credit authorization expired"].includes(error.message)) {
+          try {
+            await receiverRequest(signer, "POST", {
+              id: work.id, expectedVersion: work.stateVersion, reason: error.message,
+            }, "/api/cranker/work/retry");
+            crankerLog(`stale funded-note proof requeued id=${work.id}`);
+          } catch (retryError) {
+            // A concurrent receipt/version change must be reconciled; do not
+            // overwrite it with FAILED or attempt a replacement transaction.
+            console.error(retryError);
+          }
+          continue;
+        }
         await report(signer, work, "FAILED", {
+          ...(work.result ?? {}),
           reason: error instanceof Error ? error.message : String(error),
         }).catch(() => undefined);
         console.error(error);

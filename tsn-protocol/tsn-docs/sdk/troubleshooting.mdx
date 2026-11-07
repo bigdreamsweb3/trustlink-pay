@@ -9,7 +9,9 @@ Errors identify the failed boundary. A plain SDK validation error, a rejected se
 
 `recipientHash` must be the resolved 32-byte hexadecimal owner hash; the TIN belongs in `recipientTin` and the signed message. Node checks that both refer to the same current recipient. Re-resolve through the trusted identity boundary and rebuild the authorization when the intended recipient changes. Do not replace an owner hash or route after the wallet has approved different terms.
 
-Amount helpers enforce token precision. Registered mint decimals must match the signed token decimals. The native request supports `tcap_deposit_v2`; retired funding modes and user-supplied private transition fields are rejected. The [generated reference](/sdk/api-reference) lists direct source errors, while called dependencies and services can raise additional failures.
+Amount helpers enforce token precision. Registered mint decimals must match the signed token decimals. The native request requires `tcap_funded_note_v1`, an exact `FundingNoteV1` opening, and the same commitment in the payment message and funded deposit. Retired funding modes and user-supplied recipient transition fields are rejected. The [generated reference](/sdk/api-reference) lists direct source errors, while called dependencies and services can raise additional failures.
+
+`TCAP_FUNDING_ROOT_ACCOUNT_MISSING` or `TCAP_FUNDING_ROOT_OWNER_MISMATCH` blocks XP preparation before wallet approval. Verify that the canonical global root is initialized under the selected TCAP program and that the updated verifier is active on that cluster. These are operator prerequisites; retrying the old deposit mode does not provide funded membership. If another deposit changes the funding root before settlement, Node must reconstruct membership and proof using the same note and nullifier.
 
 ## HTTP failures and timeouts
 
@@ -18,6 +20,10 @@ Amount helpers enforce token precision. Registered mint decimals must match the 
 For a lost response, reconcile the existing payment/work ID before resubmitting. Receiver uses work kind and payload commitment for idempotency and rejects a conflicting body for an existing ID. Do not automatically create a new payment ID after an uncertain funding submission, as that can obscure an already submitted transaction.
 
 ## Stale signed funding
+
+`BlockhashNotFound` can mean expiry or that the selected RPC bank has not recognized the issuing bank's hash. XP refreshes the Node-issued hash after amount approval, before transaction signing. Gateway retries an identical simulation/send request across configured providers when a bank returns that error; it preserves the signed wire. Node retries temporary HTTP 5xx/transport failures under its active lease rather than making a terminal invalidity decision from partial RPC availability. The existing processing timeout bounds this work. A persistent outage still requires recovery and does not establish a valid transaction.
+
+If XP shows reserve funding FAILED, inspect Cranker's submission result and the original signature. Settlement RECEIVED is a linked coordination record and has not executed. The public work view intentionally excludes raw submission errors; collect sanitized RPC/stage details from the operator logs.
 
 A Cranker can retry the same owner-signed deposit on a configured alternate RPC. It cannot change the blockhash while keeping a valid original signature. When the transaction is expired, obtain fresh wallet approval and signature for rebuilt work. Before rebuilding, check whether the original signature already confirmed on the intended cluster.
 
@@ -29,6 +35,8 @@ When funding is `CONFIRMED` and settlement is `REJECTED` for `GPRU_HIDDEN_HEAD_W
 
 The exact rejection `TCAP settlement asset is unavailable or its reserve binding is invalid` can also result from the corrected Node asset-offset bug. Operators must load the correction and confirm the actual asset/reserve conditions before using the same guarded retry. Withdrawals being disabled alone does not block native credit. A genuinely inactive, unapproved, paused, deprecated or wrongly bound asset still fails verification and cannot be repaired by another deposit.
 
+The error `GPRU transaction record is missing its twelve public hidden-head inputs` came from an obsolete Node Memo validator rejecting the current thirteen-input funded-note proof before submission. Load the corrected Node and Receiver, then recover the original unsubmitted settlement through the [authenticated retry](/operators/receiver#observe-and-diagnose). This exact prior error is retryable after repair; new malformed proofs remain rejected. Confirmed funding must be preserved, and the retry performs fresh verification rather than accepting historical twelve-input proofs.
+
 The public integration should surface a bounded pending/rejected/failed state and its sanitized reason. Detailed verifier initialization, root activation, key pins and service startup belong in the [internal operator record](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs/laboratory/operations-and-verification.md). A healthy service response does not prove those prerequisites.
 
 ## Funding confirmed, settlement incomplete
@@ -36,3 +44,22 @@ The public integration should surface a bounded pending/rejected/failed state an
 Native funding and settlement are different transactions. Confirmed funding may coexist with rejected or failed settlement. Use Receiver's `/api/work-status/<funding-work-id>` response to inspect both records and their signatures, then verify chain results. The current hidden-head tutorial does not establish an automatic refund of a successful reserve deposit. Epoch-family refund instructions are separate contracts.
 
 See [lifecycle](/developers/payment-intent-lifecycle), [operator responsibilities](/operators/tsn-node), and [security boundaries](/security/operator-boundaries) when diagnosing the actor that must take the next action.
+
+## WebSocket failure after native settlement submission
+
+`WebSocket failed to connect` can occur after successful HTTP broadcast. Preserve the funded work and match its signature, finalized transaction bytes and expected TCAP root before repeating any action. A November 2 Devnet credit finalized despite that error, leaving only Receiver's FAILED receipt to repair.
+
+Current Cranker records its signed attempt before one HTTP broadcast and confirms over HTTP. For a matching finalized credit, the authenticated receipt-reconciliation endpoint offers a read-only preview and a version-checked status repair; it sends no transaction and does not requeue work. Receiver status repair and owner Memo/balance recovery remain separate checks. See [Cranker transport](/operators/tsn-cranker) and [service contracts](/api-reference/services).
+
+## XP balance is empty after a finalized credit
+
+The `protocol-tests/ui` TIN balance field previously had no loader. It now uses wallet authorization to read the active TIP registry and recover encrypted Memo actions locally. Connect the owner wallet, approve its access messages and use **Open balance** or **Refresh balance**. A complete read displays recovered token amounts; failed authorization, unavailable receipts, unsupported transaction layouts or incomplete history display **Unavailable** instead of zero. Load the rebuilt browser SDK and updated XP server together. XP calls the public SDK `loadTinOwnerBalanceV1` for the full recovery flow; integration code supplies its wallet, connection and authenticated transport. See [the one-call balance API](/sdk/getting-started#read-the-owner-balance-in-one-call).
+
+The SDK scans TCAP's shared finalized history with a 10,000-entry bound, validates public credit/Memo bindings and global root continuity, then verifies the decrypted owner's private predecessor chain. Only well-framed records that cannot authenticate under the owner's key are skipped. Public credit finality and successful owner decryption are separate results, and correctly constructed owner ciphertext remains a recovery prerequisite. Recovered amounts are a balance view; this change does not establish confidential spending or exit support.
+
+
+## Missing TIP snapshot after creating a TIN
+
+The Node automatically synchronizes TIP membership snapshots before settlement proving. Creating a TIN changes the shared route root, so the old snapshot must be extended with confirmed creation leaves. Load the updated Node and ensure its persistent witness directory and RPC history are available. The Node verifies append order, public registry bindings and the exact root/count before publishing; it cannot substitute an old snapshot when required history is unavailable.
+
+An existing settlement already marked `REJECTED` remains rejected until Receiver's guarded settlement retry requests fresh verification. Preserve its confirmed funding and retry that settlement rather than making another deposit. A missing TCAP state snapshot is separate from TIP membership synchronization. See [Node prerequisites](/operators/tsn-node#integration-and-operating-prerequisites) for bounds and configuration.

@@ -9,7 +9,7 @@ skip-lint = false
 tsn_gpru_proof_contract = "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR"
 
 [provider]
-cluster = "https://devnet.helius-rpc.com/?api-key=42fbc8ea-86e6-4037-8a78-3217d027f292"
+cluster = "https://devnet.helius-rpc.com/?api-key=4758403f-e1c0-4013-9d93-b0efced1b123"
 wallet = "~/.config/solana/id.json"
 
 [workspace]

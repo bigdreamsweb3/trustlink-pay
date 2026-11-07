@@ -113,7 +113,87 @@ solana program show tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF
 
 export TCAP_RPC_URL=https://devnet.helius-rpc.com/?api-key=92a02527-5eef-4999-868a-aec60e19f6c3
 
-ABout
+<!-- INIT FUNDING ROOT -->
+
+# INIT FUNDING ROOT
+
+node scripts/hidden-head-setup.mjs init-funding-root \
+ --rpc https://api.devnet.solana.com \
+ --wallet /home/bigdream/.config/solana/id.json \
+ --send
+
+ <!-- What really happened here -->
+
+bigdream@DESKTOP-FRI99BQ:/mnt/c/Users/codepara/Desktop/trust-link$ node scripts/hidden-head-setup.mjs migrate-verifier \
+ --rpc https://api.devnet.solana.com \
+ --wallet "$PWD/tsn-protocol/services/tsn-node/keys/mother-node-keypair.json" \
+ --args /mnt/c/Users/codepara/AppData/Local/Temp/trustlink-funded-note-validation-01a1a17e/dev/verifier-init-args.json \
+ --send
+(node:2664) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+{
+"checkedAt": "2026-11-05T13:14:58.965Z",
+"slot": 518949831,
+"rpc": "https://api.devnet.solana.com",
+"motherAuthority": "FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG",
+"governanceAuthority": "78AacdSEWquuus5QyU654C7Gjb6gFb8okLNb8v1hn5MX",
+"accounts": {
+"mother": "ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR",
+"config": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+"root": "ESunnNGeKYHiJx6ECsCUEh95zTVwsmJKRRZBo6vQwWbq",
+"fundingRoot": "FxKRFAtT1zJfAe5wtAPKbt4HKMc3NoQngW3qU5wfZsGm",
+"verifier": "4qordCRiPw4XFZcPPK8LLJTCpmugTDDawonpfqvpN9cT"
+},
+"config": {
+"version": 1,
+"paused": false,
+"proofVerifierProgram": "11111111111111111111111111111111",
+"proofVerifierEnabled": false
+},
+"root": {
+"currentRoot": "18c7a837c64208efc9bc31b922a20aee3033a48b977894e97ed5cd20ba68ca26",
+"previousRoot": "0fd9681fddea4e538364bd6f41c632c42c72b74b82298ce11727bf946fdf962c",
+"sequence": "4",
+"paused": false
+},
+"fundingRoot": {
+"currentRoot": "2f68a1c58e257e42a17a6c61dff5551ed560b9922ab119d5ac8e184c9734ead9",
+"leafCount": "0"
+},
+"verifier": {
+"version": 1,
+"exists": true,
+"bytes": 1388,
+"enabled": true
+}
+}
+{"mode":"SEND","command":"migrate-verifier","authority":"FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG","transactions":6,"packetBytes":[790,506,506,506,378,244]}
+{"transaction":1,"signature":"624ZMJEFnojbSN355WPawsaauJYtFeKC6SR7rS4YD9LkbnfP7DfnjFoRmzpMzETWrEyQngcLtWxdSebAhMQVfvec"}
+{"transaction":2,"signature":"4k8KMAj2g6bSQR6qp5RXCSQRMFEP3ucmy2jGjd5tLTvMmZ1cDUkGqsqJhxRaZc5xsuVESx4V95P577MKqgYQrR7S"}
+{"transaction":3,"signature":"2j5VqgiDPhkWsKHsmZ5cgdrVV6DMUZgvGHGf4bRWqXSTCbdX5tVb1hpbdNn8LntDATdd2XmfirM2PzGadzNs9Kk5"}
+{"transaction":4,"signature":"2NA3EohNY8uEcxbg59DNd3vdkdaKK54aQHMiHrQMvzgmn1dNXAYupHybvHkUP13KstbveNq4GUYQTGWLQ8nrLJ6Y"}
+{"transaction":5,"signature":"3ryUb4CxRnanx3PD2xTjqj86M9xBWfSMLT7G3wfBqkR8hy56r78ZanGQ6aDgyKq4vdcdSabm5M44WCfxNMcmPFeY"}
+{"transaction":6,"signature":"2urV8iFjCFkHoELEexaMLFZCixG2NL2tTahehTzFsqjzeKCH6ZWgarUEAx5zAfVrkfQDNDxxkREGG2Ny59x172aS"}
+CONFIRMED: GPRU verifier enabled with the exact circuit/key commitments and all fourteen IC points.
+bigdream@DESKTOP-FRI99BQ:/mnt/c/Users/codepara/Desktop/trust-link$
+bigdream@DESKTOP-FRI99BQ:/mnt/c/Users/codepara/Desktop/trust-link$
+
+Then we ran this " C:\Users\codepara\Desktop\trust-link> Set-Location "C:\Users\codepara\Desktop\trust-link"
+
+> > cargo build --locked --release `js init-funding-root --rpc http://127.0.0.1:8787
+  --manifest-path tsn-protocol/programs/gpru/Cargo.toml ` timeout
+> > --target-dir tsn-protocol/programs/gpru/target/node-native-funded-note"
+
+then restarted node "
+
+<!-- Rejected settlement guarded retry -->
+
+# Rejected settlement guarded retry
+
+./.venv/Scripts/python.exe scripts/retry-settlement-snapshot.py --work-id settlement-69f6df71a5e93936ae0ba0f2a451b30c --expected-version 3 --execute
+
+<!-- ABout -->
 
 I’m a self-taught developer who became obsessed with blockchain technology after seeing how badly the current system breaks trust around money, identity, and user funds. In 2021-2022, I studied how programs gain authority over user funds by building EVM drainer contract simulations and security-related software for educational purposes after I personally got drained. That experience changed my direction.
 
@@ -176,36 +256,36 @@ Run `npm audit` for details.
 [DEBUG] snarkJS: tauG1: 200000
 [DEBUG] snarkJS: tauG1: 300000
 
-
 <!-- Other prcocesses ran -->
+
 [dev setup] Verify development key against R1CS and Powers of Tau
-[INFO]  snarkJS: Reading r1cs
-[INFO]  snarkJS: Reading tauG1
-[INFO]  snarkJS: Reading tauG2
-[INFO]  snarkJS: Reading alphatauG1
-[INFO]  snarkJS: Reading betatauG1
-[INFO]  snarkJS: Circuit hash: 
-                5245af47 5ec133e3 10ae201c 69e52fe8
-                c9c7b67c 0e5e0e75 92881769 de9f5033
-                78fdde50 53e13692 b63a92df 1c3a976f
-                a04969b5 54859622 84f5ccd6 ce6c19a1
-[INFO]  snarkJS: Circuit Hash: 
-                5245af47 5ec133e3 10ae201c 69e52fe8
-                c9c7b67c 0e5e0e75 92881769 de9f5033
-                78fdde50 53e13692 b63a92df 1c3a976f
-                a04969b5 54859622 84f5ccd6 ce6c19a1
-[INFO]  snarkJS: -------------------------
-[INFO]  snarkJS: contribution #1 LOCAL DEVELOPMENT ONLY:
-                a2f9ff2e 41dda112 9cb84fae b8888793
-                31e13d48 85986299 2ea3c989 75a0f724
-                92a37bae 53e4105d 108e9127 8fad6820
-                f65810af 25b63c88 8146f7eb 91df5995
-[INFO]  snarkJS: -------------------------
-[INFO]  snarkJS: ZKey Ok!
+[INFO] snarkJS: Reading r1cs
+[INFO] snarkJS: Reading tauG1
+[INFO] snarkJS: Reading tauG2
+[INFO] snarkJS: Reading alphatauG1
+[INFO] snarkJS: Reading betatauG1
+[INFO] snarkJS: Circuit hash:
+5245af47 5ec133e3 10ae201c 69e52fe8
+c9c7b67c 0e5e0e75 92881769 de9f5033
+78fdde50 53e13692 b63a92df 1c3a976f
+a04969b5 54859622 84f5ccd6 ce6c19a1
+[INFO] snarkJS: Circuit Hash:
+5245af47 5ec133e3 10ae201c 69e52fe8
+c9c7b67c 0e5e0e75 92881769 de9f5033
+78fdde50 53e13692 b63a92df 1c3a976f
+a04969b5 54859622 84f5ccd6 ce6c19a1
+[INFO] snarkJS: -------------------------
+[INFO] snarkJS: contribution #1 LOCAL DEVELOPMENT ONLY:
+a2f9ff2e 41dda112 9cb84fae b8888793
+31e13d48 85986299 2ea3c989 75a0f724
+92a37bae 53e4105d 108e9127 8fad6820
+f65810af 25b63c88 8146f7eb 91df5995
+[INFO] snarkJS: -------------------------
+[INFO] snarkJS: ZKey Ok!
 [dev setup] Export development verification key
-[INFO]  snarkJS: EXPORT VERIFICATION KEY STARTED
-[INFO]  snarkJS: > Detected protocol: groth16
-[INFO]  snarkJS: EXPORT VERIFICATION KEY FINISHED
+[INFO] snarkJS: EXPORT VERIFICATION KEY STARTED
+[INFO] snarkJS: > Detected protocol: groth16
+[INFO] snarkJS: EXPORT VERIFICATION KEY FINISHED
 [dev setup] Encode the verifier initializer arguments for groth16-solana
 Wrote /mnt/c/Users/codepara/Desktop/trust-link/tsn-protocol/programs/gpru/circuits/hidden_head_v1/build/hidden_head_v1/dev/verifier-init-args.json
 Circuit commitment: b0e01c74246022d1a689587f155d5992b2d2b54e2b49e0dd1b8115303ca17ff4
@@ -213,16 +293,17 @@ Verifying-key commitment: 8f07f8ef1f16729f1d2ab5a7d99684ede8c0f339c0f70b049d023f
 Encoded 13 IC points (constant plus 12 public inputs) for the GPRU V1 verifier initializer.
 [dev setup] Ready: /mnt/c/Users/codepara/Desktop/trust-link/tsn-protocol/programs/gpru/circuits/hidden_head_v1/build/hidden_head_v1/dev
 [dev setup] Do not use these artifacts for production or a production Mother verifier initialization.
-bigdream@DESKTOP-FRI99BQ:/mnt/c/Users/codepara/Desktop/trust-link$ 
+bigdream@DESKTOP-FRI99BQ:/mnt/c/Users/codepara/Desktop/trust-link$
 
 <!--  -->
 
 Before the XP credit test:
+
 1. Deploy those four builds, initialize GPRU’s verifier, and activate TCAP’s currently paused root.
 2. Apply the prepared [Node prover settings](C:/Users/codepara/Desktop/trust-link/protocol-test-runs/hidden-head-readiness-20261102/node-prover-settings.env) and start the local services and XP.
 3. Create a fresh recipient TIN and refresh its TIP snapshot. The existing TIN lacks the new balance scan key.
 4. Wallet-authorize a fresh 0.01 Devnet USDC credit. USDC is already Active and Approved.
-I saved the source-bound manifest, snapshots, and [verification report](C:/Users/codepara/Desktop/trust-link/protocol-test-runs/hidden-head-readiness-20261102/README.md). No deployment, service start, or transaction signing/submission was performed; live credit remains unverified.
+   I saved the source-bound manifest, snapshots, and [verification report](C:/Users/codepara/Desktop/trust-link/protocol-test-runs/hidden-head-readiness-20261102/README.md). No deployment, service start, or transaction signing/submission was performed; live credit remains unverified.
 
 <!-- BUILDER QUEST -->
 
@@ -231,8 +312,18 @@ I saved the source-bound manifest, snapshots, and [verification report](C:/Users
 - What is R1CS? How run the Groth16 setup? and this is zk-snarks right and please which protocol own this zk gpru or tcap or what?
 - What are all this tip snapshot we are talking about where is it needed or coming from who owns it and what is it for?
 
+- where is this nullifier seen publicly in a credit tx "hashing your public deposit signature with the fixed label and TCAP program ID reproduced the credit’s published nullifier exactly."?
+
 <!-- TO DO -->
 
 on next grpu circuit setup we need add a security layer that will tsn, the gpru prover system to only interact with a setup circuit or something that is created and signed by authority key... i mean if an impersonator tries to use a circuit setup to trick it will from start becuase that setup was not signed by a valid authority key
 
 WHAT COURSES THIS "TIN CREDIT NODE REJECTED - TSN Node rejected reserve funding: Signed deposit blockhash was not recognized by any configured Solana RPC endpoint; prepare and sign a fresh deposit transaction Settlement work remains RECEIVED."?
+
+if this so ir should fail bro "The finalized credit did accept the hidden-head proof, encrypted owner record, and atomic accounting update" what happened unlinking is the goal?
+
+<!-- NOTICESSSSSSSSS -->
+
+Trace the failed credits through blockhash preparation, wallet approval, and Node verification to find where they become stale or get misclassified. I’ll also carry the findings into the operator guide, while leaving deployments and services under your control.
+
+Found: The report shows funding rejected during Node simulation, so settlement never became eligible to execute. I found two possible contributors: XP fetches the blockhash before both wallet approvals, and Node can report it as invalid even when one RPC timed out. I’m checking the recorded timing and gateway behavior to separate those causes.

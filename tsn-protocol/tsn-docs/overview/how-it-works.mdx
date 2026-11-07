@@ -28,15 +28,21 @@ sequenceDiagram
     K->>R: Claim verified funding
     K->>T: Submit unchanged wallet-signed deposit
     K->>R: Report confirmed funding
-    N->>N: Resolve TIP route and prepare root-matching proof
+    N->>R: Prepare qualified two-source funding-pool work
+    K->>T: Seal current funding root
+    N->>N: Wait for shared release window and prepare private-amount proof
     N->>R: Signed verified settlement projection
     K->>P: Submit Mother-authorized call followed by Memo
     P->>T: Invoke governed credit
     T->>G: Verify hidden-head proof and Memo
     G-->>T: Valid transition relation
-    T->>T: Advance shared root and liability accounting atomically
+    T->>T: Advance shared root and blinded epoch transcript atomically
     K->>R: Report confirmed settlement signature
     A->>R: Reconcile funding and settlement status
+    N->>R: Prepare complete 2–64-credit epoch proof
+    K->>T: Submit Mother-authorized epoch accounting
+    T->>G: Verify ordered commitments and aggregate
+    T->>T: Reclassify aggregate liabilities once
 ```
 
 GPRU protects the integrity and privacy of the user's private state presented to TCAP: its proof is intended to show that the hidden state is current and that the proposed change follows from it. TCAP remains responsible for the funds and applies a valid authorized change atomically.
@@ -45,4 +51,4 @@ GPRU protects the integrity and privacy of the user's private state presented to
 
 An accepted request means the application delivered the intent. Verification means the protocol services accepted it for processing. A submitted transaction is not yet a confirmed transaction. Settlement is confirmed only when the relevant Solana transaction succeeds; for a flow with separate funding and credit transactions, each signature represents a separate stage.
 
-The inspected sequence requires separate funding and settlement confirmation. The current native-credit ABI does not encode a plaintext recipient TIN or private predecessor pointer. It uses shared TIP/TCAP roots, and the owner retains private record lineage. Public action fields, encrypted Memo bytes, accounts, signatures, ordering and funding wallets remain observable. That encoding boundary does not establish that metadata or authorized service/application knowledge cannot correlate payments. The complete hidden-head flow and confidential debit/exit remain separate unverified runtime capabilities; see the [security boundary](/security/threat-model).
+The experimental sequence separates funding, private credit and aggregate accounting. Credit omits plaintext TIN, private predecessor and amount, using a blinded commitment and secret-derived nullifier; it leaves reserve assets/liabilities unchanged. Node prepares every opening for a complete 2–64-credit epoch, Receiver coordinates work and Cranker submits one proof-verified reclassification. Public deposits/epoch totals, metadata, timing and Node knowledge can still correlate payments. SBF/activation/live accounting and confidential debit/exit remain unverified; see [the security boundary](/security/threat-model).

@@ -6,9 +6,13 @@ import {
   parsePaymentIntentMessage,
 } from "../dist/canonical-message.js";
 import { buildCreateIntentRequest } from "../dist/contracts.js";
+import { deriveFundingNoteCommitmentV1 } from "../dist/gpru/funding-note.js";
+const fundingNote = { version: 1, secret: "01".padStart(64, "0"), blinding: "02".padStart(64, "0"),
+  commitment: deriveFundingNoteCommitmentV1("01".padStart(64, "0"), "02".padStart(64, "0")) };
 
 test("payment authorization binds the recipient TIN without route data", () => {
   const message = buildPaymentIntentMessage({
+    fundingNoteCommitment: fundingNote.commitment,
     amountBaseUnits: 1_250_000n,
     tokenMintAddress: "11111111111111111111111111111111",
     tokenDecimals: 6,
@@ -26,6 +30,7 @@ test("payment authorization binds the recipient TIN without route data", () => {
 
 test("payment authorization does not accept sender-supplied route data", () => {
   const message = buildPaymentIntentMessage({
+    fundingNoteCommitment: fundingNote.commitment,
     amountBaseUnits: 1n,
     tokenMintAddress: "11111111111111111111111111111111",
     tokenDecimals: 6,
@@ -50,7 +55,7 @@ test("intent builder accepts only the Node-resolved 32-byte recipient owner hash
     senderAuthorizationSignature: "signature",
     senderAuthorizationNonce: "nonce",
     senderSignedFundingTransaction: "signed-transaction",
-    senderFundingMode: "tcap_deposit_v2",
+    senderFundingMode: "tcap_funded_note_v1", fundingNote,
   });
   assert.equal(request.recipientHash, "ab".repeat(32));
   assert.throws(
@@ -65,7 +70,7 @@ test("intent builder accepts only the Node-resolved 32-byte recipient owner hash
       senderAuthorizationSignature: "signature",
       senderAuthorizationNonce: "nonce",
       senderSignedFundingTransaction: "signed-transaction",
-      senderFundingMode: "tcap_deposit_v2",
+      senderFundingMode: "tcap_funded_note_v1", fundingNote,
     }),
     /32-byte hexadecimal hash returned by TSN Node TIN resolution/,
   );

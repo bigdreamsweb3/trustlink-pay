@@ -29,9 +29,11 @@ if (errors.length) {
   const { prepareIntent } = await load("authorization.ts");
   const { submitApprovedIntent } = await load("client.ts");
   const { inspectServices } = await load("network.ts");
+  const { createFundingNoteV1 } = await import(pathToFileURL(path.join(sdk, "dist/gpru/funding-note.js")).href);
   const input = { paymentId: "docs-offline-credit", recipientTin: "1234567890", recipientOwnerHash: "ab".repeat(32),
     senderWallet: "11111111111111111111111111111111", tokenMint: "11111111111111111111111111111111", tokenDecimals: 6,
-    amount: "0.01", fee: "0", totalTokenRequiredUi: 0.01, nonce: "ab".repeat(16), issuedAt: "2026-11-02T00:00:00.000Z", expiresAt: "2026-11-02T00:05:00.000Z" };
+    amount: "0.01", fee: "0", totalTokenRequiredUi: 0.01, nonce: "ab".repeat(16), issuedAt: "2026-11-02T00:00:00.000Z", expiresAt: "2026-11-02T00:05:00.000Z",
+    fundingNote: createFundingNoteV1() };
   const prepared = prepareIntent(input);
   assert.equal(prepared.authorization.amountBaseUnits, "10000");
   assert.match(prepared.authorization.message, /Recipient TIN: 1234567890/);
@@ -40,7 +42,9 @@ if (errors.length) {
   const request = prepared.withWalletApproval("offline-signature-placeholder", "offline-deposit-placeholder");
   assert.equal(request.recipientHash, input.recipientOwnerHash);
   assert.equal(request.amount, 0.01);
-  assert.equal(request.senderFundingMode, "tcap_deposit_v2");
+  assert.equal(request.senderFundingMode, "tcap_funded_note_v1");
+  assert.deepEqual(request.fundingNote, input.fundingNote);
+  assert.match(prepared.authorization.message, new RegExp(`Funding Note Commitment: ${input.fundingNote.commitment}`));
   assert.throws(() => prepareIntent({ ...input, recipientOwnerHash: input.recipientTin }).withWalletApproval("x", "y"), /recipientHash/);
   assert.throws(() => prepareIntent({ ...input, amount: "0.0000001" }), /decimal|precision/i);
   let submitted;
@@ -59,5 +63,5 @@ if (errors.length) {
   } });
   assert.equal(health.readyForNativeTransactions, true);
   assert.equal(health.readyForCrossChainTransactions, false);
-  console.log(JSON.stringify({ typedExamples: files.length, offlineScenarios: 8, scope: "Canonical amount/hash, request construction, HTTP acceptance/errors and health interpretation. Wallet-credit example typechecked only. No network, signatures or submission." }));
+  console.log(JSON.stringify({ typedExamples: files.length, offlineScenarios: 9, scope: "Canonical amount/hash and note binding, request construction, HTTP acceptance/errors and health interpretation. Wallet-credit example typechecked only. No network, signatures or submission." }));
 }

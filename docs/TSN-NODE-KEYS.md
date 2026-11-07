@@ -10,7 +10,8 @@ the frontend `.env`, Git, screenshots, or a public hackathon submission.
 | --- | --- | --- |
 | `TSN_RECEIVER_NODE_API_KEY` | Authenticates the Node to the TSN Receiver and protects Receiver wake, work, and state endpoints. | Obtain the shared value from the Receiver operator. Do not generate a different local value unless the Receiver is configured with the same value. |
 | `TSN_SETTLEMENT_AUTHORIZATION_SIGNING_KEY` | Signs bounded settlement authorization receipts issued by the Node. | Generate a new random 32-byte secret for each Node. The Node accepts hex, Base64, or a JSON byte array. |
-| `TSN_ROUTE_DECRYPTION_PRIVATE_KEY` | Decrypts the encrypted public route envelope used for a recipient's TIP route associated with a TIN. | Generate or provision the private key that matches the public route encryption key registered with the Receiver/TIP route flow. Do not rotate it without rotating the corresponding public key. |
+| `TINS_LOOKUP_SECRET` | Derives the active private TIN lookup commitment used by Node resolution. | Provision a stable deployment secret; rotation needs an existing-record recovery plan. |
+| `TSN_MOTHER_AUTHORITY_KEYPAIR_PATH` | Selects the Solana Mother authority for exact validated settlement co-signing. | Provision the keypair matching the on-chain Mother account; it is separate from the Node verification seed. |
 | `TSN_THRESHOLD_NONCE_SIGNING_KEY` | Signs threshold-access nonce receipts for authorized TIN access. | Generate a separate random 32-byte secret for each Node. Never reuse a wallet, route key, or settlement signing key. |
 | `TSN_NODE_VERIFICATION_SIGNING_KEY` | Ed25519 private seed used to sign every Receiver `VERIFIED` or `REJECTED` decision, binding the decision to its work, commitments, and Node lease. | Generate a dedicated Ed25519 keypair as shown below. Keep the private seed only in the Node environment. |
 
@@ -25,7 +26,8 @@ Set the service credentials and key material in `tsn-protocol/services/tsn-node/
 
 ```env
 TSN_RECEIVER_NODE_API_KEY=<shared-with-the-Receiver>
-TSN_ROUTE_DECRYPTION_PRIVATE_KEY=<64-hex-characters>
+TINS_LOOKUP_SECRET=<stable-deployment-lookup-secret>
+TSN_MOTHER_AUTHORITY_KEYPAIR_PATH=<absolute-Mother-keypair-path>
 TSN_THRESHOLD_NONCE_SIGNING_KEY=<64-hex-characters>
 TSN_SETTLEMENT_AUTHORIZATION_SIGNING_KEY=<64-hex-characters>
 TSN_NODE_VERIFICATION_SIGNING_KEY=<base64-encoded-32-byte-ed25519-seed>
@@ -55,7 +57,7 @@ environment automatically.
 | `MEMPOOL_API_KEY` | Optional direct mempool credential. The Node accepts this as an alternative worker credential when the Receiver credential is unavailable. |
 | `TSN_ROUTE_ATTESTATION_SIGNING_KEY` | Signs route attestations when enabled. Generate a separate key and follow the configured verifier format. |
 | `GITHUB_TOKEN` | Allows epoch archival to the configured GitHub repository. Create a narrowly scoped GitHub token. |
-| `FIREBASE_CREDENTIALS` or `FIREBASE_*` | Firebase Admin access when `MEMPOOL_STORE=firebase`. Use a service-account file or individual fields, never both. |
+| `FIREBASE_CREDENTIALS` or `FIREBASE_*` | Direct Node Firebase is a separately gated isolated-test adapter; normal durable work belongs to Receiver. Receiver owns its production Firebase configuration. |
 | `EVM_CRANKER_API_KEY` | Authenticates the optional cross-chain worker. Obtain it from that service operator. |
 
 For local development, the Node can use its ignored JSON store:
@@ -95,3 +97,7 @@ Invoke-WebRequest http://127.0.0.1:8000/settlement-networks
 HTTP `200` confirms that the process started. It does not by itself prove that
 TIN routing, settlement signing, or Receiver work processing is configured;
 those paths require their corresponding keys and service-side evidence.
+
+## Persistent configuration and complete deployment setup
+
+Node retains inherited process values, then loads .env.local followed by .env without overriding existing variables. Remove duplicate local/terminal overrides when .env should define the reviewed settings, and reload the process from a fresh terminal. The [full operator guide](RUN-YOUR-OWN-TSN.md) covers distinct authority/service keys, native DLL/shared-library selection, pinned prover artifacts, witness snapshots and initialization. Local-only store flags do not replace the authenticated Receiver work contract.

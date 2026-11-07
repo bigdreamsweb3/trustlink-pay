@@ -1,8 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateCrankerRequest, enforceCrankerLeaseRateLimit } from "../../../../lib/cranker-auth";
-import { attachCrankerAuthorization, leaseForCranker, transition } from "../../../../lib/store";
-import { crankerExecutionPayload, verifiedPayloadForWork } from "../../../../lib/work-contract";
+import { attachCrankerAuthorization, leaseForCranker, recordSettlementSubmission, retryLeasedSettlementFundingRoot, transition } from "../../../../lib/store";
+import { reconcileExpiredCrankerConfirmation } from "../../../../lib/settlement-reconciliation";
+import { NATIVE_REVERIFY_REASONS } from "../../../../lib/settlement-retry";
+import { crankerAuthorizationForWork, crankerExecutionPayload, verifiedPayloadForWork } from "../../../../lib/work-contract";
 export const runtime = "nodejs";
+
+/** Save a signed native settlement identity before its first broadcast. */
+export async function PUT(request: NextRequest) {
+  try {
+    const bodyText = await request.text();
+    const owner = await authenticateCrankerRequest(request, bodyText, "PUT", "/api/cranker/work");
+    const body = JSON.parse(bodyText) as { id: string; expectedVersion: number; evidence: Record<string, unknown> };
+    if (typeof body.id !== "string" || !Number.isSafeInteger(body.expectedVersion)
+        || !body.evidence || typeof body.evidence !== "object" || Array.isArray(body.evidence)) {
+      return NextResponse.json({ error: "Invalid settlement submission checkpoint" }, { status: 400 });
+    }
+    return NextResponse.json(await recordSettlementSubmission({ ...body, owner }));
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "ERROR" }, { status: errorStatus(error) });
+  }
+}
 
 function cleanUrl(value: string) {
   return value.trim().replace(/^['"]|['"]$/g, "").replace(/\/$/, "");
@@ -48,7 +66,7 @@ export async function POST(request: NextRequest) {
     await enforceCrankerLeaseRateLimit(operator);
     const body = JSON.parse(bodyText) as { supportedKinds?: Parameters<typeof leaseForCranker>[1] };
     let work = await leaseForCranker(operator, body.supportedKinds);
-    if (work && work.kind === "SETTLEMENT") {
+    if (work && ["SETTLEMENT", "TCAP_FUNDING_POOL", "TCAP_EPOCH_ACCOUNTING"].includes(work.kind)) {
       const nodeUrls = [process.env.TSN_NODE_URL, process.env.TSN_NODE_FALLBACK_URL]
         .filter((value): value is string => Boolean(value?.trim()))
         .map(cleanUrl);
@@ -81,9 +99,17 @@ export async function POST(request: NextRequest) {
       if (!response) throw new Error(`TSN Node authorization service is unavailable (${lastNodeError || "fetch failed"})`);
       if (!response.ok) {
         const detail = (await response.text()).slice(0, 500);
+        let rejection: { detail?: unknown } = {};
+        try { rejection = JSON.parse(detail) as { detail?: unknown }; } catch { /* Unstructured failures remain errors. */ }
+        if (response.status === 409 && typeof rejection.detail === "string" && NATIVE_REVERIFY_REASONS.has(rejection.detail)) {
+          const requeued = await retryLeasedSettlementFundingRoot({
+            id: work.id, expectedVersion: work.stateVersion, owner: operator, reason: String(rejection.detail), requestedBy: "authenticated-node-authorization",
+          });
+          return NextResponse.json({ work: null, requeued });
+        }
         throw new Error(`TSN Node authorization failed (${response.status}): ${detail}`);
       }
-      const authorization = await response.json() as Record<string, unknown>;
+      const authorization = crankerAuthorizationForWork(work, await response.json() as Record<string, unknown>);
       work = await attachCrankerAuthorization({ id: work.id, owner: operator, expectedVersion: work.stateVersion, authorization });
     }
     // The ingress payload may contain private routing identifiers required by
@@ -99,7 +125,18 @@ export async function PATCH(request: NextRequest) {
     const bodyText = await request.text();
     const operator = await authenticateCrankerRequest(request, bodyText, "PATCH", "/api/cranker/work");
     const body = JSON.parse(bodyText) as Parameters<typeof transition>[0];
-    return NextResponse.json(await transition({ ...body, owner: operator, actor: "cranker" }));
+    try {
+      return NextResponse.json(await transition({ ...body, owner: operator, actor: "cranker" }));
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "ERROR";
+      if ((code === "LEASE_INVALID" || code === "STALE_STATE_VERSION") && body.status === "CONFIRMED"
+          && typeof body.evidence?.signature === "string" && /^[1-9A-HJ-NP-Za-km-z]{86,88}$/.test(body.evidence.signature)) {
+        return NextResponse.json(await reconcileExpiredCrankerConfirmation({
+          id: body.id, owner: operator, expectedVersion: body.expectedVersion, signature: body.evidence.signature,
+        }));
+      }
+      throw error;
+    }
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "ERROR" }, { status: errorStatus(error) });
   }

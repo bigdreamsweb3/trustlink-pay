@@ -7,7 +7,8 @@ export type GpruDecryptedMemoActionV1 = {
   onChainAction: {
     actionKind: 1 | 2 | 3;
     tokenId: number;
-    amountBaseUnits: string;
+    amountBaseUnits?: string;
+    amountCommitment?: string;
     actionCommitment: string;
     authorizationCommitment: string;
     nullifier: string;

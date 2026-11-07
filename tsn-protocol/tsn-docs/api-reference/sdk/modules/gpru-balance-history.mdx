@@ -18,7 +18,8 @@ export type GpruDecryptedMemoActionV1 = {
   onChainAction: {
     actionKind: 1 | 2 | 3;
     tokenId: number;
-    amountBaseUnits: string;
+    amountBaseUnits?: string;
+    amountCommitment?: string;
     actionCommitment: string;
     authorizationCommitment: string;
     nullifier: string;
@@ -28,7 +29,7 @@ export type GpruDecryptedMemoActionV1 = {
 
 ## RecoveredGpruBalanceHistoryV1
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/balance-history.ts#L17).
+Import from `@trustlink/tsn-sdk`. [Implementation, line 18](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/balance-history.ts#L18).
 
 ```ts
 export type RecoveredGpruBalanceHistoryV1 = {
@@ -43,7 +44,7 @@ export type RecoveredGpruBalanceHistoryV1 = {
 
 Rebuild owner balances from decrypted Memo actions and validate their private predecessor chain.
 
-Import from `@trustlink/tsn-sdk`. [Implementation, line 35](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/balance-history.ts#L35).
+Import from `@trustlink/tsn-sdk`. [Implementation, line 36](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/balance-history.ts#L36).
 
 ```ts
 recoverGpruBalanceHistoryV1(input: readonly GpruDecryptedMemoActionV1[], expectedLatestSequence?: string | bigint): RecoveredGpruBalanceHistoryV1

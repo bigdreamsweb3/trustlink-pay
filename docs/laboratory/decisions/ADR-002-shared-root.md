@@ -1,6 +1,6 @@
 # ADR-002: shared-root credit with atomic reserve classification
 
-**Status: reconstructed CURRENT source decision; live execution unverified in this record. Review date: 2026-11-02. Original approval date: not established.**
+**Status: HISTORICAL reconstructed November 2 decision.** Its individual reserve-classification behavior is superseded by [ADR-005](ADR-005-private-amount-and-adaptive-pools.md), which retains shared-root credit while moving liability classification into complete aggregate epoch proof work. Original approval date was not established. The original rationale below is preserved as historical context; [current ABI](../credit-abi.md) directs new implementation.
 
 ## Context and problem
 

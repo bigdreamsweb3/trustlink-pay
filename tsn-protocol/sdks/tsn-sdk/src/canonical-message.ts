@@ -1,5 +1,6 @@
 import { sha256 } from "@noble/hashes/sha2";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
+import { canonicalFundingFieldHex } from "./gpru/funding-note.js";
 
 export class CanonicalMessageError extends Error {
   constructor(message: string) {
@@ -209,6 +210,7 @@ function canonicalDisplayName(value: string | undefined) {
 }
 
 export function buildPaymentIntentMessage(params: {
+  fundingNoteCommitment: string;
   amountBaseUnits: bigint | string | number;
   tokenMintAddress: string;
   tokenDecimals: number;
@@ -232,6 +234,7 @@ export function buildPaymentIntentMessage(params: {
     ["Recipient Display Name Source", params.recipientDisplayName?.trim() ? (params.recipientDisplayNameSource ?? "owner-provided") : "not provided"],
     ["Recipient Verified Credentials", canonicalRecipientCredentials(params.recipientVerifiedCredentials)],
     ["Fee", formatTokenBaseUnits(BigInt(params.feeBaseUnits), decimals)],
+    ["Funding Note Commitment", canonicalFundingFieldHex(params.fundingNoteCommitment, "Funding Note Commitment")],
     ["Sender", params.sender],
     ["Nonce", params.nonce],
     ["Expires", params.expires instanceof Date ? params.expires : new Date(params.expires)],
@@ -246,6 +249,7 @@ export function parsePaymentIntentMessage(message: string) {
   }
   return {
     tokenMintAddress: requireField(fields, "Token Mint"),
+    fundingNoteCommitment: canonicalFundingFieldHex(requireField(fields, "Funding Note Commitment"), "Funding Note Commitment"),
     tokenDecimals,
     amountBaseUnits: parseTokenAmount(requireField(fields, "Amount"), "Amount", tokenDecimals),
     recipientTin: parseTin(requireField(fields, "Recipient TIN"), "Recipient TIN"),
@@ -265,6 +269,7 @@ export function parsePaymentIntentMessage(message: string) {
  * Every destination-sensitive field is inside the user signature.
  */
 export function buildCrossChainPaymentIntentMessage(params: {
+  fundingNoteCommitment: string;
   intentId: string;
   amountBaseUnits: bigint | string | number;
   destinationToken: string;
@@ -295,6 +300,7 @@ export function buildCrossChainPaymentIntentMessage(params: {
     ["Destination Network", params.destinationNetwork],
     ["Destination Executor", params.destinationExecutor.toLowerCase()],
     ["Settlement Route ID", parseHash32(params.settlementRouteId.replace(/^0x/i, ""), "Settlement Route ID")],
+    ["Funding Note Commitment", canonicalFundingFieldHex(params.fundingNoteCommitment, "Funding Note Commitment")],
   ]);
 }
 
@@ -306,6 +312,7 @@ export function parseCrossChainPaymentIntentMessage(message: string) {
   }
   return {
     intentId: requireField(fields, "Intent ID"),
+    fundingNoteCommitment: canonicalFundingFieldHex(requireField(fields, "Funding Note Commitment"), "Funding Note Commitment"),
     amountBaseUnits: parseUsdc(requireField(fields, "Amount"), "Amount"),
     destinationToken: requireField(fields, "Asset").toLowerCase(),
     recipientTin: parseTin(requireField(fields, "Recipient TIN"), "Recipient TIN"),

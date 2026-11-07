@@ -8,6 +8,8 @@ For an architecture change, establish the intended contract and verify the neces
 
 Preserve unrelated work and existing program IDs, keypairs, deployment configuration, and user-managed services. Do not start/stop services, sign transactions, deploy programs, or commit/push unless the user explicitly asks. Report the exact verification performed and any compile or chain results that remain unverified.
 
+Before changing any TSN build, deployment, initialization, service/configuration, SDK integration or recovery method, explicitly read [.codex/tsn-operator-guide-policy.md](.codex/tsn-operator-guide-policy.md) and [docs/RUN-YOUR-OWN-TSN.md](docs/RUN-YOUR-OWN-TSN.md). Keep the affected operating steps and public entry current in the same task; explain a no-impact finding when appropriate.
+
 For documentation requests, read `docs/DOCUMENTATION_MAINTENANCE.md` and follow its source-first impact, status, validation and completion workflow. Meaningful implementation changes require reviewing both `docs/` and `tsn-protocol/tsn-docs/`, plus affected README diagrams and examples. Update only the task's scope, link existing canonical records, preserve valuable research history and correct contradictions rather than adding parallel descriptions.
 
 Do not invent functionality, SDK APIs, migrations, experiments or cryptographic guarantees. Inspect source/tests before describing implementation. Distinguish CURRENT implementation, scoped test/VERIFIED evidence, EXPERIMENTAL, PROPOSED, DEPRECATED, RETIRED, HISTORICAL and UNVERIFIED claims; source/build/deployment/payment results are separate. Record unresolved questions and missing checks without claiming work was performed.

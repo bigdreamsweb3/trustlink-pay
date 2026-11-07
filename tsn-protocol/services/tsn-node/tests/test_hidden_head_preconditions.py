@@ -38,6 +38,9 @@ class HiddenHeadPreconditionTests(unittest.IsolatedAsyncioTestCase):
         self.config, _ = Pubkey.find_program_address([b"tcap:global-config:v1"], tcap)
         self.asset = Pubkey(bytes([9]) * 32)
         self.reserve = Pubkey(bytes([10]) * 32)
+        self.funding_root, _ = Pubkey.find_program_address([b"tcap:sealed-funding:v1", bytes(self.asset), bytes([2])*32], tcap)
+        self.epoch = Pubkey.find_program_address([b"tcap:credit-epoch:v1", bytes(self.asset), bytes(8)], tcap)[0]
+        self.funding_state = {"address": str(self.funding_root), "root": (bytes([2]) * 32).hex(), "count": 1}
         self.records = [bytearray(272), bytearray(124), bytearray(287), bytearray(201)]
         for data, account_name in zip(self.records, ("TcapGlobalConfigV1", "TcapCommitmentRootStateV1", "TcapAssetEntryV1", "TcapReserveStateV1")):
             data[:8] = hashlib.sha256(f"account:{account_name}".encode()).digest()[:8]
@@ -55,10 +58,14 @@ class HiddenHeadPreconditionTests(unittest.IsolatedAsyncioTestCase):
         reserve[156:164] = (1000).to_bytes(8, "little")
         self.transition = {"commitmentRoot": str(self.root), "previousTcapRoot": (bytes([1]) * 32).hex(), "tcapRootSequence": "8",
                            "tcapConfig": str(self.config), "assetEntry": str(self.asset), "reserveState": str(self.reserve),
-                           "validAfterSlot": "40", "expiresAtSlot": "100", "amountBaseUnits": "500", "tokenId": 7}
+                           "validAfterSlot": "40", "expiresAtSlot": "100", "amountCommitment": "03"*32, "accountingEpoch": str(self.epoch), "tokenId": 7,
+                           "fundingRootAccount": str(self.funding_root), "proof": {"publicInputs": ["01" * 32] * 12 + [self.funding_state["root"]]}}
         self.root_patch = patch.object(server, "_read_tcap_shared_replay_root", new=AsyncMock(return_value=(str(self.root), bytes([1]) * 32, 7)))
         self.root_patch.start()
         self.addCleanup(self.root_patch.stop)
+        self.funding_patch = patch.object(server, "read_sealed_pool", new=AsyncMock(side_effect=lambda *_: self.funding_state))
+        self.funding_patch.start()
+        self.addCleanup(self.funding_patch.stop)
 
     async def check(self):
         response = {"result": {"context": {"slot": 50}, "value": [{"owner": server.TCAP_PROGRAM_ID, "data": [base64.b64encode(data).decode(), "base64"]} for data in self.records]}}
@@ -75,10 +82,9 @@ class HiddenHeadPreconditionTests(unittest.IsolatedAsyncioTestCase):
                 self.records[2] = self.asset_entry(**overrides)
                 await self.check()
 
-    async def test_underfunded_pending_liability_fails(self):
+    async def test_pending_reclassification_does_not_gate_an_individual_credit(self):
         self.records[3][148:156] = (499).to_bytes(8, "little")
-        with self.assertRaisesRegex(ValueError, "funded pending liabilities"):
-            await self.check()
+        await self.check()
 
     async def test_insolvency_fails(self):
         self.records[3][140:148] = (1999).to_bytes(8, "little")
@@ -108,6 +114,16 @@ class HiddenHeadPreconditionTests(unittest.IsolatedAsyncioTestCase):
         self.records[1][12] ^= 1
         with self.assertRaisesRegex(ValueError, "authorized predecessor"):
             await self.check()
+
+    async def test_funding_root_change_or_empty_tree_fails(self):
+        for change in ({"root": (bytes([3]) * 32).hex()}, {"count": 0}, {"address": str(self.asset)}):
+            with self.subTest(change=change):
+                original = self.funding_state.copy()
+                self.funding_state.update(change)
+                reason = server.FUNDING_ROOT_CHANGED if "root" in change else "funding membership account is invalid or unavailable"
+                with self.assertRaisesRegex(ValueError, reason):
+                    await self.check()
+                self.funding_state = original
 
     async def test_expired_slot_window_fails(self):
         self.transition["expiresAtSlot"] = "49"

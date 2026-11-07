@@ -17,7 +17,10 @@ flowchart TD
     S --> C[TCAP asset and reserve checks]
     C --> G[GPRU proof and Memo verification]
     G --> C
-    C --> L[Atomic shared-root and liability update on Solana]
+    C --> L[Atomic shared-root and epoch-transcript update]
+    L --> E[Node prepares complete epoch proof]
+    E --> R
+    K --> Q[TCAP/GPRU verify aggregate accounting]
 ```
 
 ## Responsibility boundaries
@@ -33,6 +36,6 @@ The proof does not grant custody or payment authority to GPRU. Settlement requir
 
 The current native-credit proof hides the recipient route/head witness and uses shared TIP/TCAP roots instead of a public latest-balance account per TIN. The owner retains the private record lineage. The credit ABI does not encode a plaintext TIN or private predecessor pointer; that structural property does not prove that public metadata, timing, application records or authorized Node knowledge cannot correlate payments.
 
-Solana exposes transaction accounts, signatures, action kind, token ID, amount, roots, nullifier, proof points, encrypted Memo bytes, timing and ordering. Funding wallets and direct wallet transfers expose their endpoints. Confidential debit/exit is a separate unverified execution path; an exit's output wallet and amount would remain public.
+Solana exposes transaction accounts, signatures, action kind, token ID, blinded amount commitment, roots, nullifier, proof points, encrypted Memo bytes, timing and ordering. Wallet deposit amounts and complete epoch totals remain public; individual credit has no plaintext amount or reserve-liability delta. Known amounts and recipient-registry/head history can still permit inference. Confidential debit/exit is a separate unverified execution path; an exit's output wallet and amount would remain public.
 
 The hidden-head proof flow is not currently established as an end-to-end settlement capability. Local proof verification is a separate evidence level from deployed verification and confirmed settlement. See the [complete lifecycle](/developers/payment-intent-lifecycle), [glossary](/glossary/index), and [internal source-backed map](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/architecture-map.md) for detailed ownership, source links and dated observations.

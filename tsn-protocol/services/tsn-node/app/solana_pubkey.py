@@ -44,7 +44,7 @@ def _encode_base58(data: bytes) -> str:
         number, remainder = divmod(number, 58)
         encoded = BASE58_ALPHABET[remainder] + encoded
     leading_zeroes = len(data) - len(data.lstrip(b"\x00"))
-    return (BASE58_ALPHABET[0] * leading_zeroes) + (encoded or BASE58_ALPHABET[0])
+    return (BASE58_ALPHABET[0] * leading_zeroes) + encoded
 
 
 def _as_program_id(value: "Pubkey | bytes") -> bytes:

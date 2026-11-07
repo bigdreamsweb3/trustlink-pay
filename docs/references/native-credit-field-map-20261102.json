@@ -1,0 +1,881 @@
+{
+  "schema": "TSN_NATIVE_CREDIT_FIELD_MAP_V1",
+  "baselineSignature": "dojfmWVHfNA4AbwHpzQtFQGGUNxASw3rAdUKfhVYYCnfmoVwJDakVdpV7GJFxGu4aSaagXhBDHigcgwTs53gjgQ",
+  "baselineFile": "docs/references/native-credit-baseline-20261102.json",
+  "rows": [
+    {
+      "group": "Accounts",
+      "key": "accounts[0]: crankerFeePayer",
+      "value": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+      "meaning": "Pays network fee and signs the complete V1 message. Signer=True; writable=True.",
+      "formedBy": "Configured registered Cranker operator Ed25519 public key.",
+      "nextCredit": "Can repeat for the same operator; infrastructure linkage.",
+      "source": "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Accounts",
+      "key": "accounts[1]: motherAuthority",
+      "value": "FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG",
+      "meaning": "Co-signs the exact permitted settlement; used as CPI payer/authority. Signer=True; writable=True.",
+      "formedBy": "Authority stored in canonical MotherEscrow.",
+      "nextCredit": "Can repeat until authority rotation; infrastructure linkage.",
+      "source": "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Accounts",
+      "key": "accounts[2]: reserveState",
+      "value": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+      "meaning": "TCAP accounting state for this accepted asset. Signer=False; writable=True.",
+      "formedBy": "TCAP PDA: [tcap:reserve-state:v1, assetEntry bytes].",
+      "nextCredit": "Repeats for the same asset/reserve; not a recipient account.",
+      "source": "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Accounts",
+      "key": "accounts[3]: commitmentRoot",
+      "value": "ESunnNGeKYHiJx6ECsCUEh95zTVwsmJKRRZBo6vQwWbq",
+      "meaning": "Stores global head/nullifier-map root and sequence. Signer=False; writable=True.",
+      "formedBy": "TCAP PDA: [tcap:commitment-root:v1].",
+      "nextCredit": "Address repeats; root data changes across settlements.",
+      "source": "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Accounts",
+      "key": "accounts[4]: authorizationSigner",
+      "value": "2YTJtK2KoXViuFK29MeD2tJiqTcYx2L51CNUevMMhEDN",
+      "meaning": "TSNP PDA that signs the TCAP CPI for this digest. Signer=False; writable=False.",
+      "formedBy": "TSNP PDA: [tsn:tcap-authorization:v1, authorizationDigest bytes].",
+      "nextCredit": "Changes when digest changes; deterministic from public fields. No standalone account creation here.",
+      "source": "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Accounts",
+      "key": "accounts[5]: gpruVerifier",
+      "value": "4qordCRiPw4XFZcPPK8LLJTCpmugTDDawonpfqvpN9cT",
+      "meaning": "Configured Groth16 verifying-key/IC account. Signer=False; writable=False.",
+      "formedBy": "GPRU PDA: [gpru:hidden-head-verifier:v1].",
+      "nextCredit": "Shared verifier address normally repeats.",
+      "source": "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Accounts",
+      "key": "accounts[6]: tcapConfig",
+      "value": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+      "meaning": "Global TCAP authority/program policy. Signer=False; writable=False.",
+      "formedBy": "TCAP PDA: [tcap:global-config:v1].",
+      "nextCredit": "Shared account normally repeats.",
+      "source": "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Accounts",
+      "key": "accounts[7]: gpruProgram",
+      "value": "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR",
+      "meaning": "Executes hidden-head proof/Memo validation. Signer=False; writable=False.",
+      "formedBy": "Configured deployed program ID.",
+      "nextCredit": "Program ID repeats.",
+      "source": "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Accounts",
+      "key": "accounts[8]: tipRouteRoot",
+      "value": "AtMjyHVYLyaPd7fpMZbdxLQ24BGyPUmJMD2vppc2Expk",
+      "meaning": "Authenticates private membership in the shared TIP route tree. Signer=False; writable=False.",
+      "formedBy": "TIP PDA: [tip:route-merkle-root:v1].",
+      "nextCredit": "Address repeats; shared root value repeats until TIP membership changes.",
+      "source": "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Accounts",
+      "key": "accounts[9]: assetEntry",
+      "value": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+      "meaning": "Maps public tokenId to mint, decimals and reserve policy. Signer=False; writable=False.",
+      "formedBy": "TCAP PDA: [tcap:asset-entry:v1, registry bytes, tokenProgram bytes, mint bytes].",
+      "nextCredit": "Repeats for the same registered asset; asset is visible.",
+      "source": "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Accounts",
+      "key": "accounts[10]: motherEscrow",
+      "value": "ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR",
+      "meaning": "Mother configuration/authority context. Signer=False; writable=False.",
+      "formedBy": "TSNP PDA: [tsn_mother_escrow].",
+      "nextCredit": "Shared protocol account; expected to repeat.",
+      "source": "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Accounts",
+      "key": "accounts[11]: memoProgram",
+      "value": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
+      "meaning": "Logs the canonical encrypted action Memo. Signer=False; writable=False.",
+      "formedBy": "Solana Memo program ID.",
+      "nextCredit": "Program ID repeats.",
+      "source": "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Accounts",
+      "key": "accounts[12]: instructionsSysvar",
+      "value": "Sysvar1nstructions1111111111111111111111111",
+      "meaning": "Lets GPRU inspect the top-level caller and following Memo. Signer=False; writable=False.",
+      "formedBy": "Canonical Solana instructions sysvar address.",
+      "nextCredit": "Shared sysvar repeats.",
+      "source": "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Accounts",
+      "key": "accounts[13]: tcapProgram",
+      "value": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+      "meaning": "Executes reserve/root accounting after proof validation. Signer=False; writable=False.",
+      "formedBy": "Configured deployed TCAP program ID.",
+      "nextCredit": "Program ID repeats.",
+      "source": "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Accounts",
+      "key": "accounts[14]: tsnpProgram",
+      "value": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+      "meaning": "Enforces Mother authority, digest and slot conditions. Signer=False; writable=False.",
+      "formedBy": "Configured deployed TSNP program ID.",
+      "nextCredit": "Program ID repeats.",
+      "source": "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Envelope",
+      "key": "versionMarker",
+      "value": "81",
+      "meaning": "Wire version discriminator.",
+      "formedBy": "Fixed hexadecimal 0x81 for actual V1.",
+      "nextCredit": "Repeats for V1.",
+      "source": "scripts/inspect-native-credit.py / V1 builder"
+    },
+    {
+      "group": "Envelope",
+      "key": "version",
+      "value": 1,
+      "meaning": "Decoded Solana message version.",
+      "formedBy": "Version marker low bits.",
+      "nextCredit": "Repeats for this encoding.",
+      "source": "scripts/inspect-native-credit.py / V1 builder"
+    },
+    {
+      "group": "Envelope",
+      "key": "requiredSignatures",
+      "value": 2,
+      "meaning": "Number of trailing signatures.",
+      "formedBy": "Payer plus Mother signer account metas.",
+      "nextCredit": "Usually 2 for this branch.",
+      "source": "scripts/inspect-native-credit.py / V1 builder"
+    },
+    {
+      "group": "Envelope",
+      "key": "readonlySigned",
+      "value": 0,
+      "meaning": "Number of readonly signer addresses.",
+      "formedBy": "Message account-role compiler.",
+      "nextCredit": "Normally repeats for the same instruction roles.",
+      "source": "scripts/inspect-native-credit.py / V1 builder"
+    },
+    {
+      "group": "Envelope",
+      "key": "readonlyUnsigned",
+      "value": 11,
+      "meaning": "Number of readonly nonsigner addresses.",
+      "formedBy": "Message account-role compiler.",
+      "nextCredit": "Normally repeats for the same instruction roles.",
+      "source": "scripts/inspect-native-credit.py / V1 builder"
+    },
+    {
+      "group": "Envelope",
+      "key": "configMask",
+      "value": 12,
+      "meaning": "Inline V1 compute/loaded-account configuration flags.",
+      "formedBy": "Mask 12 enables the two u32 limits.",
+      "nextCredit": "Repeats for this builder.",
+      "source": "scripts/inspect-native-credit.py / V1 builder"
+    },
+    {
+      "group": "Envelope",
+      "key": "recentBlockhash",
+      "value": "AtkG8sQA1UAYPyb9Gmugkv2ej2EfJwGDXBaGfUCPu2zu",
+      "meaning": "Transaction lifetime and replay context.",
+      "formedBy": "Confirmed getLatestBlockhash RPC response.",
+      "nextCredit": "Can repeat for transactions prepared under the same blockhash; is not recipient identity.",
+      "source": "scripts/inspect-native-credit.py / V1 builder"
+    },
+    {
+      "group": "Envelope",
+      "key": "instructionCount",
+      "value": 2,
+      "meaning": "Two top-level calls: TSNP then Memo.",
+      "formedBy": "Builder instruction list; CPI calls do not add top-level instructions.",
+      "nextCredit": "Repeats for this branch.",
+      "source": "scripts/inspect-native-credit.py / V1 builder"
+    },
+    {
+      "group": "Envelope",
+      "key": "addressCount",
+      "value": 15,
+      "meaning": "Distinct inline account addresses.",
+      "formedBy": "Deduplicated account-role list.",
+      "nextCredit": "Normally 15 for this branch.",
+      "source": "scripts/inspect-native-credit.py / V1 builder"
+    },
+    {
+      "group": "Envelope",
+      "key": "computeUnitLimit",
+      "value": 1400000,
+      "meaning": "Requested execution compute ceiling in compute units.",
+      "formedBy": "V1 builder configuration 1400000.",
+      "nextCredit": "Repeats unless policy changes.",
+      "source": "scripts/inspect-native-credit.py / V1 builder"
+    },
+    {
+      "group": "Envelope",
+      "key": "loadedAccountBytesLimit",
+      "value": 67108864,
+      "meaning": "Requested loaded-account ceiling in bytes.",
+      "formedBy": "V1 builder configuration 64 MiB.",
+      "nextCredit": "Repeats unless policy changes.",
+      "source": "scripts/inspect-native-credit.py / V1 builder"
+    },
+    {
+      "group": "Envelope",
+      "key": "messageBytes",
+      "value": 2781,
+      "meaning": "Serialized message size before signatures.",
+      "formedBy": "Byte count; includes compressed encrypted record size.",
+      "nextCredit": "Can repeat or change; length is observable.",
+      "source": "scripts/inspect-native-credit.py / V1 builder"
+    },
+    {
+      "group": "Envelope",
+      "key": "wireBytes",
+      "value": 2909,
+      "meaning": "Complete transaction size including signatures.",
+      "formedBy": "Message bytes plus 128 signature bytes.",
+      "nextCredit": "Can repeat or change; size is observable.",
+      "source": "scripts/inspect-native-credit.py / V1 builder"
+    },
+    {
+      "group": "Envelope",
+      "key": "wireSha256",
+      "value": "0e8052246b0850bdc084bb44da7a4e9b19ecefdba0ba9413fd5dde0fd7161218",
+      "meaning": "Inspection fingerprint of the complete public transaction.",
+      "formedBy": "Analyst SHA-256 over wire bytes; not an additional on-chain field.",
+      "nextCredit": "Changes when any wire byte changes.",
+      "source": "scripts/inspect-native-credit.py / V1 builder"
+    },
+    {
+      "group": "Envelope",
+      "key": "signature[0]",
+      "value": "dojfmWVHfNA4AbwHpzQtFQGGUNxASw3rAdUKfhVYYCnfmoVwJDakVdpV7GJFxGu4aSaagXhBDHigcgwTs53gjgQ",
+      "meaning": "Ed25519 signature over identical complete message bytes; payer signature identifies this transaction.",
+      "formedBy": "Signer private key signs public message; private key is not published.",
+      "nextCredit": "Normally changes when message changes; same key can sign another message.",
+      "source": "V1 wire and receipt matcher"
+    },
+    {
+      "group": "Envelope",
+      "key": "signature[1]",
+      "value": "3kSwqVCvqveA2TKYdybbrEuoQCAvyfw6sywakpK7iivHUHpPC5uqznQVrv1EowkPqxtuAZm3DnN75pDN9eZQVWyv",
+      "meaning": "Ed25519 signature over identical complete message bytes; payer signature identifies this transaction.",
+      "formedBy": "Signer private key signs public message; private key is not published.",
+      "nextCredit": "Normally changes when message changes; same key can sign another message.",
+      "source": "V1 wire and receipt matcher"
+    },
+    {
+      "group": "TSNP arguments",
+      "key": "discriminator",
+      "value": "792f62f65f93ae1a",
+      "meaning": "Selects tsn_register_tcap_credit_authorization_v2.",
+      "formedBy": "First 8 bytes of SHA256(global:tsn_register_tcap_credit_authorization_v2).",
+      "nextCredit": "Repeats for this instruction.",
+      "source": "tsn-protocol/services/tsn-node/server.py / tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "TSNP arguments",
+      "key": "authorizationDigest",
+      "value": "7514e0e0c40be774b2843f3fa614815c72491bb5b8bf8f16b96eb0692b7620a4",
+      "meaning": "Binds root, sequence, time window, amount, token and nullifier to Mother authorization.",
+      "formedBy": "SHA256(TSN_GPRU_TCAP_CREDIT_HIDDEN_HEAD_V1\\0 || rootAccount || oldRoot || LE64(sequence,validAfter,expires,amount) || LE32(tokenId) || nullifier).",
+      "nextCredit": "Expected to change for a new deposit/root/window; publicly recomputable.",
+      "source": "tsn-protocol/services/tsn-node/server.py / tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "TSNP arguments",
+      "key": "validAfterSlot",
+      "value": 517916251,
+      "meaning": "Earliest slot where authorization may execute.",
+      "formedBy": "Confirmed slot selected by Node.",
+      "nextCredit": "Changes with preparation slot; can repeat for same-slot preparations.",
+      "source": "tsn-protocol/services/tsn-node/server.py / tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "TSNP arguments",
+      "key": "expiresAtSlot",
+      "value": 517918251,
+      "meaning": "Latest execution slot.",
+      "formedBy": "validAfterSlot + configured TTL, 2000 slots here.",
+      "nextCredit": "Changes with validity window.",
+      "source": "tsn-protocol/services/tsn-node/server.py / tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "TSNP arguments",
+      "key": "previousTcapRoot",
+      "value": "14935d601de8d6fbd04b084de8f8510dd25b5ed1d80ab5382b8f908dc0734b3a",
+      "meaning": "Expected global state immediately before credit.",
+      "formedBy": "Current chain-selected TCAP root.",
+      "nextCredit": "Should equal baseline newGlobalRoot for the immediate next transition with no interleaving.",
+      "source": "tsn-protocol/services/tsn-node/server.py / tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "TSNP arguments",
+      "key": "tcapRootSequence",
+      "value": 1,
+      "meaning": "Global shared-root sequence, not the private TIN action sequence.",
+      "formedBy": "Chain sequence + 1.",
+      "nextCredit": "Advances globally; immediate next transition should be 2.",
+      "source": "tsn-protocol/services/tsn-node/server.py / tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "TSNP arguments",
+      "key": "tokenId",
+      "value": 1,
+      "meaning": "TCAP registered accepted-asset identifier.",
+      "formedBy": "Asset entry token_id; ID 1 maps to the observed Devnet USDC mint.",
+      "nextCredit": "Repeats for the same asset; asset selection is public.",
+      "source": "tsn-protocol/services/tsn-node/server.py / tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "TSNP arguments",
+      "key": "amountBaseUnits",
+      "value": 100000,
+      "meaning": "Public credited deposit amount; 100000 with 6 decimals is 0.1 Devnet USDC.",
+      "formedBy": "Confirmed owner-signed deposit amount.",
+      "nextCredit": "Repeats if the next amount is equal; amount is not hidden.",
+      "source": "tsn-protocol/services/tsn-node/server.py / tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "TSNP arguments",
+      "key": "nullifier",
+      "value": "079eea418f77cc6378099aae819780b7fa5b2265d678b022ce4e24e8ae40366b",
+      "meaning": "Consumed-deposit replay binding stored inside the authenticated map.",
+      "formedBy": "SHA256(TSN_GPRU_CONFIRMED_DEPOSIT_NULLIFIER_V1\\0 || TCAP program bytes || decoded funding signature) reduced modulo BN254 q.",
+      "nextCredit": "Changes for a different deposit; identical for retries of the same deposit. Public funding-to-credit link.",
+      "source": "tsn-protocol/services/tsn-node/server.py / tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+    },
+    {
+      "group": "Proof",
+      "key": "publicInputs[0]: oldGlobalRoot",
+      "value": "14935d601de8d6fbd04b084de8f8510dd25b5ed1d80ab5382b8f908dc0734b3a",
+      "meaning": "Shared authenticated state before this action.",
+      "formedBy": "Poseidon(previous private head-map root, previous nullifier-map root).",
+      "nextCredit": "Expected shared-state continuity; not a per-recipient public predecessor.",
+      "source": "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Proof",
+      "key": "publicInputs[1]: newGlobalRoot",
+      "value": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+      "meaning": "Shared authenticated state after this action.",
+      "formedBy": "Poseidon(updated private head-map root, updated nullifier-map root).",
+      "nextCredit": "Expected to change for every accepted state transition.",
+      "source": "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Proof",
+      "key": "publicInputs[2]: memoCommitment",
+      "value": "236f33517b788cced1252784168c2eaead87eeec27c3a6e61824c685e9cc5662",
+      "meaning": "Binds the complete following Memo bytes.",
+      "formedBy": "SHA256(complete ASCII Memo) reduced modulo BN254 q.",
+      "nextCredit": "Changes when Memo changes; current value is publicly recomputable.",
+      "source": "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Proof",
+      "key": "publicInputs[3]: actionCommitment",
+      "value": "2f81e8216e08f638e838fbd46207100635b03bb24a4b77775a6b27afa2c83ae7",
+      "meaning": "Binds authorized action fields.",
+      "formedBy": "Poseidon(1, tokenId, amount, authorizationCommitment, nullifier). All five inputs are public in this transaction.",
+      "nextCredit": "Expected to change with public action inputs; not a secret salted recipient identifier.",
+      "source": "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Proof",
+      "key": "publicInputs[4]: nullifier",
+      "value": "079eea418f77cc6378099aae819780b7fa5b2265d678b022ce4e24e8ae40366b",
+      "meaning": "Same consumed-deposit nullifier as the outer argument.",
+      "formedBy": "Copied into the proof statement.",
+      "nextCredit": "Same repeat/link rule as outer nullifier.",
+      "source": "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Proof",
+      "key": "publicInputs[5]: tipRouteRoot",
+      "value": "01971b68089c1e95637ee522bd72678df2e7d2c20e5d5fc7354b58122c94e63d",
+      "meaning": "Shared TIP membership tree root.",
+      "formedBy": "Chain-selected public TIP route root.",
+      "nextCredit": "Can repeat while membership is unchanged; shared across recipients.",
+      "source": "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Proof",
+      "key": "publicInputs[6]: successorPortfolioRoot",
+      "value": "295274faeb79b0833727af6c4eeccb86da3c9d31ef1c9bfe2b25ce22c3d0cff2",
+      "meaning": "Committed root of the hidden recipient token portfolio after credit.",
+      "formedBy": "Sparse token map with leaf Poseidon(tokenId, successorBalanceX, successorBalanceY).",
+      "nextCredit": "Expected to change with freshly blinded successor point; previous portfolio root is private in next witness.",
+      "source": "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Proof",
+      "key": "publicInputs[7]: successorBalanceX",
+      "value": "1261e1a0d3ca1577f4bfcf29733c6915ecbdfcdb86581feb5489f30ea5496c9e",
+      "meaning": "X of successor BabyJubjub Pedersen balance point.",
+      "formedBy": "Pnew = Pold + amount*G + freshDelta*H.",
+      "nextCredit": "Expected to change; previous point should not be explicitly published by the next credit ABI.",
+      "source": "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Proof",
+      "key": "publicInputs[8]: successorBalanceY",
+      "value": "24f742aad55d571c399a71b87b45329be06c86f31acab0dc542ab7731ded476d",
+      "meaning": "Y of the same successor balance point.",
+      "formedBy": "Same Pedersen point update; coordinate is public, opening remains private.",
+      "nextCredit": "Same rule as X; point difference alone does not certify unlinkability.",
+      "source": "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Proof",
+      "key": "publicInputs[9]: encryptedBlindingDelta",
+      "value": "03f05f41b800ee9e6942a787bb03b1733dcf35e48af85d94f68253b38d019975",
+      "meaning": "Owner-readable scalar encryption of the exact Pedersen blinding delta.",
+      "formedBy": "C = freshDelta + x(e*S) mod BabyJubjub subgroup order.",
+      "nextCredit": "Expected to change with fresh blinding/ephemeral randomness.",
+      "source": "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Proof",
+      "key": "publicInputs[10]: deltaEphemeralPublicX",
+      "value": "06a00cf572089582eebc0b9e1aed4d1ffc3bf6e3308179c33fb706a581d37393",
+      "meaning": "X of one-time BabyJubjub delta-encryption point.",
+      "formedBy": "E = e*Base8, fresh ephemeral scalar e.",
+      "nextCredit": "Expected to change with fresh e; recipient S is private in the proof witness.",
+      "source": "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Proof",
+      "key": "publicInputs[11]: deltaEphemeralPublicY",
+      "value": "0141d79442da9da60d690631c8407690b373cdc4e005a2f922fbd7fc89b6de1d",
+      "meaning": "Y of the same one-time point.",
+      "formedBy": "Same E = e*Base8.",
+      "nextCredit": "Same rule as X.",
+      "source": "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Proof",
+      "key": "proofA",
+      "value": "2b6d016aaa3cb26c10ecab03f45527c573fb7347521a6359ffb9859f00120e63264b6243a1279daa6913637292d0c794a89d8316fb9637436c08903d62990a5f",
+      "meaning": "64-byte Groth16 G1 proof point encoding.",
+      "formedBy": "Circuit witness + proving key + Groth16 prover randomness, encoded for the GPRU verifier.",
+      "nextCredit": "Normally changes for a fresh proof; different proof bytes alone do not establish privacy.",
+      "source": "hidden_head_prover.py / GPRU hidden_head.rs"
+    },
+    {
+      "group": "Proof",
+      "key": "proofB",
+      "value": "2b50c949c53d3abaecd21111444001ad449ea4a44c0a9637cbf93d56158a0f071bebd1b9f65ea9b65b6cdadae132c947367d5e35d8434f04d9abe079de0ac97719a72c6ac6836e3f9a9d0e712c310da16009db09cc9aad4682d962caa75f189d2f4464d31ddf6bc1877b69ff813fa6dac663d3df5e5f333d9ae6f4b416ee1ba5",
+      "meaning": "128-byte Groth16 G2 proof point encoding.",
+      "formedBy": "Circuit witness + proving key + Groth16 prover randomness, encoded for the GPRU verifier.",
+      "nextCredit": "Normally changes for a fresh proof; different proof bytes alone do not establish privacy.",
+      "source": "hidden_head_prover.py / GPRU hidden_head.rs"
+    },
+    {
+      "group": "Proof",
+      "key": "proofC",
+      "value": "2fe543cae834fc3410fe3087a62141fbe9530d442d685fe5eacd4835f7065d6f1cfabbce54d7fbc95d3891b02df889f14196cabbfde3796208213af32bdeaaf2",
+      "meaning": "64-byte Groth16 G1 proof point encoding.",
+      "formedBy": "Circuit witness + proving key + Groth16 prover randomness, encoded for the GPRU verifier.",
+      "nextCredit": "Normally changes for a fresh proof; different proof bytes alone do not establish privacy.",
+      "source": "hidden_head_prover.py / GPRU hidden_head.rs"
+    },
+    {
+      "group": "Proof",
+      "key": "proof.actionKind",
+      "value": 1,
+      "meaning": "Credit selector, 1.",
+      "formedBy": "Prover result binds action/token/amount and reduced authorization digest to the same witness.",
+      "nextCredit": "Action kind/asset/amount may repeat; authorization scalar generally changes.",
+      "source": "tsn-protocol/services/tsn-node/server.py / tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Proof",
+      "key": "proof.tokenId",
+      "value": 1,
+      "meaning": "Public copy of token/amount bound to TCAP and circuit.",
+      "formedBy": "Prover result binds action/token/amount and reduced authorization digest to the same witness.",
+      "nextCredit": "Action kind/asset/amount may repeat; authorization scalar generally changes.",
+      "source": "tsn-protocol/services/tsn-node/server.py / tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Proof",
+      "key": "proof.amountBaseUnits",
+      "value": 100000,
+      "meaning": "Public copy of token/amount bound to TCAP and circuit.",
+      "formedBy": "Prover result binds action/token/amount and reduced authorization digest to the same witness.",
+      "nextCredit": "Action kind/asset/amount may repeat; authorization scalar generally changes.",
+      "source": "tsn-protocol/services/tsn-node/server.py / tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Proof",
+      "key": "proof.authorizationCommitment",
+      "value": "144c43fb01a8a72141e3b3d2a311d0a221e14b24c54cadf431aac5414b7620a2",
+      "meaning": "BN254 scalar reduction of authorizationDigest; public.",
+      "formedBy": "Prover result binds action/token/amount and reduced authorization digest to the same witness.",
+      "nextCredit": "Action kind/asset/amount may repeat; authorization scalar generally changes.",
+      "source": "tsn-protocol/services/tsn-node/server.py / tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom"
+    },
+    {
+      "group": "Memo",
+      "key": "prefix",
+      "value": "TSN_GPRU_HEAD_V1",
+      "meaning": "Selects the hidden-head owner-record Memo format.",
+      "formedBy": "TSN_GPRU_HEAD_V1 prefix + seven colon-separated proof fields + unpadded Base64URL JSON body.",
+      "nextCredit": "Prefix repeats; lengths can repeat; complete Memo hash changes with any bytes.",
+      "source": "tsn-protocol/services/tsn-node/dbrix_transaction_record.py"
+    },
+    {
+      "group": "Memo",
+      "key": "bytes",
+      "value": 1404,
+      "meaning": "Complete public Memo instruction data length in bytes.",
+      "formedBy": "TSN_GPRU_HEAD_V1 prefix + seven colon-separated proof fields + unpadded Base64URL JSON body.",
+      "nextCredit": "Prefix repeats; lengths can repeat; complete Memo hash changes with any bytes.",
+      "source": "tsn-protocol/services/tsn-node/dbrix_transaction_record.py"
+    },
+    {
+      "group": "Memo",
+      "key": "sha256",
+      "value": "b49c1eaa1f0d6d4bfa15f8a79b1037c62623a7c594eff899e3caa741b9cc5665",
+      "meaning": "Full SHA-256 fingerprint of the complete ASCII Memo; its scalar reduction is memoCommitment.",
+      "formedBy": "Inspector hashes the public Memo bytes.",
+      "nextCredit": "Prefix repeats; lengths can repeat; complete Memo hash changes with any bytes.",
+      "source": "tsn-protocol/services/tsn-node/dbrix_transaction_record.py"
+    },
+    {
+      "group": "Memo",
+      "key": "bodyBase64UrlBytes",
+      "value": 932,
+      "meaning": "ASCII length of the unpadded Base64URL JSON body after the seven public fields.",
+      "formedBy": "TSN_GPRU_HEAD_V1 prefix + seven colon-separated proof fields + unpadded Base64URL JSON body.",
+      "nextCredit": "Prefix repeats; lengths can repeat; complete Memo hash changes with any bytes.",
+      "source": "tsn-protocol/services/tsn-node/dbrix_transaction_record.py"
+    },
+    {
+      "group": "Memo",
+      "key": "decodedDocumentBytes",
+      "value": 699,
+      "meaning": "Byte length of the decoded JSON envelope; this is still encrypted-record metadata.",
+      "formedBy": "TSN_GPRU_HEAD_V1 prefix + seven colon-separated proof fields + unpadded Base64URL JSON body.",
+      "nextCredit": "Prefix repeats; lengths can repeat; complete Memo hash changes with any bytes.",
+      "source": "tsn-protocol/services/tsn-node/dbrix_transaction_record.py"
+    },
+    {
+      "group": "Memo",
+      "key": "document.algorithm",
+      "value": "dbrix-core-secretbox-v1",
+      "meaning": "Owner-record cipher identifier.",
+      "formedBy": "Literal dbrix-core-secretbox-v1.",
+      "nextCredit": "Repeats for this cipher.",
+      "source": "tsn-protocol/services/tsn-node/dbrix_transaction_record.py"
+    },
+    {
+      "group": "Memo",
+      "key": "document.compression",
+      "value": "deflate",
+      "meaning": "Compression of typed action plaintext before encryption.",
+      "formedBy": "Deflate used when it reduces size.",
+      "nextCredit": "May repeat; compressed length is visible.",
+      "source": "tsn-protocol/services/tsn-node/dbrix_transaction_record.py"
+    },
+    {
+      "group": "Memo",
+      "key": "document.dna",
+      "value": "5d674ad9e1f9a9f845c68e708d274affa57bc63d0b2b81f9854838e7a1ff1343",
+      "meaning": "Fresh public record salt/context, not the owner secret.",
+      "formedBy": "Node secrets.token_bytes(32); included in the record-key hash.",
+      "nextCredit": "Expected to change per record.",
+      "source": "tsn-protocol/services/tsn-node/dbrix_transaction_record.py"
+    },
+    {
+      "group": "Memo",
+      "key": "document.recordEphemeralPublicKey",
+      "value": "88ea1c4e503dac6fc6eff1dcd86b1a6ea33f891814926f5e705925c8521f9050",
+      "meaning": "Compressed Ristretto point for owner-record key agreement; distinct from BabyJubjub E.",
+      "formedBy": "Fresh scalar r times record generator; shared point is r*ownerRecordScanPublic.",
+      "nextCredit": "Expected to change; owner public key is not copied into this envelope.",
+      "source": "tsn-protocol/services/tsn-node/dbrix_transaction_record.py"
+    },
+    {
+      "group": "Memo",
+      "key": "document.version",
+      "value": 1,
+      "meaning": "Encrypted envelope schema version.",
+      "formedBy": "Literal 1.",
+      "nextCredit": "Repeats for this schema.",
+      "source": "tsn-protocol/services/tsn-node/dbrix_transaction_record.py"
+    },
+    {
+      "group": "Memo",
+      "key": "document.data",
+      "value": {
+        "ciphertextBytes": 303,
+        "sha256": "f85ee607d01889ec14b2d75892e4e2bc3ea6284c3fff0dd87d9872560434c2da"
+      },
+      "meaning": "303 ciphertext bytes here; persisted as length/hash instead of raw ciphertext.",
+      "formedBy": "SecretBox key K=SHA256(DBRIX_GPRU_TRANSACTION_RECORD_KEY_V1\\0 || sharedPoint || DNA || recordEphemeralPublicKey).",
+      "nextCredit": "Ciphertext/hash expected to change; length may repeat.",
+      "source": "tsn-protocol/services/tsn-node/dbrix_transaction_record.py"
+    },
+    {
+      "group": "Memo",
+      "key": "document.nonce",
+      "value": {
+        "bytes": 24,
+        "hex": "51d676121986ab198779b42a406e3a88eb490ed3524e8bc9"
+      },
+      "meaning": "Public 24-byte SecretBox nonce.",
+      "formedBy": "Fresh secrets.token_bytes(24).",
+      "nextCredit": "Expected to change per encryption.",
+      "source": "tsn-protocol/services/tsn-node/dbrix_transaction_record.py"
+    },
+    {
+      "group": "TCAP event",
+      "key": "name",
+      "value": "TcapGpruMemoCreditedV1",
+      "meaning": "TCAP event emitted after successful proof and atomic root/liability mutation.",
+      "formedBy": "event discriminator + previous/current root + LE64(sequence) + LE32(tokenId) + transition digest. Digest is SHA256(TCAP_GPRU_MEMO_CREDIT_V1\\0 || oldRoot || newRoot || authDigest || nullifier || LE32(tokenId) || LE64(amount) || memoField).",
+      "nextCredit": "Name/discriminator/asset can repeat; roots/sequence/digest follow state progression.",
+      "source": "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs"
+    },
+    {
+      "group": "TCAP event",
+      "key": "discriminator",
+      "value": "7ff47826a2ed1a16",
+      "meaning": "TCAP event emitted after successful proof and atomic root/liability mutation.",
+      "formedBy": "event discriminator + previous/current root + LE64(sequence) + LE32(tokenId) + transition digest. Digest is SHA256(TCAP_GPRU_MEMO_CREDIT_V1\\0 || oldRoot || newRoot || authDigest || nullifier || LE32(tokenId) || LE64(amount) || memoField).",
+      "nextCredit": "Name/discriminator/asset can repeat; roots/sequence/digest follow state progression.",
+      "source": "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs"
+    },
+    {
+      "group": "TCAP event",
+      "key": "previousRoot",
+      "value": "14935d601de8d6fbd04b084de8f8510dd25b5ed1d80ab5382b8f908dc0734b3a",
+      "meaning": "TCAP event emitted after successful proof and atomic root/liability mutation.",
+      "formedBy": "event discriminator + previous/current root + LE64(sequence) + LE32(tokenId) + transition digest. Digest is SHA256(TCAP_GPRU_MEMO_CREDIT_V1\\0 || oldRoot || newRoot || authDigest || nullifier || LE32(tokenId) || LE64(amount) || memoField).",
+      "nextCredit": "Name/discriminator/asset can repeat; roots/sequence/digest follow state progression.",
+      "source": "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs"
+    },
+    {
+      "group": "TCAP event",
+      "key": "currentRoot",
+      "value": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+      "meaning": "TCAP event emitted after successful proof and atomic root/liability mutation.",
+      "formedBy": "event discriminator + previous/current root + LE64(sequence) + LE32(tokenId) + transition digest. Digest is SHA256(TCAP_GPRU_MEMO_CREDIT_V1\\0 || oldRoot || newRoot || authDigest || nullifier || LE32(tokenId) || LE64(amount) || memoField).",
+      "nextCredit": "Name/discriminator/asset can repeat; roots/sequence/digest follow state progression.",
+      "source": "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs"
+    },
+    {
+      "group": "TCAP event",
+      "key": "settlementSequence",
+      "value": 1,
+      "meaning": "TCAP event emitted after successful proof and atomic root/liability mutation.",
+      "formedBy": "event discriminator + previous/current root + LE64(sequence) + LE32(tokenId) + transition digest. Digest is SHA256(TCAP_GPRU_MEMO_CREDIT_V1\\0 || oldRoot || newRoot || authDigest || nullifier || LE32(tokenId) || LE64(amount) || memoField).",
+      "nextCredit": "Name/discriminator/asset can repeat; roots/sequence/digest follow state progression.",
+      "source": "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs"
+    },
+    {
+      "group": "TCAP event",
+      "key": "tokenId",
+      "value": 1,
+      "meaning": "TCAP event emitted after successful proof and atomic root/liability mutation.",
+      "formedBy": "event discriminator + previous/current root + LE64(sequence) + LE32(tokenId) + transition digest. Digest is SHA256(TCAP_GPRU_MEMO_CREDIT_V1\\0 || oldRoot || newRoot || authDigest || nullifier || LE32(tokenId) || LE64(amount) || memoField).",
+      "nextCredit": "Name/discriminator/asset can repeat; roots/sequence/digest follow state progression.",
+      "source": "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs"
+    },
+    {
+      "group": "TCAP event",
+      "key": "transitionDigest",
+      "value": "249f4ace377839abc7b6673128c6516aef900b19c62d74aa8bf28fde3a393b86",
+      "meaning": "TCAP event emitted after successful proof and atomic root/liability mutation.",
+      "formedBy": "event discriminator + previous/current root + LE64(sequence) + LE32(tokenId) + transition digest. Digest is SHA256(TCAP_GPRU_MEMO_CREDIT_V1\\0 || oldRoot || newRoot || authDigest || nullifier || LE32(tokenId) || LE64(amount) || memoField).",
+      "nextCredit": "Name/discriminator/asset can repeat; roots/sequence/digest follow state progression.",
+      "source": "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs"
+    },
+    {
+      "group": "TCAP event",
+      "key": "dataBytes",
+      "value": 116,
+      "meaning": "TCAP event emitted after successful proof and atomic root/liability mutation.",
+      "formedBy": "event discriminator + previous/current root + LE64(sequence) + LE32(tokenId) + transition digest. Digest is SHA256(TCAP_GPRU_MEMO_CREDIT_V1\\0 || oldRoot || newRoot || authDigest || nullifier || LE32(tokenId) || LE64(amount) || memoField).",
+      "nextCredit": "Name/discriminator/asset can repeat; roots/sequence/digest follow state progression.",
+      "source": "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs"
+    },
+    {
+      "group": "Metadata",
+      "key": "err",
+      "value": null,
+      "meaning": "RPC execution receipt metadata, separate from instruction inputs.",
+      "formedBy": "Solana runtime fee/compute/result/token-balance/address/reward reporting.",
+      "nextCredit": "Fee/empty arrays/result can repeat; compute/cost/length are observable side channels.",
+      "source": "finalized getTransaction receipt"
+    },
+    {
+      "group": "Metadata",
+      "key": "fee",
+      "value": 10000,
+      "meaning": "RPC execution receipt metadata, separate from instruction inputs.",
+      "formedBy": "Solana runtime fee/compute/result/token-balance/address/reward reporting.",
+      "nextCredit": "Fee/empty arrays/result can repeat; compute/cost/length are observable side channels.",
+      "source": "finalized getTransaction receipt"
+    },
+    {
+      "group": "Metadata",
+      "key": "computeUnitsConsumed",
+      "value": 760436,
+      "meaning": "RPC execution receipt metadata, separate from instruction inputs.",
+      "formedBy": "Solana runtime fee/compute/result/token-balance/address/reward reporting.",
+      "nextCredit": "Fee/empty arrays/result can repeat; compute/cost/length are observable side channels.",
+      "source": "finalized getTransaction receipt"
+    },
+    {
+      "group": "Metadata",
+      "key": "costUnits",
+      "value": 764577,
+      "meaning": "RPC execution receipt metadata, separate from instruction inputs.",
+      "formedBy": "Solana runtime fee/compute/result/token-balance/address/reward reporting.",
+      "nextCredit": "Fee/empty arrays/result can repeat; compute/cost/length are observable side channels.",
+      "source": "finalized getTransaction receipt"
+    },
+    {
+      "group": "Metadata",
+      "key": "preTokenBalances",
+      "value": [],
+      "meaning": "RPC execution receipt metadata, separate from instruction inputs.",
+      "formedBy": "Solana runtime fee/compute/result/token-balance/address/reward reporting.",
+      "nextCredit": "Fee/empty arrays/result can repeat; compute/cost/length are observable side channels.",
+      "source": "finalized getTransaction receipt"
+    },
+    {
+      "group": "Metadata",
+      "key": "postTokenBalances",
+      "value": [],
+      "meaning": "RPC execution receipt metadata, separate from instruction inputs.",
+      "formedBy": "Solana runtime fee/compute/result/token-balance/address/reward reporting.",
+      "nextCredit": "Fee/empty arrays/result can repeat; compute/cost/length are observable side channels.",
+      "source": "finalized getTransaction receipt"
+    },
+    {
+      "group": "Metadata",
+      "key": "rewards",
+      "value": [],
+      "meaning": "RPC execution receipt metadata, separate from instruction inputs.",
+      "formedBy": "Solana runtime fee/compute/result/token-balance/address/reward reporting.",
+      "nextCredit": "Fee/empty arrays/result can repeat; compute/cost/length are observable side channels.",
+      "source": "finalized getTransaction receipt"
+    },
+    {
+      "group": "Metadata",
+      "key": "loadedAddresses",
+      "value": {
+        "readonly": [],
+        "writable": []
+      },
+      "meaning": "RPC execution receipt metadata, separate from instruction inputs.",
+      "formedBy": "Solana runtime fee/compute/result/token-balance/address/reward reporting.",
+      "nextCredit": "Fee/empty arrays/result can repeat; compute/cost/length are observable side channels.",
+      "source": "finalized getTransaction receipt"
+    },
+    {
+      "group": "Metadata",
+      "key": "signature",
+      "value": "dojfmWVHfNA4AbwHpzQtFQGGUNxASw3rAdUKfhVYYCnfmoVwJDakVdpV7GJFxGu4aSaagXhBDHigcgwTs53gjgQ",
+      "meaning": "Public receipt identity, ordering, funding association or later asset binding observation.",
+      "formedBy": "RPC finalized transaction or current finalized asset account. Asset observation context is after the transaction, not an archival pre-state.",
+      "nextCredit": "Slots/signatures/timestamps change; mint/asset/funding sender can repeat.",
+      "source": "scripts/inspect-native-credit.py"
+    },
+    {
+      "group": "Metadata",
+      "key": "slot",
+      "value": 517916537,
+      "meaning": "Public receipt identity, ordering, funding association or later asset binding observation.",
+      "formedBy": "RPC finalized transaction or current finalized asset account. Asset observation context is after the transaction, not an archival pre-state.",
+      "nextCredit": "Slots/signatures/timestamps change; mint/asset/funding sender can repeat.",
+      "source": "scripts/inspect-native-credit.py"
+    },
+    {
+      "group": "Metadata",
+      "key": "blockTimeUtc",
+      "value": "2026-11-02T16:34:13+00:00",
+      "meaning": "Public receipt identity, ordering, funding association or later asset binding observation.",
+      "formedBy": "RPC finalized transaction or current finalized asset account. Asset observation context is after the transaction, not an archival pre-state.",
+      "nextCredit": "Slots/signatures/timestamps change; mint/asset/funding sender can repeat.",
+      "source": "scripts/inspect-native-credit.py"
+    },
+    {
+      "group": "Metadata",
+      "key": "finality",
+      "value": "finalized",
+      "meaning": "Public receipt identity, ordering, funding association or later asset binding observation.",
+      "formedBy": "RPC finalized transaction or current finalized asset account. Asset observation context is after the transaction, not an archival pre-state.",
+      "nextCredit": "Slots/signatures/timestamps change; mint/asset/funding sender can repeat.",
+      "source": "scripts/inspect-native-credit.py"
+    },
+    {
+      "group": "Metadata",
+      "key": "funding",
+      "value": {
+        "signature": "5HyuhK9HA56cwwtbykeTQLKRT6FNwQqeg4Ncb52zdkNwAKUEWpyZtzvMzDqWVtyWXejMShQu7utgJ5566nvZJN7o",
+        "slot": 517892485,
+        "nullifierRecomputed": "079eea418f77cc6378099aae819780b7fa5b2265d678b022ce4e24e8ae40366b",
+        "feePayer": "CPyxfZ4pshNvZr18t8wH9zqidBNzFjqGcNrQm5tG3XiV"
+      },
+      "meaning": "Public receipt identity, ordering, funding association or later asset binding observation.",
+      "formedBy": "RPC finalized transaction or current finalized asset account. Asset observation context is after the transaction, not an archival pre-state.",
+      "nextCredit": "Slots/signatures/timestamps change; mint/asset/funding sender can repeat.",
+      "source": "scripts/inspect-native-credit.py"
+    },
+    {
+      "group": "Metadata",
+      "key": "assetObservation",
+      "value": {
+        "observedContextSlot": 517924796,
+        "registry": "C8XzWaejCD4QfMpjGL8zp8jVhVVMWtaXzusqc98HTJLm",
+        "tokenId": 1,
+        "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+        "domainId": 1,
+        "scope": "b7633ad8df4c8f70bd2779f49e2ba62e4b31d0ac0f8db56649fb570eaf707547",
+        "reserveState": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "decimals": 6
+      },
+      "meaning": "Public receipt identity, ordering, funding association or later asset binding observation.",
+      "formedBy": "RPC finalized transaction or current finalized asset account. Asset observation context is after the transaction, not an archival pre-state.",
+      "nextCredit": "Slots/signatures/timestamps change; mint/asset/funding sender can repeat.",
+      "source": "scripts/inspect-native-credit.py"
+    }
+  ],
+  "sources": [
+    "V1 wire and receipt matcher",
+    "finalized getTransaction receipt",
+    "hidden_head_prover.py / GPRU hidden_head.rs",
+    "scripts/inspect-native-credit.py",
+    "scripts/inspect-native-credit.py / V1 builder",
+    "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
+    "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+    "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs",
+    "tsn-protocol/services/tsn-node/dbrix_transaction_record.py",
+    "tsn-protocol/services/tsn-node/server.py / tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
+    "tsn-protocol/services/tsn-node/server.py / tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+  ]
+}

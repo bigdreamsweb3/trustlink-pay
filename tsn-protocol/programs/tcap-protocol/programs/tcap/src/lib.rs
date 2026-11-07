@@ -7,6 +7,11 @@ pub mod errors;
 pub mod events;
 pub mod funding;
 pub mod funding_state;
+pub mod private_funding;
+pub mod private_epoch;
+pub mod private_funding_pool;
+pub use private_funding_pool::*;
+pub use private_epoch::*;
 pub mod instructions;
 pub mod state;
 
@@ -23,6 +28,10 @@ declare_id!("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
 #[program]
 pub mod tcap {
     use super::*;
+
+    pub fn seal_private_funding_pool_v1(ctx: Context<SealFundingPoolV1>, args: SealFundingPoolArgsV1) -> Result<()> { private_funding_pool::seal(ctx,args) }
+
+    pub fn account_credit_epoch_v1(ctx: Context<AccountCreditEpochV1>, args: AccountCreditEpochArgsV1) -> Result<()> { private_epoch::account_epoch(ctx,args) }
 
     pub fn initialize_tcap_v1(
         ctx: Context<InitializeTcapV1>,
@@ -247,9 +256,9 @@ pub mod tcap {
     }
 
     /// GPRU-validated encrypted memo credit with a shared atomic TCAP replay root.
-    pub fn credit_gpru_memo_v1(
-        ctx: Context<CreditGpruMemoV1>,
-        args: CreditGpruMemoV1Args,
+    pub fn credit_gpru_memo_v2(
+        ctx: Context<CreditGpruMemoV2>,
+        args: CreditGpruMemoV2Args,
     ) -> Result<()> {
         instructions::credit_gpru_memo_v1::handler(ctx, args)
     }
@@ -272,6 +281,16 @@ pub mod tcap {
         args: DebitTcapGpruTipV2Args,
     ) -> Result<()> {
         instructions::debit_tcap_gpru_tip_v2::handler(ctx, args)
+    }
+
+    /// Commit a funded private note atomically with the exact wallet-authorized reserve deposit.
+    pub fn deposit_private_funding_v1(ctx: Context<DepositPrivateFundingV1>, amount: u64, note_commitment: [u8;32]) -> Result<()> {
+        instructions::deposit_private_funding_v1::handler(ctx,amount,note_commitment)
+    }
+
+    /// Governance-only first initialization; no root replacement or reset is supported.
+    pub fn initialize_private_funding_root_v1(ctx: Context<InitializePrivateFundingRootV1>) -> Result<()> {
+        instructions::initialize_private_funding_root_v1::handler(ctx)
     }
 
     pub fn deposit_asset_v2(ctx: Context<DepositAssetV2>, amount: u64) -> Result<()> {

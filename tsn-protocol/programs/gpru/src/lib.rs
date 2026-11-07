@@ -3,6 +3,8 @@
 use anchor_lang::prelude::*;
 
 pub mod hidden_head;
+pub mod tcap_epoch;
+pub use tcap_epoch::*;
 #[path = "program.rs"]
 pub mod gpru_ix;
 #[cfg(not(target_os = "solana"))]
@@ -25,32 +27,34 @@ pub struct VerifyDnaKeyProof<'info> {
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
-pub struct HiddenHeadProofArgsV1 {
+pub struct HiddenHeadProofArgsV2 {
     pub public_inputs: [[u8; 32]; hidden_head::HIDDEN_HEAD_PUBLIC_INPUTS],
     pub proof_a: [u8; 64],
     pub proof_b: [u8; 128],
     pub proof_c: [u8; 64],
     pub action_kind: u8,
     pub token_id: u32,
-    pub amount: u64,
+    pub amount_commitment: [u8;32],
     pub authorization_commitment: [u8; 32],
 }
 
 #[derive(Accounts)]
-pub struct VerifyHiddenHeadTransitionV1<'info> {
+pub struct VerifyHiddenHeadTransitionV2<'info> {
     /// CHECK: validated against the TIP program's canonical shared route-root account.
     pub tip_route_root: UncheckedAccount<'info>,
     /// CHECK: validated against the canonical TCAP shared commitment-root account.
     pub tcap_commitment_root: UncheckedAccount<'info>,
     /// GPRU-owned, globally shared verifier configuration; it contains no user-specific data.
     #[account(seeds = [hidden_head::GPRU_HIDDEN_HEAD_VERIFIER_SEED], bump = verifier.bump)]
-    pub verifier: Box<Account<'info, hidden_head::GpruHiddenHeadVerifierV1>>,
+    pub verifier: Box<Account<'info, hidden_head::GpruHiddenHeadVerifierV2>>,
     /// CHECK: canonical instructions sysvar; GPRU binds the proof's memo commitment to the Memo instruction following the TSN call.
     pub instructions: UncheckedAccount<'info>,
+    /// CHECK: canonical TCAP-owned funding root and layout validated by GPRU.
+    pub funding_root: UncheckedAccount<'info>,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
-pub struct InitializeHiddenHeadVerifierArgsV1 {
+pub struct InitializeHiddenHeadVerifierArgsV2 {
     pub circuit_commitment: [u8; 32],
     pub verifying_key_commitment: [u8; 32],
     pub alpha_g1: [u8; 64],
@@ -60,30 +64,42 @@ pub struct InitializeHiddenHeadVerifierArgsV1 {
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
-pub struct WriteHiddenHeadVerifierIcArgsV1 {
+pub struct WriteHiddenHeadVerifierIcArgsV2 {
     pub start_index: u8,
     pub points: Vec<[u8; 64]>,
 }
 
 #[derive(Accounts)]
-pub struct ConfigureHiddenHeadVerifierV1<'info> {
+pub struct ConfigureHiddenHeadVerifierV2<'info> {
     pub authority: Signer<'info>,
     /// CHECK: canonical TSN Mother Escrow and its authority are checked by the handler.
     pub mother_escrow: UncheckedAccount<'info>,
     #[account(mut, seeds = [hidden_head::GPRU_HIDDEN_HEAD_VERIFIER_SEED], bump = verifier.bump)]
-    pub verifier: Box<Account<'info, hidden_head::GpruHiddenHeadVerifierV1>>,
+    pub verifier: Box<Account<'info, hidden_head::GpruHiddenHeadVerifierV2>>,
 }
 
 #[derive(Accounts)]
-#[instruction(args: InitializeHiddenHeadVerifierArgsV1)]
-pub struct InitializeHiddenHeadVerifierV1<'info> {
+#[instruction(args: InitializeHiddenHeadVerifierArgsV2)]
+pub struct InitializeHiddenHeadVerifierV2<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
     /// CHECK: authenticated as the canonical TSN Mother Escrow account below.
     pub mother_escrow: UncheckedAccount<'info>,
-    #[account(init, payer = authority, space = hidden_head::GpruHiddenHeadVerifierV1::SPACE, seeds = [hidden_head::GPRU_HIDDEN_HEAD_VERIFIER_SEED], bump)]
-    pub verifier: Box<Account<'info, hidden_head::GpruHiddenHeadVerifierV1>>,
+    #[account(init, payer = authority, space = hidden_head::GpruHiddenHeadVerifierV2::SPACE, seeds = [hidden_head::GPRU_HIDDEN_HEAD_VERIFIER_SEED], bump)]
+    pub verifier: Box<Account<'info, hidden_head::GpruHiddenHeadVerifierV2>>,
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct MigrateHiddenHeadVerifierV2<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    /// CHECK: canonical Mother Escrow and signer authority validated by the handler.
+    pub mother_escrow: UncheckedAccount<'info>,
+    /// CHECK: explicit one-time parsing of the old V1 account, never a runtime fallback.
+    #[account(mut,seeds=[hidden_head::GPRU_HIDDEN_HEAD_VERIFIER_SEED],bump,owner=crate::ID)]
+    pub verifier: UncheckedAccount<'info>,
+    pub system_program: Program<'info,System>,
 }
 
 #[program]
@@ -109,33 +125,47 @@ pub mod tsn_gpru_proof_contract {
     /// Verify a zero-knowledge update of one hidden TIN head and a one-time
     /// nullifier against the public shared roots. This instruction does not
     /// accept a TIN/TIP registry account or expose a per-TIN sequence.
-    pub fn verify_hidden_head_transition_v1(
-        ctx: Context<VerifyHiddenHeadTransitionV1>,
-        args: HiddenHeadProofArgsV1,
+    pub fn verify_hidden_head_transition_v2(
+        ctx: Context<VerifyHiddenHeadTransitionV2>,
+        args: HiddenHeadProofArgsV2,
     ) -> Result<()> {
         hidden_head::verify_transition(ctx, args)
     }
+
+    pub fn initialize_tcap_epoch_verifier_v1(ctx: Context<InitializeTcapEpochVerifierV1>, args: ConfigureTcapEpochVerifierArgsV1) -> Result<()> { tcap_epoch::initialize(ctx,args) }
+    pub fn write_tcap_epoch_verifier_ic_v1(ctx: Context<ConfigureTcapEpochVerifierV1>, args: WriteTcapEpochVerifierIcArgsV1) -> Result<()> { tcap_epoch::write_ic(ctx,args) }
+    pub fn enable_tcap_epoch_verifier_v1(ctx: Context<ConfigureTcapEpochVerifierV1>) -> Result<()> { tcap_epoch::enable(ctx) }
+    pub fn verify_tcap_credit_epoch_v1(ctx: Context<VerifyTcapCreditEpochV1>, args: TcapEpochProofV1) -> Result<()> { tcap_epoch::verify(ctx,args) }
 
     /// Create the disabled verifier and install its fixed key header under Mother authority.
     /// IC points are uploaded in bounded transactions before commitment-checked enabling.
     /// This is a one-time protocol setup instruction; it stores only global
     /// verifier parameters and no TIN-specific state.
-    pub fn initialize_hidden_head_verifier_v1(
-        ctx: Context<InitializeHiddenHeadVerifierV1>,
-        args: InitializeHiddenHeadVerifierArgsV1,
+    pub fn initialize_hidden_head_verifier_v2(
+        ctx: Context<InitializeHiddenHeadVerifierV2>,
+        args: InitializeHiddenHeadVerifierArgsV2,
     ) -> Result<()> {
         hidden_head::initialize_verifier(ctx, args)
     }
 
-    pub fn write_hidden_head_verifier_ic_v1(
-        ctx: Context<ConfigureHiddenHeadVerifierV1>,
-        args: WriteHiddenHeadVerifierIcArgsV1,
+    /// One-time Mother-authorized growth and key replacement for the funded-note circuit.
+    pub fn migrate_hidden_head_verifier_v2(ctx: Context<MigrateHiddenHeadVerifierV2>, args: InitializeHiddenHeadVerifierArgsV2) -> Result<()> {
+        hidden_head::migrate_verifier(ctx,args)
+    }
+
+    pub fn rekey_hidden_head_verifier_v2(ctx: Context<ConfigureHiddenHeadVerifierV2>, args: InitializeHiddenHeadVerifierArgsV2) -> Result<()> {
+        hidden_head::rekey_verifier(ctx,args)
+    }
+
+    pub fn write_hidden_head_verifier_ic_v2(
+        ctx: Context<ConfigureHiddenHeadVerifierV2>,
+        args: WriteHiddenHeadVerifierIcArgsV2,
     ) -> Result<()> {
         hidden_head::write_verifier_ic(ctx, args)
     }
 
-    pub fn enable_hidden_head_verifier_v1(
-        ctx: Context<ConfigureHiddenHeadVerifierV1>,
+    pub fn enable_hidden_head_verifier_v2(
+        ctx: Context<ConfigureHiddenHeadVerifierV2>,
     ) -> Result<()> {
         hidden_head::enable_verifier(ctx)
     }

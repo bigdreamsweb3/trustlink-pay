@@ -129,28 +129,9 @@ function makeTinIssuanceProof(secret, { ownerPubkey, lookupCommitment, nonce, in
 }
 
 function buildOwnerTinIdentityChallengeMessage(ownerPubkey, tin, challengeId) {
-  return Buffer.from([
-    "TrustLink",
-    "Private identity display",
-    "",
-    "Purpose",
-    "",
-    "Confirm wallet ownership to display the name encrypted with this TIN.",
-    "",
-    "Wallet",
-    "",
-    ownerPubkey.toBase58(),
-    "",
-    "TIN",
-    "",
-    tin,
-    "",
-    "One-time request",
-    "",
-    challengeId,
-    "",
-    "This signature authorizes this XP lookup only. It does not authorize a transaction or move funds.",
-  ].join("\n"), "utf8");
+  return Buffer.from(tsnSdk.buildOwnerTinIdentityChallengeMessageV1({
+    ownerPublicKey: ownerPubkey.toBase58(), tin, challengeId,
+  }));
 }
 
 const server = http.createServer(async (req, res) => {
@@ -207,6 +188,33 @@ async function handleApi(req, res, url) {
   if (!session) return json(res, 401, { error: "INVALID_OR_EXPIRED_SESSION" });
   if (req.method !== "GET" && req.headers["x-trustlink-csrf"] !== session.csrfToken) return json(res, 403, { error: "CSRF_VALIDATION_FAILED" });
   session.touchedAt = Date.now();
+
+  async function readNodeBlockhash() {
+    const nodeUrl = configuredNodeUrl();
+    if (!nodeUrl) return void json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED_FOR_BLOCKHASH" });
+    let blockhashResponse;
+    try {
+      blockhashResponse = await fetch(`${nodeUrl}/network/recent-blockhash`, {
+        cache: "no-store", signal: AbortSignal.timeout(10_000),
+      });
+    } catch (error) {
+      return json(res, 503, { error: "TSN_NODE_BLOCKHASH_UNAVAILABLE", detail: error instanceof Error ? error.message : String(error) });
+    }
+    const latestBlockhash = await blockhashResponse.json().catch(() => ({}));
+    if (!blockhashResponse.ok || typeof latestBlockhash.recentBlockhash !== "string"
+      || !Number.isInteger(latestBlockhash.lastValidBlockHeight)) {
+      return json(res, 503, { error: "TSN_NODE_BLOCKHASH_UNAVAILABLE", detail: latestBlockhash.detail ?? latestBlockhash.error ?? "Node returned an invalid blockhash response" });
+    }
+    return latestBlockhash;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/tsn/sdk/refresh-tin-credit-blockhash") {
+    const prepared = session.pendingTinCredit;
+    if (!prepared || prepared.expiresAt < Date.now()) return json(res, 409, { error: "TIN_CREDIT_PREPARATION_EXPIRED" });
+    const latestBlockhash = await readNodeBlockhash();
+    if (!latestBlockhash) return;
+    return json(res, 200, { recentBlockhash: latestBlockhash.recentBlockhash, lastValidBlockHeight: latestBlockhash.lastValidBlockHeight });
+  }
 
   if (url.pathname === "/api/tsn/sdk/network-status") {
     const network = await tsnSdk.getTsnNetworkStatus({
@@ -504,9 +512,21 @@ async function handleApi(req, res, url) {
     if (!identity) return json(res, 404, { error: "TIN could not be resolved" });
     const expectedOwnerHash = createHash("sha256").update(ownerPubkey.toBuffer()).digest("hex");
     if (identity.ownerPubkeyHash !== expectedOwnerHash) return json(res, 404, { error: "OWNER_TIN_NOT_FOUND" });
+    let balanceContext;
+    if (body.includeBalanceContext === true) {
+      try {
+        balanceContext = await tsnSdk.getTinOwnerBalanceContextV1({
+          connection: new Connection(await resolveRpcUrl(), "finalized"),
+          registry: identity.registryPda, programId: tinProgramId, ownerPublicKey: ownerPubkey.toBase58(),
+        });
+      } catch {
+        return json(res, 502, { error: "OWNER_TIN_BALANCE_CONTEXT_INVALID" });
+      }
+    }
     return json(res, 200, {
       tin,
       displayName: identity.displayName,
+      ...(balanceContext ? { balanceContext } : {}),
       source: "TSN SDK / TIP registry RPC",
     });
   }
@@ -562,8 +582,8 @@ async function handleApi(req, res, url) {
     const accounts = await rpc.read((connection) => tsnSdk.resolveTcapGpruDepositAccounts(connection, {
       depositor, mint, tokenProgram, tcapProgramId: tcapProgram,
     }));
-    const [reserveAccount, vaultAccount] = await rpc.read((connection) => connection.getMultipleAccountsInfo([
-      accounts.reserveState, accounts.vault,
+    const [reserveAccount, vaultAccount, fundingRootAccount] = await rpc.read((connection) => connection.getMultipleAccountsInfo([
+      accounts.reserveState, accounts.vault, accounts.fundingRootAccount,
     ], "confirmed"));
     const { assetEntryAccount: entryAccount } = accounts;
     const entryData = entryAccount?.data;
@@ -578,6 +598,8 @@ async function handleApi(req, res, url) {
     }
     if (!reserveAccount) return json(res, 409, { error: "TCAP_CANONICAL_RESERVE_ACCOUNT_MISSING", address: accounts.reserveState.toBase58() });
     if (!vaultAccount) return json(res, 409, { error: "TCAP_CANONICAL_VAULT_ACCOUNT_MISSING", address: accounts.vault.toBase58() });
+    if (!fundingRootAccount) return json(res, 409, { error: "TCAP_FUNDING_ROOT_ACCOUNT_MISSING", address: accounts.fundingRootAccount.toBase58() });
+    if (!fundingRootAccount.owner.equals(tcapProgram)) return json(res, 409, { error: "TCAP_FUNDING_ROOT_OWNER_MISMATCH" });
     if (!reserveAccount.owner.equals(tcapProgram)) return json(res, 409, { error: "TCAP_RESERVE_ACCOUNT_OWNER_MISMATCH" });
     if (!vaultAccount.owner.equals(tokenProgram)) return json(res, 409, { error: "TCAP_VAULT_TOKEN_PROGRAM_MISMATCH" });
     if (vaultAccount.data.length < 72 || vaultAccount.data.subarray(0, 32).toString("hex") !== mint.toBuffer().toString("hex")) {
@@ -609,21 +631,8 @@ async function handleApi(req, res, url) {
     const sourceTokenBalance = selectedSource.balance;
     if (sourceTokenBalance < amountBaseUnits) return json(res, 409, { error: "INSUFFICIENT_SENDER_TOKEN_BALANCE", availableBaseUnits: sourceTokenBalance.toString() });
     const slot = await rpc.read((connection) => connection.getSlot("confirmed"));
-    const nodeUrl = configuredNodeUrl();
-    if (!nodeUrl) return json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED_FOR_BLOCKHASH" });
-    let blockhashResponse;
-    try {
-      blockhashResponse = await fetch(`${nodeUrl}/network/recent-blockhash`, {
-        cache: "no-store", signal: AbortSignal.timeout(10_000),
-      });
-    } catch (error) {
-      return json(res, 503, { error: "TSN_NODE_BLOCKHASH_UNAVAILABLE", detail: error instanceof Error ? error.message : String(error) });
-    }
-    const latestBlockhash = await blockhashResponse.json().catch(() => ({}));
-    if (!blockhashResponse.ok || typeof latestBlockhash.recentBlockhash !== "string"
-      || !Number.isInteger(latestBlockhash.lastValidBlockHeight)) {
-      return json(res, 503, { error: "TSN_NODE_BLOCKHASH_UNAVAILABLE", detail: latestBlockhash.detail ?? latestBlockhash.error ?? "Node returned an invalid blockhash response" });
-    }
+    const latestBlockhash = await readNodeBlockhash();
+    if (!latestBlockhash) return;
     // The resolver also returns fetched account data and numeric token
     // metadata. Serialize only deposit addresses, after selecting the source.
     const depositAccounts = {
@@ -631,6 +640,7 @@ async function handleApi(req, res, url) {
       assetEntry: accounts.assetEntry.toBase58(), reserveState: accounts.reserveState.toBase58(),
       source: accounts.source.toBase58(), vault: accounts.vault.toBase58(), mint: mint.toBase58(),
       tokenProgram: tokenProgram.toBase58(), tcapProgramId: tcapProgram.toBase58(),
+      fundingRootAccount: accounts.fundingRootAccount.toBase58(),
     };
     session.pendingTinCredit = {
       recipientTin,
@@ -663,6 +673,18 @@ async function handleApi(req, res, url) {
     if (!request || request.senderWallet !== session.wallet || request.recipientTin !== prepared.recipientTin
       || request.recipientHash !== prepared.recipientHash || request.tokenMintAddress !== prepared.mint) {
       return json(res, 409, { error: "TIN_CREDIT_REQUEST_DIFFERS_FROM_PREPARATION" });
+    }
+    let fundingNote;
+    try {
+      fundingNote = tsnSdk.assertFundingNoteV1(request.fundingNote);
+      const signedIntent = tsnSdk.parsePaymentIntentMessage(request.senderAuthorizationMessage);
+      if (request.senderFundingMode !== "tcap_funded_note_v1" || signedIntent.fundingNoteCommitment !== fundingNote.commitment
+          || signedIntent.amountBaseUnits.toString() !== prepared.amountBaseUnits
+          || signedIntent.tokenMintAddress !== prepared.mint || signedIntent.recipientTin !== prepared.recipientTin) {
+        return json(res, 409, { error: "TIN_CREDIT_REQUEST_DIFFERS_FROM_PREPARATION" });
+      }
+    } catch {
+      return json(res, 422, { error: "INVALID_PRIVATE_FUNDING_NOTE" });
     }
     const nodeUrl = configuredNodeUrl();
     if (!nodeUrl) return json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED_FOR_LIVE_MODE" });
@@ -729,4 +751,4 @@ function json(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
-server.listen(port, () => console.log(`[tsn-protocol-ui] http://127.0.0.1:${port} · SDK-only dApp demonstration`));
+server.listen(port, () => console.log(`[tsn-protocol-ui] http://127.0.0.1:${port} Â· SDK-only dApp demonstration`));

@@ -241,6 +241,16 @@ function isBase64AccountData(data) {
   return typeof data === "string" || (Array.isArray(data) && typeof data[0] === "string");
 }
 
+function isBlockhashRejection(payload, body) {
+  // A valid JSON-RPC response can still come from a bank that has not seen
+  // this hash. Retry the identical payload; never replace signed bytes.
+  const error = payload.method === "simulateTransaction"
+    ? body?.result?.value?.err ?? body?.error?.data?.err
+    : payload.method === "sendTransaction" ? body?.error?.data?.err : null;
+  return error === "BlockhashNotFound"
+    || (isJsonObject(error) && Object.hasOwn(error, "BlockhashNotFound"));
+}
+
 function hasMalformedAccountData(payload, responseBody) {
   if (payload.method === "getAccountInfo") {
     const data = responseBody?.result?.value?.data;
@@ -359,6 +369,7 @@ async function fetchRpcPayload(provider, payload, timeoutMs) {
 async function proxySinglePayload(pool, config, payload) {
   const rankedProviders = pool.getRankedProviders(payload.method);
   let lastError = null;
+  let blockhashRejection = null;
 
   for (const provider of rankedProviders) {
     try {
@@ -367,6 +378,13 @@ async function proxySinglePayload(pool, config, payload) {
         provider: provider.label,
       });
       const result = await fetchRpcPayload(provider, payload, config.timeoutMs);
+      if (isBlockhashRejection(payload, result.body)) {
+        blockhashRejection = { body: result.body, provider };
+        logGatewayEvent(config, "info", "blockhash unavailable; trying next provider", {
+          method: payload.method, provider: provider.label,
+        });
+        continue;
+      }
       logGatewayEvent(config, "info", "upstream success", {
         ...Object.fromEntries(requestLabel(payload).split(" ").map((entry) => entry.split("="))),
         provider: provider.label,
@@ -400,6 +418,9 @@ async function proxySinglePayload(pool, config, payload) {
     }
   }
 
+  // Return a definitive blockhash rejection only when every attempted
+  // provider answered. An unavailable provider leaves validity unknown.
+  if (!lastError && blockhashRejection) return blockhashRejection;
   throw lastError ?? new Error("No upstream Solana RPC providers are available");
 }
 

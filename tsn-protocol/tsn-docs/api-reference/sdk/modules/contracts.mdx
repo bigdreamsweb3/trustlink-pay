@@ -9,15 +9,21 @@ This reference is generated from the checked-out TypeScript exports. Types and s
 
 ## buildCreateIntentRequest
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 119](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L119).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 121](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L121).
 
 ```ts
-buildCreateIntentRequest(params: { paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; senderSignedFundingTransaction: string; senderFundingMode: "tcap_deposit_v2"; recipientAmount?: number; destinationNetwork?: string | null; destinationExecutor?: string | null; destinationToken?: string | null; settlementRouteId?: string | null; source?: string; }): CreateIntentRequest
+buildCreateIntentRequest(params: { paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; senderSignedFundingTransaction: string; senderFundingMode: "tcap_funded_note_v1"; fundingNote: FundingNoteV1; recipientAmount?: number; destinationNetwork?: string | null; destinationExecutor?: string | null; destinationToken?: string | null; settlementRouteId?: string | null; source?: string; }): CreateIntentRequest
+```
+
+Direct failure expressions:
+
+```text
+new Error("TCAP_FUNDED_NOTE_V1_REQUIRED")
 ```
 
 ## computeTsnUiStage
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 166](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L166).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 171](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L171).
 
 ```ts
 computeTsnUiStage(intent: IntentState): TsnUiStage
@@ -25,7 +31,7 @@ computeTsnUiStage(intent: IntentState): TsnUiStage
 
 ## CreateIntentRequest
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 24](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L24).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 25](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L25).
 
 ```ts
 export type CreateIntentRequest = {
@@ -43,7 +49,8 @@ export type CreateIntentRequest = {
   senderAuthorizationExpiresAt?: string | null;
   senderFeeAmount?: number | null;
   senderSignedFundingTransaction: string;
-  senderFundingMode: "tcap_deposit_v2";
+  senderFundingMode: "tcap_funded_note_v1";
+  fundingNote: FundingNoteV1;
   recipientAmount?: number;
   source?: string;
   destinationNetwork?: string | null;
@@ -55,7 +62,7 @@ export type CreateIntentRequest = {
 
 ## IntentState
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 103](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L103).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 105](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L105).
 
 ```ts
 export type IntentState = {
@@ -65,11 +72,11 @@ export type IntentState = {
 
 ## PaymentIntentRecord
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 9](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L9).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 10](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L10).
 
 ### PaymentIntentRecord.id
 
-[Source, line 10](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L10).
+[Source, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L11).
 
 ```ts
 id: string
@@ -77,7 +84,7 @@ id: string
 
 ### PaymentIntentRecord.payment_id
 
-[Source, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L11).
+[Source, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L12).
 
 ```ts
 payment_id: string
@@ -85,7 +92,7 @@ payment_id: string
 
 ### PaymentIntentRecord.intent_seed_hash
 
-[Source, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L12).
+[Source, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L13).
 
 ```ts
 intent_seed_hash: string
@@ -93,7 +100,7 @@ intent_seed_hash: string
 
 ### PaymentIntentRecord.recipient_hash
 
-[Source, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L13).
+[Source, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L14).
 
 ```ts
 recipient_hash: string
@@ -101,7 +108,7 @@ recipient_hash: string
 
 ### PaymentIntentRecord.token_mint_address
 
-[Source, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L14).
+[Source, line 15](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L15).
 
 ```ts
 token_mint_address: string | null
@@ -109,7 +116,7 @@ token_mint_address: string | null
 
 ### PaymentIntentRecord.amount
 
-[Source, line 15](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L15).
+[Source, line 16](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L16).
 
 ```ts
 amount: string
@@ -117,7 +124,7 @@ amount: string
 
 ### PaymentIntentRecord.status
 
-[Source, line 16](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L16).
+[Source, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L17).
 
 ```ts
 status: TsnIntentStatus
@@ -125,7 +132,7 @@ status: TsnIntentStatus
 
 ### PaymentIntentRecord.assigned_cranker_pubkey
 
-[Source, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L17).
+[Source, line 18](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L18).
 
 ```ts
 assigned_cranker_pubkey: string | null
@@ -133,7 +140,7 @@ assigned_cranker_pubkey: string | null
 
 ### PaymentIntentRecord.lease_expiry_at
 
-[Source, line 18](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L18).
+[Source, line 19](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L19).
 
 ```ts
 lease_expiry_at: string | null
@@ -141,7 +148,7 @@ lease_expiry_at: string | null
 
 ### PaymentIntentRecord.funding_tx_sig
 
-[Source, line 19](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L19).
+[Source, line 20](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L20).
 
 ```ts
 funding_tx_sig: string | null
@@ -149,7 +156,7 @@ funding_tx_sig: string | null
 
 ### PaymentIntentRecord.settlement_tx_sig
 
-[Source, line 20](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L20).
+[Source, line 21](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L21).
 
 ```ts
 settlement_tx_sig: string | null
@@ -157,7 +164,7 @@ settlement_tx_sig: string | null
 
 ### PaymentIntentRecord.created_at
 
-[Source, line 21](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L21).
+[Source, line 22](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L22).
 
 ```ts
 created_at: string
@@ -165,7 +172,7 @@ created_at: string
 
 ## PaymentIntentStatus
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 7](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L7).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 8](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L8).
 
 ```ts
 export type PaymentIntentStatus = TsnIntentStatus;
@@ -173,7 +180,7 @@ export type PaymentIntentStatus = TsnIntentStatus;
 
 ## PublicTsnMempoolIntent
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 60](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L60).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 62](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L62).
 
 ```ts
 export type PublicTsnMempoolIntent = Pick<
@@ -199,7 +206,7 @@ export type PublicTsnMempoolIntent = Pick<
 
 ## sha256Hex
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 107](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L107).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 109](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L109).
 
 ```ts
 sha256Hex(input: string): string
@@ -207,7 +214,7 @@ sha256Hex(input: string): string
 
 ## TsnEpochChallenge
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 86](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L86).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 88](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L88).
 
 ```ts
 export type TsnEpochChallenge = {
@@ -230,7 +237,7 @@ export type TsnEpochChallenge = {
 
 ## TsnEpochChallengeStatus
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 84](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L84).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 86](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L86).
 
 ```ts
 export type TsnEpochChallengeStatus = "open" | "submitted" | "completed" | "failed";
@@ -238,7 +245,7 @@ export type TsnEpochChallengeStatus = "open" | "submitted" | "completed" | "fail
 
 ## TsnIntentStatus
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 4](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L4).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 5](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L5).
 
 ```ts
 export type TsnIntentStatus = "pending" | "onchain" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
@@ -246,7 +253,7 @@ export type TsnIntentStatus = "pending" | "onchain" | "executed" | "settled" | "
 
 ## TsnIntentWorkItem
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 80](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L80).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 82](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L82).
 
 ```ts
 export type TsnIntentWorkItem = {
@@ -256,7 +263,7 @@ export type TsnIntentWorkItem = {
 
 ## TsnMempoolIntent
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 48](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L48).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 50](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L50).
 
 ```ts
 export type TsnMempoolIntent = CreateIntentRequest & {
@@ -274,7 +281,7 @@ export type TsnMempoolIntent = CreateIntentRequest & {
 
 ## TsnUiStage
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 5](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L5).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/contracts`. [Implementation, line 6](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L6).
 
 ```ts
 export type TsnUiStage = "intent_pending" | "funded" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";

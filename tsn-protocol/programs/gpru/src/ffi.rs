@@ -12,7 +12,7 @@ pub unsafe extern "C" fn tsn_gpru_poseidon_v1(
     output: *mut u8,
 ) -> i32 {
     if inputs.is_null() || output.is_null() { return 2; }
-    if !matches!(count, 1 | 2 | 3 | 5) { return 1; }
+    if !matches!(count, 1 | 2 | 3 | 4 | 5) { return 1; }
     let bytes = core::slice::from_raw_parts(inputs, count * 32);
     let fields: Vec<&[u8]> = bytes.chunks_exact(32).collect();
     let result = solana_program::poseidon::hashv(
@@ -126,3 +126,17 @@ pub unsafe extern "C" fn tsn_gpru_derive_record_shared_point_v1(
     0
 }
 
+
+#[cfg(test)]
+mod poseidon_tests {
+    #[test]
+    fn four_input_native_adapter_matches_solana_and_rejects_bad_fields() {
+        let mut inputs=[0u8;128];for i in 0..4{inputs[i*32+31]=(i+1) as u8;}
+        let mut output=[0u8;32];
+        assert_eq!(unsafe{super::tsn_gpru_poseidon_v1(inputs.as_ptr(),4,output.as_mut_ptr())},0);
+        let expected=solana_program::poseidon::hashv(solana_program::poseidon::Parameters::Bn254X5,
+            solana_program::poseidon::Endianness::BigEndian,&inputs.chunks_exact(32).collect::<Vec<_>>()).unwrap();
+        assert_eq!(output,expected.to_bytes());
+        inputs[..32].fill(255);assert_eq!(unsafe{super::tsn_gpru_poseidon_v1(inputs.as_ptr(),4,output.as_mut_ptr())},1);
+    }
+}

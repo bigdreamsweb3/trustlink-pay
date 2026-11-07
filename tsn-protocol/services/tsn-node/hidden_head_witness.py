@@ -124,7 +124,24 @@ class HiddenHeadWitnessStore:
         self.directory = directory
 
     def prepare_credit(self, *, old_root: str, tip_root: str, route: dict[str, Any],
-                       token_id: int, amount: int, authorization: str, nullifier: str) -> dict[str, Any]:
+                       token_id: int, amount: int, authorization: str, nullifier: str,
+                       funding_note: dict[str, Any], funding_membership: dict[str, Any], amount_blinding: int | None = None) -> dict[str, Any]:
+        from funding_note import validate_funding_note, funded_leaf, funding_nullifier
+        note = validate_funding_note(funding_note)
+        if funding_nullifier(note) != nullifier:
+            raise ValueError("Credit nullifier differs from the private funding opening")
+        if (not isinstance(funding_membership, dict)
+                or set(funding_membership) != {"fundingRoot", "fundingIndex", "fundingSiblings"}):
+            raise ValueError("Funding membership has an unsupported field set")
+        funding_root = field(funding_membership["fundingRoot"])
+        funding_index = funding_membership["fundingIndex"]
+        funding_siblings = funding_membership["fundingSiblings"]
+        if (type(funding_index) is not int or not 0 <= funding_index < 1 << 32
+                or not isinstance(funding_siblings, list) or len(funding_siblings) != 32):
+            raise ValueError("Funding membership index or path is invalid")
+        funding_siblings = [field(v) for v in funding_siblings]
+        if path_root(funded_leaf(note["commitment"], token_id, amount), funding_index, funding_siblings) != funding_root:
+            raise ValueError("Funding opening, registered token or amount differs from funded membership")
         if type(token_id) is not int or not 0 < token_id <= 0xFFFFFFFF or type(amount) is not int or not 0 < amount <= 0xFFFFFFFFFFFFFFFF:
             raise ValueError("Hidden-head credit requires a positive u32 token and u64 amount")
         if field_hex(authorization) == 0:
@@ -201,9 +218,14 @@ class HiddenHeadWitnessStore:
         successor = _babyjub_add(_babyjub_add(predecessor, _babyjub_mul(BABYJUB_BASE8, amount)), _babyjub_mul(BALANCE_H, delta))
         portfolio_siblings = portfolio.siblings(token_id)
         successor_portfolio = path_root(poseidon_v1([token_id, *successor]), token_id, portfolio_siblings)
-        action = poseidon_v1([1, token_id, amount, field_hex(authorization), n])
+        from credit_amount import commitment
+        amount_blinding = secrets.randbelow(BABYJUB_FIELD-1)+1 if amount_blinding is None else amount_blinding
+        value_commitment = commitment(token_id,amount,amount_blinding,n)
+        action = poseidon_v1([1, token_id, value_commitment, field_hex(authorization), n])
         witness = {
             "oldGlobalRoot": field_hex(old_root), "tipRouteRoot": field_hex(tip_root),
+            "fundingRoot": funding_root, "fundingIndex": funding_index, "fundingSiblings": funding_siblings,
+            "fundingSecret": field_hex(note["secret"]), "fundingBlinding": field_hex(note["blinding"]),
             "actionCommitment": action, "nullifier": n,
             "successorPortfolioRoot": successor_portfolio,
             "successorBalanceX": successor[0], "successorBalanceY": successor[1],
@@ -218,6 +240,7 @@ class HiddenHeadWitnessStore:
             "predecessorPortfolioRoot": portfolio.root, "accountSiblings": head_tree.siblings(head_index),
             "isFirstToken": int(point is None), "predecessorBalanceX": predecessor[0], "predecessorBalanceY": predecessor[1],
             "portfolioSiblings": portfolio_siblings, "nullifierSiblings": nullifier_tree.siblings(nullifier_index),
+            "amountBlinding": amount_blinding, "amountCommitment": value_commitment,
             "actionKind": 1, "assetId": token_id, "amount": amount, "authorizationCommitment": field_hex(authorization),
             "balanceBlindingDelta": delta, "balanceBlindingCarry": 0, "deltaEphemeralScalar": cipher["ephemeralScalar"],
             "sharedXReduction": cipher["sharedXReduction"], "sharedXCarry": cipher["sharedXCarry"], "encryptedDeltaCarry": cipher["encryptedDeltaCarry"],
@@ -248,6 +271,8 @@ class HiddenHeadWitnessStore:
     def save_candidate(self, prepared: dict[str, Any]) -> None:
         # Called only after local proof verification. This immutable candidate
         # becomes usable only if a later chain read selects its exact root.
+        from credit_amount import publish_opening
+        publish_opening(self.directory,prepared["witness"])
         target = self.directory / f"tcap-{hex_field(prepared['witness']['newGlobalRoot'])}.json"
         encoded = json.dumps(prepared["state"], sort_keys=True, separators=(",", ":")).encode("utf-8")
         temporary = target.with_suffix(f".{secrets.token_hex(8)}.tmp")

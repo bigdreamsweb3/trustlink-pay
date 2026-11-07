@@ -33,7 +33,7 @@ await esbuild.build({
         namespace: "tsn-zk-sdk",
       }));
       build.onLoad({ filter: /.*/, namespace: "tsn-zk-sdk" }, () => ({
-        contents: `import initSync, { ConfidentialKeys } from "@solana/zk-sdk/web";\nconst wasm = Uint8Array.from(atob("${zkSdkWasm}"), (c) => c.charCodeAt(0));\ninitSync(wasm);\nexport { ConfidentialKeys };`,
+        contents: `import { initSync, ConfidentialKeys, ElGamalPubkey } from "@solana/zk-sdk/web";\nconst wasm = Uint8Array.from(atob("${zkSdkWasm}"), (c) => c.charCodeAt(0));\ninitSync({ module: wasm });\nexport { ConfidentialKeys, ElGamalPubkey };`,
         loader: "js",
         resolveDir: zkSdkPackage,
       }));

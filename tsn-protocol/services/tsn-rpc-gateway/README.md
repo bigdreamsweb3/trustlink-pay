@@ -70,3 +70,7 @@ Inside this folder:
 - `npm run check`
 
 See [`docs/RPC-GATEWAY.md`](../docs/RPC-GATEWAY.md) for the full setup guide.
+
+## Signed funding blockhash visibility
+
+The gateway retries identical simulation or sendTransaction preflight requests across ranked providers after a bank returns BlockhashNotFound. It never refreshes the signed message or disables signature checks. If all attempted banks explicitly reject the hash, that error is returned; a mixed transport failure leaves validity unknown. Keep every upstream on the intended Devnet genesis. A reachable health endpoint does not prove transaction-bank visibility. See [the operator guide](../../../docs/RUN-YOUR-OWN-TSN.md) for setup and recovery.

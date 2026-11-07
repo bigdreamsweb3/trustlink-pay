@@ -42,7 +42,11 @@ from uuid import uuid4
 import httpx
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, Header, HTTPException, Path as ApiPath, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Path as ApiPath, Query, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from nacl.exceptions import BadSignatureError, CryptoError
 from nacl.public import Box, PrivateKey, PublicKey as Curve25519PublicKey
@@ -71,7 +75,12 @@ from app.services.cross_chain_routes import (
 from dbrix_transaction_record import BN254_SCALAR_MODULUS, encrypt_transaction_record_v1, validate_transaction_record_v1
 from gpru_crypto import derive_node_record_shared_point
 from hidden_head_witness import HiddenHeadWitnessStore, hex_field
+from tip_snapshot_sync import ensure_tip_snapshot
 from hidden_head_prover import PUBLIC_SIGNALS, prove_hidden_head_credit
+from funding_note import validate_funding_note, funding_nullifier
+from funding_snapshot_sync import FUNDING_ROOT_CHANGED, funding_root_address, read_funding_root, ensure_funding_snapshot, funding_membership, read_sealed_pool, sealed_pool_address
+from credit_amount import commitment as credit_amount_commitment, read_opening
+from private_credit_coordination import PrivateCreditWait, read_epoch, qualified_sources, admitted_pool_sources, schedule, epoch_credits, build_epoch_witness
 
 _node_root = Path(__file__).resolve().parent
 # Local development is local-first. The hosted .env remains a fallback for
@@ -488,6 +497,17 @@ def _node_verification_message(attestation: dict[str, Any]) -> bytes:
     return ("TSN_NODE_VERIFICATION_V1\n" + "\n".join(values)).encode("utf-8")
 
 
+def _public_coordination(kind: str, value: dict) -> dict:
+    allowed = {"assetEntry", "reserveState", "tcapConfig"} | (
+        {"root", "eligibleNoteCount", "sourceWalletCount", "releaseSlot"} if kind == "TCAP_FUNDING_POOL"
+        else {"accountingEpoch", "total", "proof"})
+    result = {key: child for key, child in value.items() if key in allowed}
+    if isinstance(result.get("proof"), dict):
+        result["proof"] = {key: child for key, child in result["proof"].items()
+                           if key in {"publicInputs", "proofA", "proofB", "proofC"}}
+    return result
+
+
 def _sign_node_verification(
     *, work: dict[str, Any], status: str, evidence: dict[str, Any], verification_type: str,
 ) -> dict[str, Any]:
@@ -503,6 +523,8 @@ def _sign_node_verification(
             # are evidence, not Cranker execution inputs.
             "AUTHORIZED_FUNDING": {"senderSignedFundingTransaction", "senderFundingMode"},
             "SETTLEMENT": {"tcapCreditTransition"},
+            "TCAP_FUNDING_POOL": {"tcapFundingPool"},
+            "TCAP_EPOCH_ACCOUNTING": {"tcapEpochAccounting"},
             "TIN_OPERATION": {
                 "intentId", "intentType", "ownerPubkey", "ownerSignature", "ownerIntentHash",
                 "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry", "nonce",
@@ -515,10 +537,10 @@ def _sign_node_verification(
         }.get(str(work.get("kind") or ""), set())
         execution_payload = {name: verified_payload[name] for name in allowed if name in verified_payload}
         if work.get("kind") == "SETTLEMENT" and isinstance(execution_payload.get("tcapCreditTransition"), dict):
-            execution_payload["tcapCreditTransition"] = {
-                name: value for name, value in execution_payload["tcapCreditTransition"].items()
-                if name in TCAP_CRANKER_TRANSITION_FIELDS
-            }
+            execution_payload["tcapCreditTransition"] = _public_tcap_transition(execution_payload["tcapCreditTransition"])
+        for kind, field in (("TCAP_FUNDING_POOL", "tcapFundingPool"), ("TCAP_EPOCH_ACCOUNTING", "tcapEpochAccounting")):
+            if work.get("kind") == kind and isinstance(execution_payload.get(field), dict):
+                execution_payload[field] = _public_coordination(kind, execution_payload[field])
     else:
         execution_payload = {}
     attestation: dict[str, Any] = {
@@ -1422,8 +1444,9 @@ class CreateIntentRequest(BaseModel):
     senderAuthorizationIssuedAt: Optional[str] = Field(None, description="Authorization issue timestamp")
     senderAuthorizationExpiresAt: Optional[str] = Field(None, description="Authorization expiry timestamp")
     senderFeeAmount: Optional[float] = Field(None, description="Sender-side protocol fee routed to treasury")
-    senderSignedFundingTransaction: str = Field(..., description="Owner-signed TCAP deposit_asset_v2 transaction")
-    senderFundingMode: Literal["tcap_deposit_v2"] = Field(..., description="Required TCAP V2 funding authority model")
+    senderSignedFundingTransaction: str = Field(..., description="Owner-signed TCAP private funded-note deposit transaction")
+    senderFundingMode: Literal["tcap_funded_note_v1"] = Field(..., description="Required proof-bound private funding authority model")
+    fundingNote: dict[str, Any] = Field(..., repr=False, description="Private note opening restricted to Node verification")
     recipientAmount: Optional[float] = Field(None, description="Amount paid to recipient")
     destinationNetwork: Optional[str] = Field(None, description="Signed destination settlement network for cross-chain exits")
     destinationExecutor: Optional[str] = Field(None, description="Signed destination executor contract for cross-chain exits")
@@ -1752,11 +1775,14 @@ def _assert_recipient_hash_matches_owner(recipient_hash: str, owner_pubkey_hash:
 
 async def _verify_payment_authorization_from_signed_message(req: CreateIntentRequest) -> dict[str, Any]:
     mode = req.senderFundingMode or ""
-    if mode != "tcap_deposit_v2":
-        raise HTTPException(400, "Legacy funding modes are retired; TSN requires a TCAP V2 wallet deposit")
+    if mode != "tcap_funded_note_v1":
+        raise HTTPException(400, "TSN requires a proof-bound private funded-note wallet deposit")
     is_cross_chain = (req.senderAuthorizationMessage or "").startswith("TSN Cross-Chain Payment Intent\n")
     action = "Cross-Chain Payment Intent" if is_cross_chain else "Payment Intent"
     fields = _parse_canonical_message(req.senderAuthorizationMessage or "", action)
+    note = validate_funding_note(req.fundingNote)
+    if fields.get("Funding Note Commitment") != note["commitment"]:
+        raise HTTPException(400, "Funding note commitment differs from the wallet-signed authorization")
     if is_cross_chain:
         amount_base_units = _parse_usdc_base_units(str(fields.get("Amount") or ""), "Amount")
         fee_base_units = _parse_usdc_base_units(str(fields.get("Fee") or ""), "Fee")
@@ -2176,9 +2202,11 @@ def _validate_tcap_credit_digest(transition: dict[str, Any]) -> str:
     token_id = int(transition.get("tokenId") or 0)
     if token_id <= 0 or token_id > 0xFFFFFFFF:
         raise ValueError("TCAP credit tokenId is out of range")
-    amount_base_units = int(str(transition.get("amountBaseUnits") or transition.get("amount") or "0"))
-    if amount_base_units <= 0 or amount_base_units > 0xFFFFFFFFFFFFFFFF:
-        raise ValueError("TCAP credit amountBaseUnits is out of range")
+    amount_commitment = _tcap_credit_bytes32(transition.get("amountCommitment"), "amountCommitment")
+    if not 0 < int.from_bytes(amount_commitment, "big") < BN254_SCALAR_MODULUS:
+        raise ValueError("TCAP credit amount commitment is invalid")
+    if "amountBaseUnits" in transition or "amount" in (transition.get("proof") or {}):
+        raise ValueError("PUBLIC_CREDIT_AMOUNT_FORBIDDEN")
     if previous_tcap_root == bytes(32) or nonce == bytes(32):
         raise ValueError("TCAP credit predecessor root and nullifier must be nonzero")
     if int.from_bytes(tcap_root_sequence, "little") <= 0 or int.from_bytes(expires, "little") < int.from_bytes(valid_after, "little"):
@@ -2192,8 +2220,8 @@ def _validate_tcap_credit_digest(transition: dict[str, Any]) -> str:
     if not isinstance(proof, dict):
         raise ValueError("TCAP transition is missing the GPRU hidden-head proof")
     raw_inputs = proof.get("publicInputs")
-    if not isinstance(raw_inputs, list) or len(raw_inputs) != 12:
-        raise ValueError("GPRU hidden-head proof must contain exactly twelve public inputs")
+    if not isinstance(raw_inputs, list) or len(raw_inputs) != 13:
+        raise ValueError("GPRU hidden-head proof must contain exactly thirteen public inputs")
     inputs = [_tcap_credit_bytes32(value, f"proof.publicInputs[{index}]") for index, value in enumerate(raw_inputs)]
     if any(int.from_bytes(value, "big") >= 21888242871839275222246405745257275088548364400416034343698204186575808495617 for value in inputs):
         raise ValueError("GPRU hidden-head public inputs must be canonical BN254 field elements")
@@ -2209,7 +2237,7 @@ def _validate_tcap_credit_digest(transition: dict[str, Any]) -> str:
     if (len(proof_a), len(proof_b), len(proof_c)) != (64, 128, 64):
         raise ValueError("GPRU Groth16 proof points have invalid byte lengths")
     if (int(proof.get("actionKind", 0)) != 1 or int(proof.get("tokenId", 0)) != token_id
-            or int(str(proof.get("amount") or "0")) != amount_base_units):
+            or _tcap_credit_bytes32(proof.get("amountCommitment"), "proof.amountCommitment") != amount_commitment):
         raise ValueError("GPRU proof action does not match this TCAP credit")
     digest_scalar = int.from_bytes(authorization_digest, "big") % 21888242871839275222246405745257275088548364400416034343698204186575808495617
     if int.from_bytes(proof_commitment, "big") != digest_scalar:
@@ -2227,18 +2255,25 @@ def _validate_tcap_credit_digest(transition: dict[str, Any]) -> str:
         raise ValueError("GPRU Groth16 balance-delta ciphertext inputs do not match the Memo prefix")
 
     expected_digest = hashlib.sha256(b"".join((
-        b"TSN_GPRU_TCAP_CREDIT_HIDDEN_HEAD_V1\0",
+        b"TSN_GPRU_TCAP_CREDIT_PRIVATE_V2\0",
         bytes(commitment_root),
         previous_tcap_root,
         tcap_root_sequence,
         valid_after,
         expires,
-        amount_base_units.to_bytes(8, "little"),
+        amount_commitment,
         token_id.to_bytes(4, "little"),
         nonce,
+        inputs[12],
+        bytes(Pubkey.from_string(transition["accountingEpoch"])),
+        bytes(Pubkey.from_string(transition["fundingRootAccount"])),
     ))).digest()
     if not hmac.compare_digest(expected_digest, authorization_digest):
         raise ValueError("TCAP authorization digest does not match the deployed hidden-head V1 contract")
+    if str(transition.get("fundingRootAccount") or "") != str(sealed_pool_address(transition["assetEntry"], inputs[12].hex(), TCAP_PROGRAM_ID)[0]):
+        raise ValueError("TCAP funding membership account is not canonical")
+    if inputs[12] == bytes(32):
+        raise ValueError("TCAP funding membership root must be nonzero")
     transition["tipRootCommitment"] = inputs[5].hex()
     return str(commitment_root)
 
@@ -2273,11 +2308,14 @@ async def _simulate_owner_signed_tcap_deposit(transaction_base64: str) -> dict[s
             except (httpx.HTTPError, ValueError) as exc:
                 last_rpc_error = exc
                 continue
+            if not isinstance(rpc_response, dict):
+                last_rpc_error = ValueError("Solana RPC returned an invalid TCAP deposit response")
+                continue
             if rpc_response.get("error"):
                 last_rpc_error = RuntimeError(str(rpc_response["error"]))
                 continue
             value = ((rpc_response.get("result") or {}).get("value"))
-            if not isinstance(value, dict):
+            if not isinstance(value, dict) or "err" not in value:
                 last_rpc_error = ValueError("Solana RPC returned no TCAP deposit simulation result")
                 continue
             simulation_error = value.get("err")
@@ -2296,7 +2334,7 @@ async def _simulate_owner_signed_tcap_deposit(transaction_base64: str) -> dict[s
                 "programSimulation": "PASSED",
                 "computeUnitsConsumed": value.get("units"),
             }
-    if last_blockhash_error is not None:
+    if last_blockhash_error is not None and last_rpc_error is None:
         raise ValueError("Signed deposit blockhash was not recognized by any configured Solana RPC endpoint; prepare and sign a fresh deposit transaction")
     raise HTTPException(503, "Solana RPC is unavailable while simulating the signed TCAP deposit") from last_rpc_error
 
@@ -2446,12 +2484,12 @@ def _verify_mother_signed_tcap_settlement_message(
     )
     proof_action_kind = int(proof["actionKind"])
     proof_token_id = int(proof["tokenId"])
-    proof_amount = int(str(proof["amount"]))
+    proof_amount_commitment = _tcap_credit_bytes32(proof["amountCommitment"], "proof.amountCommitment")
     proof_authorization_commitment = _tcap_credit_bytes32(
         proof["authorizationCommitment"], "proof.authorizationCommitment",
     )
-    if (len(public_inputs) != 12 * 32 or len(proof_bytes) != 64 + 128 + 64
-            or proof_action_kind != 1 or proof_token_id != token_id or proof_amount != int(str(transition["amountBaseUnits"]))):
+    if (len(public_inputs) != 13 * 32 or len(proof_bytes) != 64 + 128 + 64
+            or proof_action_kind != 1 or proof_token_id != token_id or proof_amount_commitment != _tcap_credit_bytes32(transition["amountCommitment"], "amountCommitment")):
         raise HTTPException(422, "GPRU proof payload does not match the canonical TCAP credit instruction layout")
     args = b"".join((
         authorization_digest,
@@ -2460,13 +2498,13 @@ def _verify_mother_signed_tcap_settlement_message(
         previous_tcap_root,
         tcap_root_sequence,
         token_id.to_bytes(4, "little"),
-        _tcap_credit_u64(transition.get("amountBaseUnits"), "amountBaseUnits"),
+        _tcap_credit_bytes32(transition.get("amountCommitment"), "amountCommitment"),
         _tcap_credit_bytes32(transition.get("nullifier"), "nullifier"),
         public_inputs,
         proof_bytes,
         bytes([proof_action_kind]),
         proof_token_id.to_bytes(4, "little"),
-        proof_amount.to_bytes(8, "little"),
+        proof_amount_commitment,
         proof_authorization_commitment,
     ))
     tsn_program = Pubkey.from_string(TSN_PROGRAM_ID)
@@ -2489,15 +2527,15 @@ def _verify_mother_signed_tcap_settlement_message(
         [
             authority, str(mother_escrow), str(tcap_program), TSN_PROGRAM_ID,
             str(config), str(asset_entry), str(commitment_root), str(reserve_state),
-            str(auth_signer), str(tip_route_root), str(gpru_verifier), instructions_sysvar, str(gpru_program),
+            str(auth_signer), str(tip_route_root), str(gpru_verifier), instructions_sysvar, str(gpru_program), transition["fundingRootAccount"], transition["accountingEpoch"], "11111111111111111111111111111111",
         ],
-        hashlib.sha256(b"global:tsn_register_tcap_credit_authorization_v2").digest()[:8] + args,
+        hashlib.sha256(b"global:tsn_register_tcap_credit_authorization_v3").digest()[:8] + args,
     )
     expected_instructions: list[tuple[str, list[str], bytes]] = [register_instruction]
     expected_keys = {
         operator, authority, str(mother_escrow), str(tcap_program), TSN_PROGRAM_ID,
         str(config), str(asset_entry), str(commitment_root), str(reserve_state), str(auth_signer),
-        str(tip_route_root), str(gpru_verifier), instructions_sysvar, str(gpru_program),
+        str(tip_route_root), str(gpru_verifier), instructions_sysvar, str(gpru_program), transition["fundingRootAccount"], transition["accountingEpoch"], "11111111111111111111111111111111",
     }
     memo_payload = str(transition.get("memoPayload") or "")
     if not re.fullmatch(r"TSN_GPRU_HEAD_V1:(?:[0-9a-f]{64}:){7}[A-Za-z0-9_-]+", memo_payload):
@@ -2511,7 +2549,7 @@ def _verify_mother_signed_tcap_settlement_message(
     if instructions != expected_instructions or set(account_keys) != expected_keys:
         raise HTTPException(403, "Settlement transaction does not exactly match the Node-verified TCAP transition")
     writable_unsigned_count = len(account_keys) - required_signatures - readonly_unsigned
-    expected_writable_unsigned = {str(commitment_root), str(reserve_state)}
+    expected_writable_unsigned = {str(commitment_root), transition["accountingEpoch"]}
     if writable_unsigned_count < 0 or set(account_keys[required_signatures:required_signatures + writable_unsigned_count]) != expected_writable_unsigned:
         raise HTTPException(422, "Settlement transaction has unexpected writable accounts")
     return recent_blockhash
@@ -2573,17 +2611,17 @@ def _verify_signed_tcap_deposit_contract(
     expected_deposit_accounts = [
         wallet, accounts.get("config"), accounts.get("assetEntry"),
         accounts.get("reserveState"), accounts.get("source"), accounts.get("vault"),
-        accounts.get("mint"), accounts.get("tokenProgram"),
+        accounts.get("mint"), accounts.get("tokenProgram"), accounts.get("fundingRootAccount"),
     ]
     if amount <= 0 or accounts.get("depositor") != wallet:
         raise ValueError("TCAP deposit amount or sender does not match the signed intent")
     instructions = _parse_signed_tcap_deposit_instructions(transaction_base64)
-    deposit_disc = hashlib.sha256(b"global:deposit_asset_v2").digest()[:8]
+    deposit_disc = hashlib.sha256(b"global:deposit_private_funding_v1").digest()[:8]
     if len(instructions) != 1:
         raise ValueError("Wallet funding transaction must contain exactly the TCAP reserve deposit")
     deposit = instructions[0]
-    if deposit[0] != TCAP_PROGRAM_ID or deposit[1] != expected_deposit_accounts or len(deposit[2]) != 16 or deposit[2][:8] != deposit_disc or int.from_bytes(deposit[2][8:], "little") != amount:
-        raise ValueError("Wallet funding transaction does not contain the exact TCAP deposit_asset_v2 instruction")
+    if deposit[0] != TCAP_PROGRAM_ID or deposit[1] != expected_deposit_accounts or len(deposit[2]) != 48 or deposit[2][:8] != deposit_disc or int.from_bytes(deposit[2][8:16], "little") != amount or deposit[2][16:48].hex() != transition.get("fundingNoteCommitment") or accounts.get("fundingRootAccount") != str(funding_root_address(TCAP_PROGRAM_ID)[0]):
+        raise ValueError("Wallet funding transaction does not contain the exact TCAP private funded-note deposit instruction")
 
 
 async def _verify_confirmed_tcap_deposit(
@@ -2618,14 +2656,14 @@ async def _verify_confirmed_tcap_deposit(
     expected_accounts = [
         wallet, accounts.get("config"), accounts.get("assetEntry"),
         accounts.get("reserveState"), accounts.get("source"), accounts.get("vault"), token_mint,
-        accounts.get("tokenProgram"),
+        accounts.get("tokenProgram"), accounts.get("fundingRootAccount"),
     ]
     if accounts.get("depositor") != wallet or accounts.get("mint") != token_mint:
         raise ValueError("TCAP deposit owner or mint differs from the signed request")
     amount = int(str(transition.get("depositAmountBaseUnits") or "0"))
     if amount <= 0:
         raise ValueError("TCAP deposit amount must be positive")
-    discriminator = hashlib.sha256(b"global:deposit_asset_v2").digest()[:8]
+    discriminator = hashlib.sha256(b"global:deposit_private_funding_v1").digest()[:8]
     matching = []
     decoded_instructions: list[tuple[str, list[str], bytes]] = []
     instructions = (transaction.get("message") or {}).get("instructions") or []
@@ -2635,11 +2673,11 @@ async def _verify_confirmed_tcap_deposit(
         except ValueError:
             continue
         decoded_instructions.append((str(instruction.get("programId") or ""), list(instruction.get("accounts") or []), data))
-        if str(instruction.get("programId") or "") == TCAP_PROGRAM_ID and len(data) == 16 and data[:8] == discriminator:
-            if list(instruction.get("accounts") or []) == expected_accounts and int.from_bytes(data[8:], "little") == amount:
+        if str(instruction.get("programId") or "") == TCAP_PROGRAM_ID and len(data) == 48 and data[:8] == discriminator:
+            if list(instruction.get("accounts") or []) == expected_accounts and int.from_bytes(data[8:16], "little") == amount and data[16:48].hex() == transition.get("fundingNoteCommitment"):
                 matching.append(instruction)
     if len(matching) != 1:
-        raise ValueError("Confirmed transaction does not contain the exact signed TCAP V2 deposit instruction")
+        raise ValueError("Confirmed transaction does not contain the exact signed TCAP funded-note deposit instruction")
     if decoded_instructions != signed_instructions:
         raise ValueError("Confirmed TCAP reserve deposit differs from the wallet-signed transaction")
     return {"signature": signature, "slot": int(tx.get("slot") or 0), "amountBaseUnits": str(amount), "mint": token_mint}
@@ -2663,9 +2701,14 @@ async def _assert_tcap_gpru_credit_program_preconditions(transition: dict[str, A
     if str(transition.get("commitmentRoot") or "") != root_address:
         raise ValueError("TCAP shared replay root address is not canonical")
     if _tcap_credit_bytes32(transition.get("previousTcapRoot"), "previousTcapRoot") != expected_root:
-        raise ValueError("TCAP shared replay root changed while constructing the credit")
+        raise ValueError("TCAP_SHARED_REPLAY_ROOT_CHANGED_BEFORE_SETTLEMENT")
     if int(str(transition.get("tcapRootSequence") or "0")) != expected_root_sequence + 1:
-        raise ValueError("TCAP shared replay root sequence changed while constructing the credit")
+        raise ValueError("TCAP_SHARED_REPLAY_ROOT_CHANGED_BEFORE_SETTLEMENT")
+    funding_state = await read_sealed_pool(solana_rpc, asset_entry_address, transition["proof"]["publicInputs"][12], int(transition["tokenId"]), TCAP_PROGRAM_ID)
+    if transition.get("fundingRootAccount") != funding_state["address"] or funding_state["count"] == 0:
+        raise ValueError("TCAP funding membership account is invalid or unavailable")
+    if transition["proof"]["publicInputs"][12] != funding_state["root"]:
+        raise ValueError(FUNDING_ROOT_CHANGED)
     reserve_address = str(transition.get("reserveState") or "")
     if not reserve_address:
         raise ValueError("TCAP reserve state address is required")
@@ -2733,12 +2776,26 @@ async def _assert_tcap_gpru_credit_program_preconditions(transition: dict[str, A
     actual, pending, settled, withdrawal, refund = (int.from_bytes(reserve_data[offset:offset + 8], "little") for offset in (140, 148, 156, 164, 172))
     transfer_pending = int.from_bytes(reserve_data[193:201], "little")
     liabilities = pending + settled + withdrawal + refund + transfer_pending
-    if pending < int(transition["amountBaseUnits"]) or liabilities > 0xFFFFFFFFFFFFFFFF or actual < liabilities:
+    epoch_number = int.from_bytes(reserve_data[180:188], "little")
+    epoch_address = Pubkey.find_program_address([b"tcap:credit-epoch:v1", bytes(Pubkey.from_string(asset_entry_address)), epoch_number.to_bytes(8, "little")], tcap_program)[0]
+    if transition.get("accountingEpoch") != str(epoch_address):
+        raise ValueError("TCAP_CREDIT_EPOCH_CHANGED_BEFORE_SETTLEMENT")
+    if liabilities > 0xFFFFFFFFFFFFFFFF or actual < liabilities:
         raise ValueError("TCAP settlement reserve lacks funded pending liabilities or is insolvent")
 
 
+TCAP_PROOF_FIELDS = {"publicInputs", "proofA", "proofB", "proofC", "actionKind", "tokenId", "amountCommitment", "authorizationCommitment"}
+
+
+def _public_tcap_transition(transition: dict[str, Any]) -> dict[str, Any]:
+    result = {name: value for name, value in transition.items() if name in TCAP_CRANKER_TRANSITION_FIELDS}
+    if isinstance(result.get("proof"), dict):
+        result["proof"] = {name: value for name, value in result["proof"].items() if name in TCAP_PROOF_FIELDS}
+    return result
+
+
 TCAP_CRANKER_TRANSITION_FIELDS = {
-    "commitmentRoot", "previousTcapRoot", "tcapRootSequence", "tokenId", "amountBaseUnits", "nullifier",
+    "commitmentRoot", "previousTcapRoot", "tcapRootSequence", "tokenId", "amountCommitment", "nullifier", "fundingRootAccount", "accountingEpoch",
     "validAfterSlot", "expiresAtSlot", "authorizationDigest", "proof", "memoPayload", "memoBodyPayload",
     "memoLedgerSlots", "memoDocument", "memoCommitment", "successorBalancePoint", "assetEntry", "tcapConfig", "reserveState",
 }
@@ -2749,11 +2806,11 @@ SOLANA_V1_TRANSACTION_SIZE_LIMIT = 4096
 
 def _tcap_credit_v1_wire_size(memo_payload: str) -> int:
     # Canonical @dbrix/solana sendInstructionsV1 transport: 42 fixed message
-    # bytes, 15 distinct addresses, two u32 config values, two instruction
-    # headers, 13 authorization account indexes plus one Memo signer index,
+    # bytes, 16 distinct addresses, two u32 config values, two instruction
+    # headers, 14 authorization account indexes plus one Memo signer index,
     # the fixed Borsh authorization payload, and two trailing signatures.
-    instruction_bytes = 8 + 32 + 8 + 8 + 32 + 8 + 4 + 8 + 32 + 12 * 32 + 64 + 128 + 64 + 1 + 4 + 8 + 32
-    return 42 + 15 * 32 + 2 * 4 + 2 * 4 + 13 + 1 + instruction_bytes + len(memo_payload.encode("ascii")) + 2 * 64
+    instruction_bytes = 905
+    return 42 + 18 * 32 + 2 * 4 + 2 * 4 + 16 + 1 + instruction_bytes + len(memo_payload.encode("ascii")) + 2 * 64
 
 
 def _assert_tcap_credit_transport_capacity(memo_payload: str) -> None:
@@ -2802,18 +2859,147 @@ async def _settlement_funding_context(funding: dict[str, Any]) -> tuple[CreateIn
     if amount != ui_amount_to_base_units(request.amount, asset["decimals"]):
         raise ValueError("Settlement amount differs from the wallet-signed payment")
     instructions = _parse_signed_tcap_deposit_instructions(request.senderSignedFundingTransaction)
-    if len(instructions) != 1 or len(instructions[0][1]) != 8:
+    if len(instructions) != 1 or len(instructions[0][1]) != 9:
         raise ValueError("Settlement requires the exact wallet-signed TCAP deposit")
-    names = ("depositor", "config", "assetEntry", "reserveState", "source", "vault", "mint", "tokenProgram")
+    names = ("depositor", "config", "assetEntry", "reserveState", "source", "vault", "mint", "tokenProgram", "fundingRootAccount")
     accounts = dict(zip(names, instructions[0][1]))
     if accounts["assetEntry"] != asset["assetEntry"] or accounts["tokenProgram"] != asset["tokenProgram"]:
         raise ValueError("Settlement funding asset differs from the current TCAP registration")
-    context = {"depositAccounts": accounts, "depositAmountBaseUnits": str(amount)}
+    note = validate_funding_note(request.fundingNote)
+    if fields.get("Funding Note Commitment") != note["commitment"]:
+        raise ValueError("Confirmed funding note differs from the signed payment commitment")
+    context = {"depositAccounts": accounts, "depositAmountBaseUnits": str(amount), "fundingNoteCommitment": note["commitment"]}
     receipt = await _verify_confirmed_tcap_deposit(funding_work=funding, transition=context, wallet=request.senderWallet, token_mint=request.tokenMintAddress)
-    # Stable across retries, root changes, and Node instances. The nullifier
-    # is consumed inside TCAP's authenticated map, not in a Node-local counter.
-    nullifier = hex_field(int.from_bytes(hashlib.sha256(b"TSN_GPRU_CONFIRMED_DEPOSIT_NULLIFIER_V1\0" + bytes(Pubkey.from_string(TCAP_PROGRAM_ID)) + decode_base58(receipt["signature"])).digest(), "big") % BN254_SCALAR_MODULUS)
+    # The circuit enforces this same secret relation and funded membership.
+    # Re-verification retains the original opening, so retry/root changes cannot
+    # issue another nullifier for the same funded note.
+    nullifier = funding_nullifier(note)
     return request, asset, {**context, "receipt": receipt, "nullifier": nullifier}
+
+
+_private_coordination_pending = False
+_private_inventory: list[dict[str, Any]] = []
+
+async def _current_credit_epoch(asset: str, reserve: str) -> tuple[str, int]:
+    epoch = await read_epoch(solana_rpc, asset, reserve)
+    if epoch["count"] == 64:
+        raise PrivateCreditWait("TCAP_EPOCH_ACCOUNTING_REQUIRED")
+    return epoch["address"], epoch["number"]
+
+async def _select_private_funding_pool(asset: dict, request: CreateIntentRequest, context: dict, directory: Path) -> dict:
+    response = await solana_rpc("getProgramAccounts", [TCAP_PROGRAM_ID, {"encoding": "base64", "commitment": "confirmed",
+        "filters": [{"dataSize": 113}, {"memcmp": {"offset": 11, "bytes": asset["assetEntry"]}}]}])
+    pools = response.get("result")
+    if not isinstance(pools, list): raise ValueError("TCAP_PRIVATE_POOL_RPC_INVALID")
+    for row in pools:
+        data = base64.b64decode(row["account"]["data"][0], validate=True)
+        if data[:8] != hashlib.sha256(b"account:TcapSealedFundingPoolV1").digest()[:8]: continue
+        try:
+            pool = await read_sealed_pool(solana_rpc, asset["assetEntry"], data[47:79].hex(), asset["tokenId"])
+            if row["pubkey"] != pool["address"]: raise ValueError("TCAP_PRIVATE_POOL_INVALID")
+            snapshot = await ensure_funding_snapshot(directory, pool, solana_rpc)
+            funding_membership(snapshot, request.fundingNote["commitment"], asset["tokenId"], int(context["depositAmountBaseUnits"]))
+            return pool
+        except ValueError as exc:
+            if str(exc) == "TCAP_PRIVATE_POOL_NOT_READY" or str(exc) == "Confirmed deposit has no membership in the selected funding root": continue
+            raise
+    raise PrivateCreditWait("TCAP_PRIVATE_POOL_NOT_READY")
+
+async def _qualified_private_funding(asset_entry: str, directory: Path) -> list[dict]:
+    _, root, _ = await _read_tcap_shared_replay_root()
+    # Select the same immutable chain-root snapshot used by credit proving.
+    from hidden_head_witness import _read_snapshot, SparseTree, _portfolio, field_hex
+    from gpru_crypto import poseidon_v1
+    state = _read_snapshot(directory / f"tcap-{root.hex()}.json")
+    heads = {int(k,16) % (1<<128): poseidon_v1([int(k,16),int(v["sequence"]),int(v["memoCommitment"],16),int(v["actionCommitment"],16),_portfolio(v["portfolio"]).root]) for k,v in state["heads"].items()}
+    nullifiers = {poseidon_v1([field_hex(n)]) % (1<<128): poseidon_v1([field_hex(n)]) for n in state["nullifiers"]}
+    if (len(heads) != len(state["heads"]) or len(nullifiers) != len(state["nullifiers"])
+        or poseidon_v1([SparseTree(128,heads).root,SparseTree(128,nullifiers).root]) != int.from_bytes(root,"big")):
+        raise ValueError("TCAP_PRIVATE_CENSUS_SNAPSHOT_INVALID")
+    rows = []
+    for work in _private_inventory:
+        if work.get("kind") != "AUTHORIZED_FUNDING" or work.get("status") != "CONFIRMED": continue
+        if not isinstance((work.get("payload") or {}).get("fundingNote"), dict): continue
+        # Each wallet/note/amount is rechecked against its signed intent and exact confirmed SPL deposit.
+        request, asset, context = await _settlement_funding_context(work)
+        if asset["assetEntry"] != asset_entry: continue
+        rows.append({"commitment": request.fundingNote["commitment"], "nullifier": context["nullifier"],
+            "amount": int(context["depositAmountBaseUnits"]), "token": asset["tokenId"], "wallet": request.senderWallet, "slot": context["receipt"]["slot"]})
+    return qualified_sources(rows, set(state["nullifiers"]))
+
+async def _coordinate_private_credit_work(client: httpx.AsyncClient, headers: dict[str,str]) -> None:
+    global _private_inventory, _private_coordination_pending
+    inventory, cursor, seen = [], "", set()
+    while True:
+        response = await receiver_request(client, "GET", "/api/internal/node/coordination",
+            headers=headers, params={"after": cursor})
+        response.raise_for_status()
+        page = response.json()
+        inventory.extend(page["work"])
+        cursor = page.get("nextCursor")
+        if not cursor: break
+        if cursor in seen: raise ValueError("PRIVATE_CREDIT_CURSOR_REPEATED")
+        seen.add(cursor)
+    _private_inventory = inventory
+    _private_coordination_pending = any(w.get("status") in ("RECEIVED","NODE_VERIFYING","VERIFIED","CRANKER_LEASED")
+        and w.get("kind") != "AUTHORIZED_FUNDING" for w in _private_inventory)
+    directory_value = clean_env(os.environ.get("GPRU_HIDDEN_HEAD_WITNESS_DIR"))
+    if not directory_value: return
+    directory = Path(directory_value)
+    grouped = {}
+    for funding in _private_inventory:
+        if funding.get("kind") != "AUTHORIZED_FUNDING" or funding.get("status") != "CONFIRMED": continue
+        if not isinstance((funding.get("payload") or {}).get("fundingNote"), dict): continue
+        accounts = _parse_signed_tcap_deposit_instructions(funding["payload"]["senderSignedFundingTransaction"])[0][1]
+        grouped[accounts[2]] = {"assetEntry": accounts[2], "reserveState": accounts[3], "tcapConfig": accounts[1]}
+    for asset_entry, payload in grouped.items():
+        epoch = await read_epoch(solana_rpc, asset_entry, payload["reserveState"])
+        if epoch["count"] >= 2: _private_coordination_pending = True
+        slot = int((await solana_rpc("getSlot", [{"commitment":"confirmed"}])).get("result") or 0)
+        kind, body = None, None
+        if epoch["count"] >= 2 and (epoch["count"] == 64 or slot - epoch["started"] >= 120):
+            kind = "TCAP_EPOCH_ACCOUNTING"; body = {**payload, "accountingEpoch": epoch["address"]}
+            key = hashlib.sha256(bytes(Pubkey.from_string(epoch["address"]))).hexdigest()
+        else:
+            pending = [w for w in _private_inventory if w.get("kind") == "SETTLEMENT" and w.get("status") == "RECEIVED"]
+            if not pending: continue
+            rows = await _qualified_private_funding(asset_entry,directory)
+            target, window = schedule([r["slot"] for r in rows], slot)
+            sources = len({r["wallet"] for r in rows})
+            if sources < 2 or len(rows) < 2: continue
+            # A common slot boundary avoids a recognizable timer per deposit.
+            if len(rows) < target and slot % window > 8: continue
+            root = await read_funding_root(solana_rpc)
+            kind = "TCAP_FUNDING_POOL"; body = {**payload, "root": root["root"]}
+            key = hashlib.sha256(bytes(Pubkey.from_string(asset_entry))+bytes.fromhex(root["root"])).hexdigest()
+        identifier = f"tcap-{'epoch' if kind == 'TCAP_EPOCH_ACCOUNTING' else 'pool'}-{key}"
+        if any(w["id"] == identifier for w in _private_inventory): continue
+        response = await receiver_request(client,"POST","/api/internal/node/coordination",headers=headers,
+            json={"id":identifier,"kind":kind,"payload":body})
+        response.raise_for_status(); _private_coordination_pending = True
+
+async def _verify_private_coordination_work(work: dict) -> dict:
+    payload = work["payload"]; directory = Path(clean_env(os.environ.get("GPRU_HIDDEN_HEAD_WITNESS_DIR")))
+    if work["kind"] == "TCAP_FUNDING_POOL":
+        root = await read_funding_root(solana_rpc)
+        if root["root"] != payload["root"]: raise ValueError("TCAP_POOL_CAPTURE_ROOT_CHANGED")
+        snapshot = await ensure_funding_snapshot(directory, root, solana_rpc)
+        rows = admitted_pool_sources(await _qualified_private_funding(payload["assetEntry"],directory), snapshot)
+        sources = len({r["wallet"] for r in rows})
+        if len(rows) < 2 or sources < 2: raise PrivateCreditWait("TCAP_PRIVATE_POOL_NOT_READY")
+        _, window = schedule([r["slot"] for r in rows],root["slot"])
+        release = ((root["slot"] // window)+1)*window
+        value = {**payload,"eligibleNoteCount":str(len(rows)),"sourceWalletCount":sources,"releaseSlot":str(release)}
+        return {"verifiedPayload":{"tcapFundingPool":value},"verificationType":"TSN_TCAP_FUNDING_POOL_V1"}
+    epoch = await read_epoch(solana_rpc,payload["assetEntry"],payload["reserveState"])
+    if epoch["address"] != payload["accountingEpoch"]: raise ValueError("TCAP_EPOCH_ALREADY_ACCOUNTED")
+    if epoch["count"] < 2: raise PrivateCreditWait("TCAP_EPOCH_REQUIRES_COMPLETE_GROUP")
+    credits = await epoch_credits(solana_rpc,epoch,_parse_solana_v1_message,TSN_PROGRAM_ID)
+    witness = await asyncio.to_thread(build_epoch_witness,epoch,credits,directory)
+    from tcap_epoch_prover import prove_epoch
+    proof = await prove_epoch(witness,solana_rpc)
+    value = {**payload,"total":str(witness["total"]),"proof":proof}
+    return {"verifiedPayload":{"tcapEpochAccounting":value},"verificationType":"TSN_TCAP_EPOCH_ACCOUNTING_V1"}
 
 
 async def _construct_verified_tcap_transition(funding: dict[str, Any]) -> dict[str, Any]:
@@ -2827,6 +3013,12 @@ async def _construct_verified_tcap_transition(funding: dict[str, Any]) -> dict[s
     _assert_recipient_hash_matches_owner(request.recipientHash, route["ownerPubkeyHash"])
     root_address, old_root, root_sequence = await _read_tcap_shared_replay_root()
     tip_root, verifier_data, verifier_bump = await _read_gpru_proof_accounts()
+    funded_state = await _select_private_funding_pool(asset, request, funding_context, Path(directory))
+    funded_snapshot = await ensure_funding_snapshot(Path(directory), funded_state, solana_rpc, TCAP_PROGRAM_ID)
+    membership = funding_membership(funded_snapshot, request.fundingNote["commitment"], asset["tokenId"], int(funding_context["depositAmountBaseUnits"]))
+    snapshot = await ensure_tip_snapshot(Path(directory), tip_root, solana_rpc, tip_program=get_tins_program_pubkey())
+    if snapshot["published"]:
+        logger.info("TIP witness snapshot synchronized: routes=%s", snapshot["routeCount"])
     slot_response = await solana_rpc("getSlot", [{"commitment": "confirmed"}])
     slot = int(slot_response.get("result") or 0)
     if slot <= 0 or root_sequence == 0xFFFFFFFFFFFFFFFF:
@@ -2835,32 +3027,38 @@ async def _construct_verified_tcap_transition(funding: dict[str, Any]) -> dict[s
     if not 1 <= ttl <= 10_000:
         raise ValueError("TCAP credit validity window is out of range")
     amount = int(funding_context["depositAmountBaseUnits"])
+    blinding = secrets.randbelow(BN254_SCALAR_MODULUS - 1) + 1
+    amount_commitment = hex_field(credit_amount_commitment(asset["tokenId"], amount, blinding, int(funding_context["nullifier"], 16)))
+    epoch_address, _ = await _current_credit_epoch(asset["assetEntry"], funding_context["depositAccounts"]["reserveState"])
     transition = {
         "commitmentRoot": root_address, "previousTcapRoot": old_root.hex(), "tcapRootSequence": str(root_sequence + 1),
-        "tokenId": asset["tokenId"], "amountBaseUnits": str(amount), "nullifier": funding_context["nullifier"],
+        "tokenId": asset["tokenId"], "amountCommitment": amount_commitment, "accountingEpoch": epoch_address, "nullifier": funding_context["nullifier"],
         "validAfterSlot": str(slot), "expiresAtSlot": str(slot + ttl),
         "tcapConfig": funding_context["depositAccounts"]["config"], "assetEntry": asset["assetEntry"],
-        "reserveState": funding_context["depositAccounts"]["reserveState"],
+        "reserveState": funding_context["depositAccounts"]["reserveState"], "fundingRootAccount": funded_state["address"],
     }
     digest = hashlib.sha256(b"".join((
-        b"TSN_GPRU_TCAP_CREDIT_HIDDEN_HEAD_V1\0", bytes(Pubkey.from_string(root_address)), old_root,
+        b"TSN_GPRU_TCAP_CREDIT_PRIVATE_V2\0", bytes(Pubkey.from_string(root_address)), old_root,
         (root_sequence + 1).to_bytes(8, "little"), slot.to_bytes(8, "little"), (slot + ttl).to_bytes(8, "little"),
-        amount.to_bytes(8, "little"), asset["tokenId"].to_bytes(4, "little"), bytes.fromhex(transition["nullifier"]),
+        bytes.fromhex(amount_commitment), asset["tokenId"].to_bytes(4, "little"), bytes.fromhex(transition["nullifier"]), bytes.fromhex(funded_state["root"]),
+        bytes(Pubkey.from_string(epoch_address)), bytes(Pubkey.from_string(funded_state["address"])),
     ))).digest()
     transition["authorizationDigest"] = digest.hex()
     authorization = hex_field(int.from_bytes(digest, "big") % BN254_SCALAR_MODULUS)
     store = HiddenHeadWitnessStore(Path(directory))
     prepared = await asyncio.to_thread(store.prepare_credit, old_root=old_root.hex(), tip_root=tip_root, route=route,
-                                       token_id=asset["tokenId"], amount=amount, authorization=authorization, nullifier=transition["nullifier"])
+                                       token_id=asset["tokenId"], amount=amount, authorization=authorization, nullifier=transition["nullifier"],
+                                       funding_note=request.fundingNote, funding_membership=membership, amount_blinding=blinding)
     witness = prepared["witness"]
     ephemeral, shared = await asyncio.to_thread(derive_node_record_shared_point, bytes.fromhex(route["gpruElgamalPublicKey"]))
     dna = secrets.token_bytes(32)
     binding = {name: hex_field(witness[name]) for name in ("successorPortfolioRoot", "successorBalanceX", "successorBalanceY", "actionCommitment", "authorizationCommitment", "nullifier")}
     memo = encrypt_transaction_record_v1(
-        record={"version": 1, "recordType": "tsn-gpru-balance-action-v1", "sequence": str(prepared["sequence"]),
+        record={"version": 2, "recordType": "tsn-gpru-balance-action-v2", "sequence": str(prepared["sequence"]),
                 "previousMemoCommitment": prepared["previousMemoCommitment"], "actionCommitment": binding["actionCommitment"],
                 "authorizationCommitment": authorization, "nullifier": transition["nullifier"], "actionKind": 1,
-                "tokenId": asset["tokenId"], "amountBaseUnits": str(amount)},
+                "tokenId": asset["tokenId"], "amountBaseUnits": str(amount),
+                 "amountBlinding": hex_field(blinding), "amountCommitment": amount_commitment},
         shared_point=shared, record_ephemeral_public_key=ephemeral, dna=dna,
         encrypted_blinding_delta=hex_field(witness["encryptedBlindingDelta"]),
         delta_ephemeral_public_x=hex_field(witness["deltaEphemeralPublicX"]), delta_ephemeral_public_y=hex_field(witness["deltaEphemeralPublicY"]), memo_binding=binding,
@@ -2873,7 +3071,7 @@ async def _construct_verified_tcap_transition(funding: dict[str, Any]) -> dict[s
     await _assert_tcap_gpru_credit_program_preconditions(transition)
     current_tip, current_verifier, current_bump = await _read_gpru_proof_accounts()
     if current_tip != tip_root or current_verifier != verifier_data or current_bump != verifier_bump:
-        raise ValueError("TIP route root or GPRU verifier changed during proving")
+        raise PrivateCreditWait("GPRU_PROOF_CONTEXT_CHANGED_DURING_PROVING")
     await asyncio.to_thread(store.save_candidate, prepared)
     # No private witness, sequence, paths, prior commitments or delta is part
     # of the Receiver decision. The full owner record is encrypted in Memo.
@@ -2886,12 +3084,13 @@ def _assert_stored_settlement_attestation(work: dict[str, Any], transition: dict
     if not isinstance(attestation, dict):
         raise HTTPException(403, "Settlement Node attestation is missing")
     public_key = bytes(_node_verification_signing_key().verify_key)
-    execution = {"tcapCreditTransition": {name: value for name, value in transition.items() if name in TCAP_CRANKER_TRANSITION_FIELDS}}
+    field = {"SETTLEMENT":"tcapCreditTransition", "TCAP_FUNDING_POOL":"tcapFundingPool", "TCAP_EPOCH_ACCOUNTING":"tcapEpochAccounting"}[work["kind"]]
+    execution = {field: _public_tcap_transition(transition) if work["kind"] == "SETTLEMENT" else _public_coordination(work["kind"], transition)}
     commitment = hashlib.sha256(_stable_verification_json(execution).encode("utf-8")).hexdigest()
     if (attestation.get("version") != 1 or attestation.get("algorithm") != "Ed25519"
-            or attestation.get("workId") != work.get("id") or attestation.get("workKind") != "SETTLEMENT"
+            or attestation.get("workId") != work.get("id") or attestation.get("workKind") != work["kind"]
             or attestation.get("decision") != "VERIFIED" or attestation.get("inputPayloadCommitment") != work.get("payloadCommitment")
-            or attestation.get("verificationType") != "TSN_TCAP_GPRU_HIDDEN_HEAD_V1"
+            or attestation.get("verificationType") != {"SETTLEMENT":"TSN_TCAP_GPRU_HIDDEN_HEAD_V1","TCAP_FUNDING_POOL":"TSN_TCAP_FUNDING_POOL_V1","TCAP_EPOCH_ACCOUNTING":"TSN_TCAP_EPOCH_ACCOUNTING_V1"}[work["kind"]]
             or attestation.get("keyId") != hashlib.sha256(public_key).hexdigest()[:24]
             or attestation.get("executionPayloadCommitment") != commitment):
         raise HTTPException(403, "Settlement proof does not match the Node-attested execution payload")
@@ -2904,7 +3103,7 @@ def _assert_stored_settlement_attestation(work: dict[str, Any], transition: dict
 
 def _assert_current_settlement_lease(work: dict[str, Any], operator: str) -> None:
     lease = work.get("crankerLease") or {}
-    if work.get("kind") != "SETTLEMENT" or work.get("status") != "CRANKER_LEASED" or lease.get("owner") != operator:
+    if work.get("kind") not in ("SETTLEMENT","TCAP_FUNDING_POOL","TCAP_EPOCH_ACCOUNTING") or work.get("status") != "CRANKER_LEASED" or lease.get("owner") != operator:
         raise HTTPException(403, "Settlement is not leased to this Cranker")
     try:
         expires = datetime.fromisoformat(str(lease.get("expiresAt") or "").replace("Z", "+00:00"))
@@ -2922,8 +3121,8 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
     if kind == "AUTHORIZED_FUNDING":
         request = CreateIntentRequest(**payload)
         verified_fields = await _verify_payment_authorization_from_signed_message(request)
-        if request.senderFundingMode != "tcap_deposit_v2":
-            raise ValueError("Only the deployed TCAP V2 GPRU TIN credit path is supported")
+        if request.senderFundingMode != "tcap_funded_note_v1":
+            raise ValueError("Only the TCAP funded-note GPRU TIN credit path is supported")
         signed_deposit = _parse_signed_tcap_deposit_instructions(str(request.senderSignedFundingTransaction or ""))
         if len(signed_deposit) != 1:
             raise ValueError("Wallet funding transaction must contain exactly one TCAP reserve deposit")
@@ -2932,14 +3131,16 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
         expected_amount = ui_amount_to_base_units(request.amount, decimals)
         if (
             deposit_program != TCAP_PROGRAM_ID
-            or len(deposit_accounts) != 8
+            or len(deposit_accounts) != 9
             or deposit_accounts[0] != str(request.senderWallet)
             or deposit_accounts[2] != str(verified_fields["tcapAssetEntry"])
             or deposit_accounts[6] != str(request.tokenMintAddress)
             or deposit_accounts[7] != str(verified_fields["tokenProgram"])
-            or len(deposit_data) != 16
-            or deposit_data[:8] != hashlib.sha256(b"global:deposit_asset_v2").digest()[:8]
-            or int.from_bytes(deposit_data[8:], "little") != expected_amount
+            or len(deposit_data) != 48
+            or deposit_data[:8] != hashlib.sha256(b"global:deposit_private_funding_v1").digest()[:8]
+            or int.from_bytes(deposit_data[8:16], "little") != expected_amount
+            or deposit_data[16:48].hex() != request.fundingNote["commitment"]
+            or deposit_accounts[8] != str(funding_root_address(TCAP_PROGRAM_ID)[0])
         ):
             raise ValueError("Wallet-signed TCAP deposit does not match the authorized sender, token, or amount")
         simulation = await _simulate_owner_signed_tcap_deposit(str(request.senderSignedFundingTransaction))
@@ -2956,13 +3157,15 @@ async def _verify_receiver_work(work: dict[str, Any]) -> dict[str, Any]:
         if funding.get("kind") != "AUTHORIZED_FUNDING" or funding.get("status") != "CONFIRMED":
             raise ValueError("Funding deposit is not confirmed")
         funding_payload = funding.get("payload") or {}
-        if funding_payload.get("senderFundingMode") != "tcap_deposit_v2":
+        if funding_payload.get("senderFundingMode") != "tcap_funded_note_v1":
             raise ValueError("Settlement is not a TCAP reserve deposit")
         transition = await _construct_verified_tcap_transition(funding)
         return {
             "verifiedPayload": {"tcapCreditTransition": transition},
             "verificationType": "TSN_TCAP_GPRU_HIDDEN_HEAD_V1",
         }
+    if kind in ("TCAP_FUNDING_POOL", "TCAP_EPOCH_ACCOUNTING"):
+        return await _verify_private_coordination_work(work)
     if kind == "TIN_OPERATION":
         normalized = _normalize_tin_operation_input(payload)
         await assert_tin_operation_can_enter(normalized)
@@ -2996,6 +3199,12 @@ async def _renew_receiver_node_lease(client: httpx.AsyncClient, headers: dict[st
             or (renewed_lease.get("leaseId") or work["id"]) != (lease.get("leaseId") or work["id"])
             or (renewed_lease.get("version") or renewed.get("stateVersion")) != (lease.get("version") or work["stateVersion"])):
         raise RuntimeError("TSN_RECEIVER_NODE_LEASE_LOST: renewal changed the claim context")
+    try:
+        expires = datetime.fromisoformat(str(renewed_lease.get("expiresAt") or "").replace("Z", "+00:00"))
+        if expires <= datetime.now(timezone.utc):
+            raise ValueError("expired")
+    except (ValueError, TypeError) as exc:
+        raise RuntimeError("TSN_RECEIVER_NODE_LEASE_LOST: renewal returned an invalid expiry") from exc
 
 
 async def _verify_and_report_receiver_work(client: httpx.AsyncClient, headers: dict[str, str], work: dict[str, Any]) -> None:
@@ -3004,14 +3213,37 @@ async def _verify_and_report_receiver_work(client: httpx.AsyncClient, headers: d
         "kind": str(work.get("kind") or ""), "stateVersion": work.get("stateVersion"),
         "payloadCommitment": str(work.get("payloadCommitment") or ""),
     }
-    try:
-        evidence = await _verify_receiver_work(work)
-        evidence = {**evidence, "receiverLease": lease_context}
-        status = "VERIFIED"
-    except Exception as exc:
-        logger.warning("Receiver work rejected: id=%s reason=%s", work.get("id"), str(exc))
-        evidence = {"reason": str(exc)[:500], "receiverLease": lease_context}
-        status = "REJECTED"
+    retry_delay = 2.0
+    while True:
+        try:
+            evidence = await _verify_receiver_work(work)
+            evidence = {**evidence, "receiverLease": lease_context}
+            status = "VERIFIED"
+            break
+        except PrivateCreditWait as exc:
+            response = await receiver_request(client, "POST", "/api/internal/node/coordination", headers=headers, json={
+                "action": "defer", "id": work["id"], "owner": TSN_NODE_ID, "expectedVersion": work["stateVersion"], "seconds": exc.seconds})
+            response.raise_for_status()
+            return
+        except Exception as exc:
+            if isinstance(exc, ValueError) and str(exc) in (FUNDING_ROOT_CHANGED, "TCAP_SHARED_REPLAY_ROOT_CHANGED_BEFORE_SETTLEMENT", "TCAP_CREDIT_EPOCH_CHANGED_BEFORE_SETTLEMENT"):
+                response = await receiver_request(client, "POST", "/api/internal/node/coordination", headers=headers, json={
+                    "action": "defer", "id": work["id"], "owner": TSN_NODE_ID, "expectedVersion": work["stateVersion"], "seconds": 8})
+                response.raise_for_status()
+                return
+            if (isinstance(exc, HTTPException) and exc.status_code >= 500
+                    or isinstance(exc, httpx.RequestError)):
+                # The outer processing window and lease renewal bound retries.
+                # Unavailable RPC/proving services do not invalidate approval.
+                logger.warning("Receiver verification temporarily unavailable: id=%s; retrying", work.get("id"))
+                await asyncio.sleep(retry_delay)
+                retry_delay = min(10.0, retry_delay * 2)
+                continue
+            reason = _verification_rejection_reason(exc)
+            logger.warning("Receiver work rejected: id=%s reason=%s", work.get("id"), reason)
+            evidence = {"reason": reason, "receiverLease": lease_context}
+            status = "REJECTED"
+            break
     evidence["nodeAttestation"] = _sign_node_verification(
         work=work, status=status, evidence=evidence,
         verification_type=str(evidence.get("verificationType") or ""),
@@ -3073,16 +3305,21 @@ async def receiver_verification_worker() -> None:
             # Sleep without a timer or network request until the Receiver sends
             # an authenticated wake. This is the important CPU/quota boundary.
             logger.info("TSN Receiver verifier sleeping; waiting for wake")
-            await _receiver_wake_event.wait()
+            if _private_coordination_pending:
+                try: await asyncio.wait_for(_receiver_wake_event.wait(), timeout=8)
+                except asyncio.TimeoutError: pass
+            else:
+                await _receiver_wake_event.wait()
             _receiver_wake_event.clear()
             logger.info("TSN Receiver verifier woke; draining authenticated work")
             retry_delay = 2.0
             consecutive_failures = 0
             while True:
                 try:
+                    await _coordinate_private_credit_work(client, headers)
                     leased_work = await receiver_request(client, "POST", "/api/internal/node/work", headers=headers, json={
                         "nodeId": TSN_NODE_ID,
-                        "supportedKinds": ["AUTHORIZED_FUNDING", "TIN_OPERATION", "SETTLEMENT"],
+                        "supportedKinds": ["AUTHORIZED_FUNDING", "TIN_OPERATION", "SETTLEMENT", "TCAP_FUNDING_POOL", "TCAP_EPOCH_ACCOUNTING"],
                     })
                     leased_work.raise_for_status()
                     work = leased_work.json().get("work")
@@ -3230,6 +3467,85 @@ async def wake_receiver_verification() -> dict[str, Any]:
     logger.info("TSN Receiver wake accepted")
     return {"ok": True, "status": "awake"}
 
+def _verification_rejection_reason(exc: Exception) -> str:
+    if isinstance(exc, (ValidationError, RequestValidationError)):
+        return "Invalid Receiver payment request fields"
+    return str(exc)[:500]
+
+
+@app.exception_handler(RequestValidationError)
+async def private_payment_validation_error(request: Request, exc: RequestValidationError):
+    if request.url.path == "/intents":
+        # Pydantic's default missing-field errors may include the entire input,
+        # including a valid private note alongside the invalid/missing field.
+        return JSONResponse(status_code=422, content={"detail": "Invalid payment request fields"})
+    return await request_validation_exception_handler(request, exc)
+
+
+async def _assert_authorized_credit_preconditions(transition: dict[str, Any]) -> None:
+    try:
+        await _assert_tcap_gpru_credit_program_preconditions(transition)
+    except ValueError as exc:
+        if str(exc) in (FUNDING_ROOT_CHANGED, "TCAP_CREDIT_EPOCH_CHANGED_BEFORE_SETTLEMENT", "TCAP_SHARED_REPLAY_ROOT_CHANGED_BEFORE_SETTLEMENT"):
+            raise HTTPException(409, str(exc)) from exc
+        raise
+
+
+async def _authorize_private_coordination(work: dict, operator: str) -> dict:
+    field = "tcapFundingPool" if work["kind"] == "TCAP_FUNDING_POOL" else "tcapEpochAccounting"
+    value = (_receiver_verified_payload(work) or {}).get(field)
+    if not isinstance(value,dict): raise HTTPException(422,"PRIVATE_COORDINATION_TRANSITION_MISSING")
+    value = _public_coordination(work["kind"], value)
+    _assert_stored_settlement_attestation(work,value)
+    directory = Path(clean_env(os.environ.get("GPRU_HIDDEN_HEAD_WITNESS_DIR")))
+    if work["kind"] == "TCAP_FUNDING_POOL":
+        root = await read_funding_root(solana_rpc)
+        snapshot = await ensure_funding_snapshot(directory, root, solana_rpc)
+        rows = admitted_pool_sources(await _qualified_private_funding(value["assetEntry"],directory), snapshot)
+        if (root["root"] != value["root"] or len(rows) != int(value["eligibleNoteCount"])
+            or len({r["wallet"] for r in rows}) != value["sourceWalletCount"]
+            or not root["slot"] <= int(value["releaseSlot"]) <= root["slot"]+5000):
+            raise HTTPException(409,"TCAP_POOL_CAPTURE_STALE")
+    else:
+        epoch = await read_epoch(solana_rpc,value["assetEntry"],value["reserveState"])
+        if epoch["address"] != value["accountingEpoch"]: raise HTTPException(409,"TCAP_EPOCH_ALREADY_ACCOUNTED")
+        credits = await epoch_credits(solana_rpc,epoch,_parse_solana_v1_message,TSN_PROGRAM_ID)
+        witness = await asyncio.to_thread(build_epoch_witness,epoch,credits,directory)
+        if str(witness["total"]) != value["total"]: raise HTTPException(403,"TCAP_EPOCH_TOTAL_MISMATCH")
+        from tcap_epoch_prover import prove_epoch
+        if await prove_epoch(witness,solana_rpc,existing_proof=value["proof"]) != value["proof"]: raise HTTPException(403,"TCAP_EPOCH_PROOF_MISMATCH")
+    current = await _receiver_work_by_id(work["id"]); _assert_current_settlement_lease(current,operator)
+    if current["stateVersion"] != work["stateVersion"]: raise HTTPException(409,"PRIVATE_COORDINATION_LEASE_CHANGED")
+    lease = current["crankerLease"]
+    return {"kind":"TSN_TCAP_COORDINATION_AUTHORIZATION_V1","transition":value,"workStateVersion":current["stateVersion"],
+        "leaseId":lease.get("leaseId") or current["id"],"leaseVersion":lease.get("version") or current["stateVersion"],
+        "leaseExpiresAt":lease["expiresAt"],"expiresAtTs":int(datetime.fromisoformat(lease["expiresAt"].replace("Z","+00:00")).timestamp())}
+
+
+def _verify_private_coordination_message(message: bytes, operator: str, authority: str, kind: str, value: dict) -> bytes:
+    required, readonly_signed, readonly_unsigned, keys, blockhash, instructions = _parse_solana_v1_message(message)
+    if required != 2 or readonly_signed != 0 or keys[:2] != [operator,authority] or len(message)+128 > 4096:
+        raise HTTPException(403,"PRIVATE_COORDINATION_SIGNERS_INVALID")
+    mother = str(get_mother_escrow_pda()); program = Pubkey.from_string(TCAP_PROGRAM_ID)
+    asset = Pubkey.from_string(value["assetEntry"])
+    if kind == "TCAP_FUNDING_POOL":
+        pool = str(sealed_pool_address(value["assetEntry"],value["root"])[0])
+        accounts = [authority,mother,value["tcapConfig"],value["assetEntry"],str(funding_root_address()[0]),pool,"11111111111111111111111111111111"]
+        data = hashlib.sha256(b"global:seal_private_funding_pool_v1").digest()[:8]+bytes.fromhex(value["root"])+int(value["eligibleNoteCount"]).to_bytes(8,"little")+int(value["sourceWalletCount"]).to_bytes(2,"little")+int(value["releaseSlot"]).to_bytes(8,"little")
+        writable = {pool}
+    else:
+        verifier = str(Pubkey.find_program_address([b"gpru:tcap-epoch-verifier:v1"],Pubkey.from_string(GPRU_PROGRAM_ID))[0])
+        accounts = [authority,mother,value["tcapConfig"],value["assetEntry"],value["reserveState"],value["accountingEpoch"],verifier,GPRU_PROGRAM_ID]
+        proof = value["proof"]
+        data = hashlib.sha256(b"global:account_credit_epoch_v1").digest()[:8]+int(value["total"]).to_bytes(8,"little")+b"".join(bytes.fromhex(v) for v in proof["publicInputs"])+b"".join(bytes.fromhex(proof[v]) for v in ("proofA","proofB","proofC"))
+        writable = {value["reserveState"],value["accountingEpoch"]}
+    if instructions != [(TCAP_PROGRAM_ID,accounts,data)] or set(keys) != {operator,TCAP_PROGRAM_ID,*accounts}:
+        raise HTTPException(403,"PRIVATE_COORDINATION_MESSAGE_MISMATCH")
+    n = len(keys)-required-readonly_unsigned
+    if n < 0 or set(keys[required:required+n]) != writable or not any(blockhash): raise HTTPException(403,"PRIVATE_COORDINATION_ACCOUNT_PERMISSIONS_INVALID")
+    return blockhash
+
+
 @app.post("/internal/settlement-authorizations/settlement", dependencies=[Depends(require_worker_api_key)])
 async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any]:
     """Reverify the exact stored transition for the current Cranker lease."""
@@ -3238,6 +3554,8 @@ async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any
         raise HTTPException(422, "workId and crankerPubkey are required")
     work = await _receiver_work_by_id(work_id)
     _assert_current_settlement_lease(work, operator)
+    if work["kind"] in ("TCAP_FUNDING_POOL", "TCAP_EPOCH_ACCOUNTING"):
+        return await _authorize_private_coordination(work, operator)
     if (work.get("verification") or {}).get("verificationType") != "TSN_TCAP_GPRU_HIDDEN_HEAD_V1":
         raise HTTPException(403, "Settlement has no Node-verified hidden-head transition")
     verified = _receiver_verified_payload(work) or {}
@@ -3249,22 +3567,23 @@ async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any
     funding_id = str((work.get("payload") or {}).get("intentId") or "")
     funding = await _receiver_work_by_id(funding_id)
     _, asset, context = await _settlement_funding_context(funding)
-    if (transition.get("nullifier") != context["nullifier"] or transition.get("amountBaseUnits") != context["depositAmountBaseUnits"]
+    opening = read_opening(Path(clean_env(os.environ.get("GPRU_HIDDEN_HEAD_WITNESS_DIR"))), transition["amountCommitment"])
+    if (transition.get("nullifier") != context["nullifier"] or opening["amount"] != context["depositAmountBaseUnits"] or opening["nullifier"] != context["nullifier"]
             or transition.get("tokenId") != asset["tokenId"] or transition.get("assetEntry") != asset["assetEntry"]
             or transition.get("reserveState") != context["depositAccounts"]["reserveState"] or transition.get("tcapConfig") != context["depositAccounts"]["config"]):
         raise HTTPException(403, "Settlement transition differs from its confirmed funding")
     _validate_tcap_credit_digest(transition)
-    await _assert_tcap_gpru_credit_program_preconditions(transition)
+    await _assert_authorized_credit_preconditions(transition)
     tip_root, verifier_data, verifier_bump = await _read_gpru_proof_accounts()
     proof = transition["proof"]
     if proof["publicInputs"][5] != tip_root:
         raise HTTPException(409, "TIP route root changed since settlement verification")
     witness = {name: int(value, 16) for name, value in zip(PUBLIC_SIGNALS, proof["publicInputs"])}
-    witness.update(assetId=asset["tokenId"], amount=int(context["depositAmountBaseUnits"]), authorizationCommitment=int(proof["authorizationCommitment"], 16))
+    witness.update(assetId=asset["tokenId"], amount=int(context["depositAmountBaseUnits"]), amountCommitment=int(transition["amountCommitment"],16), authorizationCommitment=int(proof["authorizationCommitment"], 16))
     checked = await prove_hidden_head_credit(witness, verifier_data, verifier_bump, existing_proof=proof)
     if checked != proof:
         raise HTTPException(403, "Stored TCAP proof differs from the locally verified proof")
-    await _assert_tcap_gpru_credit_program_preconditions(transition)
+    await _assert_authorized_credit_preconditions(transition)
     current = await _receiver_work_by_id(work_id)
     _assert_current_settlement_lease(current, operator)
     if (current.get("stateVersion") != work.get("stateVersion")
@@ -3275,8 +3594,8 @@ async def create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any
     if expires_at_ts <= int(datetime.now(timezone.utc).timestamp()):
         raise HTTPException(409, "Settlement lease has insufficient time for authorization")
     return {
-        "kind": "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V2",
-        "transition": transition, "workStateVersion": current["stateVersion"],
+        "kind": "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3",
+        "transition": _public_tcap_transition(transition), "workStateVersion": current["stateVersion"],
         "leaseId": lease.get("leaseId") or current["id"],
         "leaseVersion": lease.get("version") or current["stateVersion"],
         "leaseExpiresAt": lease["expiresAt"], "expiresAtTs": expires_at_ts,
@@ -3306,9 +3625,9 @@ async def sign_settlement_transaction(body: dict[str, Any]) -> dict[str, Any]:
         raise HTTPException(422, "Node settlement authorization has no verified TCAP transition")
     signing_key = _mother_authority_signing_key()
     authority = await _assert_mother_authority_key_matches_chain(signing_key)
-    recent_blockhash = _verify_mother_signed_tcap_settlement_message(
-        message, operator=operator, authority=authority, transition=transition,
-    )
+    current_kind = (await _receiver_work_by_id(settlement_id))["kind"]
+    recent_blockhash = (_verify_mother_signed_tcap_settlement_message(message, operator=operator, authority=authority, transition=transition)
+        if current_kind == "SETTLEMENT" else _verify_private_coordination_message(message,operator,authority,current_kind,transition))
     blockhash_status = await solana_rpc("isBlockhashValid", [
         encode_base58(recent_blockhash), {"commitment": "confirmed"},
     ])

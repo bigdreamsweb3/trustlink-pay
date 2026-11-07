@@ -52,12 +52,13 @@ The display name helps the sender confirm the intended recipient; it is not lega
 
 ## Request wallet authorization
 
-Use the SDK to build the canonical payment authorization from the reviewed recipient and asset details. Ask the connected wallet to sign that exact message; do not substitute an operator key for the sender's approval.
+Use the SDK to create a private funding note and build the canonical payment authorization from the reviewed recipient and asset details. Ask the connected wallet to sign that exact message, including its funding-note commitment. Keep the opening in memory and exclude it from logs and persistent browser storage.
 
 ```ts
 import { Connection, PublicKey } from "@solana/web3.js";
-import { createTcapAssetPaymentAuthorization } from "@trustlink/tsn-sdk";
+import { createTcapAssetPaymentAuthorization, createFundingNoteV1 } from "@trustlink/tsn-sdk";
 
+const fundingNote = createFundingNoteV1();
 const authorization = await createTcapAssetPaymentAuthorization({
   connection: new Connection(process.env.TSN_RPC_URL!, "confirmed"),
   depositor: new PublicKey(senderWallet),
@@ -69,8 +70,9 @@ const authorization = await createTcapAssetPaymentAuthorization({
   recipientDisplayNameSource: recipient.displayName.trim() ? "owner-provided" : "not provided",
   amount,
   senderFeeAmount,
-  totalTokenRequiredUi: amount + senderFeeAmount,
-  fundingMode: "tcap_deposit_v2",
+  totalTokenRequiredUi,
+  fundingMode: "tcap_funded_note_v1",
+  fundingNoteCommitment: fundingNote.commitment,
 });
 
 const signature = await wallet.signMessage(
@@ -78,16 +80,18 @@ const signature = await wallet.signMessage(
 );
 ```
 
-If the payment requires a separately signed token-deposit transaction, show that transaction in the wallet for approval as well. A message signature and a token transfer are distinct authorizations.
+Native credit also requires a wallet-signed funded-note deposit. Resolve its accounts with `resolveTcapGpruDepositAccounts` and build it with `buildTcapGpruWalletDepositTransaction`, passing `fundingNoteCommitment: fundingNote.commitment`. Show that exact transaction in the wallet for approval. The selected TCAP program must have its canonical global funding root initialized and the updated thirteen-input verifier activated; responding services alone do not establish those prerequisites. See the complete [payment guide](/sdk/payment-guide).
 
 ## Submit and follow status
 
-Submit the SDK-built intent with the sender's signature and any required signed funding transaction. The response identifies accepted work; it does not mean the Node has verified it or that funds have settled. Follow the [payment lifecycle](/developers/payment-intent-lifecycle) and verify the confirmed transaction signature on the selected Solana cluster.
+Submit the SDK-built intent with the sender's message signature, exact signed funding transaction and matching private note through the configured protected ingress route. The response identifies accepted work; it does not mean the Node has verified it or that funds have settled. Follow the [payment lifecycle](/developers/payment-intent-lifecycle) and verify funding and settlement signatures separately on the selected Solana cluster.
 
 ```ts
 import {
   TsnHttpClient,
   buildPaymentAuthorizationIntentRequest,
+  type CreateIntentRequest,
+  type PublicTsnMempoolIntent,
 } from "@trustlink/tsn-sdk";
 
 const request = buildPaymentAuthorizationIntentRequest({
@@ -104,13 +108,14 @@ const request = buildPaymentAuthorizationIntentRequest({
   senderAuthorizationExpiresAt: authorization.expiresAt,
   senderFeeAmount,
   senderSignedFundingTransaction,
-  senderFundingMode: "tcap_deposit_v2",
+  senderFundingMode: "tcap_funded_note_v1",
+  fundingNote,
   amount,
   source: "my-tsn-app",
 });
 
 const client = new TsnHttpClient({ baseUrl: process.env.TSN_NODE_URL! });
-const intent = await client.postIntent(request);
+const intent = await client.postIntent<CreateIntentRequest, PublicTsnMempoolIntent>(request);
 console.log(intent.id, intent.status);
 ```
 

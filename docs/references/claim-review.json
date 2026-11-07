@@ -27,7 +27,7 @@
     {
       "id": "C-003",
       "path": "docs/laboratory/cryptography.md",
-      "contains": "The current circuit publishes these twelve fields",
+      "contains": "The funded-note circuit publishes these thirteen fields",
       "status": "CURRENT",
       "reason": "Public statement order is source-backed; no live execution implied.",
       "evidence": [
@@ -49,11 +49,12 @@
     {
       "id": "C-005",
       "path": "docs/laboratory/invariants.md",
-      "contains": "subtracts the same amount from pending liability",
-      "status": "CURRENT",
-      "reason": "Accounting changes follow successful proof verification in TCAP handler.",
+      "contains": "Individual credit checks asset policy",
+      "status": "EXPERIMENTAL",
+      "reason": "Private credit appends root/transcript with no liability reclassification; a complete separate epoch proof authenticates aggregate conservation.",
       "evidence": [
-        "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs"
+        "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
+        "tsn-protocol/programs/tcap-protocol/programs/tcap/src/private_epoch.rs"
       ]
     },
     {
@@ -103,7 +104,7 @@
       "path": "docs/laboratory/testing-and-evidence.md",
       "contains": "Four complete documentation examples passed",
       "status": "VERIFIED",
-      "reason": "Documentation-run typechecking and eight offline mock-transport scenarios passed; live wallet callbacks excluded.",
+      "reason": "Attributed November 2 documentation reconstruction observation; the November 7 replacement checks have separate evidence.",
       "evidence": [
         "docs/references/tooling/verify-sdk-examples.mjs",
         "tsn-protocol/tsn-docs/sdk/examples"
@@ -114,7 +115,7 @@
       "path": "docs/laboratory/testing-and-evidence.md",
       "contains": "canonical-payment-route suite passed all three tests",
       "status": "VERIFIED",
-      "reason": "Direct SDK compiler succeeded and canonical-payment-route suite passed during this task.",
+      "reason": "Attributed November 2 documentation reconstruction observation; the November 7 replacement checks have separate evidence.",
       "evidence": [
         "docs/laboratory/operations-and-verification.md",
         "tsn-protocol/sdks/tsn-sdk/tests/canonical-payment-route.test.mjs"
@@ -216,12 +217,12 @@
     {
       "id": "C-021",
       "path": "docs/laboratory/cryptography.md",
-      "contains": "All of those inputs are public.",
-      "status": "CURRENT",
-      "reason": "Public deposit-derived nullifier permits funding-to-credit linkage by source construction; no live experiment claimed.",
+      "contains": "All inputs were public.",
+      "status": "HISTORICAL",
+      "reason": "Dated twelve-input credit evidence retains the old public funding linkage; the funded-note runtime removes that calculation.",
       "evidence": [
-        "tsn-protocol/services/tsn-node/server.py",
-        "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+        "docs/laboratory/experiments/EXP-20261102-native-credit-baseline.md",
+        "docs/laboratory/experiments/EXP-20261103-funded-note-credit.md"
       ]
     },
     {
@@ -273,11 +274,129 @@
     {
       "id": "C-026",
       "path": "docs/laboratory/cranker-transaction-map.md",
-      "contains": "createTransactionMessage({version: 1})",
+      "contains": "preserves the installed DBrix 0.2 message contract",
       "status": "CURRENT",
-      "reason": "Locally installed DBrix code inspected; target-cluster acceptance not established.",
+      "reason": "Application-owned Kit 8.5.0 V1 builder preserves the DBrix message contract in offline comparison; one exact 2909-byte Devnet credit separately finalized at slot 517916537.",
       "evidence": [
-        "tsn-protocol/services/tsn-cranker-op-daemon/node_modules/@dbrix/solana/dist/index.js"
+        "tsn-protocol/services/tsn-cranker-op-daemon/src/dbrix/settlement-transport.ts",
+        "tsn-protocol/services/tsn-cranker-op-daemon/tests/settlement-transport.test.ts",
+        "protocol-test-runs/native-credit-receipt-20261102/evidence.json"
+      ]
+    },
+    {
+      "id": "C-027",
+      "path": "docs/laboratory/experiments/EXP-20261102-native-credit-baseline.md",
+      "contains": "Recomputation from the public funding signature and TCAP program produced",
+      "status": "VERIFIED",
+      "reason": "Public nullifier recomputation exactly matched this finalized credit, establishing this funding-to-credit relation without identifying the recipient TIN.",
+      "evidence": [
+        "docs/references/native-credit-baseline-20261102.json",
+        "scripts/inspect-native-credit.py",
+        "tsn-protocol/services/tsn-node/server.py"
+      ]
+    },
+    {
+      "id": "C-028",
+      "path": "docs/laboratory/experiments/EXP-20261102-native-credit-baseline.md",
+      "contains": "The finalized TSNP instruction carries `100000`",
+      "status": "VERIFIED",
+      "reason": "Finalized instruction/proof/CPI and observed six-decimal asset binding establish the public 0.1 Devnet USDC credit amount.",
+      "evidence": [
+        "docs/references/native-credit-baseline-20261102.json",
+        "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_credit_authorization_v2.rs"
+      ]
+    },
+    {
+      "id": "C-029",
+      "path": "docs/laboratory/experiments/EXP-20261102-native-credit-baseline.md",
+      "contains": "TCAP changed the global root from",
+      "status": "VERIFIED",
+      "reason": "The retained successful finalized receipt and matching event establish the root transition, sequence and exact authorization/signature match for this transaction.",
+      "evidence": [
+        "docs/references/native-credit-baseline-20261102.json",
+        "protocol-test-runs/native-credit-receipt-20261102/evidence.json",
+        "tsn-protocol/services/tsn-receiver/lib/settlement-reconciliation.ts"
+      ]
+    },
+    {
+      "id": "C-030",
+      "path": "docs/laboratory/experiments/EXP-20261103-native-credit-linkability.md",
+      "contains": "The matching public registry was",
+      "status": "VERIFIED",
+      "reason": "Read-only finalized receipt and public TIP registry fields reproduced the exact first-credit successor root from verified empty state; plaintext TIN was not recovered.",
+      "evidence": [
+        "docs/references/native-credit-registry-link-20261102.json",
+        "scripts/check-native-credit-registry-link.py"
+      ]
+    },
+    {
+      "id": "C-031",
+      "path": "docs/laboratory/experiments/EXP-20261103-native-credit-linkability.md",
+      "contains": "ran fourteen assertions using synthetic fixtures",
+      "status": "VERIFIED",
+      "reason": "Fourteen offline current-witness structural tests passed including registry dictionary, next same-token credit, cross-asset portfolio and incorrect-candidate controls. This is not a second live credit.",
+      "evidence": [
+        "docs/references/native-credit-linkability-20261102.json",
+        "scripts/check-native-credit-linkability.py"
+      ]
+    },
+    {
+      "id": "C-032",
+      "path": "docs/references/TSN-OPERATOR-GUIDE-20261105.md",
+      "contains": "Cranker retries temporary receipt/finality/RPC or report transport failures",
+      "status": "CURRENT",
+      "reason": "Bounded retries report the same confirmed receipt and preserve its signature; no transaction rebuild or broadcast.",
+      "evidence": [
+        "tsn-protocol/services/tsn-cranker-op-daemon/src/receiver/confirmed-report.ts",
+        "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+        "tsn-protocol/services/tsn-cranker-op-daemon/tests/confirmed-report.test.ts"
+      ]
+    },
+    {
+      "id": "C-033",
+      "path": "docs/references/TSN-OPERATOR-GUIDE-20261105.md",
+      "contains": "The existing authenticated Cranker CONFIRMED PATCH now handles lease/version conflicts",
+      "status": "CURRENT",
+      "reason": "Exact expired signed attempt and reporting payer are reconciled against finalized receipt before changing status/history.",
+      "evidence": [
+        "tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts",
+        "tsn-protocol/services/tsn-receiver/lib/settlement-reconciliation.ts",
+        "tsn-protocol/services/tsn-receiver/tests/settlement-reconciliation.test.mjs"
+      ]
+    },
+    {
+      "id": "C-034",
+      "path": "docs/laboratory/experiments/EXP-20261103-funded-note-credit.md",
+      "contains": "the former signature-to-nullifier calculation no longer matches, but a singleton funding root still identifies the deposit.",
+      "status": "VERIFIED",
+      "reason": "Bounded public-only Devnet observation: both historical controls match; new nullifier differs; public leaf/root reconstruction and leafCount=1 link the supplied pair.",
+      "evidence": [
+        "docs/references/funded-note-public-link-20261105.json",
+        "scripts/check-funded-note-public-link.mjs",
+        "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
+        "tsn-protocol/programs/tcap-protocol/programs/tcap/src/private_funding.rs"
+      ]
+    },
+    {
+      "id": "C-035",
+      "path": "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "contains": "Its unblinded action and authorization commitments permitted amount-guessing checks",
+      "status": "HISTORICAL",
+      "reason": "November 5 disclosure finding retained for historical amount-public ABI.",
+      "evidence": [
+        "docs/references/funded-note-public-link-20261105.json"
+      ]
+    },
+    {
+      "id": "C-036",
+      "path": "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "contains": "Fresh nonzero canonical BN254 blinding produces",
+      "status": "EXPERIMENTAL",
+      "reason": "Replacement amount/pool/epoch contracts are implemented and locally tested; SBF and chain activation remain unverified.",
+      "evidence": [
+        "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
+        "tsn-protocol/programs/gpru/circuits/tcap_epoch_v1/main.circom",
+        "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
       ]
     }
   ]

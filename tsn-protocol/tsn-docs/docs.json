@@ -137,6 +137,8 @@
               "api-reference/sdk/modules/gpru",
               "api-reference/sdk/modules/gpru-babyjub-delta-cipher",
               "api-reference/sdk/modules/gpru-balance-history",
+              "api-reference/sdk/modules/gpru-chain-history",
+              "api-reference/sdk/modules/gpru-funding-note",
               "api-reference/sdk/modules/gpru-stealth-keys",
               "api-reference/sdk/modules/gpru-transaction-record",
               "api-reference/sdk/modules/lit-threshold-provider",
@@ -188,6 +190,7 @@
           {
             "group": "Responsibilities and Integration",
             "pages": [
+              "operators/run-your-own-tsn",
               "operators/tsn-node",
               "operators/tsn-cranker",
               "operators/receiver"

@@ -1,6 +1,6 @@
 //! Groth16 contract for private TIN-head updates.
 //!
-//! A proof has twelve public inputs, in this fixed order:
+//! A proof has thirteen public inputs, in this fixed order:
 //! 0. TCAP shared root before the action
 //! 1. TCAP shared root after the action
 //! 2. encrypted Memo commitment
@@ -13,6 +13,7 @@
 //! 9. one-time encrypted blinding delta
 //! 10. one-time delta-encryption ephemeral point X coordinate
 //! 11. one-time delta-encryption ephemeral point Y coordinate
+//! 12. canonical TCAP funded-note membership root
 //!
 //! The circuit witness contains the hidden route membership, TIN/asset leaf,
 //! predecessor sequence and memo, sparse-map paths, and the nullifier
@@ -31,9 +32,9 @@ use solana_program::{
 };
 
 use crate::{
-    HiddenHeadProofArgsV1, InitializeHiddenHeadVerifierArgsV1,
-    InitializeHiddenHeadVerifierV1, VerifyHiddenHeadTransitionV1,
-    ConfigureHiddenHeadVerifierV1, WriteHiddenHeadVerifierIcArgsV1,
+    HiddenHeadProofArgsV2, InitializeHiddenHeadVerifierArgsV2,
+    InitializeHiddenHeadVerifierV2, VerifyHiddenHeadTransitionV2,
+    ConfigureHiddenHeadVerifierV2, WriteHiddenHeadVerifierIcArgsV2, MigrateHiddenHeadVerifierV2,
 };
 
 pub const GPRU_HIDDEN_HEAD_VERIFIER_SEED: &[u8] = b"gpru:hidden-head-verifier:v1";
@@ -41,7 +42,7 @@ pub const TIP_ROUTE_ROOT_SEED: &[u8] = b"tip:route-merkle-root:v1";
 pub const TIP_PROGRAM_ID: Pubkey = pubkey!("TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT");
 pub const TCAP_PROGRAM_ID: Pubkey = pubkey!("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
 pub const TSN_PROGRAM_ID: Pubkey = pubkey!("TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V");
-pub const HIDDEN_HEAD_PUBLIC_INPUTS: usize = 12;
+pub const HIDDEN_HEAD_PUBLIC_INPUTS: usize = 13;
 pub const ACTION_KIND_CREDIT_V1: u8 = 1;
 pub const ACTION_KIND_DEBIT_V1: u8 = 2;
 pub const ACTION_KIND_EXIT_V1: u8 = 3;
@@ -53,7 +54,7 @@ const BN254_SCALAR_MODULUS_BE: [u8; 32] = [
 ];
 
 #[account]
-pub struct GpruHiddenHeadVerifierV1 {
+pub struct GpruHiddenHeadVerifierV2 {
     pub version: u16,
     pub authority: Pubkey,
     pub circuit_commitment: [u8; 32],
@@ -64,12 +65,12 @@ pub struct GpruHiddenHeadVerifierV1 {
     pub beta_g2: [u8; 128],
     pub gamma_g2: [u8; 128],
     pub delta_g2: [u8; 128],
-    /// Groth16 IC points for the constant term plus twelve public inputs.
+    /// Groth16 IC points for the constant term plus thirteen public inputs.
     pub ic: [[u8; 64]; HIDDEN_HEAD_PUBLIC_INPUTS + 1],
 }
 
-impl GpruHiddenHeadVerifierV1 {
-    pub const VERSION: u16 = 1;
+impl GpruHiddenHeadVerifierV2 {
+    pub const VERSION: u16 = 2;
     pub const SPACE: usize = 8 + 2 + 32 + 32 + 32 + 1 + 1 + 64 + 128 * 3 + 64 * (HIDDEN_HEAD_PUBLIC_INPUTS + 1);
 }
 
@@ -87,6 +88,8 @@ pub enum HiddenHeadError {
     InvalidTipRouteRoot,
     #[msg("The supplied account is not the canonical TCAP shared root")]
     InvalidTcapRoot,
+    #[msg("The supplied account is not the canonical TCAP funded-note root")]
+    InvalidFundingRoot,
     #[msg("The Groth16 proof failed verification")]
     InvalidProof,
     #[msg("The supplied authority does not control the TSN Mother Escrow")]
@@ -101,7 +104,7 @@ pub fn circuit_commitment_v1() -> [u8; 32] {
     ]).to_bytes()
 }
 
-pub fn verifying_key_commitment_v1(verifier: &GpruHiddenHeadVerifierV1) -> [u8; 32] {
+pub fn verifying_key_commitment_v1(verifier: &GpruHiddenHeadVerifierV2) -> [u8; 32] {
     let mut bytes = Vec::with_capacity(64 + 128 * 3 + 64 * (HIDDEN_HEAD_PUBLIC_INPUTS + 1));
     bytes.extend_from_slice(&verifier.alpha_g1);
     bytes.extend_from_slice(&verifier.beta_g2);
@@ -114,19 +117,19 @@ pub fn verifying_key_commitment_v1(verifier: &GpruHiddenHeadVerifierV1) -> [u8; 
 }
 
 pub fn initialize_verifier(
-    ctx: Context<InitializeHiddenHeadVerifierV1>,
-    args: InitializeHiddenHeadVerifierArgsV1,
+    ctx: Context<InitializeHiddenHeadVerifierV2>,
+    args: InitializeHiddenHeadVerifierArgsV2,
 ) -> Result<()> {
     validate_mother_authority(&ctx.accounts.mother_escrow, &ctx.accounts.authority)?;
     require!(args.circuit_commitment == circuit_commitment_v1(), HiddenHeadError::InvalidCircuit);
     require!(args.verifying_key_commitment != [0; 32], HiddenHeadError::InvalidVerifyingKey);
 
     let verifier = &mut ctx.accounts.verifier;
-    verifier.version = GpruHiddenHeadVerifierV1::VERSION;
+    verifier.version = GpruHiddenHeadVerifierV2::VERSION;
     verifier.authority = ctx.accounts.authority.key();
     verifier.circuit_commitment = args.circuit_commitment;
     verifier.verifying_key_commitment = args.verifying_key_commitment;
-    // The complete twelve-input key cannot fit in a Solana packet. Keep the
+    // The complete thirteen-input key cannot fit in a Solana packet. Keep the
     // existing account layout disabled until all IC chunks match its commitment.
     verifier.enabled = false;
     verifier.bump = ctx.bumps.verifier;
@@ -138,8 +141,54 @@ pub fn initialize_verifier(
     Ok(())
 }
 
+/// Explicit rekey of an existing V2 layout; no head, nullifier or reserve state changes.
+pub fn rekey_verifier(ctx: Context<crate::ConfigureHiddenHeadVerifierV2>, args: InitializeHiddenHeadVerifierArgsV2) -> Result<()> {
+    validate_mother_authority(&ctx.accounts.mother_escrow,&ctx.accounts.authority)?;
+    require!(args.circuit_commitment == circuit_commitment_v1(),HiddenHeadError::InvalidCircuit);
+    require!(args.verifying_key_commitment != [0;32],HiddenHeadError::InvalidVerifyingKey);
+    let verifier=&mut ctx.accounts.verifier;
+    require!(verifier.version==GpruHiddenHeadVerifierV2::VERSION,HiddenHeadError::VerifierUnavailable);
+    verifier.authority=ctx.accounts.authority.key();verifier.circuit_commitment=args.circuit_commitment;
+    verifier.verifying_key_commitment=args.verifying_key_commitment;verifier.enabled=false;
+    verifier.alpha_g1=args.alpha_g1;verifier.beta_g2=args.beta_g2;verifier.gamma_g2=args.gamma_g2;
+    verifier.delta_g2=args.delta_g2;verifier.ic=[[0;64];HIDDEN_HEAD_PUBLIC_INPUTS+1];Ok(())
+}
+
+/// This migration can only consume the existing twelve-input V1 account once.
+pub fn migrate_verifier(ctx: Context<MigrateHiddenHeadVerifierV2>, args: InitializeHiddenHeadVerifierArgsV2) -> Result<()> {
+    validate_mother_authority(&ctx.accounts.mother_escrow,&ctx.accounts.authority)?;
+    require!(args.circuit_commitment == circuit_commitment_v1(),HiddenHeadError::InvalidCircuit);
+    require!(args.verifying_key_commitment != [0;32],HiddenHeadError::InvalidVerifyingKey);
+    validate_legacy_verifier(&ctx.accounts.verifier.try_borrow_data()?,&ctx.accounts.authority.key(),ctx.bumps.verifier)?;
+    let account=ctx.accounts.verifier.to_account_info();
+    let rent=Rent::get()?.minimum_balance(GpruHiddenHeadVerifierV2::SPACE);
+    let top_up=rent.saturating_sub(account.lamports());
+    if top_up > 0 {
+        solana_program::program::invoke(&solana_program::system_instruction::transfer(&ctx.accounts.authority.key(),account.key,top_up),
+            &[ctx.accounts.authority.to_account_info(),account.clone(),ctx.accounts.system_program.to_account_info()])?;
+    }
+    account.realloc(GpruHiddenHeadVerifierV2::SPACE,true)?;
+    let verifier=Box::new(GpruHiddenHeadVerifierV2 {
+        version:GpruHiddenHeadVerifierV2::VERSION,authority:ctx.accounts.authority.key(),
+        circuit_commitment:args.circuit_commitment,verifying_key_commitment:args.verifying_key_commitment,
+        enabled:false,bump:ctx.bumps.verifier,alpha_g1:args.alpha_g1,beta_g2:args.beta_g2,
+        gamma_g2:args.gamma_g2,delta_g2:args.delta_g2,ic:[[0;64];HIDDEN_HEAD_PUBLIC_INPUTS+1],
+    });
+    verifier.try_serialize(&mut &mut account.try_borrow_mut_data()?[..])?;
+    Ok(())
+}
+
+fn validate_legacy_verifier(data:&[u8],authority:&Pubkey,bump:u8)->Result<()> {
+    let discriminator=hashv(&[b"account:GpruHiddenHeadVerifierV1"]).to_bytes();
+    require!(data.len() == 1388 && data[..8] == discriminator[..8]
+        && u16::from_le_bytes(data[8..10].try_into().unwrap()) == 1 && data[107] == bump,
+        HiddenHeadError::VerifierUnavailable);
+    require!(data[10..42] == authority.to_bytes(),HiddenHeadError::InvalidAuthority);
+    Ok(())
+}
+
 fn validate_configuration_authority(
-    ctx: &Context<ConfigureHiddenHeadVerifierV1>,
+    ctx: &Context<ConfigureHiddenHeadVerifierV2>,
 ) -> Result<()> {
     validate_mother_authority(&ctx.accounts.mother_escrow, &ctx.accounts.authority)?;
     require_keys_eq!(ctx.accounts.verifier.authority, ctx.accounts.authority.key(), HiddenHeadError::InvalidAuthority);
@@ -147,14 +196,14 @@ fn validate_configuration_authority(
 }
 
 pub fn write_verifier_ic(
-    ctx: Context<ConfigureHiddenHeadVerifierV1>,
-    args: WriteHiddenHeadVerifierIcArgsV1,
+    ctx: Context<ConfigureHiddenHeadVerifierV2>,
+    args: WriteHiddenHeadVerifierIcArgsV2,
 ) -> Result<()> {
     validate_configuration_authority(&ctx)?;
     write_ic_points(&mut ctx.accounts.verifier, &args)
 }
 
-fn write_ic_points(verifier: &mut GpruHiddenHeadVerifierV1, args: &WriteHiddenHeadVerifierIcArgsV1) -> Result<()> {
+fn write_ic_points(verifier: &mut GpruHiddenHeadVerifierV2, args: &WriteHiddenHeadVerifierIcArgsV2) -> Result<()> {
     require!(!verifier.enabled, HiddenHeadError::InvalidVerifyingKey);
     let start = usize::from(args.start_index);
     require!(!args.points.is_empty() && args.points.len() <= 4, HiddenHeadError::InvalidVerifyingKey);
@@ -164,14 +213,14 @@ fn write_ic_points(verifier: &mut GpruHiddenHeadVerifierV1, args: &WriteHiddenHe
     Ok(())
 }
 
-pub fn enable_verifier(ctx: Context<ConfigureHiddenHeadVerifierV1>) -> Result<()> {
+pub fn enable_verifier(ctx: Context<ConfigureHiddenHeadVerifierV2>) -> Result<()> {
     validate_configuration_authority(&ctx)?;
     enable_complete_key(&mut ctx.accounts.verifier)
 }
 
-fn enable_complete_key(verifier: &mut GpruHiddenHeadVerifierV1) -> Result<()> {
+fn enable_complete_key(verifier: &mut GpruHiddenHeadVerifierV2) -> Result<()> {
     require!(!verifier.enabled, HiddenHeadError::InvalidVerifyingKey);
-    require!(verifier.version == GpruHiddenHeadVerifierV1::VERSION, HiddenHeadError::VerifierUnavailable);
+    require!(verifier.version == GpruHiddenHeadVerifierV2::VERSION, HiddenHeadError::VerifierUnavailable);
     require!(verifier.circuit_commitment == circuit_commitment_v1(), HiddenHeadError::InvalidCircuit);
     require!(verifier.ic.iter().all(|point| point.iter().any(|byte| *byte != 0)), HiddenHeadError::InvalidVerifyingKey);
     require!(verifier.verifying_key_commitment == verifying_key_commitment_v1(verifier), HiddenHeadError::InvalidVerifyingKey);
@@ -183,9 +232,9 @@ fn enable_complete_key(verifier: &mut GpruHiddenHeadVerifierV1) -> Result<()> {
 mod verifier_setup_tests {
     use super::*;
 
-    fn fixture() -> GpruHiddenHeadVerifierV1 {
-        GpruHiddenHeadVerifierV1 {
-            version: 1, authority: Pubkey::new_unique(), circuit_commitment: circuit_commitment_v1(),
+    fn fixture() -> GpruHiddenHeadVerifierV2 {
+        GpruHiddenHeadVerifierV2 {
+            version: 2, authority: Pubkey::new_unique(), circuit_commitment: circuit_commitment_v1(),
             verifying_key_commitment: [0; 32], enabled: false, bump: 255,
             alpha_g1: [1; 64], beta_g2: [2; 128], gamma_g2: [3; 128], delta_g2: [4; 128],
             ic: [[5; 64]; HIDDEN_HEAD_PUBLIC_INPUTS + 1],
@@ -201,11 +250,11 @@ mod verifier_setup_tests {
         assert!(!verifier.enabled);
         for start in (0..HIDDEN_HEAD_PUBLIC_INPUTS + 1).step_by(4) {
             let count = (HIDDEN_HEAD_PUBLIC_INPUTS + 1 - start).min(4);
-            write_ic_points(&mut verifier, &WriteHiddenHeadVerifierIcArgsV1 { start_index: start as u8, points: vec![[5; 64]; count] }).unwrap();
+            write_ic_points(&mut verifier, &WriteHiddenHeadVerifierIcArgsV2 { start_index: start as u8, points: vec![[5; 64]; count] }).unwrap();
         }
         enable_complete_key(&mut verifier).unwrap();
         assert!(verifier.enabled);
-        assert!(write_ic_points(&mut verifier, &WriteHiddenHeadVerifierIcArgsV1 { start_index: 0, points: vec![[6; 64]] }).is_err());
+        assert!(write_ic_points(&mut verifier, &WriteHiddenHeadVerifierIcArgsV2 { start_index: 0, points: vec![[6; 64]] }).is_err());
     }
 
     #[test]
@@ -223,21 +272,69 @@ mod verifier_setup_tests {
     #[test]
     fn invalid_chunks_are_rejected_without_partial_write() {
         let mut verifier = fixture();
-        for (start_index, points) in [(0, vec![]), (0, vec![[5; 64]; 5]), (12, vec![[5; 64]; 2]), (0, vec![[0; 64]])] {
+        for (start_index, points) in [(0, vec![]), (0, vec![[5; 64]; 5]), (13, vec![[5; 64]; 2]), (0, vec![[0; 64]])] {
             let before = verifier.ic;
-            assert!(write_ic_points(&mut verifier, &WriteHiddenHeadVerifierIcArgsV1 { start_index, points }).is_err());
+            assert!(write_ic_points(&mut verifier, &WriteHiddenHeadVerifierIcArgsV2 { start_index, points }).is_err());
             assert_eq!(verifier.ic, before);
         }
     }
+    #[test]
+    fn migration_accepts_only_the_canonical_old_layout_and_authority() {
+        let authority=Pubkey::new_unique();let mut old=vec![0u8;1388];
+        old[..8].copy_from_slice(&hashv(&[b"account:GpruHiddenHeadVerifierV1"]).to_bytes()[..8]);
+        old[8..10].copy_from_slice(&1u16.to_le_bytes());old[10..42].copy_from_slice(authority.as_ref());old[107]=9;
+        validate_legacy_verifier(&old,&authority,9).unwrap();
+        assert!(validate_legacy_verifier(&old,&Pubkey::new_unique(),9).is_err());
+        assert!(validate_legacy_verifier(&old,&authority,8).is_err());
+        old.resize(GpruHiddenHeadVerifierV2::SPACE,0);assert!(validate_legacy_verifier(&old,&authority,9).is_err());
+        let current=fixture();let mut encoded=vec![];current.try_serialize(&mut encoded).unwrap();
+        assert_eq!(encoded.len(),1452);assert_eq!(u16::from_le_bytes(encoded[8..10].try_into().unwrap()),2);
+        assert!(validate_legacy_verifier(&encoded,&current.authority,current.bump).is_err());
+    }
+    #[test]
+    fn funding_root_requires_exact_supported_shape_nonempty_count_and_canonical_fields() {
+        let mut data=vec![0;113];data[..8].copy_from_slice(&hashv(&[b"account:TcapSealedFundingPoolV1"]).to_bytes()[..8]);
+        data[8..10].copy_from_slice(&1u16.to_le_bytes());data[10]=5;
+        data[43..47].copy_from_slice(&1u32.to_le_bytes());data[78]=1;
+        data[79..87].copy_from_slice(&2u64.to_le_bytes());data[87..95].copy_from_slice(&2u64.to_le_bytes());
+        data[95..97].copy_from_slice(&2u16.to_le_bytes());
+        validate_funding_root_bytes(&data,5).unwrap();
+        assert!(validate_funding_root_bytes(&data,4).is_err());
+        data[95..97].copy_from_slice(&1u16.to_le_bytes());assert!(validate_funding_root_bytes(&data,5).is_err());
+        data[95..97].copy_from_slice(&2u16.to_le_bytes());data[47..79].copy_from_slice(&BN254_SCALAR_MODULUS_BE);
+        assert!(validate_funding_root_bytes(&data,5).is_err());
+    }
+
+    #[test]
+    #[ignore = "requires an explicitly supplied serialized thirteen-input local proof fixture"]
+    fn serialized_funded_note_proof_verifies_and_public_input_changes_fail() {
+        let filename=std::env::var("TSN_GPRU_FUNDED_PROOF_FIXTURE").expect("set TSN_GPRU_FUNDED_PROOF_FIXTURE");
+        let bytes=std::fs::read(filename).expect("read local serialized proof fixture");
+        assert_eq!(bytes.len(),2016,"expected key header,14 IC points,13 public inputs and256 proof bytes");
+        let ic:Vec<[u8;64]>=bytes[448..1344].chunks_exact(64).map(|p|p.try_into().unwrap()).collect();
+        let vk=Groth16Verifyingkey {nr_pubinputs:13,vk_alpha_g1:bytes[..64].try_into().unwrap(),
+            vk_beta_g2:bytes[64..192].try_into().unwrap(),vk_gamme_g2:bytes[192..320].try_into().unwrap(),
+            vk_delta_g2:bytes[320..448].try_into().unwrap(),vk_ic:&ic};
+        let mut inputs:[[u8;32];13]=[[0;32];13];
+        for(slot,p)in inputs.iter_mut().zip(bytes[1344..1760].chunks_exact(32)){slot.copy_from_slice(p);}
+        let a:[u8;64]=bytes[1760..1824].try_into().unwrap();let b:[u8;128]=bytes[1824..1952].try_into().unwrap();
+        let c:[u8;64]=bytes[1952..2016].try_into().unwrap();
+        Groth16Verifier::<13>::new(&a,&b,&c,&inputs,&vk).unwrap().verify().expect("honest funded-note proof verifies");
+        for index in [12usize,4usize] {
+            let mut changed=inputs;changed[index][31]^=1;
+            assert!(Groth16Verifier::<13>::new(&a,&b,&c,&changed,&vk).unwrap().verify().is_err(),"changed public input must reject");
+        }
+    }
+
 }
 
 pub fn verify_transition(
-    ctx: Context<VerifyHiddenHeadTransitionV1>,
-    args: HiddenHeadProofArgsV1,
+    ctx: Context<VerifyHiddenHeadTransitionV2>,
+    args: HiddenHeadProofArgsV2,
 ) -> Result<()> {
     let verifier = &ctx.accounts.verifier;
     require!(
-        verifier.version == GpruHiddenHeadVerifierV1::VERSION
+        verifier.version == GpruHiddenHeadVerifierV2::VERSION
             && verifier.enabled
             && verifier.circuit_commitment == circuit_commitment_v1(),
         HiddenHeadError::VerifierUnavailable
@@ -254,15 +351,15 @@ pub fn verify_transition(
         matches!(args.action_kind, ACTION_KIND_CREDIT_V1 | ACTION_KIND_DEBIT_V1 | ACTION_KIND_EXIT_V1),
         HiddenHeadError::InvalidPublicInputs
     );
-    require!(args.token_id > 0 && args.amount > 0 && args.authorization_commitment != [0; 32], HiddenHeadError::InvalidPublicInputs);
+    require!(args.token_id > 0 && args.amount_commitment != [0;32] && is_canonical_bn254_scalar(&args.amount_commitment) && args.authorization_commitment != [0; 32], HiddenHeadError::InvalidPublicInputs);
     require!(is_canonical_bn254_scalar(&args.authorization_commitment), HiddenHeadError::InvalidPublicInputs);
     let action_kind = scalar_bytes_from_u64(args.action_kind as u64);
     let token_id = scalar_bytes_from_u64(args.token_id as u64);
-    let amount = scalar_bytes_from_u64(args.amount);
+
     let action_inputs: [&[u8]; 5] = [
         &action_kind,
         &token_id,
-        &amount,
+        &args.amount_commitment,
         &args.authorization_commitment,
         &args.public_inputs[4],
     ];
@@ -292,6 +389,8 @@ pub fn verify_transition(
     );
 
     let current_tcap_root = validate_tcap_root(&ctx.accounts.tcap_commitment_root)?;
+    let funding_root = validate_funding_root(&ctx.accounts.funding_root)?;
+    require!(args.public_inputs[12] == funding_root,HiddenHeadError::InvalidPublicInputs);
     let tip_route_root = validate_tip_route_root(&ctx.accounts.tip_route_root)?;
     require!(args.public_inputs[0] == current_tcap_root, HiddenHeadError::InvalidPublicInputs);
     require!(args.public_inputs[5] == tip_route_root, HiddenHeadError::InvalidPublicInputs);
@@ -340,6 +439,34 @@ fn validate_tcap_root(account: &UncheckedAccount) -> Result<[u8; 32]> {
     require!(data.len() == 124 && data[..8] == discriminator[..8], HiddenHeadError::InvalidTcapRoot);
     require!(u16::from_le_bytes(data[8..10].try_into().unwrap()) == 1 && data[122] == 0, HiddenHeadError::InvalidTcapRoot);
     Ok(data[12..44].try_into().unwrap())
+}
+
+fn validate_funding_root(account:&UncheckedAccount)->Result<[u8;32]> {
+    require_keys_eq!(*account.owner,TCAP_PROGRAM_ID,HiddenHeadError::InvalidFundingRoot);
+    let data=account.try_borrow_data()?;
+    require!(data.len()==113,HiddenHeadError::InvalidFundingRoot);
+    let asset=Pubkey::new_from_array(data[11..43].try_into().unwrap());
+    let root:[u8;32]=data[47..79].try_into().unwrap();
+    let(expected,bump)=Pubkey::find_program_address(&[b"tcap:sealed-funding:v1",asset.as_ref(),&root],&TCAP_PROGRAM_ID);
+    require_keys_eq!(expected,account.key(),HiddenHeadError::InvalidFundingRoot);
+    let root=validate_funding_root_bytes(&data,bump)?;
+    require!(Clock::get()?.slot>=u64::from_le_bytes(data[105..113].try_into().unwrap()),HiddenHeadError::InvalidFundingRoot);
+    Ok(root)
+}
+fn validate_funding_root_bytes(data:&[u8],bump:u8)->Result<[u8;32]> {
+    let disc=hashv(&[b"account:TcapSealedFundingPoolV1"]).to_bytes();
+    require!(data.len()==113 && data[..8]==disc[..8] && data[8..10]==1u16.to_le_bytes()
+        && data[10]==bump,HiddenHeadError::InvalidFundingRoot);
+    let count=u64::from_le_bytes(data[79..87].try_into().unwrap());
+    let eligible=u64::from_le_bytes(data[87..95].try_into().unwrap());
+    let sources=u16::from_le_bytes(data[95..97].try_into().unwrap());
+    let root:[u8;32]=data[47..79].try_into().unwrap();
+    require!(root!=[0;32] && is_canonical_bn254_scalar(&root) && count<=1u64<<32
+        && eligible>=2 && eligible<=count && sources>=2 && sources as u64<=eligible
+        && u32::from_le_bytes(data[43..47].try_into().unwrap())>0,HiddenHeadError::InvalidFundingRoot);
+    let captured=u64::from_le_bytes(data[97..105].try_into().unwrap());
+    let release=u64::from_le_bytes(data[105..113].try_into().unwrap());
+    require!(release>=captured,HiddenHeadError::InvalidFundingRoot);Ok(root)
 }
 
 fn validate_tip_route_root(account: &UncheckedAccount) -> Result<[u8; 32]> {

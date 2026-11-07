@@ -18,7 +18,7 @@ export const TSNP = new PublicKey("TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V")
 const pda = (program, seed) => PublicKey.findProgramAddressSync([Buffer.from(seed)], program)[0];
 export const ADDRESSES = {
   mother: pda(TSNP, "tsn_mother_escrow"), config: pda(TCAP, "tcap:global-config:v1"),
-  root: pda(TCAP, "tcap:commitment-root:v1"), verifier: pda(GPRU, "gpru:hidden-head-verifier:v1"),
+  root: pda(TCAP, "tcap:commitment-root:v1"), fundingRoot:pda(TCAP,"tcap:funding-root:v1"), verifier: pda(GPRU, "gpru:hidden-head-verifier:v1"),
 };
 const digest = (...parts) => { const hash = createHash("sha256"); for (const part of parts) hash.update(part); return hash.digest(); };
 const discriminator = (name) => digest(Buffer.from(`global:${name}`)).subarray(0, 8);
@@ -29,7 +29,7 @@ const asBytes = (value, size, label) => {
 };
 
 export function validateKeyArgs(args, circuitSource) {
-  if (args.public_input_count !== 12 || !Array.isArray(args.ic) || args.ic.length !== 13) throw new Error("Expected the current twelve-input/thirteen-IC-point key");
+  if (args.public_input_count !== 13 || !Array.isArray(args.ic) || args.ic.length !== 14) throw new Error("Expected the current thirteen-input/fourteen-IC-point key");
   const header = [asBytes(args.alpha_g1, 64, "alpha"), ...["beta_g2", "gamma_g2", "delta_g2"].map(k => asBytes(args[k], 128, k))];
   const points = args.ic.map((p, index) => asBytes(p, 64, `IC ${index}`));
   if (points.some(point => point.every(byte => byte === 0))) throw new Error("IC points must be nonzero");
@@ -39,19 +39,19 @@ export function validateKeyArgs(args, circuitSource) {
   return { circuit, key, header, points };
 }
 
-export function buildVerifierInstructions(authority, material) {
+export function buildVerifierInstructions(authority, material, { migration = false, rekey = false } = {}) {
   const keys = [
     { pubkey: authority, isSigner: true, isWritable: true },
     { pubkey: ADDRESSES.mother, isSigner: false, isWritable: false },
     { pubkey: ADDRESSES.verifier, isSigner: false, isWritable: true },
   ];
-  const instructions = [new TransactionInstruction({ programId: GPRU, keys: [...keys, { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }], data: Buffer.concat([discriminator("initialize_hidden_head_verifier_v1"), material.circuit, material.key, ...material.header]) })];
-  for (let start = 0; start < 13; start += 4) {
+  const instructions = [new TransactionInstruction({ programId: GPRU, keys: rekey ? keys : [...keys, { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }], data: Buffer.concat([discriminator(rekey ? "rekey_hidden_head_verifier_v2" : migration ? "migrate_hidden_head_verifier_v2" : "initialize_hidden_head_verifier_v2"), material.circuit, material.key, ...material.header]) })];
+  for (let start = 0; start < 14; start += 4) {
     const points = material.points.slice(start, start + 4);
     const count = Buffer.alloc(4); count.writeUInt32LE(points.length);
-    instructions.push(new TransactionInstruction({ programId: GPRU, keys, data: Buffer.concat([discriminator("write_hidden_head_verifier_ic_v1"), Buffer.from([start]), count, ...points]) }));
+    instructions.push(new TransactionInstruction({ programId: GPRU, keys, data: Buffer.concat([discriminator("write_hidden_head_verifier_ic_v2"), Buffer.from([start]), count, ...points]) }));
   }
-  instructions.push(new TransactionInstruction({ programId: GPRU, keys, data: discriminator("enable_hidden_head_verifier_v1") }));
+  instructions.push(new TransactionInstruction({ programId: GPRU, keys, data: discriminator("enable_hidden_head_verifier_v2") }));
   return instructions;
 }
 
@@ -61,6 +61,40 @@ export function buildRootActivation(authority) {
     { pubkey: ADDRESSES.config, isSigner: false, isWritable: false },
     { pubkey: ADDRESSES.root, isSigner: false, isWritable: true },
   ], data: discriminator("activate_commitment_root_v1") });
+}
+
+export function buildFundingRootInitialization(authority) {
+  return new TransactionInstruction({programId:TCAP,keys:[
+    {pubkey:authority,isSigner:true,isWritable:true},
+    {pubkey:ADDRESSES.config,isSigner:false,isWritable:false},
+    {pubkey:ADDRESSES.fundingRoot,isSigner:false,isWritable:true},
+    {pubkey:SystemProgram.programId,isSigner:false,isWritable:false},
+  ],data:discriminator("initialize_private_funding_root_v1")});
+}
+
+const BN254 = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
+const canonicalField = bytes => BigInt("0x"+bytes.toString("hex")) < BN254;
+export function decodeFundingRoot(info) {
+  const data=decodeAccount(info,TCAP,"TcapFundingMerkleRootV1",1081);
+  const count=data.readBigUInt64LE(45);
+  const bump=PublicKey.findProgramAddressSync([Buffer.from("tcap:funding-root:v1")],TCAP)[1];
+  if(data.readUInt16LE(8)!==1 || data.readUInt16LE(10)!==1 || data[12]!==bump
+    || count > 2n**32n || data.readUInt32LE(53)!==32
+    || !canonicalField(data.subarray(13,45)) || data.subarray(13,45).every(byte=>byte===0)) throw new Error("Invalid funding root layout or field");
+  for(let offset=57;offset<data.length;offset+=32) if(!canonicalField(data.subarray(offset,offset+32))) throw new Error("Invalid funding frontier field");
+  return {currentRoot:data.subarray(13,45).toString("hex"),leafCount:count.toString()};
+}
+
+export function decodeVerifierVersion(info) {
+  if(!info) return null;
+  if(info.data.length===1388){const data=decodeAccount(info,GPRU,"GpruHiddenHeadVerifierV1",1388);if(data.readUInt16LE(8)!==1)throw new Error("Invalid legacy verifier version");return 1;}
+  const data=decodeAccount(info,GPRU,"GpruHiddenHeadVerifierV2",1452);
+  if(data.readUInt16LE(8)!==2)throw new Error("Invalid funded verifier version");
+  return 2;
+}
+
+export function assertLegacyVerifierAuthority(info,authority) {
+  if(decodeVerifierVersion(info)!==1 || !info.data.subarray(10,42).equals(authority.toBuffer())) throw new Error("Migration requires the existing V1 verifier controlled by Mother authority");
 }
 
 export function decodeAccount(info, owner, name, size) {
@@ -74,9 +108,9 @@ export function decodeRoot(info) {
   return { currentRoot: data.subarray(12, 44).toString("hex"), previousRoot: data.subarray(44, 76).toString("hex"), sequence: data.readBigUInt64LE(80).toString(), paused: data[122] !== 0 };
 }
 
-function assertVerifierMatches(info, material, authority) {
-  const data = decodeAccount(info, GPRU, "GpruHiddenHeadVerifierV1", 1388);
-  if (data.readUInt16LE(8) !== 1 || !data.subarray(10, 42).equals(authority.toBuffer()) || !data.subarray(42, 74).equals(material.circuit) || !data.subarray(74, 106).equals(material.key) || !data.subarray(108, 556).equals(Buffer.concat(material.header))) throw new Error("Existing verifier authority/header/commitments differ; refusing to overwrite it");
+export function assertVerifierMatches(info, material, authority) {
+  const data = decodeAccount(info, GPRU, "GpruHiddenHeadVerifierV2", 1452);
+  if (data.readUInt16LE(8) !== 2 || !data.subarray(10, 42).equals(authority.toBuffer()) || !data.subarray(42, 74).equals(material.circuit) || !data.subarray(74, 106).equals(material.key) || !data.subarray(108, 556).equals(Buffer.concat(material.header))) throw new Error("Existing verifier authority/header/commitments differ; refusing to overwrite it");
   if (data[106] !== 0 && !data.subarray(556).equals(Buffer.concat(material.points))) throw new Error("Enabled verifier key differs from exported key");
   return data[106] !== 0;
 }
@@ -88,7 +122,7 @@ function options(argv) {
     else if (["--rpc", "--wallet", "--args"].includes(argv[i]) && argv[i + 1]) selected[argv[i++].slice(2)] = argv[i];
     else throw new Error(`Unknown or missing option: ${argv[i]}`);
   }
-  if (!["status", "init-verifier", "activate-root"].includes(selected.command)) throw new Error("Usage: hidden-head-setup.mjs status|init-verifier|activate-root [--rpc URL] [--wallet KEYPAIR] [--args FILE] [--send]");
+  if (!["status", "init-verifier", "migrate-verifier", "rekey-verifier", "init-funding-root", "activate-root"].includes(selected.command)) throw new Error("Usage: hidden-head-setup.mjs status|init-verifier|migrate-verifier|rekey-verifier|init-funding-root|activate-root [--rpc URL] [--wallet KEYPAIR] [--args FILE] [--send]");
   return selected;
 }
 
@@ -99,15 +133,16 @@ export async function main(argv) {
   try {
     if (await connection.getGenesisHash() !== "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG") throw new Error("This setup command requires Solana Devnet");
     const read = await connection.getMultipleAccountsInfoAndContext(Object.values(ADDRESSES), "confirmed");
-    const [motherInfo, configInfo, rootInfo, verifierInfo] = read.value;
+    const [motherInfo, configInfo, rootInfo, fundingInfo, verifierInfo] = read.value;
     if (!motherInfo || !motherInfo.owner.equals(TSNP) || motherInfo.data.length < 40 || !motherInfo.data.subarray(0, 8).equals(accountDiscriminator("MotherEscrow"))) throw new Error("Missing or invalid Mother Escrow");
     const mother = new PublicKey(motherInfo.data.subarray(8, 40));
     const config = decodeAccount(configInfo, TCAP, "TcapGlobalConfigV1", 276);
     const governance = new PublicKey(config.subarray(14, 46));
     if (!config.subarray(208, 240).equals(ADDRESSES.root.toBuffer())) throw new Error("TCAP config does not bind the canonical root");
     const root = decodeRoot(rootInfo);
-    if (verifierInfo) decodeAccount(verifierInfo, GPRU, "GpruHiddenHeadVerifierV1", 1388);
-    const summary = { checkedAt: new Date().toISOString(), slot: read.context.slot, rpc: new URL(rpc).origin, motherAuthority: mother.toBase58(), governanceAuthority: governance.toBase58(), accounts: Object.fromEntries(Object.entries(ADDRESSES).map(([name, key]) => [name, key.toBase58()])), config: { version: config.readUInt16LE(8), paused: config[207] !== 0, proofVerifierProgram: new PublicKey(config.subarray(174, 206)).toBase58(), proofVerifierEnabled: config[206] !== 0 }, root, verifier: { exists: !!verifierInfo, bytes: verifierInfo?.data.length ?? 0, enabled: verifierInfo ? verifierInfo.data[106] === 1 : false } };
+    const verifierVersion=decodeVerifierVersion(verifierInfo);
+    const fundingRoot=fundingInfo ? decodeFundingRoot(fundingInfo) : null;
+    const summary = { checkedAt: new Date().toISOString(), slot: read.context.slot, rpc: new URL(rpc).origin, motherAuthority: mother.toBase58(), governanceAuthority: governance.toBase58(), accounts: Object.fromEntries(Object.entries(ADDRESSES).map(([name, key]) => [name, key.toBase58()])), config: { version: config.readUInt16LE(8), paused: config[207] !== 0, proofVerifierProgram: new PublicKey(config.subarray(174, 206)).toBase58(), proofVerifierEnabled: config[206] !== 0 }, root, fundingRoot, verifier: { version:verifierVersion, exists: !!verifierInfo, bytes: verifierInfo?.data.length ?? 0, enabled: verifierInfo ? verifierInfo.data[106] === 1 : false } };
     console.log(JSON.stringify(summary, null, 2));
     if (selected.command === "status") return summary;
     let instructions;
@@ -118,13 +153,22 @@ export async function main(argv) {
       if (root.sequence !== "0") throw new Error("Refusing first-use activation of a root with existing transitions");
       requiredAuthority = governance;
       instructions = [buildRootActivation(governance)];
+    } else if(selected.command === "init-funding-root") {
+      if(fundingInfo) {console.log("Funding root already initialized; no transaction needed.");return;}
+      requiredAuthority=governance;
+      instructions=[buildFundingRootInitialization(governance)];
     } else {
       requiredAuthority = mother;
       const argsPath = path.resolve(selected.args ?? path.join(ROOT, "tsn-protocol/programs/gpru/circuits/hidden_head_v1/build/hidden_head_v1/dev/verifier-init-args.json"));
       material = validateKeyArgs(JSON.parse(fs.readFileSync(argsPath, "utf8")), fs.readFileSync(path.join(ROOT, "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom")));
-      if (verifierInfo && assertVerifierMatches(verifierInfo, material, mother)) { console.log("Verifier is enabled with the exact exported key; no transaction needed."); return; }
-      instructions = buildVerifierInstructions(mother, material);
-      if (verifierInfo) instructions.shift(); // Resume the matching disabled setup.
+      if(verifierVersion===1) {
+        if(selected.command!=="migrate-verifier") throw new Error("Existing twelve-input verifier requires explicit migrate-verifier");
+        assertLegacyVerifierAuthority(verifierInfo,mother);
+      } else if(selected.command==="migrate-verifier" && !verifierInfo) throw new Error("Cannot migrate a missing verifier; initialize it explicitly");
+      if(selected.command==="rekey-verifier" && verifierVersion!==2) throw new Error("Rekey requires an existing V2 verifier");
+      if(selected.command!=="rekey-verifier" && verifierVersion===2 && assertVerifierMatches(verifierInfo,material,mother)) {console.log("Verifier is enabled with the exact exported key; no transaction needed.");return;}
+      instructions=buildVerifierInstructions(mother,material,{migration:verifierVersion===1,rekey:selected.command==="rekey-verifier"});
+      if(verifierVersion===2 && selected.command!=="rekey-verifier") instructions.shift(); // Resume only a matching disabled V2 setup.
     }
     const { blockhash } = await connection.getLatestBlockhash("confirmed");
     const sizes = instructions.map(ix => new Transaction({ feePayer: requiredAuthority, recentBlockhash: blockhash }).add(ix).serialize({ requireAllSignatures: false, verifySignatures: false }).length);
@@ -139,10 +183,14 @@ export async function main(argv) {
       const signature = await sendAndConfirmTransaction(connection, new Transaction().add(instructions[index]), [signer], { commitment: "confirmed" });
       console.log(JSON.stringify({ transaction: index + 1, signature }));
     }
-    const finalInfo = await connection.getAccountInfo(selected.command === "activate-root" ? ADDRESSES.root : ADDRESSES.verifier, "confirmed");
+    const finalInfo = await connection.getAccountInfo(selected.command === "activate-root" ? ADDRESSES.root : selected.command === "init-funding-root" ? ADDRESSES.fundingRoot : ADDRESSES.verifier, "confirmed");
     if (material) {
       if (!assertVerifierMatches(finalInfo, material, requiredAuthority)) throw new Error("Verifier still disabled after setup");
-      console.log("CONFIRMED: GPRU verifier enabled with the exact circuit/key commitments and all thirteen IC points.");
+      console.log("CONFIRMED: GPRU verifier enabled with the exact circuit/key commitments and all fourteen IC points.");
+    } else if(selected.command === "init-funding-root") {
+      const finalRoot=decodeFundingRoot(finalInfo);
+      if(finalRoot.leafCount!=="0")throw new Error("Funding root initialization count is invalid");
+      console.log(JSON.stringify({result:"CONFIRMED: TCAP funding root initialized",...finalRoot}));
     } else {
       const finalRoot = decodeRoot(finalInfo);
       if (finalRoot.paused || finalRoot.sequence !== "0" || finalRoot.currentRoot !== finalRoot.previousRoot || /^0+$/.test(finalRoot.currentRoot)) throw new Error("Root activation result failed validation");

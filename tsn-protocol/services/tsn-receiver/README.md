@@ -2,23 +2,41 @@
 
 The TSN Receiver by TrustLink Labs is the durable Firebase-backed ingress,
 status, and work-publication service for the Transfer Settlement Network
-(TSN). It accepts public payment and TIN-operation submissions, preserves
-non-secret work records, leases work atomically, and publishes final status
+(TSN). It accepts payment and TIN-operation submissions, preserves narrow
+coordination records and restricted encrypted Node payloads, leases work atomically, and publishes final status
 and transaction evidence.
 
 The Receiver is not the TSN Node and is not a Cranker. It does not verify
-cryptographic plans, decrypt TIN data, derive ZK-PRUs, sign transactions, or
+hidden-head proofs, decrypt owner identity records, sign transactions, or
 hold protocol authority.
 
 For the exact payment-data retention boundary, Node verification checks, and
 Cranker proof flow, see the repository guide: [TSN Receiver verification and
-Cranker settlement](../../docs/tsn-receiver-verification-settlement.md).
+Cranker settlement](../../../docs/laboratory/architecture-map.md).
 
 State flow:
 
 `RECEIVED -> NODE_VERIFYING -> VERIFIED -> CRANKER_LEASED -> SUBMITTED -> CONFIRMED`
 
 The TSN Node is the only service allowed to move work from `RECEIVED` to `VERIFIED`. Crankers can lease only `VERIFIED` work. All leases and transitions use Firestore transactions and monotonic state versions.
+
+## Funded-note ingress and settlement projection
+
+Native funding requires `senderFundingMode: "tcap_funded_note_v1"`, an exact owner-signed `deposit_private_funding_v1` transaction, and restricted `fundingNote: {version: 1, secret, blinding, commitment}` material. The three note values use canonical 32-byte BN254 scalar hex; secret and commitment must be nonzero. Receiver verifies the sender approval signature and field shape. Node independently checks the signed intent, note opening, asset/amount and exact deposit transaction before funding becomes executable.
+
+Receiver stores the note only inside its existing authenticated encrypted Node envelope. Funding verification compaction, public status views and Cranker execution projections omit the note opening and recipient TIN. The operator still receives the original ingress body; encrypted storage does not establish operator blindness. A linked settlement reference is created at ingress, while confirmed funding gates its independent Node verification.
+
+Settlement exposes `fundingRootAccount`, the canonical global `tcap:funding-root:v1` PDA, and thirteen proof public inputs; the funding root value is input index 12. The projection excludes note commitment, secret, blinding and funding membership paths. Before storing a native authorization, Receiver filters its transition and nested proof fields and requires the public transition commitment to match the Node-verified work. New funding requires the funded tree and matching thirteen-input verifier/proving artifacts; source checks do not establish deployment or payment completion.
+
+Later deposits advance the funded root. For unsigned work, an exact Node authorization rejection `TCAP_FUNDING_ROOT_CHANGED_BEFORE_SETTLEMENT` requeues the settlement for fresh verification. The active Cranker lease owner can also request `POST /api/cranker/work/retry` with `{id, expectedVersion, reason: "TCAP_FUNDING_ROOT_CHANGED_BEFORE_SETTLEMENT"}` after its root preflight or Node co-signing rejects that root. Receiver checks ownership, lease expiry, state version, confirmed funding and immutable settlement lineage; it clears the obsolete verification/authorization and retains the original funding envelope so Node derives the same nullifier. Any persisted execution result prevents this retry; saved signatures require reconciliation.
+
+For unsubmitted REJECTED work, the authenticated Node-service retry also admits the exact former error `GPRU transaction record is missing its twelve public hidden-head inputs` after loading the corrected thirteen-input Node validator. It preserves the original confirmed funding and rejection history, then requires new verification/proving. See [operator recovery](../../../docs/RUN-YOUR-OWN-TSN.md#12-diagnose-failures-without-repeating-uncertain-payments) for the guarded utility and other supported reasons.
+
+## Expired Cranker confirmation reports
+
+Authenticated work PATCH can reconcile a native CONFIRMED report after lease expiry or immediate expiry reclamation. Receiver requires the exact expired authorization/version, durable signed checkpoint and original reporting payer, then verifies finalized execution, both signatures, wire hash/size/blockhash, exact instruction/Memo, canonical accounts and the resulting TCAP root. Concurrent lease reclamation may change coordination fields, but no replacement attempt or changed authorization is accepted. This updates status/history only and does not renew signing authority or wake settlement execution.
+
+Transient receipt/finality unavailability leaves work unchanged and the corrected Cranker retries the same report within a bounded window. Other receipt or authorization mismatches fail. For an existing FAILED receipt, the Node-service-authenticated reconciliation utility defaults to read-only verification; explicit execution repairs only Receiver status. See [the November 5 diagnosis, tests and command](../../../docs/references/TSN-OPERATOR-GUIDE-20261105.md#expired-cranker-confirmation-report).
 
 ## Runtime boundary
 
@@ -124,3 +142,9 @@ npm test
 
 TrustLink Labs maintains the protocol architecture. This repository contains
 only the Receiver service and its Firebase integration boundary.
+
+## Experimental private-credit and aggregate accounting
+
+The current replacement hides individual credit amount in a freshly blinded commitment, keeps reserve liabilities unchanged on credit, and uses dedicated `TCAP_FUNDING_POOL` and `TCAP_EPOCH_ACCOUNTING` work. Node validates positive unspent captured members and source-wallet counts, prepares current-root proofs and complete ordered epoch openings; Receiver paginates/defer leases and serializes native verification; Cranker submits exact lease-bound Mother-authorized transactions. Pool capture needs two notes/two wallets, and complete accounting requires 2–64 credits. Common windows adapt to traffic; zero-value actors never qualify a pool. Signed uncertain attempts remain locked for exact finalized receipt reconciliation.
+
+Node must retain its protected amount-opening journal and configure both credit and six `GPRU_EPOCH_*` artifact settings. [Operator activation](../../../docs/RUN-YOUR-OWN-TSN.md) specifies explicit credit rekey and the separate epoch verifier. [ABI](../../../docs/laboratory/credit-abi.md) and [offline evidence](../../../docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md) distinguish implemented checks from unverified SBF/activation/live payment. Deposit amounts, aggregate totals, metadata, Node knowledge and recipient/head correlations remain privacy limits; provider admission/rewards are outside this change.

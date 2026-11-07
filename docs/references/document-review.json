@@ -1,4 +1,17 @@
 {
+  "docs/laboratory/experiments/EXP-20261103-funded-note-credit.md": {
+    "status": "HISTORICAL",
+    "reason": "November 3–5 amount-public funded-note replacement observations; current private-credit ABI supersedes this source snapshot.",
+    "evidence": [
+      "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/private_funding.rs",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/deposit_private_funding_v1.rs",
+      "tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts",
+      "tsn-protocol/services/tsn-node/tests/test_hidden_head_witness.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/tests/funding-root.test.ts"
+    ]
+  },
   "docs/laboratory/experiments/EXP-20261102-verifier-initialization.md": {
     "status": "CURRENT",
     "reason": "Source fix, SBF build, six bounded offline tests and dated read-only account/planning observations; no subsequent deployment/enrollment/activation/payment is claimed.",
@@ -153,15 +166,12 @@
     ]
   },
   "docs/CURRENT-ARCHITECTURE.md": {
-    "status": "CURRENT",
-    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs",
-      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   },
   "docs/DEVNET-BUILD-DEPLOY.md": {
@@ -362,15 +372,12 @@
     "evidence": []
   },
   "docs/gpru-tcap-route.md": {
-    "status": "CURRENT",
-    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs",
-      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   },
   "docs/identity-and-tin.md": {
@@ -938,30 +945,30 @@
     ]
   },
   "tsn-protocol/tsn-docs/about/current-technology.mdx": {
-    "status": "CURRENT",
-    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
     "evidence": [
-      "docs/laboratory/architecture-map.md",
-      "docs/laboratory/components.md",
-      "docs/laboratory/cryptography.md"
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   },
   "tsn-protocol/tsn-docs/about/engineering-principles.mdx": {
-    "status": "CURRENT",
-    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
     "evidence": [
-      "docs/laboratory/architecture-map.md",
-      "docs/laboratory/components.md",
-      "docs/laboratory/cryptography.md"
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   },
   "tsn-protocol/tsn-docs/about/trustlink-labs.mdx": {
-    "status": "CURRENT",
-    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
     "evidence": [
-      "docs/laboratory/architecture-map.md",
-      "docs/laboratory/components.md",
-      "docs/laboratory/cryptography.md"
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   },
   "tsn-protocol/tsn-docs/about/what-were-building.mdx": {
@@ -1003,12 +1010,12 @@
     ]
   },
   "tsn-protocol/tsn-docs/developers/confidential-settlement.mdx": {
-    "status": "CURRENT",
-    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
     "evidence": [
-      "docs/laboratory/architecture-map.md",
-      "docs/laboratory/components.md",
-      "docs/laboratory/cryptography.md"
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   },
   "tsn-protocol/tsn-docs/developers/getting-started.mdx": {
@@ -1043,14 +1050,12 @@
     ]
   },
   "tsn-protocol/tsn-docs/developers/payment-intent-lifecycle.mdx": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   },
   "tsn-protocol/tsn-docs/developers/private-tin-issuance.mdx": {
@@ -1152,25 +1157,21 @@
     ]
   },
   "tsn-protocol/tsn-docs/overview/architecture.mdx": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   },
   "tsn-protocol/tsn-docs/overview/how-it-works.mdx": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   },
   "tsn-protocol/tsn-docs/overview/introduction.mdx": {
@@ -1185,12 +1186,12 @@
     ]
   },
   "tsn-protocol/tsn-docs/overview/separation-of-concerns.mdx": {
-    "status": "CURRENT",
-    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
     "evidence": [
-      "docs/laboratory/architecture-map.md",
-      "docs/laboratory/components.md",
-      "docs/laboratory/cryptography.md"
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   },
   "tsn-protocol/tsn-docs/sdk/index.mdx": {
@@ -1223,21 +1224,21 @@
     ]
   },
   "tsn-protocol/tsn-docs/security/invariants.mdx": {
-    "status": "CURRENT",
-    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
     "evidence": [
-      "docs/laboratory/architecture-map.md",
-      "docs/laboratory/components.md",
-      "docs/laboratory/cryptography.md"
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   },
   "tsn-protocol/tsn-docs/security/operator-boundaries.mdx": {
-    "status": "CURRENT",
-    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
     "evidence": [
-      "docs/laboratory/architecture-map.md",
-      "docs/laboratory/components.md",
-      "docs/laboratory/cryptography.md"
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   },
   "tsn-protocol/tsn-docs/security/replay-protection.mdx": {
@@ -1283,14 +1284,13 @@
     ]
   },
   "docs/laboratory/credit-abi.md": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "EXPERIMENTAL",
+    "reason": "Private-amount/sealed-pool/complete-epoch replacement with bounded real-proof/native/offline evidence; SBF, activation and full live flow unverified.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
+      "tsn-protocol/programs/gpru/circuits/tcap_epoch_v1/main.circom",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/private_epoch.rs",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   },
   "docs/laboratory/cryptography.md": {
@@ -1305,14 +1305,12 @@
     ]
   },
   "docs/laboratory/foundations.md": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   },
   "docs/laboratory/interface-reference.md": {
@@ -1393,8 +1391,8 @@
     ]
   },
   "docs/laboratory/decisions/ADR-002-shared-root.md": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "HISTORICAL",
+    "reason": "Retained shared-root rationale for old individual liability classification; ADR-005 supersedes accounting semantics.",
     "evidence": [
       "tsn-protocol/services/tsn-node/server.py",
       "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
@@ -2159,13 +2157,12 @@
     ]
   },
   "docs/laboratory/cranker-transaction-map.md": {
-    "status": "CURRENT",
-    "reason": "Current daemon branches and source authorization mismatch reconciled; TIN execution has dated independent evidence, while native credit, V1 cluster support and destination payout remain unverified.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
     "evidence": [
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/store.ts",
-      "docs/laboratory/experiments/EXP-20261102-tin-staged-finalization.md"
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   },
   "docs/laboratory/experiments/EXP-20261102-tin-staged-finalization.md": {
@@ -2176,6 +2173,89 @@
       "tsn-protocol/services/tsn-node/server.py",
       "tsn-protocol/services/tsn-receiver/lib/store.ts",
       "docs/laboratory/experiments/EXP-20261102-tin-staged-finalization.md"
+    ]
+  },
+  "docs/laboratory/experiments/EXP-20261102-native-credit-baseline.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed field map with separately bounded finalized-chain observations, public correlation and unresolved privacy/recovery/comparison limits.",
+    "evidence": [
+      "docs/references/native-credit-baseline-20261102.json",
+      "docs/references/native-credit-field-map-20261102.json",
+      "scripts/inspect-native-credit.py"
+    ]
+  },
+  "docs/laboratory/experiments/EXP-20261103-native-credit-linkability.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed investigation with separately bounded finalized first-credit registry/root reconstruction, fourteen offline correlation controls and proposed transaction options. Later live credits and plaintext TIN recovery remain unverified.",
+    "evidence": [
+      "docs/references/native-credit-registry-link-20261102.json",
+      "docs/references/native-credit-linkability-20261102.json",
+      "scripts/check-native-credit-registry-link.py",
+      "scripts/check-native-credit-linkability.py"
+    ]
+  },
+  "docs/RUN-YOUR-OWN-TSN.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed installation/operation and bounded verification procedure; independent fresh-network replay, production ceremony and live funded-note completion explicitly unverified.",
+    "evidence": [
+      "package.json",
+      "scripts/hidden-head-setup.mjs",
+      "protocol-tests/ui/server.mjs",
+      "tsn-protocol/services/tsn-node/server.py",
+      "docs/references/TSN-OPERATOR-GUIDE-20261105.md"
+    ]
+  },
+  ".codex/tsn-operator-guide-policy.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed installation/operation and bounded verification procedure; independent fresh-network replay, production ceremony and live funded-note completion explicitly unverified.",
+    "evidence": [
+      "package.json",
+      "scripts/hidden-head-setup.mjs",
+      "protocol-tests/ui/server.mjs",
+      "tsn-protocol/services/tsn-node/server.py",
+      "docs/references/TSN-OPERATOR-GUIDE-20261105.md"
+    ]
+  },
+  "docs/references/TSN-OPERATOR-GUIDE-20261105.md": {
+    "status": "CURRENT",
+    "reason": "Source-backed installation/operation and bounded verification procedure; independent fresh-network replay, production ceremony and live funded-note completion explicitly unverified.",
+    "evidence": [
+      "package.json",
+      "scripts/hidden-head-setup.mjs",
+      "protocol-tests/ui/server.mjs",
+      "tsn-protocol/services/tsn-node/server.py",
+      "docs/references/TSN-OPERATOR-GUIDE-20261105.md"
+    ]
+  },
+  "tsn-protocol/tsn-docs/operators/run-your-own-tsn.mdx": {
+    "status": "CURRENT",
+    "reason": "Source-backed installation/operation and bounded verification procedure; independent fresh-network replay, production ceremony and live funded-note completion explicitly unverified.",
+    "evidence": [
+      "package.json",
+      "scripts/hidden-head-setup.mjs",
+      "protocol-tests/ui/server.mjs",
+      "tsn-protocol/services/tsn-node/server.py",
+      "docs/references/TSN-OPERATOR-GUIDE-20261105.md"
+    ]
+  },
+  "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md": {
+    "status": "EXPERIMENTAL",
+    "reason": "Private-amount/sealed-pool/complete-epoch replacement with bounded real-proof/native/offline evidence; SBF, activation and full live flow unverified.",
+    "evidence": [
+      "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
+      "tsn-protocol/programs/gpru/circuits/tcap_epoch_v1/main.circom",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/private_epoch.rs",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
+    ]
+  },
+  "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md": {
+    "status": "EXPERIMENTAL",
+    "reason": "Private-amount/sealed-pool/complete-epoch replacement with bounded real-proof/native/offline evidence; SBF, activation and full live flow unverified.",
+    "evidence": [
+      "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
+      "tsn-protocol/programs/gpru/circuits/tcap_epoch_v1/main.circom",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/private_epoch.rs",
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
     ]
   }
 }

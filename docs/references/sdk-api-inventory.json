@@ -2084,7 +2084,7 @@
           ],
           "docs": "Cross-chain payment intent. This is intentionally separate from the legacy\nSolana-only Payment Intent format so existing Solana flows are not changed.\nEvery destination-sensitive field is inside the user signature.",
           "signatures": [
-            "(params: { intentId: string; amountBaseUnits: bigint | string | number; destinationToken: string; recipientTin: string; feeBaseUnits: bigint | string | number; sender: string; nonce: string; expires: string | Date; destinationNetwork: string; destinationExecutor: string; settlementRouteId: string; }): string"
+            "(params: { fundingNoteCommitment: string; intentId: string; amountBaseUnits: bigint | string | number; destinationToken: string; recipientTin: string; feeBaseUnits: bigint | string | number; sender: string; nonce: string; expires: string | Date; destinationNetwork: string; destinationExecutor: string; settlementRouteId: string; }): string"
           ],
           "constructors": [],
           "methods": [],
@@ -2105,12 +2105,13 @@
             "parseTin",
             "params.destinationExecutor.toLowerCase",
             "parseHash32",
-            "params.settlementRouteId.replace"
+            "params.settlementRouteId.replace",
+            "canonicalFundingFieldHex"
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 267,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L267"
+            "line": 271,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L271"
           }
         },
         {
@@ -2121,7 +2122,7 @@
           ],
           "docs": "",
           "signatures": [
-            "(params: { amountBaseUnits: bigint | string | number; tokenMintAddress: string; tokenDecimals: number; recipientTin: string; recipientDisplayName?: string; recipientDisplayNameSource?: \"owner-provided\" | \"not provided\"; recipientVerifiedCredentials?: readonly VerifiedRecipientCredential[]; feeBaseUnits: bigint | string | number; sender: string; nonce: string; expires: string | Date; }): string"
+            "(params: { fundingNoteCommitment: string; amountBaseUnits: bigint | string | number; tokenMintAddress: string; tokenDecimals: number; recipientTin: string; recipientDisplayName?: string; recipientDisplayNameSource?: \"owner-provided\" | \"not provided\"; recipientVerifiedCredentials?: readonly VerifiedRecipientCredential[]; feeBaseUnits: bigint | string | number; sender: string; nonce: string; expires: string | Date; }): string"
           ],
           "constructors": [],
           "methods": [],
@@ -2137,12 +2138,13 @@
             "parseTin",
             "canonicalDisplayName",
             "params.recipientDisplayName?.trim",
-            "canonicalRecipientCredentials"
+            "canonicalRecipientCredentials",
+            "canonicalFundingFieldHex"
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 211,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L211"
+            "line": 212,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L212"
           }
         },
         {
@@ -2165,8 +2167,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 322,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L322"
+            "line": 329,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L329"
           }
         },
         {
@@ -2189,8 +2191,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 338,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L338"
+            "line": 345,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L345"
           }
         },
         {
@@ -2212,8 +2214,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 4,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L4"
+            "line": 5,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L5"
           }
         },
         {
@@ -2236,8 +2238,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 167,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L167"
+            "line": 168,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L168"
           }
         },
         {
@@ -2248,7 +2250,7 @@
           ],
           "docs": "",
           "signatures": [
-            "(message: string): { intentId: string; amountBaseUnits: bigint; destinationToken: string; recipientTin: string; feeBaseUnits: bigint; sender: string; nonce: string; expires: Date; destinationNetwork: string; destinationExecutor: string; settlementRouteId: string; }"
+            "(message: string): { intentId: string; fundingNoteCommitment: string; amountBaseUnits: bigint; destinationToken: string; recipientTin: string; feeBaseUnits: bigint; sender: string; nonce: string; expires: Date; destinationNetwork: string; destinationExecutor: string; settlementRouteId: string; }"
           ],
           "constructors": [],
           "methods": [],
@@ -2261,6 +2263,7 @@
             "requireField(fields, \"Destination Executor\").toLowerCase",
             "requireField",
             "/^0x[0-9a-f]{40}$/.test",
+            "canonicalFundingFieldHex",
             "parseUsdc",
             "requireField(fields, \"Asset\").toLowerCase",
             "parseTin",
@@ -2269,8 +2272,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 301,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L301"
+            "line": 307,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L307"
           }
         },
         {
@@ -2281,7 +2284,7 @@
           ],
           "docs": "",
           "signatures": [
-            "(message: string): { tokenMintAddress: string; tokenDecimals: number; amountBaseUnits: bigint; recipientTin: string; recipientDisplayName: string; recipientDisplayNameSource: string; recipientVerifiedCredentials: VerifiedRecipientCredential[]; feeBaseUnits: bigint; sender: string; nonce: string; expires: Date; }"
+            "(message: string): { tokenMintAddress: string; fundingNoteCommitment: string; tokenDecimals: number; amountBaseUnits: bigint; recipientTin: string; recipientDisplayName: string; recipientDisplayNameSource: string; recipientVerifiedCredentials: VerifiedRecipientCredential[]; feeBaseUnits: bigint; sender: string; nonce: string; expires: Date; }"
           ],
           "constructors": [],
           "methods": [],
@@ -2294,6 +2297,7 @@
             "Number",
             "requireField",
             "Number.isInteger",
+            "canonicalFundingFieldHex",
             "parseTokenAmount",
             "parseTin",
             "JSON.parse",
@@ -2301,8 +2305,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 241,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L241"
+            "line": 244,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L244"
           }
         },
         {
@@ -2327,8 +2331,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 364,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L364"
+            "line": 371,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L371"
           }
         },
         {
@@ -2353,8 +2357,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 354,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L354"
+            "line": 361,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L361"
           }
         },
         {
@@ -2386,8 +2390,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 17,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L17"
+            "line": 18,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L18"
           }
         },
         {
@@ -2407,8 +2411,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 14,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L14"
+            "line": 15,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L15"
           }
         },
         {
@@ -2430,8 +2434,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 11,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L11"
+            "line": 12,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L12"
           }
         },
         {
@@ -2449,8 +2453,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 171,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L171"
+            "line": 172,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L172"
           }
         }
       ]
@@ -2615,20 +2619,23 @@
           ],
           "docs": "",
           "signatures": [
-            "(params: { paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; senderSignedFundingTransaction: string; senderFundingMode: \"tcap_deposit_v2\"; recipientAmount?: number; destinationNetwork?: string | null; destinationExecutor?: string | null; destinationToken?: string | null; settlementRouteId?: string | null; source?: string; }): CreateIntentRequest"
+            "(params: { paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; senderSignedFundingTransaction: string; senderFundingMode: \"tcap_funded_note_v1\"; fundingNote: FundingNoteV1; recipientAmount?: number; destinationNetwork?: string | null; destinationExecutor?: string | null; destinationToken?: string | null; settlementRouteId?: string | null; source?: string; }): CreateIntentRequest"
           ],
           "constructors": [],
           "methods": [],
           "declaredType": null,
-          "directThrowExpressions": [],
+          "directThrowExpressions": [
+            "new Error(\"TCAP_FUNDED_NOTE_V1_REQUIRED\")"
+          ],
           "directCalls": [
             "sha256Hex",
-            "normalizeRecipientHash"
+            "normalizeRecipientHash",
+            "assertFundingNoteV1"
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-            "line": 119,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L119"
+            "line": 121,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L121"
           }
         },
         {
@@ -2648,8 +2655,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-            "line": 166,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L166"
+            "line": 171,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L171"
           }
         },
         {
@@ -2662,13 +2669,13 @@
           "signatures": [],
           "constructors": [],
           "methods": [],
-          "declaredType": "export type CreateIntentRequest = {\r\n  paymentId: string;\r\n  intentSeedHash: string;\r\n  recipientHash: string;\r\n  recipientTin: string;\r\n  tokenMintAddress: string;\r\n  amount: number;\r\n  senderWallet: string;\r\n  senderAuthorizationMessage: string;\r\n  senderAuthorizationSignature: string;\r\n  senderAuthorizationNonce: string;\r\n  senderAuthorizationIssuedAt?: string | null;\r\n  senderAuthorizationExpiresAt?: string | null;\r\n  senderFeeAmount?: number | null;\r\n  senderSignedFundingTransaction: string;\r\n  senderFundingMode: \"tcap_deposit_v2\";\r\n  recipientAmount?: number;\r\n  source?: string;\r\n  destinationNetwork?: string | null;\r\n  destinationExecutor?: string | null;\r\n  destinationToken?: string | null;\r\n  settlementRouteId?: string | null;\r\n};",
+          "declaredType": "export type CreateIntentRequest = {\r\n  paymentId: string;\r\n  intentSeedHash: string;\r\n  recipientHash: string;\r\n  recipientTin: string;\r\n  tokenMintAddress: string;\r\n  amount: number;\r\n  senderWallet: string;\r\n  senderAuthorizationMessage: string;\r\n  senderAuthorizationSignature: string;\r\n  senderAuthorizationNonce: string;\r\n  senderAuthorizationIssuedAt?: string | null;\r\n  senderAuthorizationExpiresAt?: string | null;\r\n  senderFeeAmount?: number | null;\r\n  senderSignedFundingTransaction: string;\r\n  senderFundingMode: \"tcap_funded_note_v1\";\r\n  fundingNote: FundingNoteV1;\r\n  recipientAmount?: number;\r\n  source?: string;\r\n  destinationNetwork?: string | null;\r\n  destinationExecutor?: string | null;\r\n  destinationToken?: string | null;\r\n  settlementRouteId?: string | null;\r\n};",
           "directThrowExpressions": [],
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-            "line": 24,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L24"
+            "line": 25,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L25"
           }
         },
         {
@@ -2686,8 +2693,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-            "line": 103,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L103"
+            "line": 105,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L105"
           }
         },
         {
@@ -2708,24 +2715,12 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-                "line": 10,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L10"
-              }
-            },
-            {
-              "name": "payment_id",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
                 "line": 11,
                 "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L11"
               }
             },
             {
-              "name": "intent_seed_hash",
+              "name": "payment_id",
               "memberKind": "instance",
               "signatures": [],
               "type": "string",
@@ -2737,7 +2732,7 @@
               }
             },
             {
-              "name": "recipient_hash",
+              "name": "intent_seed_hash",
               "memberKind": "instance",
               "signatures": [],
               "type": "string",
@@ -2749,6 +2744,18 @@
               }
             },
             {
+              "name": "recipient_hash",
+              "memberKind": "instance",
+              "signatures": [],
+              "type": "string",
+              "docs": "",
+              "source": {
+                "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
+                "line": 14,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L14"
+              }
+            },
+            {
               "name": "token_mint_address",
               "memberKind": "instance",
               "signatures": [],
@@ -2756,8 +2763,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-                "line": 14,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L14"
+                "line": 15,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L15"
               }
             },
             {
@@ -2768,8 +2775,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-                "line": 15,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L15"
+                "line": 16,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L16"
               }
             },
             {
@@ -2780,24 +2787,12 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-                "line": 16,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L16"
-              }
-            },
-            {
-              "name": "assigned_cranker_pubkey",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string | null",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
                 "line": 17,
                 "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L17"
               }
             },
             {
-              "name": "lease_expiry_at",
+              "name": "assigned_cranker_pubkey",
               "memberKind": "instance",
               "signatures": [],
               "type": "string | null",
@@ -2809,7 +2804,7 @@
               }
             },
             {
-              "name": "funding_tx_sig",
+              "name": "lease_expiry_at",
               "memberKind": "instance",
               "signatures": [],
               "type": "string | null",
@@ -2821,7 +2816,7 @@
               }
             },
             {
-              "name": "settlement_tx_sig",
+              "name": "funding_tx_sig",
               "memberKind": "instance",
               "signatures": [],
               "type": "string | null",
@@ -2833,6 +2828,18 @@
               }
             },
             {
+              "name": "settlement_tx_sig",
+              "memberKind": "instance",
+              "signatures": [],
+              "type": "string | null",
+              "docs": "",
+              "source": {
+                "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
+                "line": 21,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L21"
+              }
+            },
+            {
               "name": "created_at",
               "memberKind": "instance",
               "signatures": [],
@@ -2840,8 +2847,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-                "line": 21,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L21"
+                "line": 22,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L22"
               }
             }
           ],
@@ -2850,8 +2857,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-            "line": 9,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L9"
+            "line": 10,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L10"
           }
         },
         {
@@ -2869,8 +2876,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-            "line": 7,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L7"
+            "line": 8,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L8"
           }
         },
         {
@@ -2888,8 +2895,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-            "line": 60,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L60"
+            "line": 62,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L62"
           }
         },
         {
@@ -2913,8 +2920,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-            "line": 107,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L107"
+            "line": 109,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L109"
           }
         },
         {
@@ -2932,8 +2939,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-            "line": 86,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L86"
+            "line": 88,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L88"
           }
         },
         {
@@ -2951,8 +2958,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-            "line": 84,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L84"
+            "line": 86,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L86"
           }
         },
         {
@@ -2970,8 +2977,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-            "line": 4,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L4"
+            "line": 5,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L5"
           }
         },
         {
@@ -2989,8 +2996,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-            "line": 80,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L80"
+            "line": 82,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L82"
           }
         },
         {
@@ -3008,8 +3015,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-            "line": 48,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L48"
+            "line": 50,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L50"
           }
         },
         {
@@ -3027,8 +3034,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/contracts.ts",
-            "line": 5,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L5"
+            "line": 6,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/contracts.ts#L6"
           }
         }
       ]
@@ -5426,7 +5433,7 @@
           "signatures": [],
           "constructors": [],
           "methods": [],
-          "declaredType": "export type GpruDecryptedMemoActionV1 = {\n  memoPayload: string;\n  record: GpruBalanceActionRecordV1;\n  onChainAction: {\n    actionKind: 1 | 2 | 3;\n    tokenId: number;\n    amountBaseUnits: string;\n    actionCommitment: string;\n    authorizationCommitment: string;\n    nullifier: string;\n  };\n};",
+          "declaredType": "export type GpruDecryptedMemoActionV1 = {\n  memoPayload: string;\n  record: GpruBalanceActionRecordV1;\n  onChainAction: {\n    actionKind: 1 | 2 | 3;\n    tokenId: number;\n    amountBaseUnits?: string;\n    amountCommitment?: string;\n    actionCommitment: string;\n    authorizationCommitment: string;\n    nullifier: string;\n  };\n};",
           "directThrowExpressions": [],
           "directCalls": [],
           "source": {
@@ -5449,8 +5456,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/balance-history.ts",
-            "line": 17,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/balance-history.ts#L17"
+            "line": 18,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/balance-history.ts#L18"
           }
         },
         {
@@ -5498,8 +5505,458 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/balance-history.ts",
-            "line": 35,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/balance-history.ts#L35"
+            "line": 36,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/balance-history.ts#L36"
+          }
+        }
+      ]
+    },
+    {
+      "slug": "gpru-chain-history",
+      "name": "gpru/chain-history",
+      "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts",
+      "symbols": [
+        {
+          "name": "decodeFinalizedGpruCreditV1",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/gpru/chain-history"
+          ],
+          "docs": "Read current funded credits and historical twelve-input receipts for owner recovery only.",
+          "signatures": [
+            "(wire: GpruHistoryWireTransactionV1, signature: string, slot: number): GpruFinalizedCreditV1 | null"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [],
+          "directCalls": [
+            "check",
+            "wire.instructions.filter",
+            "TSNP.toBase58",
+            "[disc(\"global:tsn_register_tcap_credit_authorization_v2\"), disc(\"global:tsn_register_tcap_credit_authorization_v3\")].includes",
+            "disc",
+            "bytesToHex",
+            "ix.data.subarray",
+            "Buffer.from",
+            "data.subarray",
+            "hex",
+            "data.readBigUInt64LE",
+            "data.readUInt32LE",
+            "Array.from",
+            "inputs.every",
+            "BigInt",
+            "field",
+            "Buffer.alloc",
+            "authorizationPreimage.writeBigUInt64LE",
+            "Buffer.from(amountCommitment!, \"hex\").copy",
+            "authorizationPreimage.writeUInt32LE",
+            "hash",
+            "Buffer.concat",
+            "seed",
+            "ROOT.toBuffer",
+            "new PublicKey(ix.accounts[14]).toBuffer",
+            "new PublicKey(ix.accounts[13]).toBuffer",
+            "pda",
+            "new PublicKey(ix.accounts[5]).toBytes",
+            "expectedAccounts.push",
+            "expectedAccounts.every",
+            "key.toBase58",
+            "ix.signerAccounts.includes",
+            "(privateAmount ? [0, 6, 14] : [0, 6, 7]).every",
+            "ix.writableAccounts.includes",
+            "new TextDecoder(\"utf-8\", { fatal: true }).decode",
+            "parseGpruMemoBindingV1",
+            "prefix.every",
+            "amount.toString"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts",
+            "line": 46,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L46"
+          }
+        },
+        {
+          "name": "GpruFinalizedCreditV1",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/gpru/chain-history"
+          ],
+          "docs": "",
+          "signatures": [],
+          "constructors": [],
+          "methods": [],
+          "declaredType": "export type GpruFinalizedCreditV1 = {\n  signature: string;\n  slot: number;\n  sequence: bigint;\n  oldRoot: string;\n  newRoot: string;\n  memoPayload: string;\n  assetEntry: string;\n  reserveState: string;\n  fundingProofVersion: 1 | 2 | 3;\n  accountingEpoch?: string;\n  fundingRoot?: string;\n  action: GpruDecryptedMemoActionV1[\"onChainAction\"];\n};",
+          "directThrowExpressions": [],
+          "directCalls": [],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts",
+            "line": 30,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L30"
+          }
+        },
+        {
+          "name": "loadGpruFinalizedCreditHistoryV1",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/gpru/chain-history"
+          ],
+          "docs": "Read only public finalized credits. No owner key material enters RPC calls.",
+          "signatures": [
+            "(params: { connection: Connection; signal?: AbortSignal; onProgress?: (message: string) => void; }): Promise<{ credits: GpruFinalizedCreditV1[]; snapshot: RootSnapshot; }>"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [],
+          "directCalls": [
+            "params.signal?.throwIfAborted",
+            "aborted",
+            "readRoot",
+            "check",
+            "params.connection.getSignaturesForAddress",
+            "seen.has",
+            "seen.add",
+            "readRawTransaction",
+            "/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test",
+            "decodeGpruHistoryTransactionV1",
+            "Buffer.from",
+            "decodeFinalizedGpruCreditV1",
+            "credits.push",
+            "params.onProgress",
+            "BigInt",
+            "credits.sort",
+            "validateGpruGlobalCreditHistoryV1"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts",
+            "line": 166,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L166"
+          }
+        },
+        {
+          "name": "loadTinGpruTokenBalancesV1",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/gpru/chain-history"
+          ],
+          "docs": "",
+          "signatures": [
+            "(params: { connection: Connection; masterSeed: Uint8Array; gpruElgamalPublicKey: Uint8Array; gpruBalanceScanPublicKeyX: Uint8Array; gpruBalanceScanPublicKeyY: Uint8Array; signal?: AbortSignal; onProgress?: (message: string) => void; }): Promise<{ tokenBalances: Array<{ tokenId: number; mint: string; decimals: number; balanceBaseUnits: string; }>; latestGlobalSequence: string; latestOwnerSequence: string; actionCount: number; }>"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [
+            "error"
+          ],
+          "directCalls": [
+            "check",
+            "bytesToHex",
+            "deriveGpruElgamalPublicKey",
+            "deriveGpruBalanceScanKeyV1",
+            "scanKey.publicKey.x.toString(16).padStart",
+            "scanKey.publicKey.x.toString",
+            "scanKey.publicKey.y.toString(16).padStart",
+            "scanKey.publicKey.y.toString",
+            "loadGpruFinalizedCreditHistoryV1",
+            "params.signal?.throwIfAborted",
+            "decryptGpruLedgerMemoV1",
+            "actions.push",
+            "assets.get",
+            "assets.set",
+            "resolveAsset",
+            "recoverGpruBalanceHistoryV1",
+            "(recovered?.balances ?? []).map",
+            "snapshot.sequence.toString"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts",
+            "line": 225,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L225"
+          }
+        },
+        {
+          "name": "validateGpruGlobalCreditHistoryV1",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/gpru/chain-history"
+          ],
+          "docs": "Require every global transition from the activated empty root through the finalized snapshot.",
+          "signatures": [
+            "(credits: readonly GpruFinalizedCreditV1[], snapshot: RootSnapshot): void"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [],
+          "directCalls": [
+            "check",
+            "BigInt",
+            "credits.forEach",
+            "nullifiers.has",
+            "nullifiers.add"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts",
+            "line": 138,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L138"
+          }
+        }
+      ]
+    },
+    {
+      "slug": "gpru-funding-note",
+      "name": "gpru/funding-note",
+      "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts",
+      "symbols": [
+        {
+          "name": "assertFundingNoteV1",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "Require the exact four-field opening and recompute its nonzero commitment.",
+          "signatures": [
+            "(value: FundingNoteV1): FundingNoteV1"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [
+            "new Error(\"Funding note must contain exactly version, secret, blinding and commitment\")",
+            "new Error(\"Funding note opening does not match its commitment\")"
+          ],
+          "directCalls": [
+            "Array.isArray",
+            "Object.keys(value).sort().join",
+            "Object.keys(value).sort",
+            "Object.keys",
+            "canonicalFundingFieldHex",
+            "deriveFundingNoteCommitmentV1"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts",
+            "line": 33,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L33"
+          }
+        },
+        {
+          "name": "canonicalFundingFieldHex",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "Validate 32-byte BN254 scalar hex; zero is permitted only when explicitly requested for blinding.",
+          "signatures": [
+            "(value: string, label?: string, allowZero?: boolean): string"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [
+            "new Error(`${label} must be 32-byte hex`)",
+            "new Error(`${label} must be a ${allowZero ? \"\" : \"nonzero \"}canonical BN254 scalar`)"
+          ],
+          "directCalls": [
+            "/^[a-f0-9]{64}$/i.test",
+            "BigInt",
+            "value.toLowerCase"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts",
+            "line": 14,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L14"
+          }
+        },
+        {
+          "name": "createFundingNoteV1",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "Generate before signing; no secret is inserted into the public deposit or credit.",
+          "signatures": [
+            "(): FundingNoteV1"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [],
+          "directCalls": [
+            "randomField",
+            "assertFundingNoteV1",
+            "deriveFundingNoteCommitmentV1"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts",
+            "line": 59,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L59"
+          }
+        },
+        {
+          "name": "deriveFundedLeafV1",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "Poseidon4(leaf domain, note commitment, registered token ID, actual transferred amount).",
+          "signatures": [
+            "(noteCommitment: string, tokenId: number, amountBaseUnits: bigint): string"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [
+            "new Error(\"Funded leaf token or amount is outside its on-chain range\")"
+          ],
+          "directCalls": [
+            "Number.isInteger",
+            "hex",
+            "poseidon4",
+            "BigInt",
+            "canonicalFundingFieldHex"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts",
+            "line": 65,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L65"
+          }
+        },
+        {
+          "name": "deriveFundingNoteCommitmentV1",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "Poseidon3(note domain, nonzero secret, canonical blinding). Blinding may be zero.",
+          "signatures": [
+            "(secret: string, blinding: string): string"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [],
+          "directCalls": [
+            "hex",
+            "poseidon3",
+            "BigInt",
+            "canonicalFundingFieldHex"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts",
+            "line": 26,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L26"
+          }
+        },
+        {
+          "name": "deriveFundingNullifierV1",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "Poseidon2(nullifier domain, nonzero secret); public deposit signatures do not enter this relation.",
+          "signatures": [
+            "(secret: string): string"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [],
+          "directCalls": [
+            "hex",
+            "poseidon2",
+            "BigInt",
+            "canonicalFundingFieldHex"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts",
+            "line": 73,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L73"
+          }
+        },
+        {
+          "name": "FundingNoteV1",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "Private opening: keep in sender memory and restricted payment ingress only.",
+          "signatures": [],
+          "constructors": [],
+          "methods": [],
+          "declaredType": "export type FundingNoteV1 = { version: 1; secret: string; blinding: string; commitment: string };",
+          "directThrowExpressions": [],
+          "directCalls": [],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts",
+            "line": 11,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L11"
+          }
+        },
+        {
+          "name": "GPRU_FUNDED_LEAF_DOMAIN_V1",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "",
+          "signatures": [],
+          "constructors": [],
+          "methods": [],
+          "declaredType": "7345779629200698683464734587914033020491313n",
+          "directThrowExpressions": [],
+          "directCalls": [],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts",
+            "line": 7,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L7"
+          }
+        },
+        {
+          "name": "GPRU_FUNDING_FIELD_MODULUS",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "",
+          "signatures": [],
+          "constructors": [],
+          "methods": [],
+          "declaredType": "21888242871839275222246405745257275088548364400416034343698204186575808495617n",
+          "directThrowExpressions": [],
+          "directCalls": [],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts",
+            "line": 5,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L5"
+          }
+        },
+        {
+          "name": "GPRU_FUNDING_NOTE_DOMAIN_V1",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "",
+          "signatures": [],
+          "constructors": [],
+          "methods": [],
+          "declaredType": "1880519585075378862971854540099064911735248433n",
+          "directThrowExpressions": [],
+          "directCalls": [],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts",
+            "line": 6,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L6"
+          }
+        },
+        {
+          "name": "GPRU_FUNDING_NULLIFIER_DOMAIN_V1",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "",
+          "signatures": [],
+          "constructors": [],
+          "methods": [],
+          "declaredType": "2067653150050877929286087838257825941301032058674988668465n",
+          "directThrowExpressions": [],
+          "directCalls": [],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts",
+            "line": 8,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts#L8"
           }
         }
       ]
@@ -5617,7 +6074,7 @@
           ],
           "docs": "Check the decrypted Memo record against the action values authenticated by the on-chain Groth16 statement.",
           "signatures": [
-            "(record: GpruBalanceActionRecordV1, proofAction: { actionKind: 1 | 2 | 3; tokenId: number; amountBaseUnits: string; actionCommitment: string; authorizationCommitment: string; nullifier: string; }): void"
+            "(record: GpruBalanceActionRecordV1, proofAction: { actionKind: 1 | 2 | 3; tokenId: number; amountBaseUnits?: string; amountCommitment?: string; actionCommitment: string; authorizationCommitment: string; nullifier: string; }): void"
           ],
           "constructors": [],
           "methods": [],
@@ -5634,8 +6091,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts",
-            "line": 195,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L195"
+            "line": 207,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L207"
           }
         },
         {
@@ -5654,6 +6111,10 @@
             "new Error(\"GPRU Memo payload must be an unpadded Base64URL Ledger stream\")",
             "new Error(\"Memo does not contain a valid DBrix GPRU record envelope\")",
             "new Error(\"Unsupported DBrix GPRU transaction-record envelope version\")",
+            "new Error(`GPRU Memo ${label} must use canonical Base64`)",
+            "new Error(\"Unsupported GPRU Memo compression\")",
+            "new Error(\"Malformed GPRU Memo nonce or ciphertext length\")",
+            "new GpruMemoAuthenticationErrorV1()",
             "new Error(\"TIN master seed does not derive the registered GPRU balance scan key\")",
             "new Error(\"Decrypted GPRU action commitment differs from the proof-bound Memo prefix\")"
           ],
@@ -5670,6 +6131,13 @@
             "new TextDecoder(\"utf-8\", { fatal: true }).decode",
             "hexToBytes",
             "deriveGpruTransactionRecordKeyV1",
+            "/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test",
+            "Uint8Array.from",
+            "atob",
+            "character.charCodeAt",
+            "base64Bytes",
+            "nacl.secretbox.open",
+            "authenticated.fill",
             "decrypt",
             "deriveGpruBalanceScanKeyV1",
             "decodeBabyJubHexV1",
@@ -5681,8 +6149,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts",
-            "line": 217,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L217"
+            "line": 232,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L232"
           }
         },
         {
@@ -5723,8 +6191,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts",
-            "line": 82,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L82"
+            "line": 91,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L91"
           }
         },
         {
@@ -5741,8 +6209,30 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts",
-            "line": 37,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L37"
+            "line": 46,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L46"
+          }
+        },
+        {
+          "name": "GpruMemoAuthenticationErrorV1",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "A well-framed owner record that cannot authenticate under this owner's key.",
+          "signatures": [],
+          "constructors": [
+            "(): GpruMemoAuthenticationErrorV1"
+          ],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [],
+          "directCalls": [
+            "super"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts",
+            "line": 16,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L16"
           }
         },
         {
@@ -5759,8 +6249,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts",
-            "line": 41,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L41"
+            "line": 50,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L50"
           }
         },
         {
@@ -5772,13 +6262,13 @@
           "signatures": [],
           "constructors": [],
           "methods": [],
-          "declaredType": "export type GpruOwnerMemoActionPayloadV1 = {\n  version: 1;\n  recordType: \"tsn-gpru-balance-action-v1\";\n  sequence: string;\n  previousMemoCommitment: string;\n  actionCommitment: string;\n  authorizationCommitment: string;\n  nullifier: string;\n  actionKind: 1 | 2 | 3;\n  tokenId: number;\n  amountBaseUnits: string;\n};",
+          "declaredType": "export type GpruOwnerMemoActionPayloadV1 = {\n  version: 1 | 2;\n  recordType: \"tsn-gpru-balance-action-v1\" | \"tsn-gpru-balance-action-v2\";\n  amountCommitment?: string;\n  amountBlinding?: string;\n  sequence: string;\n  previousMemoCommitment: string;\n  actionCommitment: string;\n  authorizationCommitment: string;\n  nullifier: string;\n  actionKind: 1 | 2 | 3;\n  tokenId: number;\n  amountBaseUnits: string;\n};",
           "directThrowExpressions": [],
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts",
-            "line": 23,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L23"
+            "line": 30,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L30"
           }
         },
         {
@@ -5795,8 +6285,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts",
-            "line": 13,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L13"
+            "line": 20,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L20"
           }
         },
         {
@@ -5826,8 +6316,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts",
-            "line": 122,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L122"
+            "line": 131,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L131"
           }
         },
         {
@@ -5859,9 +6349,11 @@
             "new Error(\"GPRU action sequence or amount exceeds u64\")",
             "new Error(\"GPRU balance blinding delta must be recovered from the proof-bound Memo ciphertext\")",
             "new Error(\"GPRU blinding delta must be nonzero and inside the BabyJubjub scalar field\")",
-            "new Error(\"First GPRU action must have no predecessor; later actions must name one\")"
+            "new Error(\"First GPRU action must have no predecessor; later actions must name one\")",
+            "new Error(\"PRIVATE_CREDIT_OPENING_MISMATCH\")"
           ],
           "directCalls": [
+            "expectedKeys.push",
             "Object.prototype.hasOwnProperty.call",
             "Object.keys(value).sort().join",
             "Object.keys(value).sort",
@@ -5877,6 +6369,7 @@
             "Number.isInteger",
             "record.previousMemoCommitment!.toLowerCase",
             "\"0\".repeat",
+            "deriveCreditAmountCommitmentV2",
             "sequence.toString",
             "record.actionCommitment!.toLowerCase",
             "record.authorizationCommitment!.toLowerCase",
@@ -5886,8 +6379,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts",
-            "line": 134,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L134"
+            "line": 143,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/transaction-record.ts#L143"
           }
         }
       ]
@@ -6922,16 +7415,21 @@
           ],
           "docs": "",
           "signatures": [
-            "(params: { paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; tokenDecimals: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderAuthorizationIssuedAt: string; senderAuthorizationExpiresAt: string; senderFeeAmount?: string | number | null; senderSignedFundingTransaction: string; senderFundingMode: \"tcap_deposit_v2\"; amount: string | number; destinationNetwork?: string | null; destinationExecutor?: string | null; destinationToken?: string | null; settlementRouteId?: string | null; recipientAmount?: number; source?: string; }): CreateIntentRequest"
+            "(params: { paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; tokenDecimals: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderAuthorizationIssuedAt: string; senderAuthorizationExpiresAt: string; senderFeeAmount?: string | number | null; senderSignedFundingTransaction: string; senderFundingMode: \"tcap_funded_note_v1\"; fundingNote: FundingNoteV1; amount: string | number; destinationNetwork?: string | null; destinationExecutor?: string | null; destinationToken?: string | null; settlementRouteId?: string | null; recipientAmount?: number; source?: string; }): CreateIntentRequest"
           ],
           "constructors": [],
           "methods": [],
           "declaredType": null,
           "directThrowExpressions": [
+            "new Error(\"Funding note commitment differs from the sender-signed payment intent\")",
             "new Error(\"Payment amount cannot be represented exactly in the TSN intent request\")",
             "new Error(\"Sender fee cannot be represented exactly in the TSN intent request\")"
           ],
           "directCalls": [
+            "assertFundingNoteV1",
+            "params.senderAuthorizationMessage.startsWith",
+            "parseCrossChainPaymentIntentMessage",
+            "parsePaymentIntentMessage",
             "parseTokenAmountToBaseUnits",
             "Number",
             "Number.isFinite",
@@ -6940,8 +7438,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts",
-            "line": 184,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L184"
+            "line": 191,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L191"
           }
         },
         {
@@ -6952,7 +7450,7 @@
           ],
           "docs": "",
           "signatures": [
-            "(params: { intentId: string; senderWallet: string; senderIdentity: string; receiverIdentity: string; tokenMintAddress: string; destinationToken: string; amount: string | number; senderFeeAmount: string | number; nonce?: string; issuedAt?: string; expiresAt?: string; destinationNetwork: string; destinationExecutor: string; settlementRouteId: string; }): { message: string; nonce: string; issuedAt: string; expiresAt: string; }"
+            "(params: { fundingNoteCommitment: string; intentId: string; senderWallet: string; senderIdentity: string; receiverIdentity: string; tokenMintAddress: string; destinationToken: string; amount: string | number; senderFeeAmount: string | number; nonce?: string; issuedAt?: string; expiresAt?: string; destinationNetwork: string; destinationExecutor: string; settlementRouteId: string; }): { message: string; nonce: string; issuedAt: string; expiresAt: string; }"
           ],
           "constructors": [],
           "methods": [],
@@ -6970,8 +7468,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts",
-            "line": 145,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L145"
+            "line": 150,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L150"
           }
         },
         {
@@ -6982,7 +7480,7 @@
           ],
           "docs": "",
           "signatures": [
-            "(params: { senderWallet: string; senderIdentity: string; receiverIdentity: string; recipientDisplayName?: string; recipientDisplayNameSource?: \"owner-provided\" | \"not provided\"; recipientVerifiedCredentials?: readonly VerifiedRecipientCredential[]; tokenMintAddress: string; tokenDecimals: number; amount: string | number; senderFeeAmount: string | number; totalTokenRequiredUi: number; nonce?: string; issuedAt?: string; expiresAt?: string; fundingMode?: \"tcap_deposit_v2\"; }): { message: string; amountBaseUnits: string; feeBaseUnits: string; nonce: string; issuedAt: string; expiresAt: string; }"
+            "(params: { fundingNoteCommitment: string; senderWallet: string; senderIdentity: string; receiverIdentity: string; recipientDisplayName?: string; recipientDisplayNameSource?: \"owner-provided\" | \"not provided\"; recipientVerifiedCredentials?: readonly VerifiedRecipientCredential[]; tokenMintAddress: string; tokenDecimals: number; amount: string | number; senderFeeAmount: string | number; totalTokenRequiredUi: number; nonce?: string; issuedAt?: string; expiresAt?: string; fundingMode?: \"tcap_funded_note_v1\"; }): { message: string; amountBaseUnits: string; feeBaseUnits: string; nonce: string; issuedAt: string; expiresAt: string; }"
           ],
           "constructors": [],
           "methods": [],
@@ -6999,8 +7497,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts",
-            "line": 74,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L74"
+            "line": 78,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L78"
           }
         },
         {
@@ -7023,8 +7521,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts",
-            "line": 70,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L70"
+            "line": 74,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L74"
           }
         },
         {
@@ -7051,8 +7549,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts",
-            "line": 62,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L62"
+            "line": 66,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L66"
           }
         },
         {
@@ -7063,7 +7561,7 @@
           ],
           "docs": "",
           "signatures": [
-            "(params: { senderWallet: string; senderIdentity: string; receiverIdentity: string; recipientDisplayName?: string; recipientDisplayNameSource?: \"owner-provided\" | \"not provided\"; recipientVerifiedCredentials?: readonly VerifiedRecipientCredential[]; tokenMintAddress: string; tokenDecimals: number; amount: string | number; senderFeeAmount: string | number; totalTokenRequiredUi: number; nonce?: string; issuedAt: string; expiresAt?: string; fundingMode?: \"tcap_deposit_v2\"; }): string"
+            "(params: { fundingNoteCommitment: string; senderWallet: string; senderIdentity: string; receiverIdentity: string; recipientDisplayName?: string; recipientDisplayNameSource?: \"owner-provided\" | \"not provided\"; recipientVerifiedCredentials?: readonly VerifiedRecipientCredential[]; tokenMintAddress: string; tokenDecimals: number; amount: string | number; senderFeeAmount: string | number; totalTokenRequiredUi: number; nonce?: string; issuedAt: string; expiresAt?: string; fundingMode?: \"tcap_funded_note_v1\"; }): string"
           ],
           "constructors": [],
           "methods": [],
@@ -7080,8 +7578,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts",
-            "line": 17,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L17"
+            "line": 19,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L19"
           }
         },
         {
@@ -7110,8 +7608,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts",
-            "line": 115,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L115"
+            "line": 120,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L120"
           }
         }
       ]
@@ -7162,7 +7660,7 @@
           ],
           "docs": "",
           "signatures": [
-            "(params: { mempool: TsnMempool; paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderSignedFundingTransaction: string; senderFundingMode: \"tcap_deposit_v2\"; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; recipientAmount?: number; source?: string; }): Promise<{ intent: PublicTsnMempoolIntent; intentRequest: CreateIntentRequest; }>"
+            "(params: { mempool: TsnMempool; paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderSignedFundingTransaction: string; senderFundingMode: \"tcap_funded_note_v1\"; fundingNote: FundingNoteV1; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; recipientAmount?: number; source?: string; }): Promise<{ intent: PublicTsnMempoolIntent; intentRequest: CreateIntentRequest; }>"
           ],
           "constructors": [],
           "methods": [],
@@ -7174,8 +7672,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts",
-            "line": 79,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L79"
+            "line": 82,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L82"
           }
         },
         {
@@ -7186,7 +7684,7 @@
           ],
           "docs": "",
           "signatures": [
-            "(params: { paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderSignedFundingTransaction: string; senderFundingMode: \"tcap_deposit_v2\"; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; recipientAmount?: number; source?: string; }): { intentRequest: CreateIntentRequest; }"
+            "(params: { paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderSignedFundingTransaction: string; senderFundingMode: \"tcap_funded_note_v1\"; fundingNote: FundingNoteV1; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; recipientAmount?: number; source?: string; }): { intentRequest: CreateIntentRequest; }"
           ],
           "constructors": [],
           "methods": [],
@@ -7197,8 +7695,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts",
-            "line": 106,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L106"
+            "line": 110,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L110"
           }
         },
         {
@@ -7216,8 +7714,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts",
-            "line": 11,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L11"
+            "line": 12,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L12"
           }
         },
         {
@@ -7228,7 +7726,7 @@
           ],
           "docs": "",
           "signatures": [
-            "(params: { senderWallet: string; senderIdentity: string; receiverIdentity: string; tokenMintAddress: string; tokenDecimals: number; amount: string | number; senderFeeAmount: number; totalTokenRequiredUi: number; issuedAt: string; nonce?: string; expiresAt?: string; signatureBase64: string; maxAgeMs?: number; getSenderTokenBalance?: (params: { senderWallet: string; tokenMintAddress: string; }) => Promise<TsnSenderBalance>; }): Promise<{ message: string; }>"
+            "(params: { fundingNoteCommitment: string; senderWallet: string; senderIdentity: string; receiverIdentity: string; tokenMintAddress: string; tokenDecimals: number; amount: string | number; senderFeeAmount: number; totalTokenRequiredUi: number; issuedAt: string; nonce?: string; expiresAt?: string; signatureBase64: string; maxAgeMs?: number; getSenderTokenBalance?: (params: { senderWallet: string; tokenMintAddress: string; }) => Promise<TsnSenderBalance>; }): Promise<{ message: string; }>"
           ],
           "constructors": [],
           "methods": [],
@@ -7249,8 +7747,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts",
-            "line": 16,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L16"
+            "line": 17,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L17"
           }
         }
       ]
@@ -9705,41 +10203,120 @@
       "path": "tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts",
       "symbols": [
         {
+          "name": "buildTcapAccountCreditEpochV1Instruction",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "Aggregate accounting has no Memo and changes liabilities once for a complete verified epoch.",
+          "signatures": [
+            "(f: { authority: PublicKey; mother: PublicKey; config: PublicKey; assetEntry: PublicKey; reserveState: PublicKey; epoch: PublicKey; total: bigint; proof: GpruTcapEpochProofV1; }): TransactionInstruction"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [
+            "new Error(\"INVALID_CREDIT_EPOCH_TOTAL_OR_PROOF\")"
+          ],
+          "directCalls": [
+            "PublicKey.findProgramAddressSync",
+            "Buffer.from",
+            "Buffer.concat",
+            "discriminator",
+            "u64",
+            "f.proof.publicInputs.map",
+            "bytes32",
+            "canonicalFundingFieldHex",
+            "fixedHex"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts",
+            "line": 177,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L177"
+          }
+        },
+        {
           "name": "buildTcapGpruWalletDepositTransaction",
           "imports": [
             "@trustlink/tsn-sdk"
           ],
           "docs": "Builds only the sender-signed reserve deposit. TIP settlement is Node-owned.",
           "signatures": [
-            "(fields: { accounts: Awaited<ReturnType<typeof resolveTcapGpruDepositAccounts>>; amountBaseUnits: bigint; }): Transaction"
-          ],
-          "constructors": [],
-          "methods": [],
-          "declaredType": null,
-          "directThrowExpressions": [],
-          "directCalls": [
-            "transaction.add",
-            "buildTcapDepositAssetV2Instruction"
-          ],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts",
-            "line": 99,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L99"
-          }
-        },
-        {
-          "name": "buildTsnRegisterTcapCreditAuthorizationV2Instruction",
-          "imports": [
-            "@trustlink/tsn-sdk"
-          ],
-          "docs": "Mother-authorized memo credit, fenced by TCAP's shared settlement root.",
-          "signatures": [
-            "(fields: { authority: PublicKey; motherEscrow: PublicKey; tcapProgramId?: PublicKey; commitmentRoot: PublicKey; assetEntry: PublicKey; reserveState: PublicKey; config: PublicKey; tipRouteRoot: PublicKey; gpruVerifier: PublicKey; instructions?: PublicKey; gpruProgramId?: PublicKey; authorizationDigest: string; validAfterSlot: string | bigint; expiresAtSlot: string | bigint; previousTcapRoot: string; tcapRootSequence: string | bigint; tokenId: number; amountBaseUnits: string | bigint; nullifier: string; proof: GpruHiddenHeadProofV1; }): TransactionInstruction"
+            "(fields: { accounts: Awaited<ReturnType<typeof resolveTcapGpruDepositAccounts>>; amountBaseUnits: bigint; fundingNoteCommitment: string; }): Transaction"
           ],
           "constructors": [],
           "methods": [],
           "declaredType": null,
           "directThrowExpressions": [
+            "new Error(\"TCAP_DEPOSIT_AMOUNT_MUST_BE_POSITIVE_U64\")",
+            "new Error(\"TCAP_FUNDING_ROOT_NOT_CANONICAL\")"
+          ],
+          "directCalls": [
+            "canonicalFundingFieldHex",
+            "PublicKey.findProgramAddressSync",
+            "Buffer.from",
+            "root.equals",
+            "transaction.add",
+            "Buffer.concat",
+            "discriminator",
+            "u64",
+            "bytes32"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts",
+            "line": 100,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L100"
+          }
+        },
+        {
+          "name": "buildTcapSealFundingPoolV1Instruction",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "Capture a chain-current funded root; later deposits cannot change this pool account.",
+          "signatures": [
+            "(f: { authority: PublicKey; mother: PublicKey; config: PublicKey; assetEntry: PublicKey; root: string; eligibleNoteCount: bigint; sourceWalletCount: number; releaseSlot: bigint; }): TransactionInstruction"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [
+            "new Error(\"FUNDING_POOL_REQUIRES_REAL_DISTINCT_SOURCES\")"
+          ],
+          "directCalls": [
+            "Number.isInteger",
+            "BigInt",
+            "PublicKey.findProgramAddressSync",
+            "Buffer.from",
+            "bytes32",
+            "canonicalFundingFieldHex",
+            "f.assetEntry.toBuffer",
+            "Buffer.alloc",
+            "sources.writeUInt16LE",
+            "Buffer.concat",
+            "discriminator",
+            "u64"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts",
+            "line": 189,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L189"
+          }
+        },
+        {
+          "name": "buildTsnRegisterTcapCreditAuthorizationV3Instruction",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "Mother-authorized memo credit, fenced by TCAP's shared settlement root.",
+          "signatures": [
+            "(fields: { authority: PublicKey; motherEscrow: PublicKey; tcapProgramId?: PublicKey; commitmentRoot: PublicKey; assetEntry: PublicKey; reserveState: PublicKey; config: PublicKey; tipRouteRoot: PublicKey; fundingRootAccount: PublicKey; accountingEpoch: PublicKey; gpruVerifier: PublicKey; instructions?: PublicKey; gpruProgramId?: PublicKey; authorizationDigest: string; validAfterSlot: string | bigint; expiresAtSlot: string | bigint; previousTcapRoot: string; tcapRootSequence: string | bigint; tokenId: number; amountCommitment: string; nullifier: string; proof: GpruHiddenHeadProofV2; }): TransactionInstruction"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [
+            "new Error(\"PRIVATE_CREDIT_PROOF_ACTION_MISMATCH\")",
+            "new Error(\"TCAP_FUNDING_ROOT_NOT_CANONICAL\")",
             "new Error(\"TCAP_CONFIG_NOT_CANONICAL\")"
           ],
           "directCalls": [
@@ -9750,13 +10327,16 @@
             "discriminator",
             "u64",
             "u32",
+            "canonicalFundingFieldHex",
             "serializeHiddenHeadProof",
+            "fields.assetEntry.toBuffer",
+            "fundingRoot.equals",
             "canonicalConfig.equals"
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts",
-            "line": 116,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L116"
+            "line": 129,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L129"
           }
         },
         {
@@ -9796,7 +10376,7 @@
           }
         },
         {
-          "name": "GpruHiddenHeadProofV1",
+          "name": "GpruHiddenHeadProofV2",
           "imports": [
             "@trustlink/tsn-sdk"
           ],
@@ -9804,7 +10384,7 @@
           "signatures": [],
           "constructors": [],
           "methods": [],
-          "declaredType": "export type GpruHiddenHeadProofV1 = {\n  publicInputs: readonly string[];\n  proofA: string;\n  proofB: string;\n  proofC: string;\n  actionKind: number;\n  tokenId: number;\n  amount: string | bigint;\n  authorizationCommitment: string;\n};",
+          "declaredType": "export type GpruHiddenHeadProofV2 = {\r\n  publicInputs: readonly string[];\r\n  proofA: string;\r\n  proofB: string;\r\n  proofC: string;\r\n  actionKind: number;\r\n  tokenId: number;\r\n  amountCommitment: string;\r\n  authorizationCommitment: string;\r\n};",
           "directThrowExpressions": [],
           "directCalls": [],
           "source": {
@@ -9814,13 +10394,31 @@
           }
         },
         {
+          "name": "GpruTcapEpochProofV1",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "",
+          "signatures": [],
+          "constructors": [],
+          "methods": [],
+          "declaredType": "export type GpruTcapEpochProofV1={publicInputs:readonly string[];proofA:string;proofB:string;proofC:string};",
+          "directThrowExpressions": [],
+          "directCalls": [],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts",
+            "line": 175,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L175"
+          }
+        },
+        {
           "name": "resolveTcapGpruDepositAccounts",
           "imports": [
             "@trustlink/tsn-sdk"
           ],
-          "docs": "Reads the canonical reserve and vault from TCAP's on-chain asset entry.\nThe reserve is never derived from an assetState PDA.",
+          "docs": "Reads the canonical reserve and vault from TCAP's on-chain asset entry.\r\nThe reserve is never derived from an assetState PDA.",
           "signatures": [
-            "(connection: Connection, fields: { depositor: PublicKey; mint: PublicKey; tokenProgram: PublicKey; tcapProgramId: PublicKey; }): Promise<{ depositor: PublicKey; tcapProgramId: PublicKey; config: PublicKey; registry: PublicKey; assetEntry: PublicKey; assetEntryAccount: AccountInfo<Buffer<ArrayBufferLike>>; reserveState: PublicKey; reserveAuthority: PublicKey; source: PublicKey; vault: PublicKey; mint: PublicKey; tokenProgram: PublicKey; tokenId: number; decimals: number; }>"
+            "(connection: Connection, fields: { depositor: PublicKey; mint: PublicKey; tokenProgram: PublicKey; tcapProgramId: PublicKey; }): Promise<{ depositor: PublicKey; tcapProgramId: PublicKey; config: PublicKey; registry: PublicKey; assetEntry: PublicKey; assetEntryAccount: AccountInfo<Buffer<ArrayBufferLike>>; reserveState: PublicKey; reserveAuthority: PublicKey; source: PublicKey; vault: PublicKey; mint: PublicKey; tokenProgram: PublicKey; fundingRootAccount: PublicKey; tokenId: number; decimals: number; }>"
           ],
           "constructors": [],
           "methods": [],
@@ -11095,6 +11693,254 @@
       ]
     },
     {
+      "slug": "tin-owner-balance",
+      "name": "tin-owner-balance",
+      "path": "tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts",
+      "symbols": [
+        {
+          "name": "buildOwnerTinIdentityChallengeMessageV1",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-owner-balance"
+          ],
+          "docs": "Canonical message shared with the owner identity service; no transaction authority.",
+          "signatures": [
+            "(params: { ownerPublicKey: string; tin: string; challengeId: string; }): Uint8Array"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [
+            "new Error(\"Invalid owner identity challenge.\")"
+          ],
+          "directCalls": [
+            "/^\\d{10}$/.test",
+            "/^[a-f0-9]{48}$/.test",
+            "new TextEncoder().encode",
+            "[\n    \"TrustLink\", \"Private identity display\", \"\", \"Purpose\", \"\",\n    \"Confirm wallet ownership to display the name encrypted with this TIN.\", \"\", \"Wallet\", \"\",\n    new PublicKey(params.ownerPublicKey).toBase58(), \"\", \"TIN\", \"\", params.tin, \"\", \"One-time request\", \"\",\n    params.challengeId, \"\",\n    \"This signature authorizes this XP lookup only. It does not authorize a transaction or move funds.\",\n  ].join",
+            "new PublicKey(params.ownerPublicKey).toBase58"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts",
+            "line": 60,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L60"
+          }
+        },
+        {
+          "name": "clearTinOwnerBalanceAccessV1",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-owner-balance"
+          ],
+          "docs": "Erases reusable local signatures and invalidates outstanding balance reads.",
+          "signatures": [
+            "(wallet: TinBalanceWallet): void"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [],
+          "directCalls": [
+            "accessByWallet.get",
+            "accessByWallet.delete",
+            "access.signatures.values",
+            "signature.fill",
+            "access.signatures.clear",
+            "access.contexts.clear",
+            "access.detach"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts",
+            "line": 49,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L49"
+          }
+        },
+        {
+          "name": "getTinOwnerBalanceContextV1",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-owner-balance"
+          ],
+          "docs": "Backend owner-context validation using the same registry checks as the complete balance read.",
+          "signatures": [
+            "(params: { connection: Connection; registry: string; programId: string; ownerPublicKey: string; }): Promise<TinOwnerBalanceContextV1>"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [],
+          "directCalls": [
+            "readOwnerBalanceRegistryV1",
+            "new PublicKey(params.registry).toBase58",
+            "new PublicKey(params.programId).toBase58"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts",
+            "line": 92,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L92"
+          }
+        },
+        {
+          "name": "loadTinOwnerBalanceV1",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-owner-balance"
+          ],
+          "docs": "Complete owner balance read: resolve identity, validate registry and owner,\nobtain wallet seed authorization, decrypt locally and verify finalized history.\nRPC and the identity service never receive the seed or reusable seed signature.",
+          "signatures": [
+            "(params: LoadTinOwnerBalanceV1Params): Promise<TinOwnerBalanceV1>"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [
+            "new Error(\"A ten-digit TIN is required.\")",
+            "new Error(\"Connected wallet changed during balance recovery.\")",
+            "new Error(\"Invalid owner wallet signature.\")",
+            "new Error(\"Owner identity challenge binding mismatch.\")",
+            "new Error(\"Owner TIN balance context is unavailable.\")",
+            "new Error(\"This TIN envelope does not support current wallet-owner GPRU recovery.\")"
+          ],
+          "directCalls": [
+            "/^\\d{10}$/.test",
+            "walletKey",
+            "accessByWallet.get",
+            "clearTinOwnerBalanceAccessV1",
+            "wallet.removeListener",
+            "accessByWallet.set",
+            "wallet.on",
+            "params.signal?.throwIfAborted",
+            "checkCurrent",
+            "Buffer.from(message).toString",
+            "Buffer.from",
+            "currentAccess.signatures.get",
+            "wallet.signMessage",
+            "nacl.sign.detached.verify",
+            "new PublicKey(publicKey).toBytes",
+            "currentAccess.signatures.set",
+            "signature.fill",
+            "currentAccess.contexts.get(client)?.get",
+            "currentAccess.contexts.get",
+            "params.onProgress",
+            "client.post",
+            "buildOwnerTinIdentityChallengeMessageV1",
+            "new TextDecoder().decode",
+            "sign",
+            "Buffer.from(signature).toString",
+            "currentAccess.contexts.has",
+            "currentAccess.contexts.set",
+            "currentAccess.contexts.get(client)!.set",
+            "readOwnerBalanceRegistryV1",
+            "decodeTinMasterSeedEnvelope",
+            "/^0{64}$/.test",
+            "withTinOwnerMasterSeed",
+            "loadTinGpruTokenBalancesV1",
+            "seedSignature?.fill"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts",
+            "line": 104,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L104"
+          }
+        },
+        {
+          "name": "LoadTinOwnerBalanceV1Params",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-owner-balance"
+          ],
+          "docs": "",
+          "signatures": [],
+          "constructors": [],
+          "methods": [],
+          "declaredType": "export type LoadTinOwnerBalanceV1Params = {\n  connection: Connection;\n  tin: string;\n  ownerWallet: TinBalanceWallet;\n  signal?: AbortSignal;\n  onProgress?: (message: string) => void;\n  /** Opt in to device-memory access reuse. Clear on logout with clearTinOwnerBalanceAccessV1. */\n  cacheAuthorization?: boolean;\n} & (\n  | { identityClient: TinOwnerIdentityClient; registry?: never; programId?: never; displayName?: never }\n  | { identityClient?: never; registry: string; programId: string; displayName: string }\n);",
+          "directThrowExpressions": [],
+          "directCalls": [],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts",
+            "line": 24,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L24"
+          }
+        },
+        {
+          "name": "TinBalanceWallet",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-owner-balance"
+          ],
+          "docs": "Accepts both wallet adapters and injected Solana browser wallets.",
+          "signatures": [],
+          "constructors": [],
+          "methods": [],
+          "declaredType": "export type TinBalanceWallet = {\n  publicKey: string | { toBase58(): string };\n  signMessage(message: Uint8Array, encoding?: \"utf8\"): Promise<Uint8Array | { signature: Uint8Array }>;\n  on?(event: \"disconnect\" | \"accountChanged\", listener: () => void): unknown;\n  removeListener?(event: \"disconnect\" | \"accountChanged\", listener: () => void): unknown;\n};",
+          "directThrowExpressions": [],
+          "directCalls": [],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts",
+            "line": 11,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L11"
+          }
+        },
+        {
+          "name": "TinOwnerBalanceContextV1",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-owner-balance"
+          ],
+          "docs": "",
+          "signatures": [],
+          "constructors": [],
+          "methods": [],
+          "declaredType": "export type TinOwnerBalanceContextV1 = { registry: string; programId: string };",
+          "directThrowExpressions": [],
+          "directCalls": [],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts",
+            "line": 22,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L22"
+          }
+        },
+        {
+          "name": "TinOwnerBalanceV1",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-owner-balance"
+          ],
+          "docs": "",
+          "signatures": [],
+          "constructors": [],
+          "methods": [],
+          "declaredType": "export type TinOwnerBalanceV1 = Awaited<ReturnType<typeof loadTinGpruTokenBalancesV1>>;",
+          "directThrowExpressions": [],
+          "directCalls": [],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts",
+            "line": 23,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L23"
+          }
+        },
+        {
+          "name": "TinOwnerIdentityClient",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-owner-balance"
+          ],
+          "docs": "Authenticated transport for the existing owner identity challenge service.",
+          "signatures": [],
+          "constructors": [],
+          "methods": [],
+          "declaredType": "export type TinOwnerIdentityClient = {\n  post(path: string, body: unknown): Promise<unknown>;\n};",
+          "directThrowExpressions": [],
+          "directCalls": [],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts",
+            "line": 19,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L19"
+          }
+        }
+      ]
+    },
+    {
       "slug": "tin-private-controller",
       "name": "tin-private-controller",
       "path": "tsn-protocol/sdks/tsn-sdk/src/tin-private-controller.ts",
@@ -11102,7 +11948,8 @@
         {
           "name": "buildTinV1OwnerEncryptionMessage",
           "imports": [
-            "@trustlink/tsn-sdk"
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-private-controller"
           ],
           "docs": "",
           "signatures": [
@@ -11134,7 +11981,8 @@
         {
           "name": "configureTinMasterSeedThresholdProvider",
           "imports": [
-            "@trustlink/tsn-sdk"
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-private-controller"
           ],
           "docs": "",
           "signatures": [
@@ -11154,7 +12002,8 @@
         {
           "name": "createTinPrivateIdentity",
           "imports": [
-            "@trustlink/tsn-sdk"
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-private-controller"
           ],
           "docs": "",
           "signatures": [
@@ -11190,7 +12039,8 @@
         {
           "name": "createTinV1OwnerSeedEnvelope",
           "imports": [
-            "@trustlink/tsn-sdk"
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-private-controller"
           ],
           "docs": "Creates the owner-recoverable seed envelope for a new TIN V1 intent.\r\nThe seed and signature-derived key stay in this runtime; only the encrypted\r\nenvelope is returned for inclusion in the owner-authorized creation intent.",
           "signatures": [
@@ -11228,7 +12078,8 @@
         {
           "name": "getTinMasterSeedThresholdProvider",
           "imports": [
-            "@trustlink/tsn-sdk"
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-private-controller"
           ],
           "docs": "",
           "signatures": [
@@ -11250,7 +12101,8 @@
         {
           "name": "loadTinPrivateTokenBalances",
           "imports": [
-            "@trustlink/tsn-sdk"
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-private-controller"
           ],
           "docs": "",
           "signatures": [
@@ -11284,7 +12136,8 @@
         {
           "name": "prepareTinV1OwnerSeedAccess",
           "imports": [
-            "@trustlink/tsn-sdk"
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-private-controller"
           ],
           "docs": "Stable, reproducible wallet approval used to encrypt a TIN seed for later recovery.",
           "signatures": [
@@ -11314,7 +12167,8 @@
         {
           "name": "rewrapTinPrivateIdentityForWalletOwner",
           "imports": [
-            "@trustlink/tsn-sdk"
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-private-controller"
           ],
           "docs": "Re-encrypt an existing TIN seed for wallet-owned, any-device access without\r\nchanging its derived PRUs. A legacy device is used only once to open its old\r\nenvelope; it is never made part of the new envelope.",
           "signatures": [
@@ -11354,7 +12208,8 @@
         {
           "name": "TinBalanceTokenInput",
           "imports": [
-            "@trustlink/tsn-sdk"
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-private-controller"
           ],
           "docs": "",
           "signatures": [],
@@ -11372,7 +12227,8 @@
         {
           "name": "TinMasterSeedAccessContext",
           "imports": [
-            "@trustlink/tsn-sdk"
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-private-controller"
           ],
           "docs": "",
           "signatures": [],
@@ -11390,7 +12246,8 @@
         {
           "name": "TinMasterSeedThresholdProvider",
           "imports": [
-            "@trustlink/tsn-sdk"
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-private-controller"
           ],
           "docs": "The provider protects only a random data-encryption key. The master seed is\r\nencrypted and decrypted locally by this controller and is never an input to\r\na threshold provider, Lit Action, TSN Node, backend, or Cranker.",
           "signatures": [],
@@ -11463,7 +12320,8 @@
         {
           "name": "TinOwnerWallet",
           "imports": [
-            "@trustlink/tsn-sdk"
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-private-controller"
           ],
           "docs": "",
           "signatures": [],
@@ -11481,7 +12339,8 @@
         {
           "name": "unlockTinPrivateRoute",
           "imports": [
-            "@trustlink/tsn-sdk"
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-private-controller"
           ],
           "docs": "",
           "signatures": [
@@ -11522,7 +12381,8 @@
         {
           "name": "withTinOwnerMasterSeed",
           "imports": [
-            "@trustlink/tsn-sdk"
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tin-private-controller"
           ],
           "docs": "Run an owner-only operation with the TIN master seed in memory. The SDK asks\r\nthe connected wallet to authorize access, verifies the envelope bindings,\r\nand clears both the derived key and seed when the callback completes.\r\nCallers should use this instead of exporting or persisting the seed.",
           "signatures": [
@@ -11898,6 +12758,41 @@
             "path": "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
             "line": 407,
             "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L407"
+          }
+        },
+        {
+          "name": "decodeTinV1RegistryAccount",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/tins"
+          ],
+          "docs": "",
+          "signatures": [
+            "(data: Uint8Array): { version: number; bump: number; status: number; reserved: Buffer<ArrayBuffer>; lookupCommitment: Buffer<ArrayBuffer>; ownerCommitment: Buffer<ArrayBuffer>; encryptedIdentityEnvelope: Buffer<ArrayBuffer>; encryptedMasterSeed: Buffer<ArrayBuffer>; createdAt: Buffer<ArrayBuffer>; encryptedMetadataHash: Buffer<ArrayBuffer>; routeVersion: bigint; routeNonce: Buffer<ArrayBuffer>; tipRouteVersion: number; gpruElgamalKeyVersion: number; gpruElgamalPublicKey: Buffer<ArrayBuffer>; gpruElgamalKeyCommitment: Buffer<ArrayBuffer>; gpruBalanceScanKeyVersion: number; gpruBalanceScanPublicKeyX: Buffer<ArrayBuffer>; gpruBalanceScanPublicKeyY: Buffer<ArrayBuffer>; policyCommitment: Buffer<ArrayBuffer>; }"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [
+            "new Error(`TIN_REGISTRY_MALFORMED_AT_${label}`)",
+            "new Error(\"TIN_REGISTRY_HAS_NONZERO_TRAILING_DATA\")"
+          ],
+          "directCalls": [
+            "Buffer.from",
+            "Number.isSafeInteger",
+            "bytes.subarray",
+            "take",
+            "take(4, `${label}_length`).readUInt32LE",
+            "u32",
+            "u8",
+            "vec",
+            "take(8, \"route_version\").readBigUInt64LE",
+            "bytes.subarray(offset).some"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+            "line": 101,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tins.ts#L101"
           }
         },
         {
@@ -13000,8 +13895,8 @@
     }
   ],
   "counts": {
-    "modules": 54,
-    "exports": 361,
+    "modules": 57,
+    "exports": 391,
     "publicMembers": 285
   }
 }

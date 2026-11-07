@@ -1,0 +1,58 @@
+{
+  "status": "VERIFIED offline synthetic structural correlation only",
+  "checkedAtUtc": "2026-11-03T10:08:45.049800+00:00",
+  "command": ".\\.venv\\Scripts\\python.exe scripts/check-native-credit-linkability.py --output docs/references/native-credit-linkability-20261102.json",
+  "pythonVersion": "3.13.14",
+  "checks": {
+    "public_registry_key_matches_builder_formula": true,
+    "genesis_public_registry_dictionary_identifies_A": true,
+    "genesis_wrong_registry_candidate_fails": true,
+    "maintained_public_history_same_token_identifies_A_again": true,
+    "maintained_public_history_different_recipient_identifies_B": true,
+    "cross_asset_same_recipient_public_portfolio_matches": true,
+    "one_token_reconstruction_fails_for_multi_asset_portfolio": true,
+    "wrong_recipient_previous_point_fails": true,
+    "different_recipient_current_point_fails": true,
+    "single_asset_A_first_root_reconstructible": true,
+    "single_asset_A_next_root_reconstructible": true,
+    "single_asset_B_root_reconstructible": true,
+    "same_token_subsequent_public_point_and_root_rotate": true,
+    "single_asset_portfolio_equation_has_no_registry_input": true
+  },
+  "sourceSha256": {
+    "scripts/check-native-credit-linkability.py": "51f3e89c05b1845e78ced66f25f7bef4fa96d544d93d3fa7b67a29fdc03be28f",
+    "tsn-protocol/services/tsn-node/hidden_head_witness.py": "b750681c60a3e5908782382fd615bf1f33fe7bb307eb016a27bf82e266b94122",
+    "tsn-protocol/services/tsn-node/gpru_crypto.py": "2e7976cc0f7bfe8f882eb3a8bda2700b8f05290f87f65466dd0afb056aa779ec",
+    "tsn-protocol/services/tsn-node/server.py": "d2251674477f251f550b504e6170a4cb5c882397e1af54d284586020616db2b4",
+    "tsn-protocol/services/tsn-node/dbrix_transaction_record.py": "3168dcc4d154aabb5bd42f5f6650913fbebf7b80109d78f64a4e62300408f493",
+    "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom": "c77393044c89995dde62aec70d3094c502c09cea689aba6cac2e53fec8a89d2a",
+    "tsn-protocol/programs/transfer-identity-protocol/tin-registrar/program/src/state.rs": "b89381a9a8abf2b53d33b33e10f43d26d6821a1316fb6225b7b3914181842790"
+  },
+  "observerInputs": {
+    "portfolio": [
+      "public token IDs",
+      "public successor balance X/Y",
+      "public successor portfolio root for comparison"
+    ],
+    "registryDictionary": [
+      "public TIP ElGamal key commitment",
+      "public old/new global roots",
+      "public Memo/action commitments",
+      "public successor portfolio root",
+      "public nullifiers",
+      "known empty initial trees and maintained inferred history"
+    ]
+  },
+  "conclusions": [
+    "The tested known-empty-map dictionary identifies a synthetic public registry and links a subsequent same-token credit to that registry.",
+    "The public portfolio root links cross-asset outputs when the correct unchanged token points can be hypothesized; wrong-recipient controls fail.",
+    "The one-token portfolio equation alone is independent of the registry and cannot identify it; the separate global-root dictionary can."
+  ],
+  "limits": [
+    "No actual TIN, registry, witness, private path, scalar, route key or raw public statement value is included in this result.",
+    "Known genesis state, enumerable current public registry keys and complete usable history are assumptions of the dictionary test; arbitrary historical state was not reconstructed.",
+    "Identifying a public TIP registry is not plaintext TIN recovery. The TIN lookup still uses protected lookup material.",
+    "No Groth16 proof, live-chain read, RPC, decryption, transaction signature, deployment or service change was performed.",
+    "This is a source-level privacy test and does not quantify large-registry enumeration cost or establish a complete security audit."
+  ]
+}

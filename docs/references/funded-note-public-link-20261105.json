@@ -1,0 +1,170 @@
+{
+  "schema": "TSN_PUBLIC_FUNDED_NOTE_LINK_CHECK_V1",
+  "checkedAtUtc": "2026-11-05T15:53:46.891Z",
+  "cluster": "devnet",
+  "genesisHash": "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
+  "scope": "Finalized public receipts and public TCAP account only; no Receiver, private openings, owner decryption, signing or submissions.",
+  "pairs": [
+    {
+      "label": "historical-1",
+      "deposit": {
+        "signature": "L4NGZGbStLW8DJpnNPmESj9uoDFEpQaS71EakNtt5ETt5SbjzXhfBtJsY2yzcgPgfc8M9DiGzJtfe7bT96KDhnV",
+        "slot": 518210706,
+        "blockTimeUtc": "2026-11-03T12:08:29.000Z",
+        "depositor": "CPyxfZ4pshNvZr18t8wH9zqidBNzFjqGcNrQm5tG3XiV",
+        "assetEntry": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+        "reserveState": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+        "fundedNoteAbi": false,
+        "instructionBytes": 16,
+        "event": null,
+        "tokenDecimals": 6
+      },
+      "credit": {
+        "signature": "3D1LppGAnsh7F6Ga4DijPpqChYyhzrNhniSKMpte7aETnunfqpxCWHZjfk83s8ZVenbfbeuvQ5FjigrSH4SUbEHq",
+        "slot": 518219859,
+        "blockTimeUtc": "2026-11-03T12:44:56.000Z",
+        "wireBytes": 2915,
+        "wireSha256": "1fcb75a1b89bf777054ed385ed17d0f2ca3aa0276d56439b8030db4d0e0d9f7d",
+        "instructionBytes": 825,
+        "publicInputCount": 12,
+        "nullifier": "0d2224fd1246cfe0ae55b3cb29eb8f48704007e074db113cae6155779a44cc68",
+        "tokenId": 1,
+        "amountBaseUnits": "1000000",
+        "fundingRoot": null,
+        "fundingRootAccount": null,
+        "assetEntry": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+        "reserveState": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "feePayer": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+        "signaturesVerified": 2
+      },
+      "oldSignatureDerivedNullifier": "0d2224fd1246cfe0ae55b3cb29eb8f48704007e074db113cae6155779a44cc68",
+      "elapsedSeconds": 2187,
+      "checks": {
+        "historicalFormulaMatches": true,
+        "assetEntryMatches": true,
+        "reserveStateMatches": true
+      }
+    },
+    {
+      "label": "historical-2",
+      "deposit": {
+        "signature": "4MwWKHnRPMbTcezdy2RcXtwHE25zqG8SeCkAVH59AzLyNxAhay7xnwTYGkWSJ2oWtFVvkmUUkrj6cXomXupmn5wQ",
+        "slot": 518205499,
+        "blockTimeUtc": "2026-11-03T11:47:40.000Z",
+        "depositor": "CPyxfZ4pshNvZr18t8wH9zqidBNzFjqGcNrQm5tG3XiV",
+        "assetEntry": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+        "reserveState": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+        "fundedNoteAbi": false,
+        "instructionBytes": 16,
+        "event": null,
+        "tokenDecimals": 6
+      },
+      "credit": {
+        "signature": "2NLYAP1JALjK28Cr8VvXaUs4PV5YdVUP1sbfd5PCGgSF6EDisj5PCfMeuYC6GEs1Gz8c14WLxzZguCoJ2DFzNa2D",
+        "slot": 518206190,
+        "blockTimeUtc": "2026-11-03T11:50:26.000Z",
+        "wireBytes": 2979,
+        "wireSha256": "fa2e47bca5fae768ce7e4e146de7bce6b14fa1dbb6194f78d4f8ca0233d24c76",
+        "instructionBytes": 825,
+        "publicInputCount": 12,
+        "nullifier": "2ec24048d95f182499bc883f0c8b06362189c4c17e829a7c4b8de2c943066eb0",
+        "tokenId": 1,
+        "amountBaseUnits": "1000000",
+        "fundingRoot": null,
+        "fundingRootAccount": null,
+        "assetEntry": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+        "reserveState": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "feePayer": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+        "signaturesVerified": 2
+      },
+      "oldSignatureDerivedNullifier": "2ec24048d95f182499bc883f0c8b06362189c4c17e829a7c4b8de2c943066eb0",
+      "elapsedSeconds": 166,
+      "checks": {
+        "historicalFormulaMatches": true,
+        "assetEntryMatches": true,
+        "reserveStateMatches": true
+      }
+    },
+    {
+      "label": "supplied-funded-note",
+      "deposit": {
+        "signature": "24Qibbt6MSy9WPp6JTrMAzD3NHDRow8gcZXppbxoVmKMK8Mo7ru49PjA2VPxruXbBJfrSmjopnTp6Vg6atLzUiL7",
+        "slot": 518969400,
+        "blockTimeUtc": "2026-11-05T14:32:52.000Z",
+        "depositor": "CPyxfZ4pshNvZr18t8wH9zqidBNzFjqGcNrQm5tG3XiV",
+        "assetEntry": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+        "reserveState": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+        "fundedNoteAbi": true,
+        "instructionBytes": 48,
+        "event": {
+          "rootAccount": "FxKRFAtT1zJfAe5wtAPKbt4HKMc3NoQngW3qU5wfZsGm",
+          "leafIndex": "0",
+          "noteCommitment": "1b7f09a5867b12f83dc56261b88ad0dfb1f82a350c1ae742b51907af657a9117",
+          "tokenId": 1,
+          "amountBaseUnits": "500000",
+          "leaf": "0a7b4e550a59555884184fd350c77161d1987c8d19566c156152dcf50bcb8344",
+          "root": "1529e9498f4a16267a4234f5120a7527161f6d2ae5030c8a615c9632bccc3692"
+        },
+        "tokenDecimals": 6
+      },
+      "credit": {
+        "signature": "2U9KCqFjxvVuRbW8UZVAQ5ecWHT5cAQdz4ZStc5hcLKbRZ5cW1uzwkqhiQHCRV82XzGfnmp5tghPXk7pFq5TWT8V",
+        "slot": 518977204,
+        "blockTimeUtc": "2026-11-05T15:03:53.000Z",
+        "wireBytes": 3044,
+        "wireSha256": "460efe7aa251f0f4014a056790c8c1c0aba8017afc9eb60b0fc59a6dab6ab91e",
+        "instructionBytes": 857,
+        "publicInputCount": 13,
+        "nullifier": "0c67bf2dc318471d21b27152918d23ec76a655643047cca55a2f60942c829b9b",
+        "tokenId": 1,
+        "amountBaseUnits": "500000",
+        "fundingRoot": "1529e9498f4a16267a4234f5120a7527161f6d2ae5030c8a615c9632bccc3692",
+        "fundingRootAccount": "FxKRFAtT1zJfAe5wtAPKbt4HKMc3NoQngW3qU5wfZsGm",
+        "assetEntry": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+        "reserveState": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "feePayer": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+        "signaturesVerified": 2
+      },
+      "oldSignatureDerivedNullifier": "2440b402318d931872c9a4a5d4dde1f24f3640fa76c0660cf8c0295bef8dbbd4",
+      "elapsedSeconds": 1861,
+      "checks": {
+        "historicalFormulaMatches": false,
+        "assetEntryMatches": true,
+        "reserveStateMatches": true,
+        "publicFundedLeafReconstructed": true,
+        "firstLeafIndex": true,
+        "singleLeafRootReconstructed": true,
+        "creditFundingRootMatchesDeposit": true,
+        "assetAndAmountMatch": true,
+        "noteCommitmentAbsentFromPublicCredit": true,
+        "singletonMembershipLink": true
+      }
+    }
+  ],
+  "currentFundingAccount": {
+    "address": "FxKRFAtT1zJfAe5wtAPKbt4HKMc3NoQngW3qU5wfZsGm",
+    "observedFinalizedSlot": 518989721,
+    "root": "1529e9498f4a16267a4234f5120a7527161f6d2ae5030c8a615c9632bccc3692",
+    "leafCount": "1",
+    "bytes": 1081
+  },
+  "conclusion": {
+    "oldFormulaRemovedForSuppliedPair": true,
+    "publicSingletonMembershipLinksSuppliedPair": true
+  },
+  "sourceSha256": {
+    "scripts/check-funded-note-public-link.mjs": "300024a62dee8405f1a7c031ba372cabd4dc098a074ae4d484e0e4fb67781942",
+    "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom": "a117c1aa905aa4fbb55b90db94664c316c1e428e4764533311e425cae682bc9e",
+    "tsn-protocol/programs/tcap-protocol/programs/tcap/src/private_funding.rs": "83137f2f3857d26b62569de5ea874fb012d5535d841a203edac56157e6e4acdf",
+    "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/deposit_private_funding_v1.rs": "763f7f0f3e97b373bb72d2c05f7149401f9d2e5d9e87f7807992ed09f4ec1893",
+    "tsn-protocol/sdks/tsn-sdk/src/gpru/funding-note.ts": "024549b981827a2cae49985e0fe000829bfa135cc5ed3c3dce7189ab446f02ed"
+  },
+  "limitations": [
+    "A different nullifier disproves the old formula for this pair; it does not prove general unlinkability.",
+    "The selected first-leaf root identifies a membership set of one. A shared root with multiple deposits alone does not identify the consumed leaf.",
+    "No proof forgery, deployed-byte equality, new recipient-registry reconstruction, private opening or owner record recovery was tested."
+  ]
+}

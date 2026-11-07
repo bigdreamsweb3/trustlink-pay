@@ -316,3 +316,15 @@ pub struct FundingClaimCreatedV2 {
     pub funding_root_sequence: u64,
     pub slot: u64,
 }
+
+/// Public funding history; the private note opening is never emitted.
+#[event]
+pub struct PrivateFundingDepositedV1 {
+    pub funding_root: Pubkey,
+    pub leaf_index: u64,
+    pub note_commitment: [u8;32],
+    pub token_id: u32,
+    pub amount: u64,
+    pub funded_leaf: [u8;32],
+    pub root: [u8;32],
+}

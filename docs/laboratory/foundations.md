@@ -10,11 +10,11 @@ The present native credit path starts with a sender-approved payment intent and 
 
 This architecture is identity-first because the canonical payment message names a TIN. It is privacy-aware because identity envelopes, hidden state paths and owner action records have distinct protected boundaries. Neither term promises universal anonymity, production readiness, arbitrary cross-chain liquidity or successful execution of every exported API.
 
-## The five distinct contracts
+## The six distinct contracts
 
-**Identity** identifies the intended recipient and the current authorized route. TIP owns that registry; the issuer and Node hold protected lookup material. **Authorization** records what the owner, sender or Mother approved. A wallet signature is specific to its message or transaction bytes. **Funding** moves assets into a reserve and creates pending liability. **Execution** applies a program instruction after its checks. **Settlement** applies the authorized recipient state change and its corresponding reserve-liability transition. **Finality** depends on chain confirmation and the chosen commitment level, rather than the service's work status alone.
+**Identity** identifies the intended recipient and the current authorized route. TIP owns that registry; the issuer and Node hold protected lookup material. **Authorization** records what the owner, sender or Mother approved. A wallet signature is specific to its message or transaction bytes. **Funding** moves assets into a reserve and creates pending liability. **Execution** applies a program instruction after its checks. **Settlement** applies the authorized private recipient state change; native aggregate liability accounting is separate complete epoch work. **Finality** depends on chain confirmation and the chosen commitment level, rather than the service's work status alone.
 
-The current credit flow implements funding and settlement as distinct transactions. Consequently, funding can succeed while settlement fails. The atomic boundary is inside the TCAP credit instruction: the shared-root update and movement from pending to settled confidential liability commit together after proof verification. It is not an atomic guarantee spanning every preceding HTTP request and deposit.
+Funding, individual credit and aggregate accounting have separate transaction boundaries. Credit atomically advances the shared head/nullifier root and blinded epoch transcript after proof verification, leaving public reserve liabilities unchanged. Node prepares every ordered opening for a complete 2–64-credit epoch; TCAP/GPRU verify the aggregate before one pending-to-settled reclassification. These atomic boundaries do not span earlier HTTP requests or confirmed deposits; a singleton carries forward. See [ADR-005](decisions/ADR-005-private-amount-and-adaptive-pools.md).
 
 ## Assumptions that must remain explicit
 

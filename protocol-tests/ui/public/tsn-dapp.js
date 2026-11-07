@@ -3,6 +3,12 @@
   let resolvedTin;
   let networkStatus;
   let activeWallet;
+  let ownerTinIdentity;
+  let balanceInFlight;
+  let balanceController;
+  const ownerIdentityClient = {
+    post: (path, body) => api(`/api/tsn/sdk${path}`, { method: "POST", body: JSON.stringify(body) }),
+  };
   const events = [];
   const $ = (id) => document.getElementById(id);
 
@@ -82,6 +88,13 @@
   function handleWalletDisconnect(wallet) {
     if (wallet !== activeWallet) return;
     activeWallet = null;
+    ownerTinIdentity = null;
+    balanceController?.abort();
+    balanceInFlight = null;
+    window.TsnTinCreationSdk?.clearTinOwnerBalanceAccessV1(wallet);
+    $("overviewTinBalance").textContent = "Locked";
+    $("tinBalanceStatus").textContent = "Connect your wallet to open your balance.";
+    $("refreshTinBalance").disabled = true;
     setWalletConnectedView(false);
     if ($("headerConnectWallet")) {
       $("headerConnectWallet").textContent = "Connect";
@@ -167,7 +180,12 @@
       if (!publicKey) throw new Error("Wallet did not return a Solana public key.");
       activeWallet = wallet;
       setWalletConnectedView(true);
-      if (typeof wallet.on === "function") wallet.on("disconnect", () => handleWalletDisconnect(wallet));
+      if (typeof wallet.on === "function") {
+        wallet.on("disconnect", () => handleWalletDisconnect(wallet));
+        wallet.on("accountChanged", (key) => {
+          if (key?.toBase58?.() !== publicKey) handleWalletDisconnect(wallet);
+        });
+      }
       const tinOwnerWallet = $("tinOwnerWallet");
       if (tinOwnerWallet) tinOwnerWallet.value = publicKey;
       await api("/api/session/wallet", { method: "POST", body: JSON.stringify({ publicKey }) });
@@ -288,7 +306,59 @@
     if ($("overviewAccountStatus")) $("overviewAccountStatus").textContent = "TIN recovered from wallet";
     const issueButton = $("issueTinAction");
     if (issueButton) issueButton.hidden = true;
+    ownerTinIdentity = { tin: identity.tin, displayName };
+    $("refreshTinBalance").disabled = false;
     log("TIN RECOVERED", `Wallet-authorized recovery / TIN ${identity.tin}${displayName ? ` · ${displayName}` : ""}`);
+    await refreshTinBalance();
+  }
+
+  function formatTinTokenBalance(token) {
+    const raw = BigInt(token.balanceBaseUnits), scale = 10n ** BigInt(token.decimals);
+    const fraction = (raw % scale).toString().padStart(token.decimals, "0").replace(/0+$/, "");
+    const amount = `${raw / scale}${fraction ? `.${fraction}` : ""}`;
+    const label = token.mint === "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU" ? "USDC" : `asset ${token.tokenId}`;
+    return `${amount} ${label}`;
+  }
+
+  async function refreshTinBalance() {
+    if (balanceInFlight) return balanceInFlight;
+    const wallet = activeWallet, identity = ownerTinIdentity;
+    if (!wallet || !identity) return;
+    const controller = new AbortController();
+    balanceController = controller;
+    const current = () => wallet === activeWallet && identity === ownerTinIdentity && !controller.signal.aborted;
+    $("refreshTinBalance").disabled = true;
+    $("overviewTinBalance").textContent = "Loading…";
+    $("tinBalanceStatus").textContent = "Approve wallet access to read your balance locally.";
+    const pending = (async () => {
+      try {
+        const sdk = window.TsnTinCreationSdk;
+        if (!sdk?.loadTinOwnerBalanceV1) throw new Error("Rebuild the XP browser SDK to enable balance recovery.");
+        const connection = new sdk.Connection(`${window.location.origin}/api/tsn/rpc`, {
+          commitment: "finalized", httpHeaders: { "x-trustlink-session": session.sessionId, "x-trustlink-csrf": session.csrfToken },
+        });
+        const result = await sdk.loadTinOwnerBalanceV1({ connection, tin: identity.tin,
+          identityClient: ownerIdentityClient, ownerWallet: wallet, cacheAuthorization: true,
+          signal: controller.signal,
+          onProgress: message => { if (current()) $("tinBalanceStatus").textContent = message; },
+        });
+        if (!current()) return;
+        const tokens = result.tokenBalances.filter(token => BigInt(token.balanceBaseUnits) > 0n);
+        $("overviewTinBalance").textContent = tokens.length ? tokens.map(formatTinTokenBalance).join(" · ") : "0";
+        $("tinBalanceStatus").textContent = `${result.actionCount} owner action${result.actionCount === 1 ? "" : "s"} recovered from finalized history.`;
+        $("refreshTinBalance").textContent = "Refresh balance";
+        log("TIN BALANCE RECOVERED", `${result.actionCount} finalized owner actions checked locally.`);
+      } catch (error) {
+        if (!current()) return;
+        $("overviewTinBalance").textContent = "Unavailable";
+        $("tinBalanceStatus").textContent = error instanceof Error ? error.message : "Balance recovery failed.";
+        log("TIN BALANCE UNAVAILABLE", error instanceof Error ? error.message : "Balance recovery failed.");
+      } finally {
+        if (current()) $("refreshTinBalance").disabled = false;
+      }
+    })();
+    balanceInFlight = pending;
+    try { await pending; } finally { if (balanceInFlight === pending) balanceInFlight = null; }
   }
 
   function hexToBytes(value) {
@@ -408,6 +478,9 @@
           if (current.displayName && $("overviewDisplayName")) $("overviewDisplayName").textContent = current.displayName;
           if ($("overviewAccountStatus")) $("overviewAccountStatus").textContent = "TIN secured to wallet";
           if ($("issueTinAction")) $("issueTinAction").hidden = true;
+          ownerTinIdentity = { tin: current.tin, displayName: current.displayName ?? $("tinDisplayName").value.trim() };
+          $("refreshTinBalance").disabled = false;
+          $("tinBalanceStatus").textContent = "Open your newly issued TIN balance with wallet authorization.";
           const result = $("tinCreationResult");
           if (result) result.textContent = `TIN ${current.tin}${current.displayName ? ` · ${current.displayName}` : ""} finalized on Solana${current.signature ? ` · ${current.signature}` : ""}.`;
           log("TIN V1 FINALIZED", `TIN ${current.tin}${current.signature ? ` / Solana ${current.signature}` : ""}`);
@@ -465,22 +538,23 @@
       if (!mint) throw new Error("Enter a token mint registered and enabled in the TCAP asset registry.");
       if (typeof activeWallet.signTransaction !== "function") throw new Error("The connected wallet must support transaction signing.");
       const sdk = window.TsnRecipientCreditSdk;
-      if (!sdk?.buildTcapGpruWalletDepositTransaction) throw new Error("The browser TSN SDK bundle is missing the reserve deposit builder.");
+      if (!sdk?.buildTcapGpruWalletDepositTransaction || !sdk?.createFundingNoteV1) throw new Error("The browser TSN SDK bundle is missing the funded deposit builder.");
 
       stage = "checking the TCAP reserve and sender wallet token balance";
       const prepared = await api("/api/tsn/sdk/prepare-tin-credit", {
         method: "POST", body: JSON.stringify({ recipientTin, tokenMintAddress: mint, amount }),
       });
       const amountBaseUnits = BigInt(prepared.amountBaseUnits);
+      // This private opening stays in the current request; prepare/status responses never contain it.
+      const fundingNote = sdk.createFundingNoteV1();
       stage = "building the wallet-authorized TCAP reserve deposit";
       const key = (value) => new sdk.PublicKey(value);
       const accounts = Object.fromEntries(Object.entries(prepared.depositAccounts).map(([name, value]) => [name, key(value)]));
       const transaction = sdk.buildTcapGpruWalletDepositTransaction({
         accounts,
         amountBaseUnits,
+        fundingNoteCommitment: fundingNote.commitment,
       });
-      transaction.recentBlockhash = prepared.recentBlockhash;
-      transaction.lastValidBlockHeight = prepared.lastValidBlockHeight;
 
       stage = "requesting the sender's amount authorization";
       const authorization = sdk.createPaymentAuthorization({
@@ -495,12 +569,20 @@
         senderFeeAmount: "0",
         totalTokenRequiredUi: amount,
         tokenDecimals: prepared.decimals,
-        fundingMode: "tcap_deposit_v2",
+        fundingMode: "tcap_funded_note_v1",
+        fundingNoteCommitment: fundingNote.commitment,
       });
       if (authorization.amountBaseUnits !== amountBaseUnits.toString()) {
         throw new Error("The SDK amount does not match the TCAP registry amount; review the token and amount before signing.");
       }
       const senderAuthorizationSignature = await sign(authorization.message);
+
+      stage = "refreshing the deposit blockhash after amount approval";
+      const latestBlockhash = await api("/api/tsn/sdk/refresh-tin-credit-blockhash", {
+        method: "POST", body: JSON.stringify({}),
+      });
+      transaction.recentBlockhash = latestBlockhash.recentBlockhash;
+      transaction.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
 
       stage = "requesting the sender's TCAP deposit transaction signature";
       const signedTransaction = await activeWallet.signTransaction(transaction);
@@ -520,7 +602,8 @@
         senderAuthorizationExpiresAt: authorization.expiresAt,
         senderFeeAmount: "0",
         senderSignedFundingTransaction,
-        senderFundingMode: "tcap_deposit_v2",
+        senderFundingMode: "tcap_funded_note_v1",
+        fundingNote,
         amount,
         source: "TSN XP",
       });
@@ -554,10 +637,13 @@
           lastStatus = progress;
           if (fundingStatus === "REJECTED") {
             log("TIN CREDIT NODE REJECTED", `TSN Node rejected reserve funding${nodeReason ? `: ${nodeReason}` : "."} Settlement work remains ${creditStatus}.`);
+          } else if (fundingStatus === "FAILED") {
+            log("TIN CREDIT FUNDING FAILED", "Cranker could not complete reserve funding. Check its RPC/submission result and the original transaction signature before retrying. Settlement has not executed.");
           } else if (fundingStatus === "NODE_VERIFYING") {
             log("TIN CREDIT NODE VERIFYING", `Receiver accepted the intent; TSN Node verification is in progress. Settlement work is ${creditStatus}.`);
           } else if (creditStatus === "CONFIRMED") {
             log("TIN CREDIT SETTLED", `GPRU credit finalized / Solana ${work.settlement?.result?.signature ?? "confirmed"}`);
+            if (ownerTinIdentity) void refreshTinBalance();
           } else if (creditStatus === "RECEIVED") {
             log("TIN CREDIT SETTLEMENT WAITING", `Receiver has settlement work in ${creditStatus}; it has not executed. Reserve funding is ${fundingStatus}.`);
           } else {
@@ -627,6 +713,7 @@
     if (activeWallet && activeWallet.isConnected === false) handleWalletDisconnect(activeWallet);
   });
   $("refreshStatus").onclick = syncNetworkStatus;
+  $("refreshTinBalance").onclick = refreshTinBalance;
   $("resolveTin").onclick = resolveTinForReview;
   $("recipientTin").addEventListener("input", () => {
     resolvedTin = null;

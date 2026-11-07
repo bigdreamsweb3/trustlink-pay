@@ -102,6 +102,12 @@ template HiddenHeadTransitionV1() {
     signal input encryptedBlindingDelta;
     signal input deltaEphemeralPublicX;
     signal input deltaEphemeralPublicY;
+    // Governed TCAP append root; note, leaf and path stay private.
+    signal input fundingRoot;
+    signal input fundingSecret;
+    signal input fundingBlinding;
+    signal input fundingIndex;
+    signal input fundingSiblings[32];
 
     // Private TIP membership opening.
     signal input tipLookupCommitment;
@@ -136,6 +142,7 @@ template HiddenHeadTransitionV1() {
     signal input actionKind;
     signal input assetId;
     signal input amount;
+    signal input amountBlinding;
     signal input authorizationCommitment;
     signal input balanceBlindingDelta;
     signal input balanceBlindingCarry;
@@ -274,6 +281,36 @@ template HiddenHeadTransitionV1() {
     isFirstHead.out * (1 - isCredit.out) === 0;
     isFirstToken * (1 - isCredit.out) === 0;
 
+    // A credit must spend a note that TCAP actually funded. The outer funded
+    // leaf uses the registered token and observed transfer amount, so a caller
+    // cannot manufacture a larger funded amount inside its note commitment.
+    component fundingNoteHash = Poseidon(3);
+    fundingNoteHash.inputs[0] <== 1880519585075378862971854540099064911735248433;
+    fundingNoteHash.inputs[1] <== fundingSecret;
+    fundingNoteHash.inputs[2] <== fundingBlinding;
+    component fundedLeafHash = Poseidon(4);
+    fundedLeafHash.inputs[0] <== 7345779629200698683464734587914033020491313;
+    fundedLeafHash.inputs[1] <== fundingNoteHash.out;
+    fundedLeafHash.inputs[2] <== assetId;
+    fundedLeafHash.inputs[3] <== amount;
+    component fundingPath = SparsePath32();
+    fundingPath.leaf <== fundedLeafHash.out;
+    fundingPath.index <== fundingIndex;
+    for (var i = 0; i < 32; i++) fundingPath.siblings[i] <== fundingSiblings[i];
+    isCredit.out * (fundingPath.root - fundingRoot) === 0;
+    component fundingNullifierHash = Poseidon(2);
+    fundingNullifierHash.inputs[0] <== 2067653150050877929286087838257825941301032058674988668465;
+    fundingNullifierHash.inputs[1] <== fundingSecret;
+    isCredit.out * (nullifier - fundingNullifierHash.out) === 0;
+    component fundingSecretIsZero = IsZero();
+    fundingSecretIsZero.in <== fundingSecret;
+    isCredit.out * fundingSecretIsZero.out === 0;
+    // Retained debit/exit actions do not consume a second funding note.
+    (1 - isCredit.out) * fundingSecret === 0;
+    (1 - isCredit.out) * fundingBlinding === 0;
+    (1 - isCredit.out) * fundingIndex === 0;
+    for (var i = 0; i < 32; i++) (1 - isCredit.out) * fundingSiblings[i] === 0;
+
     // Credit: update the hidden Pedersen point homomorphically. The Node needs
     // neither the balance nor its blinding opening to add a confirmed amount.
     component deltaBound = LessThan(252);
@@ -378,10 +415,17 @@ template HiddenHeadTransitionV1() {
     (isDebit.out + isExit.out) * (successorBalanceY - openedNew.yout) === 0;
     (isDebit.out + isExit.out) * (predecessorBalance - successorBalance - amount) === 0;
 
+    // A fresh private scalar hides the amount; asset and nullifier prevent cross-action reuse.
+    component amountZero = IsZero();amountZero.in <== amount;amountZero.out === 0;
+    component amountBlindZero = IsZero();amountBlindZero.in <== amountBlinding;amountBlindZero.out === 0;
+    component amountHash = Poseidon(5);
+    amountHash.inputs[0] <== 1880519585059740412114005250091737410720192050;amountHash.inputs[1] <== assetId;
+    amountHash.inputs[2] <== amount;amountHash.inputs[3] <== amountBlinding;amountHash.inputs[4] <== nullifier;
+    signal input amountCommitment;amountCommitment === amountHash.out;
     component actionHash = Poseidon(5);
     actionHash.inputs[0] <== actionKind;
     actionHash.inputs[1] <== assetId;
-    actionHash.inputs[2] <== amount;
+    actionHash.inputs[2] <== amountCommitment;
     actionHash.inputs[3] <== authorizationCommitment;
     actionHash.inputs[4] <== nullifier;
     actionHash.out === actionCommitment;
@@ -411,4 +455,4 @@ template HiddenHeadTransitionV1() {
     newRootHash.out === newGlobalRoot;
 }
 
-component main {public [oldGlobalRoot, newGlobalRoot, memoCommitment, actionCommitment, nullifier, tipRouteRoot, successorPortfolioRoot, successorBalanceX, successorBalanceY, encryptedBlindingDelta, deltaEphemeralPublicX, deltaEphemeralPublicY]} = HiddenHeadTransitionV1();
+component main {public [oldGlobalRoot, newGlobalRoot, memoCommitment, actionCommitment, nullifier, tipRouteRoot, successorPortfolioRoot, successorBalanceX, successorBalanceY, encryptedBlindingDelta, deltaEphemeralPublicX, deltaEphemeralPublicY, fundingRoot]} = HiddenHeadTransitionV1();

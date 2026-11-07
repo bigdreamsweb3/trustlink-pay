@@ -5,13 +5,13 @@ import { readFileSync } from "node:fs";
 import { address, getTransactionEncoder, getTransactionSizeLimit, type Transaction } from "@solana/kit";
 import { createRemoteTransactionSigner, sendInstructionsV1 } from "@dbrix/solana";
 import { PublicKey } from "@solana/web3.js";
-import { buildTsnRegisterTcapCreditAuthorizationV2Instruction } from "../../../sdks/tsn-sdk/src/tcap-gpru-credit.js";
+import { buildTsnRegisterTcapCreditAuthorizationV3Instruction } from "../../../sdks/tsn-sdk/src/tcap-gpru-credit.js";
 import { createDbrixSettlementMemoInstruction } from "../src/dbrix/settlement-memo.js";
 
 const fixture = JSON.parse(readFileSync(0, "utf8"));
 const transition = fixture.transition;
 const proof = transition.proof;
-const instruction = buildTsnRegisterTcapCreditAuthorizationV2Instruction({
+const instruction = buildTsnRegisterTcapCreditAuthorizationV3Instruction({
   ...transition,
   authority: new PublicKey(fixture.authority),
   motherEscrow: new PublicKey(fixture.motherEscrow),
@@ -19,6 +19,8 @@ const instruction = buildTsnRegisterTcapCreditAuthorizationV2Instruction({
   assetEntry: new PublicKey(transition.assetEntry),
   commitmentRoot: new PublicKey(transition.commitmentRoot),
   reserveState: new PublicKey(transition.reserveState),
+  accountingEpoch: new PublicKey(transition.accountingEpoch),
+  fundingRootAccount: new PublicKey(transition.fundingRootAccount),
   tipRouteRoot: new PublicKey(fixture.tipRouteRoot),
   gpruVerifier: new PublicKey(fixture.gpruVerifier),
 });

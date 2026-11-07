@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ctypes
 import hashlib
+import os
 import secrets
 from functools import lru_cache
 from pathlib import Path
@@ -70,7 +71,7 @@ def encrypt_balance_blinding_delta_v1(
 
 def poseidon_v1(values: list[int]) -> int:
     """Use the same native Poseidon implementation as the on-chain verifier."""
-    if len(values) not in (1, 2, 3, 5) or any(type(v) is not int or not 0 <= v < BABYJUB_FIELD for v in values):
+    if len(values) not in (1, 2, 3, 4, 5) or any(type(v) is not int or not 0 <= v < BABYJUB_FIELD for v in values):
         raise ValueError("GPRU Poseidon inputs must be canonical BN254 fields")
     library = _load_library()
     if not hasattr(library, "tsn_gpru_poseidon_v1"):
@@ -88,6 +89,12 @@ def poseidon_v1(values: list[int]) -> int:
 
 
 def _library_path() -> Path:
+    configured = os.environ.get("GPRU_NATIVE_LIBRARY_PATH", "").strip()
+    if configured:
+        library_path = Path(configured)
+        if not library_path.is_absolute():
+            raise ValueError("GPRU_NATIVE_LIBRARY_PATH must be an absolute native-library path")
+        return library_path
     crate_dir = Path(__file__).resolve().parents[2] / "programs" / "gpru" / "target" / "node-native"
     if __import__("sys").platform == "win32":
         return crate_dir / "release" / "tsn_gpru_proof_contract.dll"

@@ -9,23 +9,23 @@ This reference is generated from the checked-out TypeScript exports. Types and s
 
 ## createTsnPaymentMempoolJobs
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-jobs`. [Implementation, line 79](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L79).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-jobs`. [Implementation, line 82](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L82).
 
 ```ts
-createTsnPaymentMempoolJobs(params: { mempool: TsnMempool; paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderSignedFundingTransaction: string; senderFundingMode: "tcap_deposit_v2"; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; recipientAmount?: number; source?: string; }): Promise<{ intent: PublicTsnMempoolIntent; intentRequest: CreateIntentRequest; }>
+createTsnPaymentMempoolJobs(params: { mempool: TsnMempool; paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderSignedFundingTransaction: string; senderFundingMode: "tcap_funded_note_v1"; fundingNote: FundingNoteV1; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; recipientAmount?: number; source?: string; }): Promise<{ intent: PublicTsnMempoolIntent; intentRequest: CreateIntentRequest; }>
 ```
 
 ## prepareTsnPaymentMempoolJobRequests
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-jobs`. [Implementation, line 106](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L106).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-jobs`. [Implementation, line 110](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L110).
 
 ```ts
-prepareTsnPaymentMempoolJobRequests(params: { paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderSignedFundingTransaction: string; senderFundingMode: "tcap_deposit_v2"; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; recipientAmount?: number; source?: string; }): { intentRequest: CreateIntentRequest; }
+prepareTsnPaymentMempoolJobRequests(params: { paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderSignedFundingTransaction: string; senderFundingMode: "tcap_funded_note_v1"; fundingNote: FundingNoteV1; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; recipientAmount?: number; source?: string; }): { intentRequest: CreateIntentRequest; }
 ```
 
 ## TsnSenderBalance
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-jobs`. [Implementation, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L11).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-jobs`. [Implementation, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L12).
 
 ```ts
 export type TsnSenderBalance = {
@@ -36,10 +36,10 @@ export type TsnSenderBalance = {
 
 ## verifyAuthorizedTsnPaymentRequest
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-jobs`. [Implementation, line 16](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L16).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-jobs`. [Implementation, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L17).
 
 ```ts
-verifyAuthorizedTsnPaymentRequest(params: { senderWallet: string; senderIdentity: string; receiverIdentity: string; tokenMintAddress: string; tokenDecimals: number; amount: string | number; senderFeeAmount: number; totalTokenRequiredUi: number; issuedAt: string; nonce?: string; expiresAt?: string; signatureBase64: string; maxAgeMs?: number; getSenderTokenBalance?: (params: { senderWallet: string; tokenMintAddress: string; }) => Promise<TsnSenderBalance>; }): Promise<{ message: string; }>
+verifyAuthorizedTsnPaymentRequest(params: { fundingNoteCommitment: string; senderWallet: string; senderIdentity: string; receiverIdentity: string; tokenMintAddress: string; tokenDecimals: number; amount: string | number; senderFeeAmount: number; totalTokenRequiredUi: number; issuedAt: string; nonce?: string; expiresAt?: string; signatureBase64: string; maxAgeMs?: number; getSenderTokenBalance?: (params: { senderWallet: string; tokenMintAddress: string; }) => Promise<TsnSenderBalance>; }): Promise<{ message: string; }>
 ```
 
 Direct failure expressions:

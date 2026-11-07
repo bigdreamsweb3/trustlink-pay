@@ -9,11 +9,11 @@ import server
 
 class HiddenHeadAuthorizationTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        self.proof = {"publicInputs": ["01" * 32] * 12, "authorizationCommitment": "02" * 32}
+        self.proof = {"publicInputs": ["01" * 32] * 13, "authorizationCommitment": "02" * 32}
         self.transition = {
             "proof": self.proof, "memoPayload": "mock", "nullifier": "mock-nullifier",
-            "amountBaseUnits": "100", "tokenId": 7, "assetEntry": "mock-asset",
-            "reserveState": "mock-reserve", "tcapConfig": "mock-config",
+            "amountCommitment": "03" * 32, "tokenId": 7, "assetEntry": "mock-asset",
+            "reserveState": "mock-reserve", "tcapConfig": "mock-config", "fundingRootAccount": "mock-funding-root", "accountingEpoch": "mock-epoch",
         }
         expiry = (datetime.now(timezone.utc) + timedelta(seconds=60)).isoformat().replace("+00:00", "Z")
         self.work = {
@@ -25,7 +25,7 @@ class HiddenHeadAuthorizationTests(unittest.IsolatedAsyncioTestCase):
         self.funding = {"id": "mock-funding"}
         self.current = copy.deepcopy(self.work)
         self.lookup = AsyncMock(side_effect=lambda work_id: self.funding if work_id == "mock-funding" else self.current)
-        context = {"nullifier": "mock-nullifier", "depositAmountBaseUnits": "100", "depositAccounts": {"reserveState": "mock-reserve", "config": "mock-config"}}
+        context = {"nullifier": "mock-nullifier", "depositAmountBaseUnits": "100", "depositAccounts": {"reserveState": "mock-reserve", "config": "mock-config", "fundingRootAccount": "mock-funding-root"}}
         asset = {"tokenId": 7, "assetEntry": "mock-asset"}
         patches = {
             "_receiver_work_by_id": self.lookup,
@@ -33,6 +33,7 @@ class HiddenHeadAuthorizationTests(unittest.IsolatedAsyncioTestCase):
             "_assert_tcap_credit_transport_capacity": lambda *_: None,
             "_settlement_funding_context": AsyncMock(return_value=(None, asset, context)),
             "_validate_tcap_credit_digest": lambda *_: None,
+            "read_opening": lambda *_: {"amount":"100","nullifier":"mock-nullifier"},
             "_assert_tcap_gpru_credit_program_preconditions": AsyncMock(),
             "_read_gpru_proof_accounts": AsyncMock(return_value=(self.proof["publicInputs"][5], b"mock-verifier", 252)),
             "prove_hidden_head_credit": AsyncMock(return_value=self.proof),
@@ -47,7 +48,7 @@ class HiddenHeadAuthorizationTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_authorization_matches_receiver_and_cranker_lease_contract(self):
         result = await self.authorize()
-        self.assertEqual(result["kind"], "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V2")
+        self.assertEqual(result["kind"], "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3")
         self.assertEqual(result["transition"], self.transition)
         self.assertEqual(result["leaseId"], "mock-lease")
         self.assertEqual(result["leaseVersion"], 4)

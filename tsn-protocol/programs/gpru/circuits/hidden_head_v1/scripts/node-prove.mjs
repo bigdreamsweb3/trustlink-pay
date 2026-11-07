@@ -53,7 +53,7 @@ try {
     }
   }
   const vk = JSON.parse(await readFile(artifactPaths.verificationKeySha256, "utf8"));
-  if (vk.protocol !== "groth16" || vk.curve !== "bn128" || vk.nPublic !== 12 || vk.IC?.length !== 13) throw new Error("PROVER_VERIFIER_ABI_MISMATCH");
+  if (vk.protocol !== "groth16" || vk.curve !== "bn128" || vk.nPublic !== 13 || vk.IC?.length !== 14) throw new Error("PROVER_VERIFIER_ABI_MISMATCH");
   const verifierBytes = Buffer.concat([g1(vk.vk_alpha_1), g2(vk.vk_beta_2), g2(vk.vk_gamma_2), g2(vk.vk_delta_2), ...vk.IC.map(point => g1(point))]);
   let inputBytes = Buffer.alloc(0);
   for await (const chunk of process.stdin) {
@@ -73,12 +73,12 @@ try {
       pi_a: [a[0], ((baseModulus - BigInt(a[1])) % baseModulus).toString(), "1"],
       pi_b: [[b[1], b[0]], [b[3], b[2]], ["1", "0"]], pi_c: [...c, "1"],
     };
-    if (!Array.isArray(input.publicInputs) || input.publicInputs.length !== 12) throw new Error("INVALID_PUBLIC_INPUTS");
+    if (!Array.isArray(input.publicInputs) || input.publicInputs.length !== 13) throw new Error("INVALID_PUBLIC_INPUTS");
     publicSignals = input.publicInputs.map(value => limbs(value, 32)[0]);
   } else {
     ({ proof, publicSignals } = await snarkjs.groth16.fullProve(input, artifactPaths.witnessWasmSha256, artifactPaths.provingKeySha256));
   }
-  if (publicSignals.length !== 12 || !await snarkjs.groth16.verify(vk, publicSignals, proof)) throw new Error("LOCAL_GROTH16_VERIFICATION_FAILED");
+  if (publicSignals.length !== 13 || !await snarkjs.groth16.verify(vk, publicSignals, proof)) throw new Error("LOCAL_GROTH16_VERIFICATION_FAILED");
   const output = {
     publicInputs: publicSignals.map(value => scalar(value, scalarModulus).toString("hex")),
     // groth16-solana expects -A for its pairing equation.

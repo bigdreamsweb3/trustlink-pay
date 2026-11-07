@@ -9,36 +9,36 @@ use crate::tsn::{
 
 pub const TCAP_PROGRAM_ID: Pubkey = pubkey!("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
 pub const GPRU_PROGRAM_ID: Pubkey = pubkey!("6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR");
-const AUTHORIZATION_DOMAIN: &[u8] = b"TSN_GPRU_TCAP_CREDIT_HIDDEN_HEAD_V1\0";
+const AUTHORIZATION_DOMAIN: &[u8] = b"TSN_GPRU_TCAP_CREDIT_PRIVATE_V2\0";
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
-pub struct HiddenHeadProofArgsV1 {
-    pub public_inputs: [[u8; 32]; 12],
+pub struct HiddenHeadProofArgsV2 {
+    pub public_inputs: [[u8; 32]; 13],
     pub proof_a: [u8; 64],
     pub proof_b: [u8; 128],
     pub proof_c: [u8; 64],
     pub action_kind: u8,
     pub token_id: u32,
-    pub amount: u64,
+    pub amount_commitment: [u8;32],
     pub authorization_commitment: [u8; 32],
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
-pub struct RegisterTcapCreditAuthorizationV2Args {
+pub struct RegisterTcapCreditAuthorizationV3Args {
     pub authorization_digest: [u8; 32],
     pub valid_after_slot: u64,
     pub expires_at_slot: u64,
     pub previous_tcap_root: [u8; 32],
     pub tcap_root_sequence: u64,
     pub token_id: u32,
-    pub amount_base_units: u64,
+    pub amount_commitment: [u8;32],
     pub nullifier: [u8; 32],
-    pub proof: HiddenHeadProofArgsV1,
+    pub proof: HiddenHeadProofArgsV2,
 }
 
 #[derive(Accounts)]
-#[instruction(args: RegisterTcapCreditAuthorizationV2Args)]
-pub struct RegisterTcapCreditAuthorizationV2<'info> {
+#[instruction(args: RegisterTcapCreditAuthorizationV3Args)]
+pub struct RegisterTcapCreditAuthorizationV3<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
     #[account(seeds = [TSN_MOTHER_ESCROW_SEED], bump = mother_escrow.bump, constraint = mother_escrow.authority == authority.key() @ TsnError::Unauthorized)]
@@ -57,7 +57,6 @@ pub struct RegisterTcapCreditAuthorizationV2<'info> {
     #[account(mut)]
     pub commitment_root: UncheckedAccount<'info>,
     /// CHECK: canonical asset reserve; TCAP validates and updates it atomically.
-    #[account(mut)]
     pub reserve_state: UncheckedAccount<'info>,
     /// CHECK: TSN-owned signer PDA derived from the opaque authorization digest.
     pub tcap_authorization_signer: UncheckedAccount<'info>,
@@ -71,23 +70,29 @@ pub struct RegisterTcapCreditAuthorizationV2<'info> {
     /// CHECK: canonical deployed GPRU program.
     #[account(executable, address = GPRU_PROGRAM_ID)]
     pub gpru_program: UncheckedAccount<'info>,
+    /// CHECK: the canonical TCAP funding root is validated by TCAP and GPRU.
+    pub funding_root: UncheckedAccount<'info>,
+    /// CHECK: TCAP validates and appends to its canonical accounting epoch.
+    #[account(mut)]
+    pub epoch: UncheckedAccount<'info>,
+    pub system_program: Program<'info,System>,
 }
 
 pub fn handler(
-    ctx: Context<RegisterTcapCreditAuthorizationV2>,
-    args: RegisterTcapCreditAuthorizationV2Args,
+    ctx: Context<RegisterTcapCreditAuthorizationV3>,
+    args: RegisterTcapCreditAuthorizationV3Args,
 ) -> Result<()> {
     require!(args.authorization_digest != [0; 32] && args.nullifier != [0; 32], TsnError::Unauthorized);
-    require!(args.amount_base_units > 0 && args.token_id > 0, TsnError::Unauthorized);
+    require!(args.amount_commitment != [0;32] && args.token_id > 0, TsnError::Unauthorized);
     require!(args.expires_at_slot >= args.valid_after_slot, TsnError::Unauthorized);
     require!(args.proof.action_kind == 1
         && args.proof.token_id == args.token_id
-        && args.proof.amount == args.amount_base_units
+        && args.proof.amount_commitment == args.amount_commitment
         && args.proof.public_inputs[0] == args.previous_tcap_root
         && args.proof.public_inputs[4] == args.nullifier,
         TsnError::Unauthorized);
     require!(args.proof.authorization_commitment == sha256_to_bn254_scalar(args.authorization_digest), TsnError::Unauthorized);
-    require!(args.authorization_digest == derive_authorization_digest_v2(&args, &ctx.accounts.commitment_root.key()), TsnError::Unauthorized);
+    require!(args.authorization_digest == derive_authorization_digest_v3(&args, &ctx.accounts.commitment_root.key(), &ctx.accounts.epoch.key(), &ctx.accounts.funding_root.key()), TsnError::Unauthorized);
 
     let (expected_signer, bump) = Pubkey::find_program_address(
         &[TSN_TCAP_AUTHORITY_SEED, &args.authorization_digest],
@@ -95,27 +100,27 @@ pub fn handler(
     );
     require_keys_eq!(expected_signer, ctx.accounts.tcap_authorization_signer.key(), TsnError::Unauthorized);
 
-    let tcap_args = tcap::instructions::credit_gpru_memo_v1::CreditGpruMemoV1Args {
+    let tcap_args = tcap::instructions::credit_gpru_memo_v1::CreditGpruMemoV2Args {
         authorization_digest: args.authorization_digest,
         valid_after_slot: args.valid_after_slot,
         expires_at_slot: args.expires_at_slot,
         previous_tcap_root: args.previous_tcap_root,
         tcap_root_sequence: args.tcap_root_sequence,
         token_id: args.token_id,
-        amount: args.amount_base_units,
+        amount_commitment: args.amount_commitment,
         nullifier: args.nullifier,
-        proof: tcap::instructions::credit_gpru_memo_v1::HiddenHeadProofArgsV1 {
+        proof: tcap::instructions::credit_gpru_memo_v1::HiddenHeadProofArgsV2 {
             public_inputs: args.proof.public_inputs,
             proof_a: args.proof.proof_a,
             proof_b: args.proof.proof_b,
             proof_c: args.proof.proof_c,
             action_kind: args.proof.action_kind,
             token_id: args.proof.token_id,
-            amount: args.proof.amount,
+            amount_commitment: args.proof.amount_commitment,
             authorization_commitment: args.proof.authorization_commitment,
         },
     };
-    let mut data = anchor_lang::solana_program::hash::hash(b"global:credit_gpru_memo_v1").to_bytes()[..8].to_vec();
+    let mut data = anchor_lang::solana_program::hash::hash(b"global:credit_gpru_memo_v2").to_bytes()[..8].to_vec();
     data.extend_from_slice(&tcap_args.try_to_vec()?);
     let instruction = Instruction {
         program_id: TCAP_PROGRAM_ID,
@@ -124,13 +129,16 @@ pub fn handler(
             AccountMeta::new_readonly(ctx.accounts.tcap_config.key(), false),
             AccountMeta::new(ctx.accounts.commitment_root.key(), false),
             AccountMeta::new_readonly(ctx.accounts.tcap_asset_entry.key(), false),
-            AccountMeta::new(ctx.accounts.reserve_state.key(), false),
+            AccountMeta::new_readonly(ctx.accounts.reserve_state.key(), false),
             AccountMeta::new_readonly(ctx.accounts.tsn_program.key(), false),
             AccountMeta::new_readonly(ctx.accounts.tcap_authorization_signer.key(), true),
             AccountMeta::new_readonly(ctx.accounts.tip_route_root.key(), false),
             AccountMeta::new_readonly(ctx.accounts.gpru_verifier.key(), false),
             AccountMeta::new_readonly(ctx.accounts.instructions.key(), false),
             AccountMeta::new_readonly(ctx.accounts.gpru_program.key(), false),
+            AccountMeta::new_readonly(ctx.accounts.funding_root.key(), false),
+            AccountMeta::new(ctx.accounts.epoch.key(), false),
+            AccountMeta::new_readonly(ctx.accounts.system_program.key(), false),
         ],
         data,
     };
@@ -148,6 +156,9 @@ pub fn handler(
             ctx.accounts.gpru_verifier.to_account_info(),
             ctx.accounts.instructions.to_account_info(),
             ctx.accounts.gpru_program.to_account_info(),
+            ctx.accounts.funding_root.to_account_info(),
+            ctx.accounts.epoch.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
             ctx.accounts.tcap_program.to_account_info(),
         ],
         &[&[TSN_TCAP_AUTHORITY_SEED, &args.authorization_digest, &[bump]],],
@@ -155,9 +166,9 @@ pub fn handler(
     Ok(())
 }
 
-pub fn derive_authorization_digest_v2(
-    args: &RegisterTcapCreditAuthorizationV2Args,
-    commitment_root: &Pubkey,
+pub fn derive_authorization_digest_v3(
+    args: &RegisterTcapCreditAuthorizationV3Args,
+    commitment_root: &Pubkey, epoch: &Pubkey, funding_pool: &Pubkey,
 ) -> [u8; 32] {
     anchor_lang::solana_program::hash::hashv(&[
         AUTHORIZATION_DOMAIN,
@@ -166,9 +177,12 @@ pub fn derive_authorization_digest_v2(
         &args.tcap_root_sequence.to_le_bytes(),
         &args.valid_after_slot.to_le_bytes(),
         &args.expires_at_slot.to_le_bytes(),
-        &args.amount_base_units.to_le_bytes(),
+        &args.amount_commitment,
         &args.token_id.to_le_bytes(),
         &args.nullifier,
+        &args.proof.public_inputs[12],
+        epoch.as_ref(),
+        funding_pool.as_ref(),
     ]).to_bytes()
 }
 

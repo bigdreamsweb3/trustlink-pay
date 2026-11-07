@@ -106,10 +106,11 @@ class Ref {
   collection(name: string) { return new LocalCollection(`${this.collectionPath}/${this.id}/${name}`); }
 }
 class Query {
-  constructor(private collection: string, private filters: [string, string, unknown][] = [], private order?: [string, string], private max?: number) {}
-  where(field: string, operator: string, value: unknown) { return new Query(this.collection, [...this.filters, [field, operator, value]], this.order, this.max); }
-  orderBy(field: string, direction: string = "asc") { return new Query(this.collection, this.filters, [field, direction], this.max); }
-  limit(value: number) { return new Query(this.collection, this.filters, this.order, value); }
+  constructor(private collection: string, private filters: [string, string, unknown][] = [], private order?: [string, string], private max?: number, private after?: string) {}
+  where(field: string, operator: string, value: unknown) { return new Query(this.collection, [...this.filters, [field, operator, value]], this.order, this.max, this.after); }
+  orderBy(field: string, direction: string = "asc") { return new Query(this.collection, this.filters, [field, direction], this.max, this.after); }
+  limit(value: number) { return new Query(this.collection, this.filters, this.order, value, this.after); }
+  startAfter(snapshot: Snap) { return new Query(this.collection, this.filters, this.order, this.max, snapshot.id); }
   async get() {
     const db = await read();
     let rows = Object.entries(db[this.collection] ?? {}).filter(([, row]) => this.filters.every(([field, operator, value]) => {
@@ -125,8 +126,13 @@ class Query {
     }));
     if (this.order) {
       const [field, direction] = this.order;
-      rows.sort((left, right) => String(left[1][field] ?? "").localeCompare(String(right[1][field] ?? "")) * (direction === "desc" ? -1 : 1));
+      rows.sort((left, right) => {
+        const a=String(field==="__name__" ? left[0] : left[1][field] ?? "");
+        const b=String(field==="__name__" ? right[0] : right[1][field] ?? "");
+        return (a<b ? -1 : a>b ? 1 : 0)*(direction==="desc" ? -1 : 1);
+      });
     }
+    if (this.after) rows=rows.filter(([id])=>id>this.after!);
     if (this.max) rows = rows.slice(0, this.max);
     return new QuerySnap(rows.map(([id, row]) => new Snap(id, row, new Ref(this.collection, id))));
   }

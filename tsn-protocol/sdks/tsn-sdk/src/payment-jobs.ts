@@ -7,6 +7,7 @@ import {
   createSenderPaymentAuthorizationMessage,
 } from "./payment-authorization.js";
 import { verifySenderPaymentAuthorization } from "./payment-authorization-server.js";
+import type { FundingNoteV1 } from "./gpru/funding-note.js";
 
 export type TsnSenderBalance = {
   balance: number;
@@ -14,6 +15,7 @@ export type TsnSenderBalance = {
 };
 
 export async function verifyAuthorizedTsnPaymentRequest(params: {
+  fundingNoteCommitment: string;
   senderWallet: string;
   senderIdentity: string;
   receiverIdentity: string;
@@ -39,6 +41,7 @@ export async function verifyAuthorizedTsnPaymentRequest(params: {
   }
 
   const message = createSenderPaymentAuthorizationMessage({
+    fundingNoteCommitment: params.fundingNoteCommitment,
     senderWallet: params.senderWallet,
     senderIdentity: params.senderIdentity,
     receiverIdentity: params.receiverIdentity,
@@ -88,7 +91,8 @@ export async function createTsnPaymentMempoolJobs(params: {
   senderAuthorizationSignature: string;
   senderAuthorizationNonce: string;
   senderSignedFundingTransaction: string;
-  senderFundingMode: "tcap_deposit_v2";
+  senderFundingMode: "tcap_funded_note_v1";
+  fundingNote: FundingNoteV1;
   senderAuthorizationIssuedAt?: string | null;
   senderAuthorizationExpiresAt?: string | null;
   senderFeeAmount?: number | null;
@@ -114,7 +118,8 @@ export function prepareTsnPaymentMempoolJobRequests(params: {
   senderAuthorizationSignature: string;
   senderAuthorizationNonce: string;
   senderSignedFundingTransaction: string;
-  senderFundingMode: "tcap_deposit_v2";
+  senderFundingMode: "tcap_funded_note_v1";
+  fundingNote: FundingNoteV1;
   senderAuthorizationIssuedAt?: string | null;
   senderAuthorizationExpiresAt?: string | null;
   senderFeeAmount?: number | null;
@@ -137,6 +142,7 @@ export function prepareTsnPaymentMempoolJobRequests(params: {
       senderFeeAmount: params.senderFeeAmount,
       senderSignedFundingTransaction: params.senderSignedFundingTransaction,
       senderFundingMode: params.senderFundingMode,
+      fundingNote: params.fundingNote,
       source: params.source,
     }),
     ...(params.recipientAmount == null ? {} : { recipientAmount: params.recipientAmount }),

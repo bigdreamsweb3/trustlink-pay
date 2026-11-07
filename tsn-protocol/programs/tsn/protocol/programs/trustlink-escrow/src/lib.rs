@@ -127,9 +127,9 @@ pub mod trustlink_escrow {
         tsn::instructions::commit_tin_action_fee(ctx)
     }
 
-    pub fn tsn_register_tcap_credit_authorization_v2(
-        ctx: Context<RegisterTcapCreditAuthorizationV2>,
-        args: RegisterTcapCreditAuthorizationV2Args,
+    pub fn tsn_register_tcap_credit_authorization_v3(
+        ctx: Context<RegisterTcapCreditAuthorizationV3>,
+        args: RegisterTcapCreditAuthorizationV3Args,
     ) -> Result<()> {
         tsn::instructions::register_tcap_credit_authorization_v2::handler(ctx, args)
     }

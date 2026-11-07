@@ -1,10 +1,15 @@
 # Research and experiment register
 
+- [EXP-20261107: private credit and complete epoch accounting](EXP-20261107-private-credit-epoch.md) records current amount commitment/pool/epoch contracts, real local proofs/native verification, offline coordination/recovery and missing SBF/activation/privacy checks.
+
 Experiments preserve observations, failures and conclusions with bounded evidence. They do not infer deployment from a compilation or invent missing dates. Existing research remains at its original paths, with [historical classifications](../../historical-archive/README.md) preventing superseded models from directing current integrations.
 
 - [EXP-20261102: hidden-head development setup reuse](EXP-20261102-hidden-head.md) records matching circuit artifacts, key verification, local proof tests, four program builds and a dated chain preflight.
 - [EXP-20261102: verifier initialization packet limit](EXP-20261102-verifier-initialization.md) records the unusable full-key initializer, its staged replacement, signer/account observations and setup validation.
 - [EXP-20261102: successful staged TIN finalization](EXP-20261102-tin-staged-finalization.md) maps six independently finalized Devnet transactions, account/rent effects and the remaining credit boundary.
+- [EXP-20261102: first finalized native-credit baseline](EXP-20261102-native-credit-baseline.md) maps 93 public fields, the accepted proof/atomic root update, recomputed funding correlation and a protocol for comparing the next credit.
+- [EXP-20261103: native-credit linkability](EXP-20261103-native-credit-linkability.md) reconstructs the actual first credit's public recipient registry/root, verifies fourteen offline correlation controls and assesses the proposed one-transaction/unlinking options.
+- [EXP-20261103: funded-note credit](EXP-20261103-funded-note-credit.md) records the proof-enforced funded membership, exact asset/amount and private-secret nullifier replacement, local tests and pending operator activation.
 - [EXP-20261101: Memo delta binding](EXP-20261101-delta-binding.md) records the source mismatch, the revised circuit relation and remaining verification requirements.
 
 ## Experiment record contract

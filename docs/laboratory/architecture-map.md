@@ -1,6 +1,6 @@
 # Canonical implementation map
 
-**Status: CURRENT source contract, reviewed 2026-11-02.** This map describes the inspected wallet-to-TIN credit components. Build, local-proof, deployment and end-to-end evidence are separate categories. The [dated readiness experiment](experiments/EXP-20261102-hidden-head.md) preserves its pre-deployment observation; the later [successful TIN run](experiments/EXP-20261102-tin-staged-finalization.md) verifies identity creation. The [Cranker transaction map](cranker-transaction-map.md) records confirmed reserve funding, snapshot recovery and the locally tested authorization-envelope correction; native settlement remains unverified.
+**Status: EXPERIMENTAL private-credit replacement, reviewed 2026-11-07.** This map follows the current source contract in [ADR-005](decisions/ADR-005-private-amount-and-adaptive-pools.md) and [credit ABI](credit-abi.md). The [November 7 validation](experiments/EXP-20261107-private-credit-epoch.md) separates offline proof/build checks from unverified SBF, activation and complete live settlement. November 2–5 receipts remain evidence for their historical amount-public ABIs.
 
 ## Repository boundaries
 
@@ -27,8 +27,11 @@ flowchart LR
   M --> T[TCAP credit validation]
   T --> G[GPRU proof verification]
   G --> T
-  T --> S[Atomic root and liability update]
+  T --> S[Atomic head/nullifier root and epoch digest]
   S --> O[Owner Memo recovery and reconciliation]
+  S --> E[Grouped epoch proof prepared by Node]
+  E --> R
+  C --> Q[TCAP and GPRU aggregate liability accounting]
 ```
 
 The Node's HTTP facade accepts application intents and forwards them to Receiver. Receiver owns durable coordination, not private balance authority. Node independently resolves the recipient route and verifies funding. Cranker validates Node's signed execution projection and submits the permitted transaction. Mother authority co-signs the inspected settlement; TCAP calls GPRU as part of its own validation. GPRU does not receive custody of reserve tokens.
@@ -56,30 +59,34 @@ sequenceDiagram
   P-->>C: Confirmed reserve deposit
   C->>R: Report CONFIRMED funding
   R->>R: Make linked settlement eligible for Node verification
+  N->>P: Capture real funding pool via leased Cranker work
+  N->>N: Wait for shared pool release window
   N->>R: Lease settlement
-  N->>P: Read confirmed funding, TIP root, TCAP root and verifier
+  N->>P: Read confirmed funding, TIP root, TCAP state/funding roots and V2 verifier
   N->>N: Reconstruct witness, encrypt Memo, prove and verify locally
   N->>R: Signed VERIFIED execution projection
   C->>R: Claim VERIFIED settlement
   C->>N: Request current-lease settlement authorization / co-signature
   C->>P: Submit TSNP authorization call followed by Memo
   P->>P: TSNP -> TCAP -> GPRU checks
-  P->>P: Advance shared root and liability accounting atomically
+  P->>P: Advance shared root and append blinded epoch transcript
   C->>R: Report terminal CONFIRMED result
   A->>P: Verify signature, account state and owner action history
 ```
 
 The sequence is a source description. The Node cannot prepare a usable settlement without pinned proving artifacts, root-matching witness snapshots and a matching initialized verifier. Receiver pre-creates a settlement reference at funding ingress, but leasing its verification requires confirmed funding. That confirmation does not itself confer settlement authorization.
 
-Node's authorization response binds the exact verified transition to Receiver's current lease ID/version/expiry and includes Cranker's required kind. The earlier incomplete envelope was corrected and tested locally. Missing root-selected snapshots still stop preparation; a guarded authenticated retry can requeue an unsubmitted settlement rejected for missing snapshots or the exact repaired TCAP asset-preflight reason while preserving confirmed funding and requiring fresh Node verification. The diagram describes the source contract, not a completed live credit.
+Node's authorization response binds the exact verified transition to Receiver's current lease ID/version/expiry and includes Cranker's required kind. The earlier incomplete envelope was corrected and tested locally. Node automatically reconstructs missing TIP membership snapshots from confirmed, indexed creation history before proving. Missing TCAP state snapshots or unavailable TIP history still stop preparation; a guarded authenticated retry can requeue an unsubmitted settlement rejected for missing snapshots or the exact repaired TCAP asset-preflight reason while preserving confirmed funding and requiring fresh Node verification. The diagram describes the source contract; the November 5 finalized reference receipt verifies one credit, with owner recovery still a separate check.
 
 ## State and public boundaries
 
 Receiver work uses `RECEIVED`, `NODE_VERIFYING`, `VERIFIED`, `REJECTED`, `CRANKER_LEASED`, `SUBMITTED`, `CONFIRMED`, and `FAILED`. Its `stateVersion`, actor checks and leases control coordination. SDK intent statuses are a separate vocabulary (`pending`, `executed`, `settled`, failure variants); an application must not equate the two sets of strings.
 
-TIP maintains commitment-addressed private identity records, owner recovery accounts and an append-only shared route root. TCAP maintains an asset registry, reserve state, accepted assets and a protocol-wide commitment-root account. Hidden-head credit changes that shared root, not a publicly addressable latest balance per TIN. GPRU's verifier account stores circuit/key commitments and thirteen IC points for twelve public inputs.
+TIP maintains commitment-addressed private identity records, owner recovery accounts and an append-only shared route root. TCAP maintains an asset registry, reserve state, accepted assets, a shared state root and a distinct global funded-note root. A successful `deposit_private_funding_v1` appends a leaf bound to its registered token and observed amount. Hidden-head credit proves that leaf's membership and a deterministic private-secret nullifier before changing the shared state root. GPRU's V2 verifier stores circuit/key commitments and fourteen IC points for thirteen public inputs; the funding root is appended last.
 
-The encrypted Memo remains public transaction instruction data. Action kind, token ID, amount, roots, nullifier, successor point, ciphertext and ephemeral point are public proof/statement fields. Sender funding and wallet endpoints are observable. This is a defined privacy boundary, not proof that metadata can never correlate transactions.
+The [private-credit ABI](credit-abi.md) has one current runtime and separate historical receipt readers. Individual credits use immutable sealed funding roots, so later deposits do not invalidate them. Admission rechecks at least two positive unspent member notes from two wallets at capture; Mother attests those counts. Shared-root or epoch races before signing cause fresh verification; signed attempts require exact receipt reconciliation. Signature-only old deposits lack funded membership and require separate handling.
+
+The credit exposes token, blinded amount commitment, roots, nullifier, successor points and encrypted Memo. Its actual amount is private, and its readonly reserve has no per-credit liability mutation. Separate proof-verified accounting publishes a complete 2–64-credit epoch total; sparse or known-amount pools can still permit inference. Wallet deposits and endpoints remain observable, Node knows openings/routes, and recipient-registry/head correlation requires separate review.
 
 ## Distinct instruction families
 

@@ -33,7 +33,7 @@ Inspect Git status and current file contents before editing. Classify the reques
 
 Read the relevant source, tests, types, account/instruction layouts, configuration names and deployment scripts. Follow the same data through all actors participating in the flow. Identify callers and actual enforcers, not merely exported names. Parse credential-bearing configuration without printing its values. Compare canonical documents and recorded ADR/experiment evidence; a feature description or old discussion does not establish behavior.
 
-For native wallet-to-TIN credit, verify sender message/deposit approval, Receiver ingress and leases, Node funding verification, unchanged Cranker submission, confirmed funding, independent current-root settlement proving, Mother authorization, TSNP → TCAP → GPRU checks, atomic root/liability mutation and owner Memo recovery. Epoch Treasury/AcceptedIntent/Settlement DNA/private payout/refund are a distinct retained family. Do not insert those stages into native credit or infer enabled debit/exit from their source presence.
+For native wallet-to-TIN credit, verify sender message/deposit approval, Receiver ingress and leases, Node funding verification, unchanged Cranker submission, confirmed funding, independent current-root settlement proving, Mother authorization, TSNP → TCAP → GPRU checks, atomic root/epoch-transcript mutation, complete aggregate liability accounting and owner Memo recovery. Epoch Treasury/AcceptedIntent/Settlement DNA/private payout/refund are a distinct retained family. Do not insert those stages into native credit or infer enabled debit/exit from their source presence.
 
 ### 3. Classify each claim
 

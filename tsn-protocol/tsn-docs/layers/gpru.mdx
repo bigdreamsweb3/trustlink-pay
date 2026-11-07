@@ -12,9 +12,10 @@ This gives GPRU a verification role, not custody of funds. **TCAP governs accept
 
 - The submitted private state is the current state for the action.
 - The proposed change follows from that state and the authorized action.
+- A native credit consumes a privately opened funded note whose membership, registered asset, exact amount and secret-derived nullifier are constrained by the circuit.
 - The private identity and state witness need not be disclosed in plaintext to the verifier.
 
-These are the design goals of the hidden-head proof. The proof flow is not currently established as an end-to-end settlement capability, so applications must not present it as an active guarantee.
+Experimental credit uses thirteen public inputs with sealed funding root last, secret-derived nullifier and private-amount commitment binding. A new circuit requires newly matching keys despite retaining the V2 verifier account layout. Separate five-input epoch verification authenticates all 2–64 accepted commitment openings before aggregate accounting. [Proof guide](/developers/groth16-hidden-head) and [operator setup](/operators/run-your-own-tsn) distinguish local real proofs from unverified SBF/activation/live flow.
 
 ## Identity privacy and public-chain visibility
 

@@ -1,4 +1,4 @@
-"""Inspect or requeue one funded settlement after snapshot or TCAP preflight repair.
+"""Inspect or requeue one funded settlement after a supported verification repair.
 
 --execute wakes Node and can lead to Cranker submitting settlement. It never
 resends the deposit. Without --execute all requests are read-only.
@@ -37,7 +37,9 @@ def main():
             raise ValueError("Settlement is not REJECTED at the expected version")
         reason = str((work.get("verification") or {}).get("reason") or "")
         if not (reason.startswith("GPRU_HIDDEN_HEAD_WITNESS_UNAVAILABLE:")
-                or reason == "TCAP settlement asset is unavailable or its reserve binding is invalid"):
+                or reason == "TCAP settlement asset is unavailable or its reserve binding is invalid"
+                or reason == "TCAP_FUNDING_ROOT_CHANGED_BEFORE_SETTLEMENT"
+                or reason == "GPRU transaction record is missing its twelve public hidden-head inputs"):
             raise ValueError("Settlement rejection is outside the repaired-verification retry scope")
         funding_id = str((work.get("payload") or {}).get("intentId") or "")
         if not funding_id:

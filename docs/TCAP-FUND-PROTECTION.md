@@ -11,20 +11,23 @@ flowchart TD
     A[Depositor signs approved-token transfer] --> B[TCAP validates asset, source, vault, and token program]
     B --> C[TCAP transfers tokens and checks exact vault balance delta]
     C --> D[Reserve actual assets increase; funded pending liability increases]
-    D --> E[TSNP authorizes a settlement with the funded amount]
+    D --> E[TSNP authorizes a blinded amount commitment]
     E --> F[GPRU verifies the hidden-state transition proof]
-    F --> G{TCAP checks current root, sequence, pending amount, and aggregate solvency}
-    G -->|Valid| H[Atomically advance shared root and move pending liability to settled liability]
+    F --> G{TCAP checks sealed pool, root, sequence, epoch and solvency}
+    G -->|Valid| H[Advance shared root and blinded epoch transcript]
+    H --> J[Complete grouped epoch proof prepared by Node]
+    J --> K[Receiver leases work; Cranker submits Mother-authorized accounting]
+    K --> L[TCAP and GPRU authenticate total and account once]
     G -->|Invalid| I[Reject transaction; state changes roll back]
 ```
 
-The funding and private credit are distinct protocol actions. Funding places real tokens in the TCAP vault and creates a pending liability. A later credit can convert only an already funded amount from pending liability to settled confidential liability. If the credit proof or any TCAP condition fails, the credit and root update do not commit.
+Funding moves real tokens into the vault and creates funded pending obligations. Individual private credits prove exact funded-note amount/asset membership, consume their nullifiers and atomically advance head/root plus blinded epoch transcript, without tokens moving or liability counters being reclassified. Only a complete separate 2–64-credit epoch proof authenticates the aggregate amount for one pending-to-settled reclassification. Failure rolls back the affected transaction while earlier confirmed deposits remain backed.
 
 ## What TCAP accounts for
 
 For each accepted asset, TCAP's reserve state records the vault's actual token balance and liability categories. The aggregate liability calculation includes funded credits awaiting private settlement, settled confidential liabilities, pending private transfers, authorized withdrawals, and reserved refunds. On the proof-gated GPRU credit path, TCAP rejects the transition if recorded assets do not cover the recognized liability total or if arithmetic overflows.
 
-The key funding rule is **pool-wide and asset-specific**: a credit amount must be no greater than funded pending liabilities for that asset. When accepted, TCAP subtracts that amount from pending liabilities and adds the same amount to settled confidential liabilities, preserving the aggregate obligation while the recipient's private state advances. It does not have to consume a deposit from the same epoch. This allows a valid settlement to complete across an epoch boundary while preserving the reserve-wide solvency limit. TSNP's operator epoch treasury is separate from TCAP's asset reserve; closing that treasury does not, by itself, reconcile TCAP's deposit pool.
+The funding contract combines exact note membership and asset-level backing. TCAP rejects insolvent credit preconditions; GPRU binds private amount to the observed deposit and valid recipient arithmetic. Aggregate epoch proof opens every ordered accepted amount commitment; only that total is subtracted from pending and added to settled confidential liabilities, preserving total obligations and uncredited funding. Native credit epoch is distinct from retained TSNP Epoch Treasury/payout APIs.
 
 The TCAP reserve is not a per-TIN balance ledger. The hidden-head design uses transaction Memo data for encrypted records and a protocol-wide TCAP commitment root for ordered state transitions. It does not require a TCAP balance PDA for each TIN.
 
@@ -34,7 +37,7 @@ GPRU's role is to guard the user's private state as it is presented to TCAP. The
 
 TCAP remains the fund regulator. It validates the approved asset, TSNP authorization, current shared-root sequence, funded liability capacity, and reserve solvency. It then updates the shared root and reserve liability counters in one atomic transaction. GPRU does not custody reserve tokens, and TCAP does not treat a prover's output as a substitute for its own authorization or accounting checks.
 
-Aggregate accounting is a backstop, not a replacement for the proof. If a proof incorrectly allowed a user's hidden balance to be inflated while TCAP recorded only the funded transition amount, the reserve totals would not necessarily reveal that individual mismatch. The circuit and verifier must bind the exact action and amount to the valid predecessor and successor; TCAP must update the corresponding liability by that same amount. A proof that is mathematically valid for an incomplete statement is not sufficient protection.
+Reserve solvency alone cannot prove a recipient balance is correct. Credit proof binds funded note, amount commitment, asset, predecessor and successor arithmetic, while complete epoch proof binds the accounting total to every accepted commitment. Omitting either relation would permit a valid proof for an incomplete statement to pass the wrong obligation boundary. Owner recovery separately validates the encrypted amount opening against that commitment.
 
 ## Failure handling
 
@@ -48,7 +51,7 @@ The same protections apply before a debit or exit can be enabled: GPRU must prov
 
 ## Current implementation boundary
 
-The checked-in TCAP GPRU credit instruction requires the amount to fit within funded pending liabilities, checks aggregate reserve solvency, invokes the GPRU verifier, then advances the shared root and transfers accounting from pending to settled liabilities. The token deposit instruction checks the reserve's recorded balance against the vault before transfer, checks the exact post-transfer delta, and increases actual assets and pending liabilities.
+The experimental replacement checks released sealed pool, asset policy, current root/epoch and reserve solvency, then invokes GPRU before atomically updating shared root/transcript. Individual reserve is readonly. Deposit verifies vault balance/delta and increases assets/pending obligations. Separate epoch accounting invokes its five-input GPRU verifier before aggregate reclassification and replay marking. [Offline evidence](laboratory/experiments/EXP-20261107-private-credit-epoch.md) passed host/proof checks; SBF, activation and full live accounting remain unverified.
 
 The source also contains the proof-shaped hidden-head circuit and verifier integration, but a complete Node witness/prover configuration, matching verifier setup, and end-to-end proof-backed settlement must be established before calling this full protection path operational. Debit and exit remain disabled. See [current architecture](./CURRENT-ARCHITECTURE.md), [TCAP balance transitions and GPRU proof boundary](./TCAP-V2-DEBIT-CREDIT-DESIGN.md), and [GPRU prover and key artifacts](./GROTH16-PROVER-AND-KEY-ARTIFACTS.md).
 

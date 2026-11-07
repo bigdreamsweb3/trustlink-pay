@@ -1,5 +1,6 @@
 import { sha256 } from "@noble/hashes/sha2";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
+import { assertFundingNoteV1, type FundingNoteV1 } from "./gpru/funding-note.js";
 
 export type TsnIntentStatus = "pending" | "onchain" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
 export type TsnUiStage = "intent_pending" | "funded" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";
@@ -36,7 +37,8 @@ export type CreateIntentRequest = {
   senderAuthorizationExpiresAt?: string | null;
   senderFeeAmount?: number | null;
   senderSignedFundingTransaction: string;
-  senderFundingMode: "tcap_deposit_v2";
+  senderFundingMode: "tcap_funded_note_v1";
+  fundingNote: FundingNoteV1;
   recipientAmount?: number;
   source?: string;
   destinationNetwork?: string | null;
@@ -130,7 +132,8 @@ export function buildCreateIntentRequest(params: {
   senderAuthorizationExpiresAt?: string | null;
   senderFeeAmount?: number | null;
   senderSignedFundingTransaction: string;
-  senderFundingMode: "tcap_deposit_v2";
+  senderFundingMode: "tcap_funded_note_v1";
+  fundingNote: FundingNoteV1;
   recipientAmount?: number;
   destinationNetwork?: string | null;
   destinationExecutor?: string | null;
@@ -138,6 +141,7 @@ export function buildCreateIntentRequest(params: {
   settlementRouteId?: string | null;
   source?: string;
 }): CreateIntentRequest {
+  if (params.senderFundingMode !== "tcap_funded_note_v1") throw new Error("TCAP_FUNDED_NOTE_V1_REQUIRED");
   return {
     paymentId: params.paymentId,
     intentSeedHash: sha256Hex(params.paymentId),
@@ -154,6 +158,7 @@ export function buildCreateIntentRequest(params: {
     senderFeeAmount: params.senderFeeAmount,
     senderSignedFundingTransaction: params.senderSignedFundingTransaction,
     senderFundingMode: params.senderFundingMode,
+    fundingNote: assertFundingNoteV1(params.fundingNote),
     recipientAmount: params.recipientAmount,
     destinationNetwork: params.destinationNetwork,
     destinationExecutor: params.destinationExecutor,

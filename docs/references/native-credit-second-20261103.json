@@ -1,0 +1,4752 @@
+{
+  "schema": "TSN_PUBLIC_NATIVE_CREDIT_CAPTURE_V1",
+  "capturedAtUtc": "2026-11-03T10:44:29.711555+00:00",
+  "clusterScope": "caller-configured RPC; baseline observed on Devnet",
+  "signature": "51BRxzXoD3uN8LPfzNSuXuFEs8pr2C9vGPfzwDeL6WhRFvZhP8kzJLzhLsTYww6tMqQEMuinY69xinYmdy3wTbjH",
+  "slot": 518183248,
+  "blockTimeUtc": "2026-11-03T10:18:55+00:00",
+  "finality": "finalized",
+  "meta": {
+    "err": null,
+    "fee": 10000,
+    "computeUnitsConsumed": 780459,
+    "costUnits": 784616,
+    "preTokenBalances": [],
+    "postTokenBalances": [],
+    "rewards": [],
+    "loadedAddresses": {
+      "readonly": [],
+      "writable": []
+    }
+  },
+  "envelope": {
+    "versionMarker": "81",
+    "version": 1,
+    "requiredSignatures": 2,
+    "readonlySigned": 0,
+    "readonlyUnsigned": 11,
+    "configMask": 12,
+    "recentBlockhash": "93XJ42X6YKuft7roTKKVQMDtZmkUEH44DpwDw7fGfN6g",
+    "instructionCount": 2,
+    "addressCount": 15,
+    "computeUnitLimit": 1400000,
+    "loadedAccountBytesLimit": 67108864,
+    "messageBytes": 2845,
+    "wireBytes": 2973,
+    "wireSha256": "fee8e5fbc64a6bec0d417b6dd61351eb6dabf6aa13ff659b7a94ac6e599a65cf",
+    "signatures": [
+      {
+        "index": 0,
+        "signer": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+        "signature": "51BRxzXoD3uN8LPfzNSuXuFEs8pr2C9vGPfzwDeL6WhRFvZhP8kzJLzhLsTYww6tMqQEMuinY69xinYmdy3wTbjH",
+        "wireRange": [
+          2845,
+          2909
+        ]
+      },
+      {
+        "index": 1,
+        "signer": "FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG",
+        "signature": "45qQvrjb1hh5BGKn4TSnxKpQS5CryeaZGf1Lx54xsQRg46b3H463DJxBVjsfcXbnmitPuDK8gE8zbxWyVXwvsH7H",
+        "wireRange": [
+          2909,
+          2973
+        ]
+      }
+    ]
+  },
+  "accounts": [
+    {
+      "index": 0,
+      "address": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+      "isSigner": true,
+      "isWritable": true,
+      "wireRange": [
+        42,
+        74
+      ],
+      "roles": [
+        "crankerFeePayer"
+      ],
+      "lamportsBefore": 9880511480,
+      "lamportsAfter": 9880501480
+    },
+    {
+      "index": 1,
+      "address": "FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG",
+      "isSigner": true,
+      "isWritable": true,
+      "wireRange": [
+        74,
+        106
+      ],
+      "roles": [
+        "motherAuthority"
+      ],
+      "lamportsBefore": 13544185242,
+      "lamportsAfter": 13544185242
+    },
+    {
+      "index": 2,
+      "address": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+      "isSigner": false,
+      "isWritable": true,
+      "wireRange": [
+        106,
+        138
+      ],
+      "roles": [
+        "reserveState"
+      ],
+      "lamportsBefore": 1671320,
+      "lamportsAfter": 1671320
+    },
+    {
+      "index": 3,
+      "address": "ESunnNGeKYHiJx6ECsCUEh95zTVwsmJKRRZBo6vQwWbq",
+      "isSigner": false,
+      "isWritable": true,
+      "wireRange": [
+        138,
+        170
+      ],
+      "roles": [
+        "commitmentRoot"
+      ],
+      "lamportsBefore": 1280160,
+      "lamportsAfter": 1280160
+    },
+    {
+      "index": 4,
+      "address": "4qordCRiPw4XFZcPPK8LLJTCpmugTDDawonpfqvpN9cT",
+      "isSigner": false,
+      "isWritable": false,
+      "wireRange": [
+        170,
+        202
+      ],
+      "roles": [
+        "gpruVerifier"
+      ],
+      "lamportsBefore": 7701280,
+      "lamportsAfter": 7701280
+    },
+    {
+      "index": 5,
+      "address": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+      "isSigner": false,
+      "isWritable": false,
+      "wireRange": [
+        202,
+        234
+      ],
+      "roles": [
+        "tcapConfig"
+      ],
+      "lamportsBefore": 2052320,
+      "lamportsAfter": 2052320
+    },
+    {
+      "index": 6,
+      "address": "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR",
+      "isSigner": false,
+      "isWritable": false,
+      "wireRange": [
+        234,
+        266
+      ],
+      "roles": [
+        "gpruProgram"
+      ],
+      "lamportsBefore": 1000833120,
+      "lamportsAfter": 1000833120
+    },
+    {
+      "index": 7,
+      "address": "AtMjyHVYLyaPd7fpMZbdxLQ24BGyPUmJMD2vppc2Expk",
+      "isSigner": false,
+      "isWritable": false,
+      "wireRange": [
+        266,
+        298
+      ],
+      "roles": [
+        "tipRouteRoot"
+      ],
+      "lamportsBefore": 6065520,
+      "lamportsAfter": 6065520
+    },
+    {
+      "index": 8,
+      "address": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+      "isSigner": false,
+      "isWritable": false,
+      "wireRange": [
+        298,
+        330
+      ],
+      "roles": [
+        "assetEntry"
+      ],
+      "lamportsBefore": 2108200,
+      "lamportsAfter": 2108200
+    },
+    {
+      "index": 9,
+      "address": "ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR",
+      "isSigner": false,
+      "isWritable": false,
+      "wireRange": [
+        330,
+        362
+      ],
+      "roles": [
+        "motherEscrow"
+      ],
+      "lamportsBefore": 1941840,
+      "lamportsAfter": 1941840
+    },
+    {
+      "index": 10,
+      "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
+      "isSigner": false,
+      "isWritable": false,
+      "wireRange": [
+        362,
+        394
+      ],
+      "roles": [
+        "memoProgram"
+      ],
+      "lamportsBefore": 41509619334,
+      "lamportsAfter": 41509619334
+    },
+    {
+      "index": 11,
+      "address": "Sysvar1nstructions1111111111111111111111111",
+      "isSigner": false,
+      "isWritable": false,
+      "wireRange": [
+        394,
+        426
+      ],
+      "roles": [
+        "instructionsSysvar"
+      ],
+      "lamportsBefore": 0,
+      "lamportsAfter": 0
+    },
+    {
+      "index": 12,
+      "address": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+      "isSigner": false,
+      "isWritable": false,
+      "wireRange": [
+        426,
+        458
+      ],
+      "roles": [
+        "tcapProgram"
+      ],
+      "lamportsBefore": 833120,
+      "lamportsAfter": 833120
+    },
+    {
+      "index": 13,
+      "address": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+      "isSigner": false,
+      "isWritable": false,
+      "wireRange": [
+        458,
+        490
+      ],
+      "roles": [
+        "tsnpProgram"
+      ],
+      "lamportsBefore": 1141440,
+      "lamportsAfter": 1141440
+    },
+    {
+      "index": 14,
+      "address": "x32Nra4ZE31cgpfGPrSBdbxHnc4CnRBwLqKPph7h7wJ",
+      "isSigner": false,
+      "isWritable": false,
+      "wireRange": [
+        490,
+        522
+      ],
+      "roles": [
+        "authorizationSigner"
+      ],
+      "lamportsBefore": 0,
+      "lamportsAfter": 0
+    }
+  ],
+  "creditInstruction": {
+    "name": "tsn_register_tcap_credit_authorization_v2",
+    "program": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+    "accountRoles": {
+      "motherAuthority": "FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG",
+      "motherEscrow": "ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR",
+      "tcapProgram": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+      "tsnpProgram": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+      "tcapConfig": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+      "assetEntry": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+      "commitmentRoot": "ESunnNGeKYHiJx6ECsCUEh95zTVwsmJKRRZBo6vQwWbq",
+      "reserveState": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+      "authorizationSigner": "x32Nra4ZE31cgpfGPrSBdbxHnc4CnRBwLqKPph7h7wJ",
+      "tipRouteRoot": "AtMjyHVYLyaPd7fpMZbdxLQ24BGyPUmJMD2vppc2Expk",
+      "gpruVerifier": "4qordCRiPw4XFZcPPK8LLJTCpmugTDDawonpfqvpN9cT",
+      "instructionsSysvar": "Sysvar1nstructions1111111111111111111111111",
+      "gpruProgram": "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR"
+    },
+    "accountIndexes": [
+      1,
+      9,
+      12,
+      13,
+      5,
+      8,
+      3,
+      2,
+      14,
+      7,
+      4,
+      11,
+      6
+    ],
+    "dataBytes": 825,
+    "wireRange": [
+      551,
+      1376
+    ],
+    "fields": {
+      "discriminator": "792f62f65f93ae1a",
+      "authorizationDigest": "20528bdf03480f68a8e33aabdbb5df73ee99aeddfc4f74f4a83bd442c8662aab",
+      "validAfterSlot": 518181537,
+      "expiresAtSlot": 518183537,
+      "previousTcapRoot": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+      "tcapRootSequence": 2,
+      "tokenId": 1,
+      "amountBaseUnits": 1000000,
+      "nullifier": "131a3f1292c8b48210d79f603e3dc4d95f66f3263bda27a93afd5a9bef527e49",
+      "proof": {
+        "oldGlobalRoot": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+        "newGlobalRoot": "21319482611062a035563edb086320102199269126cb81b45dd195312284f9cd",
+        "memoCommitment": "0bb7926e9761060d817a37242b5b39e40cd35a300cc9a21d09d031d8f1042c88",
+        "actionCommitment": "2a9eed0c5034816c2221b23b14baa84e9d8ef835cb034937b86494329e1b3010",
+        "nullifier": "131a3f1292c8b48210d79f603e3dc4d95f66f3263bda27a93afd5a9bef527e49",
+        "tipRouteRoot": "01971b68089c1e95637ee522bd72678df2e7d2c20e5d5fc7354b58122c94e63d",
+        "successorPortfolioRoot": "04f9f629219204ea459ec74e52e6c4d311348d48e479eb4c88dd8087100e7ab2",
+        "successorBalanceX": "19b1c0d0ea19d92b3671b22ddf55ddf41ba881cb6dbc455b82d1534932454e90",
+        "successorBalanceY": "04b7886079eb46866fa142b7abcf33955b701344fb16778b5ae1f207071534b8",
+        "encryptedBlindingDelta": "006aa08f973349e349fa23e54422e1fc392665b34206d2d1013ca8458d8ee8b7",
+        "deltaEphemeralPublicX": "304317a615772922f2f42cf03f0d7331238456e990b0b2384e85a7e834cf4d7d",
+        "deltaEphemeralPublicY": "03a991f6faf61b926eeaa281b134b91fbe5b2a93fb3b45b2d6b0a8da78ce8777",
+        "proofA": "1a1dae5c950c7fad1c431d9112de9153b083aceae3a4bffd68fbe753b4b937f81a787473082d13a8caf862c3140dd3614b3a90be6c2fc2e4623be0396b231794",
+        "proofB": "27fd7408767b2d829203f4718a530c228abed4d2f54fc987d42a5a972cf7c7810a9f3fe774fabb9268711b26a4411ca51677c8f2f0d706569d1fe38490b365ba299533bf536039d32244ff2fa68c9f932eedb4afa555a704365d938e14054ce2004b3030a1ce2405dbad7674fab9f966476ddd609a1ccd0165ca0ec3df934077",
+        "proofC": "0ec998e866faf9fdb98f51d886a756d0d8e74b359111234c155cb46212d696240a203537f795b6b9f8524edef29d9039d601f4bdfb6f881af627f447e65173e6",
+        "actionKind": 1,
+        "tokenId": 1,
+        "amountBaseUnits": 1000000,
+        "authorizationCommitment": "20528bdf03480f68a8e33aabdbb5df73ee99aeddfc4f74f4a83bd442c8662aab"
+      }
+    },
+    "byteRanges": {
+      "discriminator": [
+        0,
+        8
+      ],
+      "authorizationDigest": [
+        8,
+        40
+      ],
+      "validAfterSlot": [
+        40,
+        48
+      ],
+      "expiresAtSlot": [
+        48,
+        56
+      ],
+      "previousTcapRoot": [
+        56,
+        88
+      ],
+      "tcapRootSequence": [
+        88,
+        96
+      ],
+      "tokenId": [
+        96,
+        100
+      ],
+      "amountBaseUnits": [
+        100,
+        108
+      ],
+      "nullifier": [
+        108,
+        140
+      ],
+      "proof": {
+        "oldGlobalRoot": [
+          140,
+          172
+        ],
+        "newGlobalRoot": [
+          172,
+          204
+        ],
+        "memoCommitment": [
+          204,
+          236
+        ],
+        "actionCommitment": [
+          236,
+          268
+        ],
+        "nullifier": [
+          268,
+          300
+        ],
+        "tipRouteRoot": [
+          300,
+          332
+        ],
+        "successorPortfolioRoot": [
+          332,
+          364
+        ],
+        "successorBalanceX": [
+          364,
+          396
+        ],
+        "successorBalanceY": [
+          396,
+          428
+        ],
+        "encryptedBlindingDelta": [
+          428,
+          460
+        ],
+        "deltaEphemeralPublicX": [
+          460,
+          492
+        ],
+        "deltaEphemeralPublicY": [
+          492,
+          524
+        ],
+        "proofA": [
+          524,
+          588
+        ],
+        "proofB": [
+          588,
+          716
+        ],
+        "proofC": [
+          716,
+          780
+        ],
+        "actionKind": [
+          780,
+          781
+        ],
+        "tokenId": [
+          781,
+          785
+        ],
+        "amountBaseUnits": [
+          785,
+          793
+        ],
+        "authorizationCommitment": [
+          793,
+          825
+        ]
+      }
+    }
+  },
+  "memo": {
+    "program": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
+    "accountIndexes": [
+      0
+    ],
+    "wireRange": [
+      1377,
+      2845
+    ],
+    "bytes": 1468,
+    "sha256": "9ce47dc73af5e68aaa6b0847afdf42fb856f130979f5f3d0d5761294c1042c8b",
+    "prefix": "TSN_GPRU_HEAD_V1",
+    "publicFields": {
+      "successorPortfolioRoot": "04f9f629219204ea459ec74e52e6c4d311348d48e479eb4c88dd8087100e7ab2",
+      "successorBalanceX": "19b1c0d0ea19d92b3671b22ddf55ddf41ba881cb6dbc455b82d1534932454e90",
+      "successorBalanceY": "04b7886079eb46866fa142b7abcf33955b701344fb16778b5ae1f207071534b8",
+      "actionCommitment": "2a9eed0c5034816c2221b23b14baa84e9d8ef835cb034937b86494329e1b3010",
+      "encryptedBlindingDelta": "006aa08f973349e349fa23e54422e1fc392665b34206d2d1013ca8458d8ee8b7",
+      "deltaEphemeralPublicX": "304317a615772922f2f42cf03f0d7331238456e990b0b2384e85a7e834cf4d7d",
+      "deltaEphemeralPublicY": "03a991f6faf61b926eeaa281b134b91fbe5b2a93fb3b45b2d6b0a8da78ce8777"
+    },
+    "bodyBase64UrlBytes": 996,
+    "decodedDocumentBytes": 747,
+    "document": {
+      "algorithm": "dbrix-core-secretbox-v1",
+      "compression": "deflate",
+      "dna": "a7b85bf0ba5b3627746b81745fce898ae52c3b5e92c30626a31ca60b391b422d",
+      "recordEphemeralPublicKey": "6e42fcb99013a7e9b9004e0943548ad97c35dc9bc2c1077af5abab607b61e149",
+      "version": 1,
+      "data": {
+        "ciphertextBytes": 338,
+        "sha256": "6fd5948c428290749de72e017eb68b08761315af0fd9777d0c43f4e2b93e92fd"
+      },
+      "nonce": {
+        "bytes": 24,
+        "hex": "102525e2b3bf73dc000778f8cfac8052a4bf6cf46df75c43"
+      }
+    }
+  },
+  "innerInstructions": [
+    {
+      "parentTopLevelInstruction": 0,
+      "stackHeight": 2,
+      "program": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+      "name": "credit_gpru_memo_v1",
+      "accountIndexes": [
+        1,
+        5,
+        3,
+        8,
+        2,
+        13,
+        14,
+        7,
+        4,
+        11,
+        6
+      ],
+      "dataBytes": 825,
+      "fields": {
+        "discriminator": "6ec61448d29cc46a",
+        "authorizationDigest": "20528bdf03480f68a8e33aabdbb5df73ee99aeddfc4f74f4a83bd442c8662aab",
+        "validAfterSlot": 518181537,
+        "expiresAtSlot": 518183537,
+        "previousTcapRoot": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+        "tcapRootSequence": 2,
+        "tokenId": 1,
+        "nullifier": "131a3f1292c8b48210d79f603e3dc4d95f66f3263bda27a93afd5a9bef527e49",
+        "amountBaseUnits": 1000000,
+        "proof": {
+          "oldGlobalRoot": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+          "newGlobalRoot": "21319482611062a035563edb086320102199269126cb81b45dd195312284f9cd",
+          "memoCommitment": "0bb7926e9761060d817a37242b5b39e40cd35a300cc9a21d09d031d8f1042c88",
+          "actionCommitment": "2a9eed0c5034816c2221b23b14baa84e9d8ef835cb034937b86494329e1b3010",
+          "nullifier": "131a3f1292c8b48210d79f603e3dc4d95f66f3263bda27a93afd5a9bef527e49",
+          "tipRouteRoot": "01971b68089c1e95637ee522bd72678df2e7d2c20e5d5fc7354b58122c94e63d",
+          "successorPortfolioRoot": "04f9f629219204ea459ec74e52e6c4d311348d48e479eb4c88dd8087100e7ab2",
+          "successorBalanceX": "19b1c0d0ea19d92b3671b22ddf55ddf41ba881cb6dbc455b82d1534932454e90",
+          "successorBalanceY": "04b7886079eb46866fa142b7abcf33955b701344fb16778b5ae1f207071534b8",
+          "encryptedBlindingDelta": "006aa08f973349e349fa23e54422e1fc392665b34206d2d1013ca8458d8ee8b7",
+          "deltaEphemeralPublicX": "304317a615772922f2f42cf03f0d7331238456e990b0b2384e85a7e834cf4d7d",
+          "deltaEphemeralPublicY": "03a991f6faf61b926eeaa281b134b91fbe5b2a93fb3b45b2d6b0a8da78ce8777",
+          "proofA": "1a1dae5c950c7fad1c431d9112de9153b083aceae3a4bffd68fbe753b4b937f81a787473082d13a8caf862c3140dd3614b3a90be6c2fc2e4623be0396b231794",
+          "proofB": "27fd7408767b2d829203f4718a530c228abed4d2f54fc987d42a5a972cf7c7810a9f3fe774fabb9268711b26a4411ca51677c8f2f0d706569d1fe38490b365ba299533bf536039d32244ff2fa68c9f932eedb4afa555a704365d938e14054ce2004b3030a1ce2405dbad7674fab9f966476ddd609a1ccd0165ca0ec3df934077",
+          "proofC": "0ec998e866faf9fdb98f51d886a756d0d8e74b359111234c155cb46212d696240a203537f795b6b9f8524edef29d9039d601f4bdfb6f881af627f447e65173e6",
+          "actionKind": 1,
+          "tokenId": 1,
+          "amountBaseUnits": 1000000,
+          "authorizationCommitment": "20528bdf03480f68a8e33aabdbb5df73ee99aeddfc4f74f4a83bd442c8662aab"
+        }
+      },
+      "byteRanges": {
+        "discriminator": [
+          0,
+          8
+        ],
+        "authorizationDigest": [
+          8,
+          40
+        ],
+        "validAfterSlot": [
+          40,
+          48
+        ],
+        "expiresAtSlot": [
+          48,
+          56
+        ],
+        "previousTcapRoot": [
+          56,
+          88
+        ],
+        "tcapRootSequence": [
+          88,
+          96
+        ],
+        "tokenId": [
+          96,
+          100
+        ],
+        "nullifier": [
+          100,
+          132
+        ],
+        "amountBaseUnits": [
+          132,
+          140
+        ],
+        "proof": {
+          "oldGlobalRoot": [
+            140,
+            172
+          ],
+          "newGlobalRoot": [
+            172,
+            204
+          ],
+          "memoCommitment": [
+            204,
+            236
+          ],
+          "actionCommitment": [
+            236,
+            268
+          ],
+          "nullifier": [
+            268,
+            300
+          ],
+          "tipRouteRoot": [
+            300,
+            332
+          ],
+          "successorPortfolioRoot": [
+            332,
+            364
+          ],
+          "successorBalanceX": [
+            364,
+            396
+          ],
+          "successorBalanceY": [
+            396,
+            428
+          ],
+          "encryptedBlindingDelta": [
+            428,
+            460
+          ],
+          "deltaEphemeralPublicX": [
+            460,
+            492
+          ],
+          "deltaEphemeralPublicY": [
+            492,
+            524
+          ],
+          "proofA": [
+            524,
+            588
+          ],
+          "proofB": [
+            588,
+            716
+          ],
+          "proofC": [
+            716,
+            780
+          ],
+          "actionKind": [
+            780,
+            781
+          ],
+          "tokenId": [
+            781,
+            785
+          ],
+          "amountBaseUnits": [
+            785,
+            793
+          ],
+          "authorizationCommitment": [
+            793,
+            825
+          ]
+        }
+      }
+    },
+    {
+      "parentTopLevelInstruction": 0,
+      "stackHeight": 3,
+      "program": "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR",
+      "name": "verify_hidden_head_transition_v1",
+      "accountIndexes": [
+        7,
+        3,
+        4,
+        11
+      ],
+      "dataBytes": 693,
+      "fields": {
+        "oldGlobalRoot": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+        "newGlobalRoot": "21319482611062a035563edb086320102199269126cb81b45dd195312284f9cd",
+        "memoCommitment": "0bb7926e9761060d817a37242b5b39e40cd35a300cc9a21d09d031d8f1042c88",
+        "actionCommitment": "2a9eed0c5034816c2221b23b14baa84e9d8ef835cb034937b86494329e1b3010",
+        "nullifier": "131a3f1292c8b48210d79f603e3dc4d95f66f3263bda27a93afd5a9bef527e49",
+        "tipRouteRoot": "01971b68089c1e95637ee522bd72678df2e7d2c20e5d5fc7354b58122c94e63d",
+        "successorPortfolioRoot": "04f9f629219204ea459ec74e52e6c4d311348d48e479eb4c88dd8087100e7ab2",
+        "successorBalanceX": "19b1c0d0ea19d92b3671b22ddf55ddf41ba881cb6dbc455b82d1534932454e90",
+        "successorBalanceY": "04b7886079eb46866fa142b7abcf33955b701344fb16778b5ae1f207071534b8",
+        "encryptedBlindingDelta": "006aa08f973349e349fa23e54422e1fc392665b34206d2d1013ca8458d8ee8b7",
+        "deltaEphemeralPublicX": "304317a615772922f2f42cf03f0d7331238456e990b0b2384e85a7e834cf4d7d",
+        "deltaEphemeralPublicY": "03a991f6faf61b926eeaa281b134b91fbe5b2a93fb3b45b2d6b0a8da78ce8777",
+        "proofA": "1a1dae5c950c7fad1c431d9112de9153b083aceae3a4bffd68fbe753b4b937f81a787473082d13a8caf862c3140dd3614b3a90be6c2fc2e4623be0396b231794",
+        "proofB": "27fd7408767b2d829203f4718a530c228abed4d2f54fc987d42a5a972cf7c7810a9f3fe774fabb9268711b26a4411ca51677c8f2f0d706569d1fe38490b365ba299533bf536039d32244ff2fa68c9f932eedb4afa555a704365d938e14054ce2004b3030a1ce2405dbad7674fab9f966476ddd609a1ccd0165ca0ec3df934077",
+        "proofC": "0ec998e866faf9fdb98f51d886a756d0d8e74b359111234c155cb46212d696240a203537f795b6b9f8524edef29d9039d601f4bdfb6f881af627f447e65173e6",
+        "actionKind": 1,
+        "tokenId": 1,
+        "amountBaseUnits": 1000000,
+        "authorizationCommitment": "20528bdf03480f68a8e33aabdbb5df73ee99aeddfc4f74f4a83bd442c8662aab"
+      },
+      "byteRanges": {
+        "oldGlobalRoot": [
+          8,
+          40
+        ],
+        "newGlobalRoot": [
+          40,
+          72
+        ],
+        "memoCommitment": [
+          72,
+          104
+        ],
+        "actionCommitment": [
+          104,
+          136
+        ],
+        "nullifier": [
+          136,
+          168
+        ],
+        "tipRouteRoot": [
+          168,
+          200
+        ],
+        "successorPortfolioRoot": [
+          200,
+          232
+        ],
+        "successorBalanceX": [
+          232,
+          264
+        ],
+        "successorBalanceY": [
+          264,
+          296
+        ],
+        "encryptedBlindingDelta": [
+          296,
+          328
+        ],
+        "deltaEphemeralPublicX": [
+          328,
+          360
+        ],
+        "deltaEphemeralPublicY": [
+          360,
+          392
+        ],
+        "proofA": [
+          392,
+          456
+        ],
+        "proofB": [
+          456,
+          584
+        ],
+        "proofC": [
+          584,
+          648
+        ],
+        "actionKind": [
+          648,
+          649
+        ],
+        "tokenId": [
+          649,
+          653
+        ],
+        "amountBaseUnits": [
+          653,
+          661
+        ],
+        "authorizationCommitment": [
+          661,
+          693
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "name": "TcapGpruMemoCreditedV1",
+      "discriminator": "7ff47826a2ed1a16",
+      "previousRoot": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+      "currentRoot": "21319482611062a035563edb086320102199269126cb81b45dd195312284f9cd",
+      "settlementSequence": 2,
+      "tokenId": 1,
+      "transitionDigest": "1e03431effed4eb711283ca601dd896c73e63ff8558ebb3a8940ea70d744205c",
+      "dataBytes": 116
+    }
+  ],
+  "executionLogs": [
+    "Program TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V invoke [1]",
+    "Program log: Instruction: TsnRegisterTcapCreditAuthorizationV2",
+    "Program tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF invoke [2]",
+    "Program log: Instruction: CreditGpruMemoV1",
+    "Program 6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR invoke [3]",
+    "Program log: Instruction: VerifyHiddenHeadTransitionV1",
+    "Program log: GPRU hidden-head Groth16 proof verified",
+    "Program 6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR consumed 196279 of 1349224 compute units",
+    "Program 6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR success",
+    "Program tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF consumed 228731 of 1378423 compute units",
+    "Program tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF success",
+    "Program TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V consumed 250744 of 1400000 compute units",
+    "Program TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V success",
+    "Program MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr invoke [1]",
+    "Program log: Signed by ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+    "Program MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr consumed 529715 of 1149256 compute units",
+    "Program MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr success"
+  ],
+  "funding": null,
+  "assetObservation": {
+    "observedContextSlot": 518189665,
+    "registry": "C8XzWaejCD4QfMpjGL8zp8jVhVVMWtaXzusqc98HTJLm",
+    "tokenId": 1,
+    "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+    "domainId": 1,
+    "scope": "b7633ad8df4c8f70bd2779f49e2ba62e4b31d0ac0f8db56649fb570eaf707547",
+    "reserveState": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+    "decimals": 6
+  },
+  "accountDerivations": {
+    "motherEscrow": {
+      "program": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+      "seedBytesHex": [
+        "74736e5f6d6f746865725f657363726f77"
+      ],
+      "bump": 255,
+      "address": "ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR"
+    },
+    "tcapConfig": {
+      "program": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+      "seedBytesHex": [
+        "746361703a676c6f62616c2d636f6e6669673a7631"
+      ],
+      "bump": 251,
+      "address": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa"
+    },
+    "commitmentRoot": {
+      "program": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+      "seedBytesHex": [
+        "746361703a636f6d6d69746d656e742d726f6f743a7631"
+      ],
+      "bump": 255,
+      "address": "ESunnNGeKYHiJx6ECsCUEh95zTVwsmJKRRZBo6vQwWbq"
+    },
+    "tipRouteRoot": {
+      "program": "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
+      "seedBytesHex": [
+        "7469703a726f7574652d6d65726b6c652d726f6f743a7631"
+      ],
+      "bump": 252,
+      "address": "AtMjyHVYLyaPd7fpMZbdxLQ24BGyPUmJMD2vppc2Expk"
+    },
+    "gpruVerifier": {
+      "program": "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR",
+      "seedBytesHex": [
+        "677072753a68696464656e2d686561642d76657269666965723a7631"
+      ],
+      "bump": 255,
+      "address": "4qordCRiPw4XFZcPPK8LLJTCpmugTDDawonpfqvpN9cT"
+    },
+    "authorizationSigner": {
+      "program": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+      "seedBytesHex": [
+        "74736e3a746361702d617574686f72697a6174696f6e3a7631",
+        "20528bdf03480f68a8e33aabdbb5df73ee99aeddfc4f74f4a83bd442c8662aab"
+      ],
+      "bump": 255,
+      "address": "x32Nra4ZE31cgpfGPrSBdbxHnc4CnRBwLqKPph7h7wJ"
+    },
+    "reserveState": {
+      "program": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+      "seedBytesHex": [
+        "746361703a726573657276652d73746174653a7631",
+        "8d0752ad6f6ad2ac3a08521b46e8a74de075af236399afc7ae9e98b01ed4d688"
+      ],
+      "bump": 255,
+      "address": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D"
+    },
+    "assetEntry": {
+      "program": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+      "seedBytesHex": [
+        "746361703a61737365742d656e7472793a7631",
+        "a55eaa034a6fd842f1da4b4706cfee74484ed5205711d838b7bf733f946c11ce",
+        "06ddf6e1d765a193d9cbe146ceeb79ac1cb485ed5f5b37913a8cf5857eff00a9",
+        "3b442cb3912157f13a933d0134282d032b5ffecd01a2dbf1b7790608df002ea7"
+      ],
+      "bump": 255,
+      "address": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67"
+    }
+  },
+  "checks": {
+    "memoPublicFieldsMatchProof": true,
+    "memoScalarHashMatchesProof": true,
+    "oldRootMatchesArgument": true,
+    "nullifierMatchesArgument": true,
+    "proofAmountMatchesArgument": true,
+    "proofTokenMatchesArgument": true,
+    "authorizationScalarMatchesDigest": true,
+    "publicAuthorizationDigestRecomputed": true,
+    "assetTokenAndReserveMatch": true,
+    "pdaMatches:motherEscrow": true,
+    "pdaMatches:tcapConfig": true,
+    "pdaMatches:commitmentRoot": true,
+    "pdaMatches:tipRouteRoot": true,
+    "pdaMatches:gpruVerifier": true,
+    "pdaMatches:authorizationSigner": true,
+    "pdaMatches:reserveState": true,
+    "pdaMatches:assetEntry": true,
+    "tcapCpiFieldsMatchTsnp": true,
+    "gpruCpiProofMatchesTsnp": true,
+    "eventMatchesCreditTransition": true
+  },
+  "privacyScope": "Public chain capture only; no recipient witness, plaintext action record, secret or raw ciphertext persisted",
+  "comparison": {
+    "baselineSignature": "dojfmWVHfNA4AbwHpzQtFQGGUNxASw3rAdUKfhVYYCnfmoVwJDakVdpV7GJFxGu4aSaagXhBDHigcgwTs53gjgQ",
+    "newSignature": "51BRxzXoD3uN8LPfzNSuXuFEs8pr2C9vGPfzwDeL6WhRFvZhP8kzJLzhLsTYww6tMqQEMuinY69xinYmdy3wTbjH",
+    "entries": [
+      {
+        "path": "accountDerivations.assetEntry.address",
+        "before": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+        "after": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.assetEntry.bump",
+        "before": 255,
+        "after": 255,
+        "same": true
+      },
+      {
+        "path": "accountDerivations.assetEntry.program",
+        "before": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+        "after": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.assetEntry.seedBytesHex[0]",
+        "before": "746361703a61737365742d656e7472793a7631",
+        "after": "746361703a61737365742d656e7472793a7631",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.assetEntry.seedBytesHex[1]",
+        "before": "a55eaa034a6fd842f1da4b4706cfee74484ed5205711d838b7bf733f946c11ce",
+        "after": "a55eaa034a6fd842f1da4b4706cfee74484ed5205711d838b7bf733f946c11ce",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.assetEntry.seedBytesHex[2]",
+        "before": "06ddf6e1d765a193d9cbe146ceeb79ac1cb485ed5f5b37913a8cf5857eff00a9",
+        "after": "06ddf6e1d765a193d9cbe146ceeb79ac1cb485ed5f5b37913a8cf5857eff00a9",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.assetEntry.seedBytesHex[3]",
+        "before": "3b442cb3912157f13a933d0134282d032b5ffecd01a2dbf1b7790608df002ea7",
+        "after": "3b442cb3912157f13a933d0134282d032b5ffecd01a2dbf1b7790608df002ea7",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.authorizationSigner.address",
+        "before": "2YTJtK2KoXViuFK29MeD2tJiqTcYx2L51CNUevMMhEDN",
+        "after": "x32Nra4ZE31cgpfGPrSBdbxHnc4CnRBwLqKPph7h7wJ",
+        "same": false
+      },
+      {
+        "path": "accountDerivations.authorizationSigner.bump",
+        "before": 255,
+        "after": 255,
+        "same": true
+      },
+      {
+        "path": "accountDerivations.authorizationSigner.program",
+        "before": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+        "after": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.authorizationSigner.seedBytesHex[0]",
+        "before": "74736e3a746361702d617574686f72697a6174696f6e3a7631",
+        "after": "74736e3a746361702d617574686f72697a6174696f6e3a7631",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.authorizationSigner.seedBytesHex[1]",
+        "before": "7514e0e0c40be774b2843f3fa614815c72491bb5b8bf8f16b96eb0692b7620a4",
+        "after": "20528bdf03480f68a8e33aabdbb5df73ee99aeddfc4f74f4a83bd442c8662aab",
+        "same": false
+      },
+      {
+        "path": "accountDerivations.commitmentRoot.address",
+        "before": "ESunnNGeKYHiJx6ECsCUEh95zTVwsmJKRRZBo6vQwWbq",
+        "after": "ESunnNGeKYHiJx6ECsCUEh95zTVwsmJKRRZBo6vQwWbq",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.commitmentRoot.bump",
+        "before": 255,
+        "after": 255,
+        "same": true
+      },
+      {
+        "path": "accountDerivations.commitmentRoot.program",
+        "before": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+        "after": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.commitmentRoot.seedBytesHex[0]",
+        "before": "746361703a636f6d6d69746d656e742d726f6f743a7631",
+        "after": "746361703a636f6d6d69746d656e742d726f6f743a7631",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.gpruVerifier.address",
+        "before": "4qordCRiPw4XFZcPPK8LLJTCpmugTDDawonpfqvpN9cT",
+        "after": "4qordCRiPw4XFZcPPK8LLJTCpmugTDDawonpfqvpN9cT",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.gpruVerifier.bump",
+        "before": 255,
+        "after": 255,
+        "same": true
+      },
+      {
+        "path": "accountDerivations.gpruVerifier.program",
+        "before": "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR",
+        "after": "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.gpruVerifier.seedBytesHex[0]",
+        "before": "677072753a68696464656e2d686561642d76657269666965723a7631",
+        "after": "677072753a68696464656e2d686561642d76657269666965723a7631",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.motherEscrow.address",
+        "before": "ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR",
+        "after": "ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.motherEscrow.bump",
+        "before": 255,
+        "after": 255,
+        "same": true
+      },
+      {
+        "path": "accountDerivations.motherEscrow.program",
+        "before": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+        "after": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.motherEscrow.seedBytesHex[0]",
+        "before": "74736e5f6d6f746865725f657363726f77",
+        "after": "74736e5f6d6f746865725f657363726f77",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.reserveState.address",
+        "before": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "after": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.reserveState.bump",
+        "before": 255,
+        "after": 255,
+        "same": true
+      },
+      {
+        "path": "accountDerivations.reserveState.program",
+        "before": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+        "after": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.reserveState.seedBytesHex[0]",
+        "before": "746361703a726573657276652d73746174653a7631",
+        "after": "746361703a726573657276652d73746174653a7631",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.reserveState.seedBytesHex[1]",
+        "before": "8d0752ad6f6ad2ac3a08521b46e8a74de075af236399afc7ae9e98b01ed4d688",
+        "after": "8d0752ad6f6ad2ac3a08521b46e8a74de075af236399afc7ae9e98b01ed4d688",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.tcapConfig.address",
+        "before": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+        "after": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.tcapConfig.bump",
+        "before": 251,
+        "after": 251,
+        "same": true
+      },
+      {
+        "path": "accountDerivations.tcapConfig.program",
+        "before": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+        "after": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.tcapConfig.seedBytesHex[0]",
+        "before": "746361703a676c6f62616c2d636f6e6669673a7631",
+        "after": "746361703a676c6f62616c2d636f6e6669673a7631",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.tipRouteRoot.address",
+        "before": "AtMjyHVYLyaPd7fpMZbdxLQ24BGyPUmJMD2vppc2Expk",
+        "after": "AtMjyHVYLyaPd7fpMZbdxLQ24BGyPUmJMD2vppc2Expk",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.tipRouteRoot.bump",
+        "before": 252,
+        "after": 252,
+        "same": true
+      },
+      {
+        "path": "accountDerivations.tipRouteRoot.program",
+        "before": "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
+        "after": "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
+        "same": true
+      },
+      {
+        "path": "accountDerivations.tipRouteRoot.seedBytesHex[0]",
+        "before": "7469703a726f7574652d6d65726b6c652d726f6f743a7631",
+        "after": "7469703a726f7574652d6d65726b6c652d726f6f743a7631",
+        "same": true
+      },
+      {
+        "path": "accounts[0].address",
+        "before": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+        "after": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+        "same": true
+      },
+      {
+        "path": "accounts[0].index",
+        "before": 0,
+        "after": 0,
+        "same": true
+      },
+      {
+        "path": "accounts[0].isSigner",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "accounts[0].isWritable",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "accounts[0].lamportsAfter",
+        "before": 9880511480,
+        "after": 9880501480,
+        "same": false
+      },
+      {
+        "path": "accounts[0].lamportsBefore",
+        "before": 9880521480,
+        "after": 9880511480,
+        "same": false
+      },
+      {
+        "path": "accounts[0].roles[0]",
+        "before": "crankerFeePayer",
+        "after": "crankerFeePayer",
+        "same": true
+      },
+      {
+        "path": "accounts[0].wireRange[0]",
+        "before": 42,
+        "after": 42,
+        "same": true
+      },
+      {
+        "path": "accounts[0].wireRange[1]",
+        "before": 74,
+        "after": 74,
+        "same": true
+      },
+      {
+        "path": "accounts[1].address",
+        "before": "FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG",
+        "after": "FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG",
+        "same": true
+      },
+      {
+        "path": "accounts[1].index",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "accounts[1].isSigner",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "accounts[1].isWritable",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "accounts[1].lamportsAfter",
+        "before": 13544185242,
+        "after": 13544185242,
+        "same": true
+      },
+      {
+        "path": "accounts[1].lamportsBefore",
+        "before": 13544185242,
+        "after": 13544185242,
+        "same": true
+      },
+      {
+        "path": "accounts[1].roles[0]",
+        "before": "motherAuthority",
+        "after": "motherAuthority",
+        "same": true
+      },
+      {
+        "path": "accounts[1].wireRange[0]",
+        "before": 74,
+        "after": 74,
+        "same": true
+      },
+      {
+        "path": "accounts[1].wireRange[1]",
+        "before": 106,
+        "after": 106,
+        "same": true
+      },
+      {
+        "path": "accounts[2].address",
+        "before": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "after": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "same": true
+      },
+      {
+        "path": "accounts[2].index",
+        "before": 2,
+        "after": 2,
+        "same": true
+      },
+      {
+        "path": "accounts[2].isSigner",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[2].isWritable",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "accounts[2].lamportsAfter",
+        "before": 1671320,
+        "after": 1671320,
+        "same": true
+      },
+      {
+        "path": "accounts[2].lamportsBefore",
+        "before": 1671320,
+        "after": 1671320,
+        "same": true
+      },
+      {
+        "path": "accounts[2].roles[0]",
+        "before": "reserveState",
+        "after": "reserveState",
+        "same": true
+      },
+      {
+        "path": "accounts[2].wireRange[0]",
+        "before": 106,
+        "after": 106,
+        "same": true
+      },
+      {
+        "path": "accounts[2].wireRange[1]",
+        "before": 138,
+        "after": 138,
+        "same": true
+      },
+      {
+        "path": "accounts[3].address",
+        "before": "ESunnNGeKYHiJx6ECsCUEh95zTVwsmJKRRZBo6vQwWbq",
+        "after": "ESunnNGeKYHiJx6ECsCUEh95zTVwsmJKRRZBo6vQwWbq",
+        "same": true
+      },
+      {
+        "path": "accounts[3].index",
+        "before": 3,
+        "after": 3,
+        "same": true
+      },
+      {
+        "path": "accounts[3].isSigner",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[3].isWritable",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "accounts[3].lamportsAfter",
+        "before": 1280160,
+        "after": 1280160,
+        "same": true
+      },
+      {
+        "path": "accounts[3].lamportsBefore",
+        "before": 1280160,
+        "after": 1280160,
+        "same": true
+      },
+      {
+        "path": "accounts[3].roles[0]",
+        "before": "commitmentRoot",
+        "after": "commitmentRoot",
+        "same": true
+      },
+      {
+        "path": "accounts[3].wireRange[0]",
+        "before": 138,
+        "after": 138,
+        "same": true
+      },
+      {
+        "path": "accounts[3].wireRange[1]",
+        "before": 170,
+        "after": 170,
+        "same": true
+      },
+      {
+        "path": "accounts[4].address",
+        "before": "2YTJtK2KoXViuFK29MeD2tJiqTcYx2L51CNUevMMhEDN",
+        "after": "4qordCRiPw4XFZcPPK8LLJTCpmugTDDawonpfqvpN9cT",
+        "same": false
+      },
+      {
+        "path": "accounts[4].index",
+        "before": 4,
+        "after": 4,
+        "same": true
+      },
+      {
+        "path": "accounts[4].isSigner",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[4].isWritable",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[4].lamportsAfter",
+        "before": 0,
+        "after": 7701280,
+        "same": false
+      },
+      {
+        "path": "accounts[4].lamportsBefore",
+        "before": 0,
+        "after": 7701280,
+        "same": false
+      },
+      {
+        "path": "accounts[4].roles[0]",
+        "before": "authorizationSigner",
+        "after": "gpruVerifier",
+        "same": false
+      },
+      {
+        "path": "accounts[4].wireRange[0]",
+        "before": 170,
+        "after": 170,
+        "same": true
+      },
+      {
+        "path": "accounts[4].wireRange[1]",
+        "before": 202,
+        "after": 202,
+        "same": true
+      },
+      {
+        "path": "accounts[5].address",
+        "before": "4qordCRiPw4XFZcPPK8LLJTCpmugTDDawonpfqvpN9cT",
+        "after": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+        "same": false
+      },
+      {
+        "path": "accounts[5].index",
+        "before": 5,
+        "after": 5,
+        "same": true
+      },
+      {
+        "path": "accounts[5].isSigner",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[5].isWritable",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[5].lamportsAfter",
+        "before": 7701280,
+        "after": 2052320,
+        "same": false
+      },
+      {
+        "path": "accounts[5].lamportsBefore",
+        "before": 7701280,
+        "after": 2052320,
+        "same": false
+      },
+      {
+        "path": "accounts[5].roles[0]",
+        "before": "gpruVerifier",
+        "after": "tcapConfig",
+        "same": false
+      },
+      {
+        "path": "accounts[5].wireRange[0]",
+        "before": 202,
+        "after": 202,
+        "same": true
+      },
+      {
+        "path": "accounts[5].wireRange[1]",
+        "before": 234,
+        "after": 234,
+        "same": true
+      },
+      {
+        "path": "accounts[6].address",
+        "before": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+        "after": "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR",
+        "same": false
+      },
+      {
+        "path": "accounts[6].index",
+        "before": 6,
+        "after": 6,
+        "same": true
+      },
+      {
+        "path": "accounts[6].isSigner",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[6].isWritable",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[6].lamportsAfter",
+        "before": 2052320,
+        "after": 1000833120,
+        "same": false
+      },
+      {
+        "path": "accounts[6].lamportsBefore",
+        "before": 2052320,
+        "after": 1000833120,
+        "same": false
+      },
+      {
+        "path": "accounts[6].roles[0]",
+        "before": "tcapConfig",
+        "after": "gpruProgram",
+        "same": false
+      },
+      {
+        "path": "accounts[6].wireRange[0]",
+        "before": 234,
+        "after": 234,
+        "same": true
+      },
+      {
+        "path": "accounts[6].wireRange[1]",
+        "before": 266,
+        "after": 266,
+        "same": true
+      },
+      {
+        "path": "accounts[7].address",
+        "before": "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR",
+        "after": "AtMjyHVYLyaPd7fpMZbdxLQ24BGyPUmJMD2vppc2Expk",
+        "same": false
+      },
+      {
+        "path": "accounts[7].index",
+        "before": 7,
+        "after": 7,
+        "same": true
+      },
+      {
+        "path": "accounts[7].isSigner",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[7].isWritable",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[7].lamportsAfter",
+        "before": 1000833120,
+        "after": 6065520,
+        "same": false
+      },
+      {
+        "path": "accounts[7].lamportsBefore",
+        "before": 1000833120,
+        "after": 6065520,
+        "same": false
+      },
+      {
+        "path": "accounts[7].roles[0]",
+        "before": "gpruProgram",
+        "after": "tipRouteRoot",
+        "same": false
+      },
+      {
+        "path": "accounts[7].wireRange[0]",
+        "before": 266,
+        "after": 266,
+        "same": true
+      },
+      {
+        "path": "accounts[7].wireRange[1]",
+        "before": 298,
+        "after": 298,
+        "same": true
+      },
+      {
+        "path": "accounts[8].address",
+        "before": "AtMjyHVYLyaPd7fpMZbdxLQ24BGyPUmJMD2vppc2Expk",
+        "after": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+        "same": false
+      },
+      {
+        "path": "accounts[8].index",
+        "before": 8,
+        "after": 8,
+        "same": true
+      },
+      {
+        "path": "accounts[8].isSigner",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[8].isWritable",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[8].lamportsAfter",
+        "before": 6065520,
+        "after": 2108200,
+        "same": false
+      },
+      {
+        "path": "accounts[8].lamportsBefore",
+        "before": 6065520,
+        "after": 2108200,
+        "same": false
+      },
+      {
+        "path": "accounts[8].roles[0]",
+        "before": "tipRouteRoot",
+        "after": "assetEntry",
+        "same": false
+      },
+      {
+        "path": "accounts[8].wireRange[0]",
+        "before": 298,
+        "after": 298,
+        "same": true
+      },
+      {
+        "path": "accounts[8].wireRange[1]",
+        "before": 330,
+        "after": 330,
+        "same": true
+      },
+      {
+        "path": "accounts[9].address",
+        "before": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+        "after": "ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR",
+        "same": false
+      },
+      {
+        "path": "accounts[9].index",
+        "before": 9,
+        "after": 9,
+        "same": true
+      },
+      {
+        "path": "accounts[9].isSigner",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[9].isWritable",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[9].lamportsAfter",
+        "before": 2108200,
+        "after": 1941840,
+        "same": false
+      },
+      {
+        "path": "accounts[9].lamportsBefore",
+        "before": 2108200,
+        "after": 1941840,
+        "same": false
+      },
+      {
+        "path": "accounts[9].roles[0]",
+        "before": "assetEntry",
+        "after": "motherEscrow",
+        "same": false
+      },
+      {
+        "path": "accounts[9].wireRange[0]",
+        "before": 330,
+        "after": 330,
+        "same": true
+      },
+      {
+        "path": "accounts[9].wireRange[1]",
+        "before": 362,
+        "after": 362,
+        "same": true
+      },
+      {
+        "path": "accounts[10].address",
+        "before": "ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR",
+        "after": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
+        "same": false
+      },
+      {
+        "path": "accounts[10].index",
+        "before": 10,
+        "after": 10,
+        "same": true
+      },
+      {
+        "path": "accounts[10].isSigner",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[10].isWritable",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[10].lamportsAfter",
+        "before": 1941840,
+        "after": 41509619334,
+        "same": false
+      },
+      {
+        "path": "accounts[10].lamportsBefore",
+        "before": 1941840,
+        "after": 41509619334,
+        "same": false
+      },
+      {
+        "path": "accounts[10].roles[0]",
+        "before": "motherEscrow",
+        "after": "memoProgram",
+        "same": false
+      },
+      {
+        "path": "accounts[10].wireRange[0]",
+        "before": 362,
+        "after": 362,
+        "same": true
+      },
+      {
+        "path": "accounts[10].wireRange[1]",
+        "before": 394,
+        "after": 394,
+        "same": true
+      },
+      {
+        "path": "accounts[11].address",
+        "before": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
+        "after": "Sysvar1nstructions1111111111111111111111111",
+        "same": false
+      },
+      {
+        "path": "accounts[11].index",
+        "before": 11,
+        "after": 11,
+        "same": true
+      },
+      {
+        "path": "accounts[11].isSigner",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[11].isWritable",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[11].lamportsAfter",
+        "before": 41509619334,
+        "after": 0,
+        "same": false
+      },
+      {
+        "path": "accounts[11].lamportsBefore",
+        "before": 41509619334,
+        "after": 0,
+        "same": false
+      },
+      {
+        "path": "accounts[11].roles[0]",
+        "before": "memoProgram",
+        "after": "instructionsSysvar",
+        "same": false
+      },
+      {
+        "path": "accounts[11].wireRange[0]",
+        "before": 394,
+        "after": 394,
+        "same": true
+      },
+      {
+        "path": "accounts[11].wireRange[1]",
+        "before": 426,
+        "after": 426,
+        "same": true
+      },
+      {
+        "path": "accounts[12].address",
+        "before": "Sysvar1nstructions1111111111111111111111111",
+        "after": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+        "same": false
+      },
+      {
+        "path": "accounts[12].index",
+        "before": 12,
+        "after": 12,
+        "same": true
+      },
+      {
+        "path": "accounts[12].isSigner",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[12].isWritable",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[12].lamportsAfter",
+        "before": 0,
+        "after": 833120,
+        "same": false
+      },
+      {
+        "path": "accounts[12].lamportsBefore",
+        "before": 0,
+        "after": 833120,
+        "same": false
+      },
+      {
+        "path": "accounts[12].roles[0]",
+        "before": "instructionsSysvar",
+        "after": "tcapProgram",
+        "same": false
+      },
+      {
+        "path": "accounts[12].wireRange[0]",
+        "before": 426,
+        "after": 426,
+        "same": true
+      },
+      {
+        "path": "accounts[12].wireRange[1]",
+        "before": 458,
+        "after": 458,
+        "same": true
+      },
+      {
+        "path": "accounts[13].address",
+        "before": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+        "after": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+        "same": false
+      },
+      {
+        "path": "accounts[13].index",
+        "before": 13,
+        "after": 13,
+        "same": true
+      },
+      {
+        "path": "accounts[13].isSigner",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[13].isWritable",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[13].lamportsAfter",
+        "before": 833120,
+        "after": 1141440,
+        "same": false
+      },
+      {
+        "path": "accounts[13].lamportsBefore",
+        "before": 833120,
+        "after": 1141440,
+        "same": false
+      },
+      {
+        "path": "accounts[13].roles[0]",
+        "before": "tcapProgram",
+        "after": "tsnpProgram",
+        "same": false
+      },
+      {
+        "path": "accounts[13].wireRange[0]",
+        "before": 458,
+        "after": 458,
+        "same": true
+      },
+      {
+        "path": "accounts[13].wireRange[1]",
+        "before": 490,
+        "after": 490,
+        "same": true
+      },
+      {
+        "path": "accounts[14].address",
+        "before": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+        "after": "x32Nra4ZE31cgpfGPrSBdbxHnc4CnRBwLqKPph7h7wJ",
+        "same": false
+      },
+      {
+        "path": "accounts[14].index",
+        "before": 14,
+        "after": 14,
+        "same": true
+      },
+      {
+        "path": "accounts[14].isSigner",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[14].isWritable",
+        "before": false,
+        "after": false,
+        "same": true
+      },
+      {
+        "path": "accounts[14].lamportsAfter",
+        "before": 1141440,
+        "after": 0,
+        "same": false
+      },
+      {
+        "path": "accounts[14].lamportsBefore",
+        "before": 1141440,
+        "after": 0,
+        "same": false
+      },
+      {
+        "path": "accounts[14].roles[0]",
+        "before": "tsnpProgram",
+        "after": "authorizationSigner",
+        "same": false
+      },
+      {
+        "path": "accounts[14].wireRange[0]",
+        "before": 490,
+        "after": 490,
+        "same": true
+      },
+      {
+        "path": "accounts[14].wireRange[1]",
+        "before": 522,
+        "after": 522,
+        "same": true
+      },
+      {
+        "path": "assetObservation.decimals",
+        "before": 6,
+        "after": 6,
+        "same": true
+      },
+      {
+        "path": "assetObservation.domainId",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "assetObservation.mint",
+        "before": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+        "after": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+        "same": true
+      },
+      {
+        "path": "assetObservation.observedContextSlot",
+        "before": 517924796,
+        "after": 518189665,
+        "same": false
+      },
+      {
+        "path": "assetObservation.registry",
+        "before": "C8XzWaejCD4QfMpjGL8zp8jVhVVMWtaXzusqc98HTJLm",
+        "after": "C8XzWaejCD4QfMpjGL8zp8jVhVVMWtaXzusqc98HTJLm",
+        "same": true
+      },
+      {
+        "path": "assetObservation.reserveState",
+        "before": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "after": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "same": true
+      },
+      {
+        "path": "assetObservation.scope",
+        "before": "b7633ad8df4c8f70bd2779f49e2ba62e4b31d0ac0f8db56649fb570eaf707547",
+        "after": "b7633ad8df4c8f70bd2779f49e2ba62e4b31d0ac0f8db56649fb570eaf707547",
+        "same": true
+      },
+      {
+        "path": "assetObservation.tokenId",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "assetObservation.tokenProgram",
+        "before": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        "after": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        "same": true
+      },
+      {
+        "path": "blockTimeUtc",
+        "before": "2026-11-02T16:34:13+00:00",
+        "after": "2026-11-03T10:18:55+00:00",
+        "same": false
+      },
+      {
+        "path": "capturedAtUtc",
+        "before": "2026-11-02T17:02:48.557970+00:00",
+        "after": "2026-11-03T10:44:29.711555+00:00",
+        "same": false
+      },
+      {
+        "path": "checks.assetTokenAndReserveMatch",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.authorizationScalarMatchesDigest",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.bothV1SignaturesVerifiedByReceiptMatcher",
+        "before": true,
+        "after": null,
+        "same": false
+      },
+      {
+        "path": "checks.eventMatchesCreditTransition",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.gpruCpiProofMatchesTsnp",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.memoPublicFieldsMatchProof",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.memoScalarHashMatchesProof",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.nullifierMatchesArgument",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.oldRootMatchesArgument",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.pdaMatches:assetEntry",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.pdaMatches:authorizationSigner",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.pdaMatches:commitmentRoot",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.pdaMatches:gpruVerifier",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.pdaMatches:motherEscrow",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.pdaMatches:reserveState",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.pdaMatches:tcapConfig",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.pdaMatches:tipRouteRoot",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.proofAmountMatchesArgument",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.proofTokenMatchesArgument",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.publicActionCommitmentRecomputed",
+        "before": true,
+        "after": null,
+        "same": false
+      },
+      {
+        "path": "checks.publicAuthorizationDigestRecomputed",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "checks.publicDepositNullifierLinkRecomputed",
+        "before": true,
+        "after": null,
+        "same": false
+      },
+      {
+        "path": "checks.tcapCpiFieldsMatchTsnp",
+        "before": true,
+        "after": true,
+        "same": true
+      },
+      {
+        "path": "clusterScope",
+        "before": "caller-configured RPC; baseline observed on Devnet",
+        "after": "caller-configured RPC; baseline observed on Devnet",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.accountIndexes[0]",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.accountIndexes[1]",
+        "before": 10,
+        "after": 9,
+        "same": false
+      },
+      {
+        "path": "creditInstruction.accountIndexes[2]",
+        "before": 13,
+        "after": 12,
+        "same": false
+      },
+      {
+        "path": "creditInstruction.accountIndexes[3]",
+        "before": 14,
+        "after": 13,
+        "same": false
+      },
+      {
+        "path": "creditInstruction.accountIndexes[4]",
+        "before": 6,
+        "after": 5,
+        "same": false
+      },
+      {
+        "path": "creditInstruction.accountIndexes[5]",
+        "before": 9,
+        "after": 8,
+        "same": false
+      },
+      {
+        "path": "creditInstruction.accountIndexes[6]",
+        "before": 3,
+        "after": 3,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.accountIndexes[7]",
+        "before": 2,
+        "after": 2,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.accountIndexes[8]",
+        "before": 4,
+        "after": 14,
+        "same": false
+      },
+      {
+        "path": "creditInstruction.accountIndexes[9]",
+        "before": 8,
+        "after": 7,
+        "same": false
+      },
+      {
+        "path": "creditInstruction.accountIndexes[10]",
+        "before": 5,
+        "after": 4,
+        "same": false
+      },
+      {
+        "path": "creditInstruction.accountIndexes[11]",
+        "before": 12,
+        "after": 11,
+        "same": false
+      },
+      {
+        "path": "creditInstruction.accountIndexes[12]",
+        "before": 7,
+        "after": 6,
+        "same": false
+      },
+      {
+        "path": "creditInstruction.accountRoles.assetEntry",
+        "before": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+        "after": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.accountRoles.authorizationSigner",
+        "before": "2YTJtK2KoXViuFK29MeD2tJiqTcYx2L51CNUevMMhEDN",
+        "after": "x32Nra4ZE31cgpfGPrSBdbxHnc4CnRBwLqKPph7h7wJ",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.accountRoles.commitmentRoot",
+        "before": "ESunnNGeKYHiJx6ECsCUEh95zTVwsmJKRRZBo6vQwWbq",
+        "after": "ESunnNGeKYHiJx6ECsCUEh95zTVwsmJKRRZBo6vQwWbq",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.accountRoles.gpruProgram",
+        "before": "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR",
+        "after": "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.accountRoles.gpruVerifier",
+        "before": "4qordCRiPw4XFZcPPK8LLJTCpmugTDDawonpfqvpN9cT",
+        "after": "4qordCRiPw4XFZcPPK8LLJTCpmugTDDawonpfqvpN9cT",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.accountRoles.instructionsSysvar",
+        "before": "Sysvar1nstructions1111111111111111111111111",
+        "after": "Sysvar1nstructions1111111111111111111111111",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.accountRoles.motherAuthority",
+        "before": "FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG",
+        "after": "FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.accountRoles.motherEscrow",
+        "before": "ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR",
+        "after": "ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.accountRoles.reserveState",
+        "before": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "after": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.accountRoles.tcapConfig",
+        "before": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+        "after": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.accountRoles.tcapProgram",
+        "before": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+        "after": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.accountRoles.tipRouteRoot",
+        "before": "AtMjyHVYLyaPd7fpMZbdxLQ24BGyPUmJMD2vppc2Expk",
+        "after": "AtMjyHVYLyaPd7fpMZbdxLQ24BGyPUmJMD2vppc2Expk",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.accountRoles.tsnpProgram",
+        "before": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+        "after": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.amountBaseUnits[0]",
+        "before": 100,
+        "after": 100,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.amountBaseUnits[1]",
+        "before": 108,
+        "after": 108,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.authorizationDigest[0]",
+        "before": 8,
+        "after": 8,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.authorizationDigest[1]",
+        "before": 40,
+        "after": 40,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.discriminator[0]",
+        "before": 0,
+        "after": 0,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.discriminator[1]",
+        "before": 8,
+        "after": 8,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.expiresAtSlot[0]",
+        "before": 48,
+        "after": 48,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.expiresAtSlot[1]",
+        "before": 56,
+        "after": 56,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.nullifier[0]",
+        "before": 108,
+        "after": 108,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.nullifier[1]",
+        "before": 140,
+        "after": 140,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.previousTcapRoot[0]",
+        "before": 56,
+        "after": 56,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.previousTcapRoot[1]",
+        "before": 88,
+        "after": 88,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.actionCommitment[0]",
+        "before": 236,
+        "after": 236,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.actionCommitment[1]",
+        "before": 268,
+        "after": 268,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.actionKind[0]",
+        "before": 780,
+        "after": 780,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.actionKind[1]",
+        "before": 781,
+        "after": 781,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.amountBaseUnits[0]",
+        "before": 785,
+        "after": 785,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.amountBaseUnits[1]",
+        "before": 793,
+        "after": 793,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.authorizationCommitment[0]",
+        "before": 793,
+        "after": 793,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.authorizationCommitment[1]",
+        "before": 825,
+        "after": 825,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.deltaEphemeralPublicX[0]",
+        "before": 460,
+        "after": 460,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.deltaEphemeralPublicX[1]",
+        "before": 492,
+        "after": 492,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.deltaEphemeralPublicY[0]",
+        "before": 492,
+        "after": 492,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.deltaEphemeralPublicY[1]",
+        "before": 524,
+        "after": 524,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.encryptedBlindingDelta[0]",
+        "before": 428,
+        "after": 428,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.encryptedBlindingDelta[1]",
+        "before": 460,
+        "after": 460,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.memoCommitment[0]",
+        "before": 204,
+        "after": 204,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.memoCommitment[1]",
+        "before": 236,
+        "after": 236,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.newGlobalRoot[0]",
+        "before": 172,
+        "after": 172,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.newGlobalRoot[1]",
+        "before": 204,
+        "after": 204,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.nullifier[0]",
+        "before": 268,
+        "after": 268,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.nullifier[1]",
+        "before": 300,
+        "after": 300,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.oldGlobalRoot[0]",
+        "before": 140,
+        "after": 140,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.oldGlobalRoot[1]",
+        "before": 172,
+        "after": 172,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.proofA[0]",
+        "before": 524,
+        "after": 524,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.proofA[1]",
+        "before": 588,
+        "after": 588,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.proofB[0]",
+        "before": 588,
+        "after": 588,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.proofB[1]",
+        "before": 716,
+        "after": 716,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.proofC[0]",
+        "before": 716,
+        "after": 716,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.proofC[1]",
+        "before": 780,
+        "after": 780,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.successorBalanceX[0]",
+        "before": 364,
+        "after": 364,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.successorBalanceX[1]",
+        "before": 396,
+        "after": 396,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.successorBalanceY[0]",
+        "before": 396,
+        "after": 396,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.successorBalanceY[1]",
+        "before": 428,
+        "after": 428,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.successorPortfolioRoot[0]",
+        "before": 332,
+        "after": 332,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.successorPortfolioRoot[1]",
+        "before": 364,
+        "after": 364,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.tipRouteRoot[0]",
+        "before": 300,
+        "after": 300,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.tipRouteRoot[1]",
+        "before": 332,
+        "after": 332,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.tokenId[0]",
+        "before": 781,
+        "after": 781,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.proof.tokenId[1]",
+        "before": 785,
+        "after": 785,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.tcapRootSequence[0]",
+        "before": 88,
+        "after": 88,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.tcapRootSequence[1]",
+        "before": 96,
+        "after": 96,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.tokenId[0]",
+        "before": 96,
+        "after": 96,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.tokenId[1]",
+        "before": 100,
+        "after": 100,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.validAfterSlot[0]",
+        "before": 40,
+        "after": 40,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.byteRanges.validAfterSlot[1]",
+        "before": 48,
+        "after": 48,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.dataBytes",
+        "before": 825,
+        "after": 825,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.fields.amountBaseUnits",
+        "before": 100000,
+        "after": 1000000,
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.authorizationDigest",
+        "before": "7514e0e0c40be774b2843f3fa614815c72491bb5b8bf8f16b96eb0692b7620a4",
+        "after": "20528bdf03480f68a8e33aabdbb5df73ee99aeddfc4f74f4a83bd442c8662aab",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.discriminator",
+        "before": "792f62f65f93ae1a",
+        "after": "792f62f65f93ae1a",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.fields.expiresAtSlot",
+        "before": 517918251,
+        "after": 518183537,
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.nullifier",
+        "before": "079eea418f77cc6378099aae819780b7fa5b2265d678b022ce4e24e8ae40366b",
+        "after": "131a3f1292c8b48210d79f603e3dc4d95f66f3263bda27a93afd5a9bef527e49",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.previousTcapRoot",
+        "before": "14935d601de8d6fbd04b084de8f8510dd25b5ed1d80ab5382b8f908dc0734b3a",
+        "after": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.actionCommitment",
+        "before": "2f81e8216e08f638e838fbd46207100635b03bb24a4b77775a6b27afa2c83ae7",
+        "after": "2a9eed0c5034816c2221b23b14baa84e9d8ef835cb034937b86494329e1b3010",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.actionKind",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.fields.proof.amountBaseUnits",
+        "before": 100000,
+        "after": 1000000,
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.authorizationCommitment",
+        "before": "144c43fb01a8a72141e3b3d2a311d0a221e14b24c54cadf431aac5414b7620a2",
+        "after": "20528bdf03480f68a8e33aabdbb5df73ee99aeddfc4f74f4a83bd442c8662aab",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.deltaEphemeralPublicX",
+        "before": "06a00cf572089582eebc0b9e1aed4d1ffc3bf6e3308179c33fb706a581d37393",
+        "after": "304317a615772922f2f42cf03f0d7331238456e990b0b2384e85a7e834cf4d7d",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.deltaEphemeralPublicY",
+        "before": "0141d79442da9da60d690631c8407690b373cdc4e005a2f922fbd7fc89b6de1d",
+        "after": "03a991f6faf61b926eeaa281b134b91fbe5b2a93fb3b45b2d6b0a8da78ce8777",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.encryptedBlindingDelta",
+        "before": "03f05f41b800ee9e6942a787bb03b1733dcf35e48af85d94f68253b38d019975",
+        "after": "006aa08f973349e349fa23e54422e1fc392665b34206d2d1013ca8458d8ee8b7",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.memoCommitment",
+        "before": "236f33517b788cced1252784168c2eaead87eeec27c3a6e61824c685e9cc5662",
+        "after": "0bb7926e9761060d817a37242b5b39e40cd35a300cc9a21d09d031d8f1042c88",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.newGlobalRoot",
+        "before": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+        "after": "21319482611062a035563edb086320102199269126cb81b45dd195312284f9cd",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.nullifier",
+        "before": "079eea418f77cc6378099aae819780b7fa5b2265d678b022ce4e24e8ae40366b",
+        "after": "131a3f1292c8b48210d79f603e3dc4d95f66f3263bda27a93afd5a9bef527e49",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.oldGlobalRoot",
+        "before": "14935d601de8d6fbd04b084de8f8510dd25b5ed1d80ab5382b8f908dc0734b3a",
+        "after": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.proofA",
+        "before": "2b6d016aaa3cb26c10ecab03f45527c573fb7347521a6359ffb9859f00120e63264b6243a1279daa6913637292d0c794a89d8316fb9637436c08903d62990a5f",
+        "after": "1a1dae5c950c7fad1c431d9112de9153b083aceae3a4bffd68fbe753b4b937f81a787473082d13a8caf862c3140dd3614b3a90be6c2fc2e4623be0396b231794",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.proofB",
+        "before": "2b50c949c53d3abaecd21111444001ad449ea4a44c0a9637cbf93d56158a0f071bebd1b9f65ea9b65b6cdadae132c947367d5e35d8434f04d9abe079de0ac97719a72c6ac6836e3f9a9d0e712c310da16009db09cc9aad4682d962caa75f189d2f4464d31ddf6bc1877b69ff813fa6dac663d3df5e5f333d9ae6f4b416ee1ba5",
+        "after": "27fd7408767b2d829203f4718a530c228abed4d2f54fc987d42a5a972cf7c7810a9f3fe774fabb9268711b26a4411ca51677c8f2f0d706569d1fe38490b365ba299533bf536039d32244ff2fa68c9f932eedb4afa555a704365d938e14054ce2004b3030a1ce2405dbad7674fab9f966476ddd609a1ccd0165ca0ec3df934077",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.proofC",
+        "before": "2fe543cae834fc3410fe3087a62141fbe9530d442d685fe5eacd4835f7065d6f1cfabbce54d7fbc95d3891b02df889f14196cabbfde3796208213af32bdeaaf2",
+        "after": "0ec998e866faf9fdb98f51d886a756d0d8e74b359111234c155cb46212d696240a203537f795b6b9f8524edef29d9039d601f4bdfb6f881af627f447e65173e6",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.successorBalanceX",
+        "before": "1261e1a0d3ca1577f4bfcf29733c6915ecbdfcdb86581feb5489f30ea5496c9e",
+        "after": "19b1c0d0ea19d92b3671b22ddf55ddf41ba881cb6dbc455b82d1534932454e90",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.successorBalanceY",
+        "before": "24f742aad55d571c399a71b87b45329be06c86f31acab0dc542ab7731ded476d",
+        "after": "04b7886079eb46866fa142b7abcf33955b701344fb16778b5ae1f207071534b8",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.successorPortfolioRoot",
+        "before": "295274faeb79b0833727af6c4eeccb86da3c9d31ef1c9bfe2b25ce22c3d0cff2",
+        "after": "04f9f629219204ea459ec74e52e6c4d311348d48e479eb4c88dd8087100e7ab2",
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.proof.tipRouteRoot",
+        "before": "01971b68089c1e95637ee522bd72678df2e7d2c20e5d5fc7354b58122c94e63d",
+        "after": "01971b68089c1e95637ee522bd72678df2e7d2c20e5d5fc7354b58122c94e63d",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.fields.proof.tokenId",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.fields.tcapRootSequence",
+        "before": 1,
+        "after": 2,
+        "same": false
+      },
+      {
+        "path": "creditInstruction.fields.tokenId",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.fields.validAfterSlot",
+        "before": 517916251,
+        "after": 518181537,
+        "same": false
+      },
+      {
+        "path": "creditInstruction.name",
+        "before": "tsn_register_tcap_credit_authorization_v2",
+        "after": "tsn_register_tcap_credit_authorization_v2",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.program",
+        "before": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+        "after": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+        "same": true
+      },
+      {
+        "path": "creditInstruction.wireRange[0]",
+        "before": 551,
+        "after": 551,
+        "same": true
+      },
+      {
+        "path": "creditInstruction.wireRange[1]",
+        "before": 1376,
+        "after": 1376,
+        "same": true
+      },
+      {
+        "path": "envelope.addressCount",
+        "before": 15,
+        "after": 15,
+        "same": true
+      },
+      {
+        "path": "envelope.computeUnitLimit",
+        "before": 1400000,
+        "after": 1400000,
+        "same": true
+      },
+      {
+        "path": "envelope.configMask",
+        "before": 12,
+        "after": 12,
+        "same": true
+      },
+      {
+        "path": "envelope.instructionCount",
+        "before": 2,
+        "after": 2,
+        "same": true
+      },
+      {
+        "path": "envelope.loadedAccountBytesLimit",
+        "before": 67108864,
+        "after": 67108864,
+        "same": true
+      },
+      {
+        "path": "envelope.messageBytes",
+        "before": 2781,
+        "after": 2845,
+        "same": false
+      },
+      {
+        "path": "envelope.readonlySigned",
+        "before": 0,
+        "after": 0,
+        "same": true
+      },
+      {
+        "path": "envelope.readonlyUnsigned",
+        "before": 11,
+        "after": 11,
+        "same": true
+      },
+      {
+        "path": "envelope.recentBlockhash",
+        "before": "AtkG8sQA1UAYPyb9Gmugkv2ej2EfJwGDXBaGfUCPu2zu",
+        "after": "93XJ42X6YKuft7roTKKVQMDtZmkUEH44DpwDw7fGfN6g",
+        "same": false
+      },
+      {
+        "path": "envelope.requiredSignatures",
+        "before": 2,
+        "after": 2,
+        "same": true
+      },
+      {
+        "path": "envelope.signatures[0].index",
+        "before": 0,
+        "after": 0,
+        "same": true
+      },
+      {
+        "path": "envelope.signatures[0].signature",
+        "before": "dojfmWVHfNA4AbwHpzQtFQGGUNxASw3rAdUKfhVYYCnfmoVwJDakVdpV7GJFxGu4aSaagXhBDHigcgwTs53gjgQ",
+        "after": "51BRxzXoD3uN8LPfzNSuXuFEs8pr2C9vGPfzwDeL6WhRFvZhP8kzJLzhLsTYww6tMqQEMuinY69xinYmdy3wTbjH",
+        "same": false
+      },
+      {
+        "path": "envelope.signatures[0].signer",
+        "before": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+        "after": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+        "same": true
+      },
+      {
+        "path": "envelope.signatures[0].wireRange[0]",
+        "before": 2781,
+        "after": 2845,
+        "same": false
+      },
+      {
+        "path": "envelope.signatures[0].wireRange[1]",
+        "before": 2845,
+        "after": 2909,
+        "same": false
+      },
+      {
+        "path": "envelope.signatures[1].index",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "envelope.signatures[1].signature",
+        "before": "3kSwqVCvqveA2TKYdybbrEuoQCAvyfw6sywakpK7iivHUHpPC5uqznQVrv1EowkPqxtuAZm3DnN75pDN9eZQVWyv",
+        "after": "45qQvrjb1hh5BGKn4TSnxKpQS5CryeaZGf1Lx54xsQRg46b3H463DJxBVjsfcXbnmitPuDK8gE8zbxWyVXwvsH7H",
+        "same": false
+      },
+      {
+        "path": "envelope.signatures[1].signer",
+        "before": "FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG",
+        "after": "FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG",
+        "same": true
+      },
+      {
+        "path": "envelope.signatures[1].wireRange[0]",
+        "before": 2845,
+        "after": 2909,
+        "same": false
+      },
+      {
+        "path": "envelope.signatures[1].wireRange[1]",
+        "before": 2909,
+        "after": 2973,
+        "same": false
+      },
+      {
+        "path": "envelope.version",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "envelope.versionMarker",
+        "before": "81",
+        "after": "81",
+        "same": true
+      },
+      {
+        "path": "envelope.wireBytes",
+        "before": 2909,
+        "after": 2973,
+        "same": false
+      },
+      {
+        "path": "envelope.wireSha256",
+        "before": "0e8052246b0850bdc084bb44da7a4e9b19ecefdba0ba9413fd5dde0fd7161218",
+        "after": "fee8e5fbc64a6bec0d417b6dd61351eb6dabf6aa13ff659b7a94ac6e599a65cf",
+        "same": false
+      },
+      {
+        "path": "events[0].currentRoot",
+        "before": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+        "after": "21319482611062a035563edb086320102199269126cb81b45dd195312284f9cd",
+        "same": false
+      },
+      {
+        "path": "events[0].dataBytes",
+        "before": 116,
+        "after": 116,
+        "same": true
+      },
+      {
+        "path": "events[0].discriminator",
+        "before": "7ff47826a2ed1a16",
+        "after": "7ff47826a2ed1a16",
+        "same": true
+      },
+      {
+        "path": "events[0].name",
+        "before": "TcapGpruMemoCreditedV1",
+        "after": "TcapGpruMemoCreditedV1",
+        "same": true
+      },
+      {
+        "path": "events[0].previousRoot",
+        "before": "14935d601de8d6fbd04b084de8f8510dd25b5ed1d80ab5382b8f908dc0734b3a",
+        "after": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+        "same": false
+      },
+      {
+        "path": "events[0].settlementSequence",
+        "before": 1,
+        "after": 2,
+        "same": false
+      },
+      {
+        "path": "events[0].tokenId",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "events[0].transitionDigest",
+        "before": "249f4ace377839abc7b6673128c6516aef900b19c62d74aa8bf28fde3a393b86",
+        "after": "1e03431effed4eb711283ca601dd896c73e63ff8558ebb3a8940ea70d744205c",
+        "same": false
+      },
+      {
+        "path": "executionLogs[0]",
+        "before": "Program TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V invoke [1]",
+        "after": "Program TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V invoke [1]",
+        "same": true
+      },
+      {
+        "path": "executionLogs[1]",
+        "before": "Program log: Instruction: TsnRegisterTcapCreditAuthorizationV2",
+        "after": "Program log: Instruction: TsnRegisterTcapCreditAuthorizationV2",
+        "same": true
+      },
+      {
+        "path": "executionLogs[2]",
+        "before": "Program tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF invoke [2]",
+        "after": "Program tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF invoke [2]",
+        "same": true
+      },
+      {
+        "path": "executionLogs[3]",
+        "before": "Program log: Instruction: CreditGpruMemoV1",
+        "after": "Program log: Instruction: CreditGpruMemoV1",
+        "same": true
+      },
+      {
+        "path": "executionLogs[4]",
+        "before": "Program 6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR invoke [3]",
+        "after": "Program 6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR invoke [3]",
+        "same": true
+      },
+      {
+        "path": "executionLogs[5]",
+        "before": "Program log: Instruction: VerifyHiddenHeadTransitionV1",
+        "after": "Program log: Instruction: VerifyHiddenHeadTransitionV1",
+        "same": true
+      },
+      {
+        "path": "executionLogs[6]",
+        "before": "Program log: GPRU hidden-head Groth16 proof verified",
+        "after": "Program log: GPRU hidden-head Groth16 proof verified",
+        "same": true
+      },
+      {
+        "path": "executionLogs[7]",
+        "before": "Program 6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR consumed 195538 of 1346086 compute units",
+        "after": "Program 6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR consumed 196279 of 1349224 compute units",
+        "same": false
+      },
+      {
+        "path": "executionLogs[8]",
+        "before": "Program 6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR success",
+        "after": "Program 6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR success",
+        "same": true
+      },
+      {
+        "path": "executionLogs[9]",
+        "before": "Program tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF consumed 229559 of 1376854 compute units",
+        "after": "Program tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF consumed 228731 of 1378423 compute units",
+        "same": false
+      },
+      {
+        "path": "executionLogs[10]",
+        "before": "Program tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF success",
+        "after": "Program tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF success",
+        "same": true
+      },
+      {
+        "path": "executionLogs[11]",
+        "before": "Program TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V consumed 253141 of 1400000 compute units",
+        "after": "Program TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V consumed 250744 of 1400000 compute units",
+        "same": false
+      },
+      {
+        "path": "executionLogs[12]",
+        "before": "Program TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V success",
+        "after": "Program TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V success",
+        "same": true
+      },
+      {
+        "path": "executionLogs[13]",
+        "before": "Program MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr invoke [1]",
+        "after": "Program MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr invoke [1]",
+        "same": true
+      },
+      {
+        "path": "executionLogs[14]",
+        "before": "Program log: Signed by ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+        "after": "Program log: Signed by ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+        "same": true
+      },
+      {
+        "path": "executionLogs[15]",
+        "before": "Program MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr consumed 507295 of 1146859 compute units",
+        "after": "Program MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr consumed 529715 of 1149256 compute units",
+        "same": false
+      },
+      {
+        "path": "executionLogs[16]",
+        "before": "Program MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr success",
+        "after": "Program MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr success",
+        "same": true
+      },
+      {
+        "path": "finality",
+        "before": "finalized",
+        "after": "finalized",
+        "same": true
+      },
+      {
+        "path": "funding",
+        "before": {
+          "signature": "5HyuhK9HA56cwwtbykeTQLKRT6FNwQqeg4Ncb52zdkNwAKUEWpyZtzvMzDqWVtyWXejMShQu7utgJ5566nvZJN7o",
+          "slot": 517892485,
+          "nullifierRecomputed": "079eea418f77cc6378099aae819780b7fa5b2265d678b022ce4e24e8ae40366b",
+          "feePayer": "CPyxfZ4pshNvZr18t8wH9zqidBNzFjqGcNrQm5tG3XiV"
+        },
+        "after": null,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].accountIndexes[0]",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].accountIndexes[1]",
+        "before": 6,
+        "after": 5,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].accountIndexes[2]",
+        "before": 3,
+        "after": 3,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].accountIndexes[3]",
+        "before": 9,
+        "after": 8,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].accountIndexes[4]",
+        "before": 2,
+        "after": 2,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].accountIndexes[5]",
+        "before": 14,
+        "after": 13,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].accountIndexes[6]",
+        "before": 4,
+        "after": 14,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].accountIndexes[7]",
+        "before": 8,
+        "after": 7,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].accountIndexes[8]",
+        "before": 5,
+        "after": 4,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].accountIndexes[9]",
+        "before": 12,
+        "after": 11,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].accountIndexes[10]",
+        "before": 7,
+        "after": 6,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.amountBaseUnits[0]",
+        "before": 132,
+        "after": 132,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.amountBaseUnits[1]",
+        "before": 140,
+        "after": 140,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.authorizationDigest[0]",
+        "before": 8,
+        "after": 8,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.authorizationDigest[1]",
+        "before": 40,
+        "after": 40,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.discriminator[0]",
+        "before": 0,
+        "after": 0,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.discriminator[1]",
+        "before": 8,
+        "after": 8,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.expiresAtSlot[0]",
+        "before": 48,
+        "after": 48,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.expiresAtSlot[1]",
+        "before": 56,
+        "after": 56,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.nullifier[0]",
+        "before": 100,
+        "after": 100,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.nullifier[1]",
+        "before": 132,
+        "after": 132,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.previousTcapRoot[0]",
+        "before": 56,
+        "after": 56,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.previousTcapRoot[1]",
+        "before": 88,
+        "after": 88,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.actionCommitment[0]",
+        "before": 236,
+        "after": 236,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.actionCommitment[1]",
+        "before": 268,
+        "after": 268,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.actionKind[0]",
+        "before": 780,
+        "after": 780,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.actionKind[1]",
+        "before": 781,
+        "after": 781,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.amountBaseUnits[0]",
+        "before": 785,
+        "after": 785,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.amountBaseUnits[1]",
+        "before": 793,
+        "after": 793,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.authorizationCommitment[0]",
+        "before": 793,
+        "after": 793,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.authorizationCommitment[1]",
+        "before": 825,
+        "after": 825,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.deltaEphemeralPublicX[0]",
+        "before": 460,
+        "after": 460,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.deltaEphemeralPublicX[1]",
+        "before": 492,
+        "after": 492,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.deltaEphemeralPublicY[0]",
+        "before": 492,
+        "after": 492,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.deltaEphemeralPublicY[1]",
+        "before": 524,
+        "after": 524,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.encryptedBlindingDelta[0]",
+        "before": 428,
+        "after": 428,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.encryptedBlindingDelta[1]",
+        "before": 460,
+        "after": 460,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.memoCommitment[0]",
+        "before": 204,
+        "after": 204,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.memoCommitment[1]",
+        "before": 236,
+        "after": 236,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.newGlobalRoot[0]",
+        "before": 172,
+        "after": 172,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.newGlobalRoot[1]",
+        "before": 204,
+        "after": 204,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.nullifier[0]",
+        "before": 268,
+        "after": 268,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.nullifier[1]",
+        "before": 300,
+        "after": 300,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.oldGlobalRoot[0]",
+        "before": 140,
+        "after": 140,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.oldGlobalRoot[1]",
+        "before": 172,
+        "after": 172,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.proofA[0]",
+        "before": 524,
+        "after": 524,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.proofA[1]",
+        "before": 588,
+        "after": 588,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.proofB[0]",
+        "before": 588,
+        "after": 588,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.proofB[1]",
+        "before": 716,
+        "after": 716,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.proofC[0]",
+        "before": 716,
+        "after": 716,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.proofC[1]",
+        "before": 780,
+        "after": 780,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.successorBalanceX[0]",
+        "before": 364,
+        "after": 364,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.successorBalanceX[1]",
+        "before": 396,
+        "after": 396,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.successorBalanceY[0]",
+        "before": 396,
+        "after": 396,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.successorBalanceY[1]",
+        "before": 428,
+        "after": 428,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.successorPortfolioRoot[0]",
+        "before": 332,
+        "after": 332,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.successorPortfolioRoot[1]",
+        "before": 364,
+        "after": 364,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.tipRouteRoot[0]",
+        "before": 300,
+        "after": 300,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.tipRouteRoot[1]",
+        "before": 332,
+        "after": 332,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.tokenId[0]",
+        "before": 781,
+        "after": 781,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.proof.tokenId[1]",
+        "before": 785,
+        "after": 785,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.tcapRootSequence[0]",
+        "before": 88,
+        "after": 88,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.tcapRootSequence[1]",
+        "before": 96,
+        "after": 96,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.tokenId[0]",
+        "before": 96,
+        "after": 96,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.tokenId[1]",
+        "before": 100,
+        "after": 100,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.validAfterSlot[0]",
+        "before": 40,
+        "after": 40,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].byteRanges.validAfterSlot[1]",
+        "before": 48,
+        "after": 48,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].dataBytes",
+        "before": 825,
+        "after": 825,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].fields.amountBaseUnits",
+        "before": 100000,
+        "after": 1000000,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.authorizationDigest",
+        "before": "7514e0e0c40be774b2843f3fa614815c72491bb5b8bf8f16b96eb0692b7620a4",
+        "after": "20528bdf03480f68a8e33aabdbb5df73ee99aeddfc4f74f4a83bd442c8662aab",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.discriminator",
+        "before": "6ec61448d29cc46a",
+        "after": "6ec61448d29cc46a",
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].fields.expiresAtSlot",
+        "before": 517918251,
+        "after": 518183537,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.nullifier",
+        "before": "079eea418f77cc6378099aae819780b7fa5b2265d678b022ce4e24e8ae40366b",
+        "after": "131a3f1292c8b48210d79f603e3dc4d95f66f3263bda27a93afd5a9bef527e49",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.previousTcapRoot",
+        "before": "14935d601de8d6fbd04b084de8f8510dd25b5ed1d80ab5382b8f908dc0734b3a",
+        "after": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.actionCommitment",
+        "before": "2f81e8216e08f638e838fbd46207100635b03bb24a4b77775a6b27afa2c83ae7",
+        "after": "2a9eed0c5034816c2221b23b14baa84e9d8ef835cb034937b86494329e1b3010",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.actionKind",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.amountBaseUnits",
+        "before": 100000,
+        "after": 1000000,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.authorizationCommitment",
+        "before": "144c43fb01a8a72141e3b3d2a311d0a221e14b24c54cadf431aac5414b7620a2",
+        "after": "20528bdf03480f68a8e33aabdbb5df73ee99aeddfc4f74f4a83bd442c8662aab",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.deltaEphemeralPublicX",
+        "before": "06a00cf572089582eebc0b9e1aed4d1ffc3bf6e3308179c33fb706a581d37393",
+        "after": "304317a615772922f2f42cf03f0d7331238456e990b0b2384e85a7e834cf4d7d",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.deltaEphemeralPublicY",
+        "before": "0141d79442da9da60d690631c8407690b373cdc4e005a2f922fbd7fc89b6de1d",
+        "after": "03a991f6faf61b926eeaa281b134b91fbe5b2a93fb3b45b2d6b0a8da78ce8777",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.encryptedBlindingDelta",
+        "before": "03f05f41b800ee9e6942a787bb03b1733dcf35e48af85d94f68253b38d019975",
+        "after": "006aa08f973349e349fa23e54422e1fc392665b34206d2d1013ca8458d8ee8b7",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.memoCommitment",
+        "before": "236f33517b788cced1252784168c2eaead87eeec27c3a6e61824c685e9cc5662",
+        "after": "0bb7926e9761060d817a37242b5b39e40cd35a300cc9a21d09d031d8f1042c88",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.newGlobalRoot",
+        "before": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+        "after": "21319482611062a035563edb086320102199269126cb81b45dd195312284f9cd",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.nullifier",
+        "before": "079eea418f77cc6378099aae819780b7fa5b2265d678b022ce4e24e8ae40366b",
+        "after": "131a3f1292c8b48210d79f603e3dc4d95f66f3263bda27a93afd5a9bef527e49",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.oldGlobalRoot",
+        "before": "14935d601de8d6fbd04b084de8f8510dd25b5ed1d80ab5382b8f908dc0734b3a",
+        "after": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.proofA",
+        "before": "2b6d016aaa3cb26c10ecab03f45527c573fb7347521a6359ffb9859f00120e63264b6243a1279daa6913637292d0c794a89d8316fb9637436c08903d62990a5f",
+        "after": "1a1dae5c950c7fad1c431d9112de9153b083aceae3a4bffd68fbe753b4b937f81a787473082d13a8caf862c3140dd3614b3a90be6c2fc2e4623be0396b231794",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.proofB",
+        "before": "2b50c949c53d3abaecd21111444001ad449ea4a44c0a9637cbf93d56158a0f071bebd1b9f65ea9b65b6cdadae132c947367d5e35d8434f04d9abe079de0ac97719a72c6ac6836e3f9a9d0e712c310da16009db09cc9aad4682d962caa75f189d2f4464d31ddf6bc1877b69ff813fa6dac663d3df5e5f333d9ae6f4b416ee1ba5",
+        "after": "27fd7408767b2d829203f4718a530c228abed4d2f54fc987d42a5a972cf7c7810a9f3fe774fabb9268711b26a4411ca51677c8f2f0d706569d1fe38490b365ba299533bf536039d32244ff2fa68c9f932eedb4afa555a704365d938e14054ce2004b3030a1ce2405dbad7674fab9f966476ddd609a1ccd0165ca0ec3df934077",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.proofC",
+        "before": "2fe543cae834fc3410fe3087a62141fbe9530d442d685fe5eacd4835f7065d6f1cfabbce54d7fbc95d3891b02df889f14196cabbfde3796208213af32bdeaaf2",
+        "after": "0ec998e866faf9fdb98f51d886a756d0d8e74b359111234c155cb46212d696240a203537f795b6b9f8524edef29d9039d601f4bdfb6f881af627f447e65173e6",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.successorBalanceX",
+        "before": "1261e1a0d3ca1577f4bfcf29733c6915ecbdfcdb86581feb5489f30ea5496c9e",
+        "after": "19b1c0d0ea19d92b3671b22ddf55ddf41ba881cb6dbc455b82d1534932454e90",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.successorBalanceY",
+        "before": "24f742aad55d571c399a71b87b45329be06c86f31acab0dc542ab7731ded476d",
+        "after": "04b7886079eb46866fa142b7abcf33955b701344fb16778b5ae1f207071534b8",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.successorPortfolioRoot",
+        "before": "295274faeb79b0833727af6c4eeccb86da3c9d31ef1c9bfe2b25ce22c3d0cff2",
+        "after": "04f9f629219204ea459ec74e52e6c4d311348d48e479eb4c88dd8087100e7ab2",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.tipRouteRoot",
+        "before": "01971b68089c1e95637ee522bd72678df2e7d2c20e5d5fc7354b58122c94e63d",
+        "after": "01971b68089c1e95637ee522bd72678df2e7d2c20e5d5fc7354b58122c94e63d",
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].fields.proof.tokenId",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].fields.tcapRootSequence",
+        "before": 1,
+        "after": 2,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].fields.tokenId",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].fields.validAfterSlot",
+        "before": 517916251,
+        "after": 518181537,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[0].name",
+        "before": "credit_gpru_memo_v1",
+        "after": "credit_gpru_memo_v1",
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].parentTopLevelInstruction",
+        "before": 0,
+        "after": 0,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].program",
+        "before": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+        "after": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+        "same": true
+      },
+      {
+        "path": "innerInstructions[0].stackHeight",
+        "before": 2,
+        "after": 2,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].accountIndexes[0]",
+        "before": 8,
+        "after": 7,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].accountIndexes[1]",
+        "before": 3,
+        "after": 3,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].accountIndexes[2]",
+        "before": 5,
+        "after": 4,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].accountIndexes[3]",
+        "before": 12,
+        "after": 11,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.actionCommitment[0]",
+        "before": 104,
+        "after": 104,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.actionCommitment[1]",
+        "before": 136,
+        "after": 136,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.actionKind[0]",
+        "before": 648,
+        "after": 648,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.actionKind[1]",
+        "before": 649,
+        "after": 649,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.amountBaseUnits[0]",
+        "before": 653,
+        "after": 653,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.amountBaseUnits[1]",
+        "before": 661,
+        "after": 661,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.authorizationCommitment[0]",
+        "before": 661,
+        "after": 661,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.authorizationCommitment[1]",
+        "before": 693,
+        "after": 693,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.deltaEphemeralPublicX[0]",
+        "before": 328,
+        "after": 328,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.deltaEphemeralPublicX[1]",
+        "before": 360,
+        "after": 360,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.deltaEphemeralPublicY[0]",
+        "before": 360,
+        "after": 360,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.deltaEphemeralPublicY[1]",
+        "before": 392,
+        "after": 392,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.encryptedBlindingDelta[0]",
+        "before": 296,
+        "after": 296,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.encryptedBlindingDelta[1]",
+        "before": 328,
+        "after": 328,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.memoCommitment[0]",
+        "before": 72,
+        "after": 72,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.memoCommitment[1]",
+        "before": 104,
+        "after": 104,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.newGlobalRoot[0]",
+        "before": 40,
+        "after": 40,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.newGlobalRoot[1]",
+        "before": 72,
+        "after": 72,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.nullifier[0]",
+        "before": 136,
+        "after": 136,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.nullifier[1]",
+        "before": 168,
+        "after": 168,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.oldGlobalRoot[0]",
+        "before": 8,
+        "after": 8,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.oldGlobalRoot[1]",
+        "before": 40,
+        "after": 40,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.proofA[0]",
+        "before": 392,
+        "after": 392,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.proofA[1]",
+        "before": 456,
+        "after": 456,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.proofB[0]",
+        "before": 456,
+        "after": 456,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.proofB[1]",
+        "before": 584,
+        "after": 584,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.proofC[0]",
+        "before": 584,
+        "after": 584,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.proofC[1]",
+        "before": 648,
+        "after": 648,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.successorBalanceX[0]",
+        "before": 232,
+        "after": 232,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.successorBalanceX[1]",
+        "before": 264,
+        "after": 264,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.successorBalanceY[0]",
+        "before": 264,
+        "after": 264,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.successorBalanceY[1]",
+        "before": 296,
+        "after": 296,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.successorPortfolioRoot[0]",
+        "before": 200,
+        "after": 200,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.successorPortfolioRoot[1]",
+        "before": 232,
+        "after": 232,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.tipRouteRoot[0]",
+        "before": 168,
+        "after": 168,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.tipRouteRoot[1]",
+        "before": 200,
+        "after": 200,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.tokenId[0]",
+        "before": 649,
+        "after": 649,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].byteRanges.tokenId[1]",
+        "before": 653,
+        "after": 653,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].dataBytes",
+        "before": 693,
+        "after": 693,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].fields.actionCommitment",
+        "before": "2f81e8216e08f638e838fbd46207100635b03bb24a4b77775a6b27afa2c83ae7",
+        "after": "2a9eed0c5034816c2221b23b14baa84e9d8ef835cb034937b86494329e1b3010",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.actionKind",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].fields.amountBaseUnits",
+        "before": 100000,
+        "after": 1000000,
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.authorizationCommitment",
+        "before": "144c43fb01a8a72141e3b3d2a311d0a221e14b24c54cadf431aac5414b7620a2",
+        "after": "20528bdf03480f68a8e33aabdbb5df73ee99aeddfc4f74f4a83bd442c8662aab",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.deltaEphemeralPublicX",
+        "before": "06a00cf572089582eebc0b9e1aed4d1ffc3bf6e3308179c33fb706a581d37393",
+        "after": "304317a615772922f2f42cf03f0d7331238456e990b0b2384e85a7e834cf4d7d",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.deltaEphemeralPublicY",
+        "before": "0141d79442da9da60d690631c8407690b373cdc4e005a2f922fbd7fc89b6de1d",
+        "after": "03a991f6faf61b926eeaa281b134b91fbe5b2a93fb3b45b2d6b0a8da78ce8777",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.encryptedBlindingDelta",
+        "before": "03f05f41b800ee9e6942a787bb03b1733dcf35e48af85d94f68253b38d019975",
+        "after": "006aa08f973349e349fa23e54422e1fc392665b34206d2d1013ca8458d8ee8b7",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.memoCommitment",
+        "before": "236f33517b788cced1252784168c2eaead87eeec27c3a6e61824c685e9cc5662",
+        "after": "0bb7926e9761060d817a37242b5b39e40cd35a300cc9a21d09d031d8f1042c88",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.newGlobalRoot",
+        "before": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+        "after": "21319482611062a035563edb086320102199269126cb81b45dd195312284f9cd",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.nullifier",
+        "before": "079eea418f77cc6378099aae819780b7fa5b2265d678b022ce4e24e8ae40366b",
+        "after": "131a3f1292c8b48210d79f603e3dc4d95f66f3263bda27a93afd5a9bef527e49",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.oldGlobalRoot",
+        "before": "14935d601de8d6fbd04b084de8f8510dd25b5ed1d80ab5382b8f908dc0734b3a",
+        "after": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.proofA",
+        "before": "2b6d016aaa3cb26c10ecab03f45527c573fb7347521a6359ffb9859f00120e63264b6243a1279daa6913637292d0c794a89d8316fb9637436c08903d62990a5f",
+        "after": "1a1dae5c950c7fad1c431d9112de9153b083aceae3a4bffd68fbe753b4b937f81a787473082d13a8caf862c3140dd3614b3a90be6c2fc2e4623be0396b231794",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.proofB",
+        "before": "2b50c949c53d3abaecd21111444001ad449ea4a44c0a9637cbf93d56158a0f071bebd1b9f65ea9b65b6cdadae132c947367d5e35d8434f04d9abe079de0ac97719a72c6ac6836e3f9a9d0e712c310da16009db09cc9aad4682d962caa75f189d2f4464d31ddf6bc1877b69ff813fa6dac663d3df5e5f333d9ae6f4b416ee1ba5",
+        "after": "27fd7408767b2d829203f4718a530c228abed4d2f54fc987d42a5a972cf7c7810a9f3fe774fabb9268711b26a4411ca51677c8f2f0d706569d1fe38490b365ba299533bf536039d32244ff2fa68c9f932eedb4afa555a704365d938e14054ce2004b3030a1ce2405dbad7674fab9f966476ddd609a1ccd0165ca0ec3df934077",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.proofC",
+        "before": "2fe543cae834fc3410fe3087a62141fbe9530d442d685fe5eacd4835f7065d6f1cfabbce54d7fbc95d3891b02df889f14196cabbfde3796208213af32bdeaaf2",
+        "after": "0ec998e866faf9fdb98f51d886a756d0d8e74b359111234c155cb46212d696240a203537f795b6b9f8524edef29d9039d601f4bdfb6f881af627f447e65173e6",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.successorBalanceX",
+        "before": "1261e1a0d3ca1577f4bfcf29733c6915ecbdfcdb86581feb5489f30ea5496c9e",
+        "after": "19b1c0d0ea19d92b3671b22ddf55ddf41ba881cb6dbc455b82d1534932454e90",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.successorBalanceY",
+        "before": "24f742aad55d571c399a71b87b45329be06c86f31acab0dc542ab7731ded476d",
+        "after": "04b7886079eb46866fa142b7abcf33955b701344fb16778b5ae1f207071534b8",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.successorPortfolioRoot",
+        "before": "295274faeb79b0833727af6c4eeccb86da3c9d31ef1c9bfe2b25ce22c3d0cff2",
+        "after": "04f9f629219204ea459ec74e52e6c4d311348d48e479eb4c88dd8087100e7ab2",
+        "same": false
+      },
+      {
+        "path": "innerInstructions[1].fields.tipRouteRoot",
+        "before": "01971b68089c1e95637ee522bd72678df2e7d2c20e5d5fc7354b58122c94e63d",
+        "after": "01971b68089c1e95637ee522bd72678df2e7d2c20e5d5fc7354b58122c94e63d",
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].fields.tokenId",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].name",
+        "before": "verify_hidden_head_transition_v1",
+        "after": "verify_hidden_head_transition_v1",
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].parentTopLevelInstruction",
+        "before": 0,
+        "after": 0,
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].program",
+        "before": "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR",
+        "after": "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR",
+        "same": true
+      },
+      {
+        "path": "innerInstructions[1].stackHeight",
+        "before": 3,
+        "after": 3,
+        "same": true
+      },
+      {
+        "path": "memo.accountIndexes[0]",
+        "before": 0,
+        "after": 0,
+        "same": true
+      },
+      {
+        "path": "memo.bodyBase64UrlBytes",
+        "before": 932,
+        "after": 996,
+        "same": false
+      },
+      {
+        "path": "memo.bytes",
+        "before": 1404,
+        "after": 1468,
+        "same": false
+      },
+      {
+        "path": "memo.decodedDocumentBytes",
+        "before": 699,
+        "after": 747,
+        "same": false
+      },
+      {
+        "path": "memo.document.algorithm",
+        "before": "dbrix-core-secretbox-v1",
+        "after": "dbrix-core-secretbox-v1",
+        "same": true
+      },
+      {
+        "path": "memo.document.compression",
+        "before": "deflate",
+        "after": "deflate",
+        "same": true
+      },
+      {
+        "path": "memo.document.data.ciphertextBytes",
+        "before": 303,
+        "after": 338,
+        "same": false
+      },
+      {
+        "path": "memo.document.data.sha256",
+        "before": "f85ee607d01889ec14b2d75892e4e2bc3ea6284c3fff0dd87d9872560434c2da",
+        "after": "6fd5948c428290749de72e017eb68b08761315af0fd9777d0c43f4e2b93e92fd",
+        "same": false
+      },
+      {
+        "path": "memo.document.dna",
+        "before": "5d674ad9e1f9a9f845c68e708d274affa57bc63d0b2b81f9854838e7a1ff1343",
+        "after": "a7b85bf0ba5b3627746b81745fce898ae52c3b5e92c30626a31ca60b391b422d",
+        "same": false
+      },
+      {
+        "path": "memo.document.nonce.bytes",
+        "before": 24,
+        "after": 24,
+        "same": true
+      },
+      {
+        "path": "memo.document.nonce.hex",
+        "before": "51d676121986ab198779b42a406e3a88eb490ed3524e8bc9",
+        "after": "102525e2b3bf73dc000778f8cfac8052a4bf6cf46df75c43",
+        "same": false
+      },
+      {
+        "path": "memo.document.recordEphemeralPublicKey",
+        "before": "88ea1c4e503dac6fc6eff1dcd86b1a6ea33f891814926f5e705925c8521f9050",
+        "after": "6e42fcb99013a7e9b9004e0943548ad97c35dc9bc2c1077af5abab607b61e149",
+        "same": false
+      },
+      {
+        "path": "memo.document.version",
+        "before": 1,
+        "after": 1,
+        "same": true
+      },
+      {
+        "path": "memo.prefix",
+        "before": "TSN_GPRU_HEAD_V1",
+        "after": "TSN_GPRU_HEAD_V1",
+        "same": true
+      },
+      {
+        "path": "memo.program",
+        "before": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
+        "after": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
+        "same": true
+      },
+      {
+        "path": "memo.publicFields.actionCommitment",
+        "before": "2f81e8216e08f638e838fbd46207100635b03bb24a4b77775a6b27afa2c83ae7",
+        "after": "2a9eed0c5034816c2221b23b14baa84e9d8ef835cb034937b86494329e1b3010",
+        "same": false
+      },
+      {
+        "path": "memo.publicFields.deltaEphemeralPublicX",
+        "before": "06a00cf572089582eebc0b9e1aed4d1ffc3bf6e3308179c33fb706a581d37393",
+        "after": "304317a615772922f2f42cf03f0d7331238456e990b0b2384e85a7e834cf4d7d",
+        "same": false
+      },
+      {
+        "path": "memo.publicFields.deltaEphemeralPublicY",
+        "before": "0141d79442da9da60d690631c8407690b373cdc4e005a2f922fbd7fc89b6de1d",
+        "after": "03a991f6faf61b926eeaa281b134b91fbe5b2a93fb3b45b2d6b0a8da78ce8777",
+        "same": false
+      },
+      {
+        "path": "memo.publicFields.encryptedBlindingDelta",
+        "before": "03f05f41b800ee9e6942a787bb03b1733dcf35e48af85d94f68253b38d019975",
+        "after": "006aa08f973349e349fa23e54422e1fc392665b34206d2d1013ca8458d8ee8b7",
+        "same": false
+      },
+      {
+        "path": "memo.publicFields.successorBalanceX",
+        "before": "1261e1a0d3ca1577f4bfcf29733c6915ecbdfcdb86581feb5489f30ea5496c9e",
+        "after": "19b1c0d0ea19d92b3671b22ddf55ddf41ba881cb6dbc455b82d1534932454e90",
+        "same": false
+      },
+      {
+        "path": "memo.publicFields.successorBalanceY",
+        "before": "24f742aad55d571c399a71b87b45329be06c86f31acab0dc542ab7731ded476d",
+        "after": "04b7886079eb46866fa142b7abcf33955b701344fb16778b5ae1f207071534b8",
+        "same": false
+      },
+      {
+        "path": "memo.publicFields.successorPortfolioRoot",
+        "before": "295274faeb79b0833727af6c4eeccb86da3c9d31ef1c9bfe2b25ce22c3d0cff2",
+        "after": "04f9f629219204ea459ec74e52e6c4d311348d48e479eb4c88dd8087100e7ab2",
+        "same": false
+      },
+      {
+        "path": "memo.sha256",
+        "before": "b49c1eaa1f0d6d4bfa15f8a79b1037c62623a7c594eff899e3caa741b9cc5665",
+        "after": "9ce47dc73af5e68aaa6b0847afdf42fb856f130979f5f3d0d5761294c1042c8b",
+        "same": false
+      },
+      {
+        "path": "memo.wireRange[0]",
+        "before": 1377,
+        "after": 1377,
+        "same": true
+      },
+      {
+        "path": "memo.wireRange[1]",
+        "before": 2781,
+        "after": 2845,
+        "same": false
+      },
+      {
+        "path": "meta.computeUnitsConsumed",
+        "before": 760436,
+        "after": 780459,
+        "same": false
+      },
+      {
+        "path": "meta.costUnits",
+        "before": 764577,
+        "after": 784616,
+        "same": false
+      },
+      {
+        "path": "meta.err",
+        "before": null,
+        "after": null,
+        "same": true
+      },
+      {
+        "path": "meta.fee",
+        "before": 10000,
+        "after": 10000,
+        "same": true
+      },
+      {
+        "path": "privacyScope",
+        "before": "Public chain capture only; no recipient witness, plaintext action record, secret or raw ciphertext persisted",
+        "after": "Public chain capture only; no recipient witness, plaintext action record, secret or raw ciphertext persisted",
+        "same": true
+      },
+      {
+        "path": "schema",
+        "before": "TSN_PUBLIC_NATIVE_CREDIT_CAPTURE_V1",
+        "after": "TSN_PUBLIC_NATIVE_CREDIT_CAPTURE_V1",
+        "same": true
+      },
+      {
+        "path": "signature",
+        "before": "dojfmWVHfNA4AbwHpzQtFQGGUNxASw3rAdUKfhVYYCnfmoVwJDakVdpV7GJFxGu4aSaagXhBDHigcgwTs53gjgQ",
+        "after": "51BRxzXoD3uN8LPfzNSuXuFEs8pr2C9vGPfzwDeL6WhRFvZhP8kzJLzhLsTYww6tMqQEMuinY69xinYmdy3wTbjH",
+        "same": false
+      },
+      {
+        "path": "slot",
+        "before": 517916537,
+        "after": 518183248,
+        "same": false
+      }
+    ],
+    "crossFieldRecurrences": [
+      {
+        "value": "01971b68089c1e95637ee522bd72678df2e7d2c20e5d5fc7354b58122c94e63d",
+        "baselinePaths": [
+          "creditInstruction.fields.proof.tipRouteRoot",
+          "innerInstructions[0].fields.proof.tipRouteRoot",
+          "innerInstructions[1].fields.tipRouteRoot"
+        ],
+        "newPaths": [
+          "creditInstruction.fields.proof.tipRouteRoot",
+          "innerInstructions[0].fields.proof.tipRouteRoot",
+          "innerInstructions[1].fields.tipRouteRoot"
+        ]
+      },
+      {
+        "value": "06ddf6e1d765a193d9cbe146ceeb79ac1cb485ed5f5b37913a8cf5857eff00a9",
+        "baselinePaths": [
+          "accountDerivations.assetEntry.seedBytesHex[2]"
+        ],
+        "newPaths": [
+          "accountDerivations.assetEntry.seedBytesHex[2]"
+        ]
+      },
+      {
+        "value": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+        "baselinePaths": [
+          "creditInstruction.fields.proof.newGlobalRoot",
+          "events[0].currentRoot",
+          "innerInstructions[0].fields.proof.newGlobalRoot",
+          "innerInstructions[1].fields.newGlobalRoot"
+        ],
+        "newPaths": [
+          "creditInstruction.fields.previousTcapRoot",
+          "creditInstruction.fields.proof.oldGlobalRoot",
+          "events[0].previousRoot",
+          "innerInstructions[0].fields.previousTcapRoot",
+          "innerInstructions[0].fields.proof.oldGlobalRoot",
+          "innerInstructions[1].fields.oldGlobalRoot"
+        ]
+      },
+      {
+        "value": "3b442cb3912157f13a933d0134282d032b5ffecd01a2dbf1b7790608df002ea7",
+        "baselinePaths": [
+          "accountDerivations.assetEntry.seedBytesHex[3]"
+        ],
+        "newPaths": [
+          "accountDerivations.assetEntry.seedBytesHex[3]"
+        ]
+      },
+      {
+        "value": "4qordCRiPw4XFZcPPK8LLJTCpmugTDDawonpfqvpN9cT",
+        "baselinePaths": [
+          "accountDerivations.gpruVerifier.address",
+          "accounts[5].address",
+          "creditInstruction.accountRoles.gpruVerifier"
+        ],
+        "newPaths": [
+          "accountDerivations.gpruVerifier.address",
+          "accounts[4].address",
+          "creditInstruction.accountRoles.gpruVerifier"
+        ]
+      },
+      {
+        "value": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+        "baselinePaths": [
+          "assetObservation.mint"
+        ],
+        "newPaths": [
+          "assetObservation.mint"
+        ]
+      },
+      {
+        "value": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+        "baselinePaths": [
+          "accountDerivations.tcapConfig.address",
+          "accounts[6].address",
+          "creditInstruction.accountRoles.tcapConfig"
+        ],
+        "newPaths": [
+          "accountDerivations.tcapConfig.address",
+          "accounts[5].address",
+          "creditInstruction.accountRoles.tcapConfig"
+        ]
+      },
+      {
+        "value": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "baselinePaths": [
+          "accountDerivations.reserveState.address",
+          "accounts[2].address",
+          "assetObservation.reserveState",
+          "creditInstruction.accountRoles.reserveState"
+        ],
+        "newPaths": [
+          "accountDerivations.reserveState.address",
+          "accounts[2].address",
+          "assetObservation.reserveState",
+          "creditInstruction.accountRoles.reserveState"
+        ]
+      },
+      {
+        "value": "677072753a68696464656e2d686561642d76657269666965723a7631",
+        "baselinePaths": [
+          "accountDerivations.gpruVerifier.seedBytesHex[0]"
+        ],
+        "newPaths": [
+          "accountDerivations.gpruVerifier.seedBytesHex[0]"
+        ]
+      },
+      {
+        "value": "6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR",
+        "baselinePaths": [
+          "accountDerivations.gpruVerifier.program",
+          "accounts[7].address",
+          "creditInstruction.accountRoles.gpruProgram",
+          "innerInstructions[1].program"
+        ],
+        "newPaths": [
+          "accountDerivations.gpruVerifier.program",
+          "accounts[6].address",
+          "creditInstruction.accountRoles.gpruProgram",
+          "innerInstructions[1].program"
+        ]
+      },
+      {
+        "value": "746361703a61737365742d656e7472793a7631",
+        "baselinePaths": [
+          "accountDerivations.assetEntry.seedBytesHex[0]"
+        ],
+        "newPaths": [
+          "accountDerivations.assetEntry.seedBytesHex[0]"
+        ]
+      },
+      {
+        "value": "746361703a636f6d6d69746d656e742d726f6f743a7631",
+        "baselinePaths": [
+          "accountDerivations.commitmentRoot.seedBytesHex[0]"
+        ],
+        "newPaths": [
+          "accountDerivations.commitmentRoot.seedBytesHex[0]"
+        ]
+      },
+      {
+        "value": "746361703a676c6f62616c2d636f6e6669673a7631",
+        "baselinePaths": [
+          "accountDerivations.tcapConfig.seedBytesHex[0]"
+        ],
+        "newPaths": [
+          "accountDerivations.tcapConfig.seedBytesHex[0]"
+        ]
+      },
+      {
+        "value": "746361703a726573657276652d73746174653a7631",
+        "baselinePaths": [
+          "accountDerivations.reserveState.seedBytesHex[0]"
+        ],
+        "newPaths": [
+          "accountDerivations.reserveState.seedBytesHex[0]"
+        ]
+      },
+      {
+        "value": "7469703a726f7574652d6d65726b6c652d726f6f743a7631",
+        "baselinePaths": [
+          "accountDerivations.tipRouteRoot.seedBytesHex[0]"
+        ],
+        "newPaths": [
+          "accountDerivations.tipRouteRoot.seedBytesHex[0]"
+        ]
+      },
+      {
+        "value": "74736e3a746361702d617574686f72697a6174696f6e3a7631",
+        "baselinePaths": [
+          "accountDerivations.authorizationSigner.seedBytesHex[0]"
+        ],
+        "newPaths": [
+          "accountDerivations.authorizationSigner.seedBytesHex[0]"
+        ]
+      },
+      {
+        "value": "74736e5f6d6f746865725f657363726f77",
+        "baselinePaths": [
+          "accountDerivations.motherEscrow.seedBytesHex[0]"
+        ],
+        "newPaths": [
+          "accountDerivations.motherEscrow.seedBytesHex[0]"
+        ]
+      },
+      {
+        "value": "8d0752ad6f6ad2ac3a08521b46e8a74de075af236399afc7ae9e98b01ed4d688",
+        "baselinePaths": [
+          "accountDerivations.reserveState.seedBytesHex[1]"
+        ],
+        "newPaths": [
+          "accountDerivations.reserveState.seedBytesHex[1]"
+        ]
+      },
+      {
+        "value": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+        "baselinePaths": [
+          "accounts[0].address",
+          "envelope.signatures[0].signer"
+        ],
+        "newPaths": [
+          "accounts[0].address",
+          "envelope.signatures[0].signer"
+        ]
+      },
+      {
+        "value": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+        "baselinePaths": [
+          "accountDerivations.assetEntry.address",
+          "accounts[9].address",
+          "creditInstruction.accountRoles.assetEntry"
+        ],
+        "newPaths": [
+          "accountDerivations.assetEntry.address",
+          "accounts[8].address",
+          "creditInstruction.accountRoles.assetEntry"
+        ]
+      },
+      {
+        "value": "AtMjyHVYLyaPd7fpMZbdxLQ24BGyPUmJMD2vppc2Expk",
+        "baselinePaths": [
+          "accountDerivations.tipRouteRoot.address",
+          "accounts[8].address",
+          "creditInstruction.accountRoles.tipRouteRoot"
+        ],
+        "newPaths": [
+          "accountDerivations.tipRouteRoot.address",
+          "accounts[7].address",
+          "creditInstruction.accountRoles.tipRouteRoot"
+        ]
+      },
+      {
+        "value": "C8XzWaejCD4QfMpjGL8zp8jVhVVMWtaXzusqc98HTJLm",
+        "baselinePaths": [
+          "assetObservation.registry"
+        ],
+        "newPaths": [
+          "assetObservation.registry"
+        ]
+      },
+      {
+        "value": "ESunnNGeKYHiJx6ECsCUEh95zTVwsmJKRRZBo6vQwWbq",
+        "baselinePaths": [
+          "accountDerivations.commitmentRoot.address",
+          "accounts[3].address",
+          "creditInstruction.accountRoles.commitmentRoot"
+        ],
+        "newPaths": [
+          "accountDerivations.commitmentRoot.address",
+          "accounts[3].address",
+          "creditInstruction.accountRoles.commitmentRoot"
+        ]
+      },
+      {
+        "value": "ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR",
+        "baselinePaths": [
+          "accountDerivations.motherEscrow.address",
+          "accounts[10].address",
+          "creditInstruction.accountRoles.motherEscrow"
+        ],
+        "newPaths": [
+          "accountDerivations.motherEscrow.address",
+          "accounts[9].address",
+          "creditInstruction.accountRoles.motherEscrow"
+        ]
+      },
+      {
+        "value": "FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG",
+        "baselinePaths": [
+          "accounts[1].address",
+          "creditInstruction.accountRoles.motherAuthority",
+          "envelope.signatures[1].signer"
+        ],
+        "newPaths": [
+          "accounts[1].address",
+          "creditInstruction.accountRoles.motherAuthority",
+          "envelope.signatures[1].signer"
+        ]
+      },
+      {
+        "value": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
+        "baselinePaths": [
+          "accounts[11].address",
+          "memo.program"
+        ],
+        "newPaths": [
+          "accounts[10].address",
+          "memo.program"
+        ]
+      },
+      {
+        "value": "Sysvar1nstructions1111111111111111111111111",
+        "baselinePaths": [
+          "accounts[12].address",
+          "creditInstruction.accountRoles.instructionsSysvar"
+        ],
+        "newPaths": [
+          "accounts[11].address",
+          "creditInstruction.accountRoles.instructionsSysvar"
+        ]
+      },
+      {
+        "value": "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V",
+        "baselinePaths": [
+          "accountDerivations.authorizationSigner.program",
+          "accountDerivations.motherEscrow.program",
+          "accounts[14].address",
+          "creditInstruction.accountRoles.tsnpProgram",
+          "creditInstruction.program"
+        ],
+        "newPaths": [
+          "accountDerivations.authorizationSigner.program",
+          "accountDerivations.motherEscrow.program",
+          "accounts[13].address",
+          "creditInstruction.accountRoles.tsnpProgram",
+          "creditInstruction.program"
+        ]
+      },
+      {
+        "value": "TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
+        "baselinePaths": [
+          "accountDerivations.tipRouteRoot.program"
+        ],
+        "newPaths": [
+          "accountDerivations.tipRouteRoot.program"
+        ]
+      },
+      {
+        "value": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        "baselinePaths": [
+          "assetObservation.tokenProgram"
+        ],
+        "newPaths": [
+          "assetObservation.tokenProgram"
+        ]
+      },
+      {
+        "value": "a55eaa034a6fd842f1da4b4706cfee74484ed5205711d838b7bf733f946c11ce",
+        "baselinePaths": [
+          "accountDerivations.assetEntry.seedBytesHex[1]"
+        ],
+        "newPaths": [
+          "accountDerivations.assetEntry.seedBytesHex[1]"
+        ]
+      },
+      {
+        "value": "b7633ad8df4c8f70bd2779f49e2ba62e4b31d0ac0f8db56649fb570eaf707547",
+        "baselinePaths": [
+          "assetObservation.scope"
+        ],
+        "newPaths": [
+          "assetObservation.scope"
+        ]
+      },
+      {
+        "value": "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF",
+        "baselinePaths": [
+          "accountDerivations.assetEntry.program",
+          "accountDerivations.commitmentRoot.program",
+          "accountDerivations.reserveState.program",
+          "accountDerivations.tcapConfig.program",
+          "accounts[13].address",
+          "creditInstruction.accountRoles.tcapProgram",
+          "innerInstructions[0].program"
+        ],
+        "newPaths": [
+          "accountDerivations.assetEntry.program",
+          "accountDerivations.commitmentRoot.program",
+          "accountDerivations.reserveState.program",
+          "accountDerivations.tcapConfig.program",
+          "accounts[12].address",
+          "creditInstruction.accountRoles.tcapProgram",
+          "innerInstructions[0].program"
+        ]
+      }
+    ],
+    "oldNewGlobalRootContinuity": true,
+    "interpretation": "Equality/difference is an observation, not a proof of recipient unlinkability; analyze public derivations and shared-state continuity"
+  }
+}

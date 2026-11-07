@@ -14,7 +14,7 @@ tcap = "tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF"
 stable_tcap_faucet = "E7jSHdPLzgGafBou5PswKcsS5JxiPnek7TxquFAxXm6h"
 
 [provider]
-cluster = "https://devnet.helius-rpc.com/?api-key=42fbc8ea-86e6-4037-8a78-3217d027f292"
+cluster = "https://devnet.helius-rpc.com/?api-key=4758403f-e1c0-4013-9d93-b0efced1b123"
 wallet = "~/.config/solana/id.json"
 
 [workspace]

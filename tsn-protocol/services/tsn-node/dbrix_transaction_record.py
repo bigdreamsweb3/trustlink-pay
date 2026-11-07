@@ -33,11 +33,11 @@ def _validate_balance_action_record_v1(value: Any) -> dict[str, Any]:
         raise ValueError("GPRU owner balance action record must be an object")
     allowed = {
         "version", "recordType", "sequence", "previousMemoCommitment", "actionCommitment",
-        "authorizationCommitment", "nullifier", "actionKind", "tokenId", "amountBaseUnits",
+        "authorizationCommitment", "nullifier", "actionKind", "tokenId", "amountBaseUnits", "amountCommitment", "amountBlinding",
     }
     if set(value) != allowed:
         raise ValueError("GPRU owner balance action record has an unsupported field set")
-    if type(value.get("version")) is not int or value.get("version") != 1 or value.get("recordType") != "tsn-gpru-balance-action-v1":
+    if type(value.get("version")) is not int or value.get("version") != 2 or value.get("recordType") != "tsn-gpru-balance-action-v2":
         raise ValueError("Unsupported GPRU owner balance action record")
     if any(isinstance(value[name], bool) for name in ("sequence", "tokenId", "actionKind", "amountBaseUnits")):
         raise ValueError("GPRU owner balance action integer values cannot be booleans")
@@ -76,9 +76,18 @@ def _validate_balance_action_record_v1(value: Any) -> dict[str, Any]:
         raise ValueError("GPRU action authorization commitment and nullifier must be nonzero")
     if (sequence == 1) != (previous == ZERO_COMMITMENT):
         raise ValueError("First GPRU action must have no predecessor; later actions must name one")
+    from credit_amount import commitment
+    blinding = str(value["amountBlinding"])
+    if len(blinding) != 64 or any(c not in "0123456789abcdef" for c in blinding):
+        raise ValueError("INVALID_PRIVATE_CREDIT_AMOUNT_BLINDING")
+    amount_commitment = format(commitment(token_id, amount, int(blinding, 16), int(nullifier, 16)), "064x")
+    if value["amountCommitment"] != amount_commitment:
+        raise ValueError("PRIVATE_CREDIT_OPENING_MISMATCH")
     return {
-        "version": 1,
-        "recordType": "tsn-gpru-balance-action-v1",
+        "version": 2,
+        "recordType": "tsn-gpru-balance-action-v2",
+        "amountCommitment": amount_commitment,
+        "amountBlinding": blinding,
         "sequence": str(sequence),
         "previousMemoCommitment": previous,
         "actionCommitment": action_commitment,
@@ -214,8 +223,8 @@ def validate_transaction_record_v1(transition: dict[str, Any]) -> None:
         raise ValueError("DBrix transaction record document does not match its Ledger memo encoding")
     proof = transition.get("proof")
     public_inputs = proof.get("publicInputs") if isinstance(proof, dict) else None
-    if not isinstance(public_inputs, list) or len(public_inputs) != 12:
-        raise ValueError("GPRU transaction record is missing its twelve public hidden-head inputs")
+    if not isinstance(public_inputs, list) or len(public_inputs) != 13:
+        raise ValueError("GPRU transaction record requires exactly thirteen public hidden-head inputs")
     try:
         successor_root, balance_x, balance_y, action_commitment = (
             str(public_inputs[index]).removeprefix("0x").lower() for index in (6, 7, 8, 3)

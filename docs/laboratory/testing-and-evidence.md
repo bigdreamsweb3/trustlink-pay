@@ -8,7 +8,7 @@ The SDK tests cover canonical message/recipient binding, GPRU derivation, balanc
 
 Program tests include TCAP governance/deposit fixtures and SDK program-boundary tests. Chain-dependent tests can fund accounts or submit transactions and require explicit operator action. The documentation reconstruction did not run them, start services, or treat a simulation as finalized payment evidence.
 
-## Checks performed for this reconstruction
+## Historical November 2 reconstruction checks
 
 The root SDK build script failed on a missing root TypeScript launcher target. The installed SDK compiler then built TCAP SDK and TSN SDK successfully using the explicit command in [operations and verification](operations-and-verification.md). The canonical-payment-route suite passed all three tests: TIN-only message authorization, rejection of sender-supplied route fields and enforcement of the Node-resolved owner hash.
 
@@ -24,6 +24,6 @@ The [local link report](../references/link-check.json) checks both existing docu
 
 ## Settlement evidence standard
 
-For a native credit, retain the verified input/execution commitment, Node decision, active Cranker lease, exact funding signature, successful funding transaction, expected settlement signature, TCAP root/liability state and owner record-recovery result. Confirm the selected cluster and commitment level. Keep evidence allowlisted and sanitized; raw private witnesses, TIN payloads, credentials and replayable service material must not enter reports.
+For experimental native credit, retain exact funding, sealed-pool capture/release, Node decision and current lease, submitted credit signature/result, expected root/epoch transcript and owner opening/history recovery. Individual reserve assets/liabilities must remain unchanged. Separately verify complete aggregate epoch proof, authenticated total, one reclassification and preserved backing/uncredited pending. Confirm cluster/commitment level and sanitize evidence; raw witnesses, openings, TIN payloads, credentials and replayable service material must not enter reports.
 
-On-chain proof verification, compute use, live wallet authorization, complete funding/settlement and owner Memo recovery remain separate unverified outcomes in this reconstruction. The [documentation status record](../DOCUMENTATION_STATUS.md) is the authoritative completion/continuation ledger for documentation work.
+The [November 7 experiment](experiments/EXP-20261107-private-credit-epoch.md) records later real-proof/native and cross-layer tests, including five typed examples and nine offline scenarios. Current SBF execution/compute, matching deployment, live multiwallet credit/epoch accounting and production privacy remain unverified. The [documentation status record](../DOCUMENTATION_STATUS.md) retains dated completion and continuation evidence.

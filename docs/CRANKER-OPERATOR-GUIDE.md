@@ -4,7 +4,7 @@ This guide explains how to run an independent **TSN Cranker** for TrustLink
 Labs' Transfer Settlement Network (TSN) on Devnet. A Cranker is an operator
 process, not a public API and not a Solana program deployment. It watches the
 TSN Receiver for non-secret work, leases work that the TSN Node has verified,
-and submits the exact authorized transaction while paying Solana fees.
+and submits the exact authorized transaction. The owner pays its funding fee; Cranker pays native settlement fees.
 
 This guide covers current operator tooling for the wallet-to-TIN funding and
 GPRU/TCAP settlement path. The separate epoch-treasury flow has its own
@@ -27,11 +27,11 @@ flowchart TD
 
 The Cranker may:
 
-- lease Node-verified `AUTHORIZED_FUNDING` work and internally-created DNA
+- lease Node-verified `AUTHORIZED_FUNDING` work and internally-created
   `SETTLEMENT` work that is already eligible;
 - submit the exact sender-signed TCAP reserve-funding transaction, then the
   exact GPRU/TCAP settlement transaction authorized by the protocol;
-- pay Solana fees from its operator wallet;
+- pay native settlement fees from its operator wallet, while owner-signed funding retains its owner fee payer;
 - report transaction signatures and retry safe failures;
 - submit only explicitly authorized funding or settlement work; refunds are a
   Node/Mother operation.
@@ -53,21 +53,17 @@ transaction explicitly invokes those instructions.
 
 Before an operator starts a Cranker, the deployment owner must provide:
 
-1. A deployed TSNP program ID and matching build/IDL.
+1. Deployed matching TIP, TSNP, TCAP and GPRU programs, current SDK/account ABI and initialized funded-note roots/verifier. IDL generation is not required by the supported SBF deployment helper.
 2. A reachable TSN Receiver with Cranker work endpoints.
 3. A running or reachable TSN Node that verifies and publishes work.
-4. The current Receiver Cranker API credential. Obtain it from the
-   deployment owner; do not invent one.
-5. Direct Solana Devnet RPC and WebSocket access. Crankers submit to Solana
-   directly; the TSN RPC Gateway is used by the browser and application
-   services, not as a replacement for the operator's submission RPC.
+4. The pinned public Node verification key and a registered on-chain Cranker identity. Receiver admission uses signed challenge/session requests, not a shared Cranker API credential.
+5. A configured Devnet RPC gateway with working account, simulation and submission methods. Current funding and settlement confirmation use HTTP; WebSocket readiness is a separate optional integration.
 6. A funded operator keypair. Use a dedicated keypair, never the upgrade
    authority, a user wallet, or a TIN commitment key.
 7. A supported token mint and enough Devnet SOL for fees and account creation.
    If policy requires a funded Cranker Vault, initialize and fund it first.
 
-The public service URLs are deployment configuration, not constants in this
-guide. Set `TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app`.
+Set explicit deployment URLs and public key pins. Current startup pins a ready local Receiver, with hosted fallback only when explicitly enabled. Use [Build and operate your own TSN](RUN-YOUR-OWN-TSN.md) for the full reference/independent-deployment setup.
 
 ## Deployment boundary
 
@@ -83,7 +79,7 @@ npm run tsn:program:deploy:devnet
 Run those commands from the project's supported Solana/Anchor environment,
 verify the resulting Program ID, and initialize Mother Escrow before asking
 independent operators to register. A Cranker operator normally needs only the
-operator package, its keypair, the Receiver credential, and the public
+operator package, its keypair, the Node public verification pin, and the public
 program/cluster configuration.
 
 ## Install the operator
@@ -116,7 +112,7 @@ mkdir -p keys
 solana-keygen new --outfile keys/cranker-keypair.json --no-bip39-passphrase
 chmod 600 keys/cranker-keypair.json
 solana-keygen pubkey keys/cranker-keypair.json
-solana airdrop 2 "$$(solana-keygen pubkey keys/cranker-keypair.json)" --url devnet
+solana airdrop 2 "$(solana-keygen pubkey keys/cranker-keypair.json)" --url devnet
 ```
 
 On Windows, protect the file with equivalent filesystem ACLs. The repository
@@ -130,7 +126,8 @@ real values only on the private operator machine:
 
 ```dotenv
 SOLANA_MOCK_MODE=false
-TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.vercel.app
+TSN_RPC_URL=http://127.0.0.1:8787
+TSN_RPC_FALLBACK_URL=https://api.devnet.solana.com
 # Optional; use a direct Solana provider websocket only when subscriptions are enabled.
 # SOLANA_WS_URL=wss://<solana-provider-websocket-endpoint>
 PROGRAM_ID=TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V
@@ -139,9 +136,11 @@ KEYPAIR_PATH=./keys/cranker-keypair.json
 TSN_ENABLED=true
 TSN_CREATE_INTENTS_ONCHAIN=true
 TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app
-TSN_CRANKER_OPERATOR_PUBKEY=<registered operator public key>
+TSN_LOCAL_RECEIVER_URL=http://127.0.0.1:8010
+TSN_NODE_VERIFICATION_PUBLIC_KEY=<base64-public-node-verification-key>
+TSN_CRANKER_KEYPAIR_PATH=./keys/cranker-keypair.json
 TSN_CRANKER_POLL_MS=2000
-TSN_CRANKER_IDLE_MAX_MS=60000
+TSN_CRANKER_MAX_IDLE_POLL_MS=60000
 ```
 
 Optional fee and policy settings are documented in `.env.example`. Do not
@@ -150,7 +149,7 @@ commit `.env`, `.env.local`, keypair JSON, Receiver credentials, or
 
 ## Mother Escrow “DNA”
 
-“Mother Escrow DNA” is a one-time, Mother-authorized settlement voucher. Its
+The following settlement-DNA voucher derivation belongs to the retained epoch/payout family. Native funded-note settlement uses the current Mother co-signature and TSNP/TCAP/GPRU account/proof checks described in [the credit ABI](laboratory/credit-abi.md); it does not create a DNA payout voucher. The retained voucher's
 PDA derivation is public, but its fields are accepted only after Mother
 authority materializes the account and the TSNP program verifies the permit.
 It is not a private key or a secret credential. The Mother address is
@@ -272,7 +271,7 @@ npm run tsn:cranker:start
 Or inside its package:
 
 ```powershell
-cd tsn-protocol/tsn-cranker-op-daemon
+cd tsn-protocol/services/tsn-cranker-op-daemon
 npm run crank:start
 ```
 
@@ -286,19 +285,23 @@ The normal lifecycle is:
 ```mermaid
 sequenceDiagram
     participant R as TSN Receiver
-    participant N as TSN Node
+    participant N as TSN Node / Mother authority
     participant C as Cranker
-    participant S as TSNP program
-    R->>N: sender-signed funding intent is available
-    N-->>R: verify and publish AUTHORIZED_FUNDING
-    C->>R: lease funding work
-    C->>S: submit exact sender-authorized epoch-treasury funding transaction
-    C->>R: report funding confirmation
-    R->>N: create internal SETTLEMENT work
-    C->>R: lease DNA-authorized settlement
-    C->>S: submit exact DNA-bound payout
-    S-->>C: signature or deterministic rejection
-    C->>R: report settlement signature, retry state, or failure
+    participant S as Solana programs
+    R->>R: Store funding and linked RECEIVED settlement
+    N->>R: Lease and verify owner-approved funding
+    N-->>R: Signed VERIFIED funding decision
+    C->>R: Lease verified funding
+    C->>S: Submit unchanged funded-note TCAP deposit
+    C->>R: Report funding confirmation
+    N->>R: Lease independently eligible settlement
+    N-->>R: Current-root proof and signed VERIFIED transition
+    C->>R: Lease settlement and request Mother co-signature
+    R->>N: Check lease and exact settlement message
+    N-->>C: Lease-bound Mother signature through Receiver
+    C->>S: TSNP -> TCAP -> GPRU credit and Memo
+    S-->>C: Confirmed atomic state/liability transition
+    C->>R: Report settlement confirmation
 ```
 
 The Cranker does not replan work between the Receiver and Solana. If a lease
@@ -337,15 +340,9 @@ operator keypair, and seed recipe. Ask the deployment owner to run authorized
 Cranker registration, and an eligible Receiver work state. Do not bypass
 verification by submitting directly from the Cranker.
 
-Idle Crankers use exponential backoff (up to `TSN_CRANKER_IDLE_MAX_MS`) so an
-empty Receiver does not create a continuous high-frequency request stream. A
-local CLI Cranker cannot be directly pinged by a Vercel Receiver unless the
-operator exposes a secure callback endpoint; a future push broker or callback
-can wake it immediately.
+Idle Crankers use bounded fallback backoff, with an optional authenticated Realtime Database wake stream carrying only a control marker. Receiver leases remain authoritative; the wake channel does not provide work payloads or bypass admission.
 
-**Blockhash or send failures.** Check direct Devnet RPC health, operator SOL,
-token-account rent, compute price, and lease expiry. Retry only through the
-daemon's deterministic retry path.
+**Blockhash or send failures.** Check actual gateway RPC methods, bank visibility, payer SOL and transaction lifetime. The gateway and funding-specific Cranker fallback retry identical owner-signed bytes; expired funding requires a fresh wallet signature after original-attempt reconciliation. Node temporary HTTP 5xx/transport failures retry within its active processing lease. A confirmed deposit with incomplete settlement must be recovered as existing work.
 
 **Vault has insufficient funds.** Fund the configured Cranker Vault through the
 reviewed setup path. Do not load a user private key or make the Cranker a user

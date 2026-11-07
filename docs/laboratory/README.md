@@ -1,5 +1,7 @@
 # TSN Laboratory and Engineering Record
 
+Use [Build and operate your own TSN](../RUN-YOUR-OWN-TSN.md) for the full installation and operating procedure, including reference/independent-deployment boundaries and current recovery steps.
+
 This record explains the checked-out TSN implementation, its engineering decisions, and the evidence needed to establish behavior. It extends the existing team runbooks and protocol-flow guides rather than moving their files or replacing the public Mintlify site. The public developer handbook remains in [tsn-docs](../../tsn-protocol/tsn-docs/README.md).
 
 ## Study paths
@@ -8,6 +10,7 @@ This record explains the checked-out TSN implementation, its engineering decisio
 - [Canonical architecture map](architecture-map.md) follows the current wallet-to-TIN credit contract across the SDK, Receiver, Node, Cranker and programs.
 - [Component engineering records](components.md) documents responsibilities, important functions, data, authorization, failures and limitations.
 - [Cranker transaction map](cranker-transaction-map.md) covers every current daemon submission branch, its signers, fees, instructions, confirmation and retry boundaries.
+- [First finalized credit baseline](experiments/EXP-20261102-native-credit-baseline.md) records the actual transaction, 93 field definitions, existing public funding linkage and next-credit comparison procedure.
 - [State and route diagrams](state-and-route-diagrams.md) explain identity, hidden maps, reserve accounting and the separate epoch family.
 - [Cryptography and privacy](cryptography.md) describes the implemented cryptographic relations and their public-data boundaries.
 - [Invariants and recovery](invariants.md) records checks that must survive implementation changes.
@@ -32,4 +35,4 @@ The generated [document inventory](../references/documentation-inventory.json), 
 
 Use CURRENT for implementation descriptions that match inspected contracts, VERIFIED for a specified observation or tested behavior, EXPERIMENTAL for active unfinished work, PROPOSED for unadopted designs, HISTORICAL for superseded descriptions, DEPRECATED for supported functionality being phased out, RETIRED for explicitly abandoned concepts, and UNVERIFIED where evidence is insufficient. These labels describe claims, not product maturity. For a mixed document, classify the whole page conservatively and label individual claims separately.
 
-Every observation must identify its scope and date. The [November 2 readiness experiment](experiments/EXP-20261102-hidden-head.md) is a point-in-time observation taken before a user-managed deployment; it cannot establish the chain state after that deployment. The later [six-transaction TIN run](experiments/EXP-20261102-tin-staged-finalization.md) independently establishes fresh registry creation, while credit and owner recovery remain unverified. Do not copy private payloads, credentials, wallet secrets or lookup material into the record.
+Every observation must identify its scope and date. The [November 2 readiness experiment](experiments/EXP-20261102-hidden-head.md) is a point-in-time observation taken before a user-managed deployment; it cannot establish the chain state after that deployment. The later [six-transaction TIN run](experiments/EXP-20261102-tin-staged-finalization.md) independently establishes fresh registry creation, and the [credit baseline](experiments/EXP-20261102-native-credit-baseline.md) establishes one finalized native credit. Owner credit recovery remains unverified. Do not copy private payloads, credentials, wallet secrets or lookup material into the record.

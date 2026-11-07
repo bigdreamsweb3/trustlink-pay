@@ -1,0 +1,46 @@
+{
+  "schema": "tsn-public-native-credit-registry-link-v1",
+  "checkedAtUtc": "2026-11-03T10:13:39.594359+00:00",
+  "signature": "dojfmWVHfNA4AbwHpzQtFQGGUNxASw3rAdUKfhVYYCnfmoVwJDakVdpV7GJFxGu4aSaagXhBDHigcgwTs53gjgQ",
+  "baselineSlot": 517916537,
+  "inputs": "retained public proof statement and finalized public chain accounts only",
+  "scope": "first credit from verified empty shared state; recipient registry linkage, not plaintext TIN recovery",
+  "checks": {
+    "retainedOldRootMatchesEmptyGenesis": true,
+    "globalSequenceIsOne": true,
+    "publicSingleTokenPortfolioMatches": true
+  },
+  "roots": {
+    "emptyGenesis": "14935d601de8d6fbd04b084de8f8510dd25b5ed1d80ab5382b8f908dc0734b3a",
+    "observedSuccessor": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+    "newNullifierRoot": "16717c765d75a4090a9b9272753b4dd1d07a3bfd0816c00dd75dd191024ec90e"
+  },
+  "publicCandidates": [
+    {
+      "registry": "EZLPHfpq1qiPk5tsYUDM8CEAwavst23mJAGBeBowHFX1",
+      "publicRouteKey": "2b7ba9bbb488692e1c7fe485a7a976c71fc1d402710402ea3e171e46895c3cef",
+      "reconstructedGlobalRoot": "2d788e4b5d6527742d7910d402a6c17b3f0c3f1b02698441353cf8bdeff213ef",
+      "matchesCreditSuccessor": true
+    }
+  ],
+  "rpcChecks": {
+    "finalizedSuccessfulV1Receipt": true,
+    "receiptSlotMatchesBaseline": true,
+    "wireHashMatchesBaseline": true,
+    "creditStatementMatchesBaseline": true
+  },
+  "rpcFailures": [],
+  "limitations": [
+    "current public registry observation is not an archival registry snapshot",
+    "single first-credit result does not validate all later transitions or reveal plaintext TIN",
+    "no secret, witness, private local payload, owner decryption or service state used"
+  ],
+  "enumeration": {
+    "source": "getProgramAccounts",
+    "returnedCandidates": 14,
+    "observedContextSlot": 518182235
+  },
+  "skippedUnsupportedCandidates": 13,
+  "matchingPublicRegistryCount": 1,
+  "outcome": "VERIFIED_PUBLIC_REGISTRY_LINK"
+}

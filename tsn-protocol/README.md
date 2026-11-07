@@ -14,6 +14,8 @@ Cranker submits permitted transactions, and Mother authority co-signs
 settlement. The diagram describes current source, with configuration and live
 evidence limits below.
 
+For installation, fresh initialization, persistent service settings and failure recovery, use [Build and operate your own TSN](../docs/RUN-YOUR-OWN-TSN.md) and the [public operator entry](tsn-docs/operators/run-your-own-tsn.mdx).
+
 ## Wallet-to-TIN credit flow and data boundaries
 
 ```mermaid
@@ -21,8 +23,8 @@ flowchart TB
     subgraph DEVICE["1. Sender device — TSN XP and SDK"]
         direction TB
         A["Review recipient identity<br/>TIN, display name and resolved owner commitment"]
-        B["Approve canonical payment message<br/>TIN, asset, amount, fee, nonce and expiry"]
-        C["Sign exact TCAP reserve deposit<br/>deposit_asset_v2; wallet-signed wire"]
+        B["Create private funding note; approve payment<br/>TIN, asset, amount, fee, nonce, expiry and note commitment"]
+        C["Refresh blockhash after amount approval<br/>Sign exact TCAP reserve deposit<br/>deposit_private_funding_v1; wallet-signed wire"]
         A --> B --> C
     end
 
@@ -44,16 +46,16 @@ flowchart TB
     subgraph FUNDING["4. First Solana transaction — reserve funding"]
         direction TB
         I["Cranker checks attestation and leases funding<br/>Submit unchanged owner-signed wire"]
-        J["TCAP deposit confirms<br/>Reserve assets and pending liability increase"]
+        J["TCAP verifies exact vault transfer delta<br/>Append funded leaf; increase assets and pending liability atomically"]
         K["Receiver records funding CONFIRMED<br/>Linked settlement becomes eligible for Node verification"]
         I --> J --> K
     end
 
     subgraph PROVING["5. TSN Node — independent settlement verification"]
         direction TB
-        L["Lease linked settlement and recheck funding<br/>Read current TIP root, TCAP root and verifier"]
-        M["Select root-matching witness snapshot<br/>Encrypt owner Memo; prove and verify locally"]
-        N["Return signed VERIFIED settlement<br/>Twelve public inputs and bound Memo"]
+        L["Lease linked settlement and recheck funding<br/>Read TIP, TCAP state/funding roots and V2 verifier"]
+        M["Synchronize membership and select matching state<br/>Prove funding, asset/amount and secret-derived nullifier; bind Memo"]
+        N["Return signed VERIFIED settlement<br/>Thirteen public inputs and bound Memo"]
         L --> M --> N
     end
 
@@ -70,17 +72,17 @@ flowchart TB
         subgraph CHECKS["TSNP → TCAP → GPRU"]
             direction TB
             R["TSNP checks Mother authority and digest<br/>Invokes TCAP with authorization signer"]
-            S["TCAP checks asset, reserves, slots and shared root<br/>Invokes GPRU before accounting mutation"]
+            S["TCAP checks asset, reserves, slots and shared root<br/>Invokes GPRU before root and epoch mutation"]
             T["GPRU checks roots, verifier and Groth16 proof<br/>Binds action and immediately following Memo"]
             R --> S --> T
         end
-        U["TCAP atomically advances shared root<br/>Equal pending-to-settled confidential liability shift"]
+        U["TCAP atomically advances shared root<br/>Append blinded epoch digest; reserve unchanged"]
         T --> U
     end
 
     subgraph EVIDENCE["8. Confirmation and owner recovery"]
         direction TB
-        V["Confirm settlement signature and chain result<br/>Reconcile shared root and reserve liabilities"]
+        V["Confirm settlement signature and chain result<br/>Reconcile shared root and owner action"]
         W["Owner SDK scans and validates encrypted Memo history<br/>Recover action delta and reconcile private balance"]
         V --> W
     end
@@ -92,6 +94,9 @@ flowchart TB
     N --> O
     Q --> R
     U --> V
+    U --> AA["Grouped accepted-credit openings<br/>Node proves complete 2–64-credit epoch"]
+    AA --> AB["Receiver verifies and leases accounting work<br/>Cranker obtains Mother signature and submits"]
+    AB --> AC["TCAP and separate GPRU epoch verifier<br/>One authenticated liability reclassification"]
     G -->|"Invalid authorization or deposit"| X["Reject funding work<br/>No verified Cranker execution"]
     M -->|"Missing snapshots, artifacts or account prerequisites"| Y["Fail closed; resolve prerequisites<br/>Reverify before settlement submission"]
     T -->|"Invalid proof or binding"| Z["Credit transaction fails atomically<br/>Earlier confirmed funding remains separate"]
@@ -108,27 +113,21 @@ flowchart TB
     class I,O,P,Q funding;
     class J,R,S,T,U chain;
     class V,W,X,Y,Z evidence;
+    class AA node;
+    class AB receiver;
+    class AC chain;
 ```
 
 The SDK signs a canonical TIN-targeted authorization using resolved display
 identity and owner commitment; credentials are not invented message fields.
 Its reserve-deposit wire binds depositor, config, asset entry, reserve state,
-source, vault, mint and token program. Node validates the actual message,
+source, vault, mint, token program, global funding root and note commitment. Node validates the actual message,
 signature, registered decimals, amount/accounts and simulation before a
 Cranker can submit that unchanged wire. Receiver pre-creates the linked
 settlement reference at ingress, and confirmed funding gates Node's settlement
 verification lease.
 
-Settlement preparation rechecks actual funding confirmation, current TIP/TCAP
-roots and verifier, then selects matching witness snapshots, constructs the
-encrypted owner action Memo and generates/verifies a local Groth16 proof.
-Cranker uses the signed VERIFIED projection and current lease to request
-authorization and Mother co-signing. The outer transaction contains
-`register_tcap_credit_authorization_v2` followed by its bound Memo;
-program nesting is TSNP → TCAP → GPRU. TCAP commits the shared root and
-equal pending-to-settled liability shift only after validation. See the
-[exact credit ABI](../docs/laboratory/credit-abi.md) for account order,
-authorization digest and twelve-input/thirteen-IC-point proof contract.
+Settlement preparation rechecks confirmed funding, TIP/current private state and a released immutable sealed funding pool. Node binds an encrypted owner record and freshly blinded amount commitment, proves locally and returns the attested public execution. Cranker obtains lease-bound Mother signing and submits `tsn_register_tcap_credit_authorization_v3` followed by Memo. TSNP → TCAP → GPRU advances root/epoch transcript, with readonly reserve and no individual liability reclassification. Separate complete epoch work authenticates the 2–64-credit total and accounts once. See [ABI](../docs/laboratory/credit-abi.md).
 
 The credit call takes shared roots and verifier accounts, without a public
 recipient TIN registry, per-TIN latest tip or recipient token account. It does
@@ -139,21 +138,9 @@ compatibility review rather than an assumed migration.
 
 ## Privacy, readiness and recovery
 
-Funding exposes sender/token accounts, asset, amount and signature. Settlement
-exposes roots, nullifier, action/amount, successor point, encrypted Memo and
-ephemeral values, accounts and timing. Current Node source computes its public
-nullifier from public TCAP program/deposit-signature bytes, so an observer can
-link funding to credit. Hidden identity/head witnesses do not establish full
-unlinkability or owner-only knowledge; Node processes sensitive routing and
-witness material. [Cryptography](../docs/laboratory/cryptography.md) records the
-exact disclosure boundary and proof-bound owner-delta relation.
+Deposits expose wallets, token/amount and signature. Individual credit exposes a blinded amount commitment, token, roots, nullifier, successor points and ciphertext; its reserve does not change. Sealed pool capture requires two positive unspent members and two source wallets, and common release windows adapt to traffic. Epoch accounting exposes a complete 2–64-credit total. Known amounts/spends, timing, recipient-registry history and Node knowledge can still support inference. [Cryptography](../docs/laboratory/cryptography.md) records these limits; historical public disclosures remain on chain.
 
-Local witness/prover adapters exist and require pinned matching artifacts,
-initialized roots/verifier/assets and current snapshots. Missing prerequisites
-fail closed. The [dated development experiment](../docs/laboratory/experiments/EXP-20261102-hidden-head.md)
-records build/key/local-test evidence; it does not establish current deployment,
-live proof compute, a complete credit or validated owner history. The
-[status ledger](../docs/DOCUMENTATION_STATUS.md) distinguishes those results.
+The experimental replacement has pinned witness/prover adapters, isolated real credit/epoch proof tests and native verification. [November 7 evidence](../docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md) separates those checks from unverified SBF build, operator activation and complete live credit/accounting. November 2–5 receipts belong to older amount-public ABIs. Retained payout/exit and provider rewards require separate implementation or execution review.
 
 An expired wallet-signed funding wire requires a rebuilt transaction and fresh
 wallet signature. A stale root/proof or lease requires current-state

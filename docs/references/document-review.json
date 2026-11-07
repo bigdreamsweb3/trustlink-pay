@@ -2227,17 +2227,6 @@
       "docs/references/TSN-OPERATOR-GUIDE-20261105.md"
     ]
   },
-  "tsn-protocol/tsn-docs/operators/run-your-own-tsn.mdx": {
-    "status": "CURRENT",
-    "reason": "Source-backed installation/operation and bounded verification procedure; independent fresh-network replay, production ceremony and live funded-note completion explicitly unverified.",
-    "evidence": [
-      "package.json",
-      "scripts/hidden-head-setup.mjs",
-      "protocol-tests/ui/server.mjs",
-      "tsn-protocol/services/tsn-node/server.py",
-      "docs/references/TSN-OPERATOR-GUIDE-20261105.md"
-    ]
-  },
   "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md": {
     "status": "EXPERIMENTAL",
     "reason": "Private-amount/sealed-pool/complete-epoch replacement with bounded real-proof/native/offline evidence; SBF, activation and full live flow unverified.",

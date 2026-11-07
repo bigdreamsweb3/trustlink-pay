@@ -1,6 +1,8 @@
 # Build and operate your own TSN
 
-**Status: EXPERIMENTAL private-credit operator procedure, reviewed 2026-11-07.** This guide follows the replacement source; its SBF build, on-chain rekey/epoch activation and complete credit/accounting flow remain unverified. November 5 finalized receipts belong to the historical amount-public ABI. [November 7 offline evidence](laboratory/experiments/EXP-20261107-private-credit-epoch.md) and the [prior operating record](references/TSN-OPERATOR-GUIDE-20261105.md) distinguish checks from missing clean-machine and independent-network validation.
+**Status: EXPERIMENTAL private-credit operator procedure, reviewed 2026-11-07.** This guide follows the replacement source. The operator reported successful SBF deployments; subsequent read-only November 7 checks verified both exact enabled credit/epoch keys and two wallet deposits. Independent deployed-binary comparison and the complete private-credit/accounting flow remain unverified. November 5 finalized receipts belong to the historical amount-public ABI. [November 7 offline evidence](laboratory/experiments/EXP-20261107-private-credit-epoch.md) and the [prior operating record](references/TSN-OPERATOR-GUIDE-20261105.md) distinguish checks from missing clean-machine and independent-network validation.
+
+**Publication scope: INTERNAL development guide.** Keep this procedure in docs/ while TSN is under construction. Community documentation and the tsn-protocol subtree must not publish or promote this guide until the user explicitly requests its release.
 
 ## 1. Choose the deployment you intend to operate
 
@@ -176,6 +178,28 @@ node scripts/tcap-epoch-setup.mjs init --rpc https://api.devnet.solana.com --wal
 
 Replace paths with the retained matching set. Setup defaults to `circuits/tcap_epoch_v1/build/tcap_epoch_v1` and `dev/tcap_epoch_dev_only.zkey`. It verifies Ptau/zkey and exports six IC points; an existing prepared development Ptau may be selected with `GPRU_EPOCH_PTAU_FINAL_PATH`. The initializer is read-only unless `--send` is supplied, accepts matching disabled-upload resume, and requires explicit `rekey` for a mismatched existing key. The epoch verifier is a new 940-byte PDA at `[gpru:tcap-epoch-verifier:v1]`. Pool and credit-epoch accounts are created by normal Mother-authorized work; they have no manual initialization step. Credit epoch uses reserve accounting_epoch in the existing 201-byte layout.
 
+### Existing reference Devnet activation: November 7 local preparation
+
+The operator reported successful program deployments and the Windows native release build. Independent deployed-binary comparison remains unverified. Local preparation retained the previously validated matching credit and epoch sets in `protocol-test-runs/private-credit-20261107/credit` and `epoch`, verified all five source/runtime artifact hashes per set and the initializer-to-runtime VK encoding/commitments, and checked the Windows DLL against the Poseidon reference vector and arities 1–5. Node's `.env` now contains both six-field artifact sets and its native-library path; only those thirteen overrides were removed from `.env.local`. Unrelated configuration and the existing witness-directory setting were verified unchanged against private backups. This checkout-specific preparation is not a portable installation result.
+
+Read-only Devnet checks at slots 519695668–519695833 found the existing enabled V2 credit verifier carrying a different key and no epoch verifier. The TCAP state root was active at sequence 5, with funding leaf count 1. The reviewed operations are six credit-rekey transactions and four epoch-initialization transactions, all within the standard 1232-byte packet limit. No activation transaction was signed or submitted by the assistant.
+
+From the repository root in **Windows PowerShell**, the operator can execute these one-time operations with the retained matching artifacts and existing Mother keypair:
+
+```powershell
+node scripts/hidden-head-setup.mjs rekey-verifier --rpc https://api.devnet.solana.com --wallet tsn-protocol/services/tsn-node/keys/mother-node-keypair.json --args protocol-test-runs/private-credit-20261107/credit/dev/verifier-init-args.json --send
+node scripts/tcap-epoch-setup.mjs init --rpc https://api.devnet.solana.com --wallet tsn-protocol/services/tsn-node/keys/mother-node-keypair.json --args protocol-test-runs/private-credit-20261107/epoch/dev/verifier-init-args.json --send
+```
+
+Require the first command's exact-key/fourteen-IC confirmation before proceeding to the second, then require its enabled/six-IC confirmation. Verify both exact key sets without sending:
+
+```powershell
+node scripts/hidden-head-setup.mjs init-verifier --rpc https://api.devnet.solana.com --args protocol-test-runs/private-credit-20261107/credit/dev/verifier-init-args.json
+node scripts/tcap-epoch-setup.mjs init --rpc https://api.devnet.solana.com --args protocol-test-runs/private-credit-20261107/epoch/dev/verifier-init-args.json
+```
+
+Both checks should report an already-matching verifier with no transactions needed. An interrupted matching disabled upload can resume through these commands with the Mother wallet and `--send`; do not rerun `rekey-verifier` merely to resume. Preserve existing roots, nullifiers and witness state. Reload Node from a fresh PowerShell terminal only after both verifier checks succeed; inherited old artifact variables take precedence over `.env`. Live activation, multiwallet credit and complete epoch accounting remain unverified until the corresponding receipts and accounting are inspected.
+
 ## 8. Persist Node artifact settings and witness state
 
 Place the following in `tsn-protocol/services/tsn-node/.env`, using absolute paths for that machine. This example assumes the default artifact directory; a retained matching artifact set may use a different stable directory.
@@ -311,4 +335,4 @@ A turnkey independent-network initializer, configurable program-ID coverage, pro
 
 ## Planned private amount and adaptive pool replacement
 
-The November 7 replacement uses a freshly blinded amount commitment and no per-credit liability reclassification. Node creates `TCAP_FUNDING_POOL` and `TCAP_EPOCH_ACCOUNTING` work, Receiver coordinates verification/leases, and Cranker submits the exact Mother-authorized transaction. Capture requires two positive unspent member notes and two source wallets; zero-value actors do not qualify. Defaults adapt target 2–8 and shared windows 24/48/96 slots. Accounting is considered at 120 slots or 64 credits and requires at least two credits. Empty-network latency is unguaranteed. [ADR-005](laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md) records missing privacy/scalability checks; [ABI](laboratory/credit-abi.md) records contracts. Liquidity-provider admission and ongoing fee rewards remain outside this implementation.
+The November 7 replacement uses a freshly blinded amount commitment and no per-credit liability reclassification. Node creates `TCAP_FUNDING_POOL` and `TCAP_EPOCH_ACCOUNTING` work, Receiver coordinates verification/leases, and Cranker submits the exact Mother-authorized transaction. Capture requires two positive unspent member notes and two source wallets; zero-value actors do not qualify. Defaults adapt target 2–8 and shared windows 24/48/96 slots. Release is chosen after the census from a fresh root read, with a measured budget for both later authorization passes and transport; this preserves the two-wallet floor and TCAP’s 5000-slot cap. Repeated unsigned `TCAP_POOL_CAPTURE_STALE` before the November 7 timing fix requires reloading the corrected Node, which lets existing leased work retry without another deposit or program deployment. Accounting is considered at 120 slots or 64 credits and requires at least two credits. Empty-network latency is unguaranteed. [ADR-005](laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md) records missing privacy/scalability checks; [ABI](laboratory/credit-abi.md) records contracts. Liquidity-provider admission and ongoing fee rewards remain outside this implementation.

@@ -40,7 +40,7 @@ TCAP verifies the complete transcript through the separate GPRU verifier, moves 
 
 ## Scheduling, recovery and activation
 
-Inventory and queue selection use bounded pages. Defaults adapt target 2–8 notes and shared windows 24/48/96 slots to recent qualified arrivals, with a two-wallet floor. Accounting is considered after 120 slots or at 64 credits; bounded wake checks continue while accounting is pending. These are defaults, not measured latency guarantees.
+Inventory and queue selection use bounded pages. Defaults adapt target 2–8 notes and shared windows 24/48/96 slots to recent qualified arrivals, with a two-wallet floor. Node selects the shared release boundary after a fresh post-census root read, budgeting twice the observed census duration plus 48 slots for both later authorizations and transport, capped at 4800 slots before boundary rounding. Authorization rechecks root/count and release expiry after its own census; stale unsigned work requires re-verification. Accounting is considered after 120 slots or at 64 credits; bounded wake checks continue while accounting is pending. These are defaults, not measured latency guarantees.
 
 Obsolete captures are retired; unsigned stale authorizations return to Node verification. Durable signed attempts are reconciled before replacement. Mother signing and receipt repair inspect exact signer order, permissions, instruction bytes and Memo. Encrypted owner record V2 carries the opening; SDK verifies it against the public commitment. Historical 825/857-byte receipts remain independently readable; active builders support only the new ABI.
 

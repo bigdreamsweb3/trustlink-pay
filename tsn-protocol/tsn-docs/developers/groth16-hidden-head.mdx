@@ -3,7 +3,7 @@ title: "How GPRU Proofs Guard User State"
 description: "A plain-language overview of the zero-knowledge proof intended to protect private state before TCAP settlement."
 ---
 
-The experimental private-credit replacement keeps thirteen public inputs and a V2 verifier with fourteen IC points, but needs newly matching circuit keys. Existing V2 amount-public keys require explicit rekey; V1 accounts require their separate one-time layout migration. Complete epoch accounting has a separate five-input verifier/key and six IC points. [Operator setup](/operators/run-your-own-tsn) distinguishes deployment, funding-root initialization, credit rekey, epoch enrollment and persistent service configuration.
+The experimental private-credit replacement keeps thirteen public inputs and a V2 verifier with fourteen IC points, but needs newly matching circuit keys. Existing V2 amount-public keys require explicit rekey; V1 accounts require their separate one-time layout migration. Complete epoch accounting has a separate five-input verifier/key and six IC points. Deployment, funding-root initialization, credit rekey, epoch enrollment and persistent service configuration are separate prerequisites.
 
 GPRU is designed to guard the integrity and privacy of a user's private state as it is presented to TCAP for a balance-changing action. A Groth16 proof lets a verifier check a statement about hidden data without receiving the private data itself.
 

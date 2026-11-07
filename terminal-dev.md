@@ -311,8 +311,13 @@ Before the XP credit test:
 - How does this proving-key work, from how it created with code in program/script to what really happens?
 - What is R1CS? How run the Groth16 setup? and this is zk-snarks right and please which protocol own this zk gpru or tcap or what?
 - What are all this tip snapshot we are talking about where is it needed or coming from who owns it and what is it for?
-
 - where is this nullifier seen publicly in a credit tx "hashing your public deposit signature with the fixed label and TCAP program ID reproduced the credit’s published nullifier exactly."?
+- What is this "node-native-funded-note"? (Set-Location "C:\Users\codepara\Desktop\trust-link"
+  cargo build --locked --release --manifest-path tsn-protocol/programs/gpru/Cargo.toml --target-dir tsn-protocol/programs/gpru/target/node-native-funded-note)
+- Why do we have to run and when "Set-Location "C:\Users\codepara\Desktop\trust-link"
+  node scripts/hidden-head-setup.mjs rekey-verifier --rpc https://api.devnet.solana.com --wallet tsn-protocol/services/tsn-node/keys/mother-node-keypair.json --args protocol-test-runs/private-credit-20261107/credit/dev/verifier-init-args.json --send"?
+
+-
 
 <!-- TO DO -->
 

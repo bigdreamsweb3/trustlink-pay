@@ -33,6 +33,7 @@ import { resolveSolanaRpcUrls } from "../../../sdks/tsn-sdk/src/rpc.js";
 import { createDbrixSettlementMemoInstruction } from "../src/dbrix/settlement-memo.js";
 import { sendSettlementV1 } from "../src/dbrix/settlement-transport.js";
 import { ConfirmedReceiptReportPending, RetryableConfirmedReportError, confirmedReportAvailabilityError, sendConfirmedWorkReport } from "../src/receiver/confirmed-report.js";
+import { nativeConflictReason, nativeWorkRetryReason } from "../src/receiver/native-retry.js";
 import { assertSealedFundingPool } from "../src/dbrix/funding-root.js";
 import {
   getTinsGlobalStatePda,
@@ -466,9 +467,8 @@ async function receiverRequest<T>(
     if (!response.ok) {
       let rejection: { detail?: unknown; error?: unknown } = {};
       try { rejection = JSON.parse(responseText) as { detail?: unknown; error?: unknown }; } catch { /* Keep unstructured failures descriptive. */ }
-      if (response.status === 409 && rejection.detail === "TCAP_FUNDING_ROOT_CHANGED_BEFORE_SETTLEMENT") {
-        throw new Error("TCAP_FUNDING_ROOT_CHANGED_BEFORE_SETTLEMENT");
-      }
+      const nativeReason = nativeConflictReason(response.status, rejection);
+      if (nativeReason) throw new Error(nativeReason);
       if (signal && confirmedReportAvailabilityError(response.status, rejection.error)) throw new RetryableConfirmedReportError("Receiver receipt verification temporarily unavailable");
       throw new Error(`Receiver request failed (${response.status}): ${responseText.slice(0, 300)}`);
     }
@@ -1168,16 +1168,13 @@ async function main() {
           continue;
         }
         crankerLog(`work processing failed id=${work.id} kind=${work.kind} error=${error instanceof Error ? error.message : String(error)}`);
-        if (["SETTLEMENT","TCAP_FUNDING_POOL","TCAP_EPOCH_ACCOUNTING"].includes(work.kind) && !work.result?.signature
-            && error instanceof Error && ["TCAP_FUNDING_ROOT_CHANGED_BEFORE_SETTLEMENT",
-              "TCAP_SHARED_REPLAY_ROOT_CHANGED_BEFORE_SETTLEMENT","TCAP_POOL_CAPTURE_STALE",
-              "TCAP_CREDIT_EPOCH_CHANGED_BEFORE_SETTLEMENT","TCAP_EPOCH_ALREADY_ACCOUNTED",
-              "TCAP credit authorization expired"].includes(error.message)) {
+        const retryReason = nativeWorkRetryReason(work, error);
+        if (retryReason) {
           try {
             await receiverRequest(signer, "POST", {
-              id: work.id, expectedVersion: work.stateVersion, reason: error.message,
+              id: work.id, expectedVersion: work.stateVersion, reason: retryReason,
             }, "/api/cranker/work/retry");
-            crankerLog(`stale funded-note proof requeued id=${work.id}`);
+            crankerLog(`unsigned native work requeued id=${work.id}`);
           } catch (retryError) {
             // A concurrent receipt/version change must be reconciled; do not
             // overwrite it with FAILED or attempt a replacement transaction.

@@ -80,7 +80,7 @@ from hidden_head_prover import PUBLIC_SIGNALS, prove_hidden_head_credit
 from funding_note import validate_funding_note, funding_nullifier
 from funding_snapshot_sync import FUNDING_ROOT_CHANGED, funding_root_address, read_funding_root, ensure_funding_snapshot, funding_membership, read_sealed_pool, sealed_pool_address
 from credit_amount import commitment as credit_amount_commitment, read_opening
-from private_credit_coordination import PrivateCreditWait, read_epoch, qualified_sources, admitted_pool_sources, schedule, epoch_credits, build_epoch_witness
+from private_credit_coordination import PrivateCreditWait, read_epoch, qualified_sources, admitted_pool_sources, schedule, PoolCaptureTiming, epoch_credits, build_epoch_witness
 
 _node_root = Path(__file__).resolve().parent
 # Local development is local-first. The hosted .env remains a fallback for
@@ -2877,6 +2877,7 @@ async def _settlement_funding_context(funding: dict[str, Any]) -> tuple[CreateIn
     return request, asset, {**context, "receipt": receipt, "nullifier": nullifier}
 
 
+_pool_capture_timing = PoolCaptureTiming()
 _private_coordination_pending = False
 _private_inventory: list[dict[str, Any]] = []
 
@@ -2987,8 +2988,10 @@ async def _verify_private_coordination_work(work: dict) -> dict:
         rows = admitted_pool_sources(await _qualified_private_funding(payload["assetEntry"],directory), snapshot)
         sources = len({r["wallet"] for r in rows})
         if len(rows) < 2 or sources < 2: raise PrivateCreditWait("TCAP_PRIVATE_POOL_NOT_READY")
-        _, window = schedule([r["slot"] for r in rows],root["slot"])
-        release = ((root["slot"] // window)+1)*window
+        checked = await read_funding_root(solana_rpc)
+        if checked["root"] != root["root"] or checked["count"] != root["count"]:
+            raise ValueError("TCAP_POOL_CAPTURE_ROOT_CHANGED")
+        release = _pool_capture_timing.release(payload["assetEntry"], [r["slot"] for r in rows], root["slot"], checked["slot"])
         value = {**payload,"eligibleNoteCount":str(len(rows)),"sourceWalletCount":sources,"releaseSlot":str(release)}
         return {"verifiedPayload":{"tcapFundingPool":value},"verificationType":"TSN_TCAP_FUNDING_POOL_V1"}
     epoch = await read_epoch(solana_rpc,payload["assetEntry"],payload["reserveState"])
@@ -3502,9 +3505,25 @@ async def _authorize_private_coordination(work: dict, operator: str) -> dict:
         root = await read_funding_root(solana_rpc)
         snapshot = await ensure_funding_snapshot(directory, root, solana_rpc)
         rows = admitted_pool_sources(await _qualified_private_funding(value["assetEntry"],directory), snapshot)
-        if (root["root"] != value["root"] or len(rows) != int(value["eligibleNoteCount"])
-            or len({r["wallet"] for r in rows}) != value["sourceWalletCount"]
-            or not root["slot"] <= int(value["releaseSlot"]) <= root["slot"]+5000):
+        checked = await read_funding_root(solana_rpc)
+        # Learn from both later passes, including an expired unsigned capture.
+        # Only public elapsed slots are retained; every admission is revalidated.
+        _pool_capture_timing.observe(value["assetEntry"], root["slot"], checked["slot"])
+        stale_cause = None
+        if not 0 < root["slot"] <= checked["slot"]:
+            stale_cause = "RPC_CONTEXT_INVALID"
+        elif root["root"] != value["root"] or checked["root"] != root["root"] or checked["count"] != root["count"]:
+            stale_cause = "FUNDING_ROOT_CHANGED"
+        elif (len(rows) < 2 or len({r["wallet"] for r in rows}) < 2
+              or len(rows) != int(value["eligibleNoteCount"])
+              or len({r["wallet"] for r in rows}) != value["sourceWalletCount"]):
+            stale_cause = "ELIGIBLE_SOURCES_CHANGED"
+        elif int(value["releaseSlot"]) < checked["slot"]:
+            stale_cause = "RELEASE_EXPIRED"
+        elif int(value["releaseSlot"]) > checked["slot"]+5000:
+            stale_cause = "RELEASE_OUT_OF_RANGE"
+        if stale_cause:
+            logger.info("TCAP funding pool authorization deferred: work_id=%s reason=TCAP_POOL_CAPTURE_STALE cause=%s", work["id"], stale_cause)
             raise HTTPException(409,"TCAP_POOL_CAPTURE_STALE")
     else:
         epoch = await read_epoch(solana_rpc,value["assetEntry"],value["reserveState"])

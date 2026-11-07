@@ -293,7 +293,12 @@ async function lease(
         }
         transaction.set(lockRef, { workId: current.id });
       }
-      const expiresAt = new Date(Date.now() + 60_000).toISOString();
+      // Native execution includes two full Node authorization passes before
+      // signing, then bounded broadcast/confirmation. Recovery stays finite.
+      const nativeCranker = next === "CRANKER_LEASED" && (current.kind === "TCAP_FUNDING_POOL"
+        || current.kind === "TCAP_EPOCH_ACCOUNTING"
+        || (current.kind === "SETTLEMENT" && current.verification?.verificationType === "TSN_TCAP_GPRU_HIDDEN_HEAD_V1"));
+      const expiresAt = new Date(Date.now() + (nativeCranker ? 180_000 : 60_000)).toISOString();
       const patch = {
         status: next,
         stateVersion: current.stateVersion + 1,

@@ -64,7 +64,7 @@ that account reads or transaction submission work.
 
 A chain-confirmed transaction can outlive its 60-second Cranker lease. Receiver accepts a late native CONFIRMED report only after finalized receipt verification against the durable signed checkpoint, original reporting payer and expired authorization/lease generation. It checks both signatures, wire identity, exact authorized instruction/Memo, canonical accounts and resulting TCAP root; another lease or changed receipt fails. Signing still requires an active lease.
 
-Cranker retries temporary RPC/finality and report transport failures with the identical confirmation body up to six times, using a 25-second deadline covering authentication/report requests and five seconds between attempts. Receipt or authorization mismatches are not retried. A remaining write failure logs a pending receipt with the existing signature and does not produce a FAILED transaction report. Reload Receiver and Cranker after this correction. Already FAILED receipts use the receipt-only operator utility; see [the finalized reference credit and recovery command](../../../docs/references/TSN-OPERATOR-GUIDE-20261105.md#expired-cranker-confirmation-report).
+Cranker retries temporary RPC/finality and report transport failures with the identical confirmation body up to six times, using a 25-second deadline covering authentication/report requests and five seconds between attempts. Receipt or authorization mismatches are not retried. A remaining write failure logs a pending receipt with the existing signature and does not produce a FAILED transaction report. Reload Receiver and Cranker after this correction. Already FAILED receipts use the receipt-only operator utility; see [the finalized reference credit and recovery command](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/references/TSN-OPERATOR-GUIDE-20261105.md#expired-cranker-confirmation-report).
 
 ## Local Operation
 
@@ -75,7 +75,7 @@ npm run crank:start
 
 For the complete setup sequence, Mother Escrow PDA derivation, vault
 initialization, environment configuration, and troubleshooting, see
-[the Cranker operator guide](../../../docs/CRANKER-OPERATOR-GUIDE.md). Run the commands above from this package only when operating the intended registered environment.
+[the Cranker operator guide](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/CRANKER-OPERATOR-GUIDE.md). Run the commands above from this package only when operating the intended registered environment.
 
 ## Security Rules
 
@@ -96,14 +96,14 @@ initialization, environment configuration, and troubleshooting, see
 
 ## Related Docs
 
-- [Cranker operator guide](../../../docs/CRANKER-OPERATOR-GUIDE.md)
-- [Native transaction contract](../../../docs/laboratory/credit-abi.md)
-- [TSN operations and verification](../../../docs/laboratory/operations-and-verification.md)
+- [Cranker operator guide](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/CRANKER-OPERATOR-GUIDE.md)
+- [Native transaction contract](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/credit-abi.md)
+- [TSN operations and verification](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/operations-and-verification.md)
 
-For a team's complete installation, deployment, initialization and persistent service setup, use [Build and operate your own TSN](../../../docs/RUN-YOUR-OWN-TSN.md). Gateway bank failover also preserves the exact request; it cannot extend the owner-signed deposit's blockhash lifetime.
+Gateway bank failover preserves the exact request; it cannot extend the owner-signed deposit's blockhash lifetime.
 
 ## Experimental private-credit and aggregate accounting
 
 The current replacement hides individual credit amount in a freshly blinded commitment, keeps reserve liabilities unchanged on credit, and uses dedicated `TCAP_FUNDING_POOL` and `TCAP_EPOCH_ACCOUNTING` work. Node validates positive unspent captured members and source-wallet counts, prepares current-root proofs and complete ordered epoch openings; Receiver paginates/defer leases and serializes native verification; Cranker submits exact lease-bound Mother-authorized transactions. Pool capture needs two notes/two wallets, and complete accounting requires 2–64 credits. Common windows adapt to traffic; zero-value actors never qualify a pool. Signed uncertain attempts remain locked for exact finalized receipt reconciliation.
 
-Node must retain its protected amount-opening journal and configure both credit and six `GPRU_EPOCH_*` artifact settings. [Operator activation](../../../docs/RUN-YOUR-OWN-TSN.md) specifies explicit credit rekey and the separate epoch verifier. [ABI](../../../docs/laboratory/credit-abi.md) and [offline evidence](../../../docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md) distinguish implemented checks from unverified SBF/activation/live payment. Deposit amounts, aggregate totals, metadata, Node knowledge and recipient/head correlations remain privacy limits; provider admission/rewards are outside this change.
+Node must retain its protected amount-opening journal and configure both credit and six `GPRU_EPOCH_*` artifact settings. Explicit credit rekey and separate epoch-verifier enrollment require matching keys. [ABI](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/credit-abi.md) and [offline evidence](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md) distinguish implemented checks from unverified SBF/activation/live payment. Deposit amounts, aggregate totals, metadata, Node knowledge and recipient/head correlations remain privacy limits; provider admission/rewards are outside this change.

@@ -1,13 +1,6 @@
 {
   "scope": "Both documentation trees, .codex Markdown and AGENTS/root/protocol README entries: MDX compilation and Mermaid syntax parsing; does not test Mintlify theme/browser rendering, external links or live endpoints.",
-  "mdxCompiled": 103,
-  "diagramsParsed": 37,
-  "failures": [
-    {
-      "file": "tsn-protocol/tsn-docs/developers/payment-intent-lifecycle.mdx",
-      "line": 39,
-      "kind": "Mermaid",
-      "error": "Error: Parse error on line 14:\n... leased Cranker work  N->>N: Wait for c\n-----------------------^\nExpecting 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'BIDIRECTIONAL_SOLID_ARROW', 'DOTTED_ARROW', 'BIDIRECTIONAL_DOTTED_ARROW', 'SOLID_CROSS', 'DOTTED_CROSS', 'SOLID_POINT', 'DOTTED_POINT', got 'NEWLINE'"
-    }
-  ]
+  "mdxCompiled": 102,
+  "diagramsParsed": 38,
+  "failures": []
 }

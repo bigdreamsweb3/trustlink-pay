@@ -12,6 +12,8 @@ Use [Laboratory architecture](laboratory/architecture-map.md), [components](labo
 
 ## Two destinations and existing directory conventions
 
+The run-your-own-TSN guide is internal development material while the network is under construction. Maintain docs/RUN-YOUR-OWN-TSN.md without adding its page, navigation or promotion to community documentation, public README entry points or the tsn-protocol subtree until the user explicitly requests publication. For repository-file links in tsn-protocol, keep destinations within that subtree relative; destinations outside it use https://github.com/bigdreamsweb3/trustlink-pay/blob/main/ plus the workspace-relative path and any anchor. The TrustLink Labs repository receives only tsn-protocol. Genuine third-party website links keep their original destinations.
+
 | Destination | Responsibility | Keep out |
 | --- | --- | --- |
 | `docs/` | Internal Laboratory, engineering contracts, source/account details, experiments, decisions, runbooks and bounded evidence | Credentials, secrets, private witnesses, raw private payloads and replayable service tokens |

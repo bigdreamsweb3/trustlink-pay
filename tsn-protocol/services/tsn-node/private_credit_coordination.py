@@ -4,6 +4,7 @@ Distinct source wallets are an admission measure, not proof of independent peopl
 Only the TCAP transcript and aggregate proof authorize liability reclassification.
 """
 from __future__ import annotations
+from collections import deque
 import base64, hashlib, time
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,39 @@ def schedule(arrival_slots: list[int], slot: int) -> tuple[int, int]:
     target = max(2, min(8, 2 + recent // 8))
     window = 24 if recent >= 16 else 48 if recent >= 4 else 96
     return target, window
+
+
+def pool_release_slot(arrival_slots: list[int], started_slot: int, checked_slot: int,
+                      census_slots: int = 0) -> int:
+    """Budget both later censuses before selecting a shared release boundary."""
+    if (type(started_slot) is not int or type(checked_slot) is not int
+            or not 0 < started_slot <= checked_slot
+            or type(census_slots) is not int or census_slots < 0):
+        raise PrivateCreditWait("TCAP_POOL_CAPTURE_STALE")
+    _, window = schedule(arrival_slots, checked_slot)
+    # Lease authorization and Mother co-signing each recheck the full census.
+    # Keep 48 slots for other RPC/transport work and stay inside TCAP's 5000-slot cap.
+    budget = min(4800, 2 * max(checked_slot - started_slot, census_slots) + 48)
+    return ((checked_slot + budget) // window + 1) * window
+
+
+class PoolCaptureTiming:
+    """Bounded, short-lived public timing observations; never cache admission results."""
+    def __init__(self):
+        self.observations = deque(maxlen=32)
+
+    def observe(self, asset: str, started_slot: int, checked_slot: int) -> None:
+        if (type(started_slot) is int and type(checked_slot) is int
+                and 0 < started_slot <= checked_slot):
+            self.observations.append((asset, checked_slot - started_slot, time.monotonic()))
+
+    def release(self, asset: str, arrival_slots: list[int], started_slot: int, checked_slot: int) -> int:
+        self.observe(asset, started_slot, checked_slot)
+        cutoff = time.monotonic() - 300
+        while self.observations and self.observations[0][2] < cutoff:
+            self.observations.popleft()
+        slowest = max((slots for key, slots, _ in self.observations if key == asset), default=0)
+        return pool_release_slot(arrival_slots, started_slot, checked_slot, slowest)
 
 
 def qualified_sources(rows: list[dict], consumed: set[str]) -> list[dict]:

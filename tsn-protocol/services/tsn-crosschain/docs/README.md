@@ -1,7 +1,7 @@
 # TSN Cross-Chain
 
 For the evidence-backed contract and token inventory, see the team
-[verified-address register](../../../docs/team/cross-chain/verified-addresses.md).
+[verified-address register](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/team/cross-chain/verified-addresses.md).
 Only deployed and network-checked addresses belong in that register.
 
 This folder is the EVM and Attestcoin boundary for TSN. Solana remains the
@@ -116,7 +116,7 @@ the intended testnet.
 - [Attestcoin examples](https://github.com/gluwa/attestcoin-protocol-examples)
 
 The TSN facade remains in
-[`tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts`](../../sdks/tsn-sdk/src/cross-chain.ts)
+[`tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts`](../../../sdks/tsn-sdk/src/cross-chain.ts)
 and does not expose direct TCAP or TIN implementation imports.
 
 ## Guide maintenance rule

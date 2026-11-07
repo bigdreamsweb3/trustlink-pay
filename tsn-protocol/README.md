@@ -14,8 +14,6 @@ Cranker submits permitted transactions, and Mother authority co-signs
 settlement. The diagram describes current source, with configuration and live
 evidence limits below.
 
-For installation, fresh initialization, persistent service settings and failure recovery, use [Build and operate your own TSN](../docs/RUN-YOUR-OWN-TSN.md) and the [public operator entry](tsn-docs/operators/run-your-own-tsn.mdx).
-
 ## Wallet-to-TIN credit flow and data boundaries
 
 ```mermaid
@@ -127,7 +125,7 @@ Cranker can submit that unchanged wire. Receiver pre-creates the linked
 settlement reference at ingress, and confirmed funding gates Node's settlement
 verification lease.
 
-Settlement preparation rechecks confirmed funding, TIP/current private state and a released immutable sealed funding pool. Node binds an encrypted owner record and freshly blinded amount commitment, proves locally and returns the attested public execution. Cranker obtains lease-bound Mother signing and submits `tsn_register_tcap_credit_authorization_v3` followed by Memo. TSNP → TCAP → GPRU advances root/epoch transcript, with readonly reserve and no individual liability reclassification. Separate complete epoch work authenticates the 2–64-credit total and accounts once. See [ABI](../docs/laboratory/credit-abi.md).
+Settlement preparation rechecks confirmed funding, TIP/current private state and a released immutable sealed funding pool. Node binds an encrypted owner record and freshly blinded amount commitment, proves locally and returns the attested public execution. Cranker obtains lease-bound Mother signing and submits `tsn_register_tcap_credit_authorization_v3` followed by Memo. TSNP → TCAP → GPRU advances root/epoch transcript, with readonly reserve and no individual liability reclassification. Separate complete epoch work authenticates the 2–64-credit total and accounts once. See [ABI](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/credit-abi.md).
 
 The credit call takes shared roots and verifier accounts, without a public
 recipient TIN registry, per-TIN latest tip or recipient token account. It does
@@ -138,9 +136,9 @@ compatibility review rather than an assumed migration.
 
 ## Privacy, readiness and recovery
 
-Deposits expose wallets, token/amount and signature. Individual credit exposes a blinded amount commitment, token, roots, nullifier, successor points and ciphertext; its reserve does not change. Sealed pool capture requires two positive unspent members and two source wallets, and common release windows adapt to traffic. Epoch accounting exposes a complete 2–64-credit total. Known amounts/spends, timing, recipient-registry history and Node knowledge can still support inference. [Cryptography](../docs/laboratory/cryptography.md) records these limits; historical public disclosures remain on chain.
+Deposits expose wallets, token/amount and signature. Individual credit exposes a blinded amount commitment, token, roots, nullifier, successor points and ciphertext; its reserve does not change. Sealed pool capture requires two positive unspent members and two source wallets, and common release windows adapt to traffic. Epoch accounting exposes a complete 2–64-credit total. Known amounts/spends, timing, recipient-registry history and Node knowledge can still support inference. [Cryptography](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/cryptography.md) records these limits; historical public disclosures remain on chain.
 
-The experimental replacement has pinned witness/prover adapters, isolated real credit/epoch proof tests and native verification. [November 7 evidence](../docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md) separates those checks from unverified SBF build, operator activation and complete live credit/accounting. November 2–5 receipts belong to older amount-public ABIs. Retained payout/exit and provider rewards require separate implementation or execution review.
+The experimental replacement has pinned witness/prover adapters, isolated real credit/epoch proof tests and native verification. [November 7 evidence](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md) separates those checks from unverified SBF build, operator activation and complete live credit/accounting. November 2–5 receipts belong to older amount-public ABIs. Retained payout/exit and provider rewards require separate implementation or execution review.
 
 An expired wallet-signed funding wire requires a rebuilt transaction and fresh
 wallet signature. A stale root/proof or lease requires current-state
@@ -156,21 +154,21 @@ reimbursement are a separate retained program family. TCAP one-time-tip,
 funding-commitment, debit/exit and external-route surfaces have independent
 accounts, authorization and reachability requirements. Their existence does
 not prove live delivery, and native-credit evidence must not be generalized
-to them. [State and route diagrams](../docs/laboratory/state-and-route-diagrams.md)
-and [component records](../docs/laboratory/components.md) explain these
+to them. [State and route diagrams](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/state-and-route-diagrams.md)
+and [component records](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/components.md) explain these
 boundaries. ZK-PRU is retired historical context, not an integration target.
 
 ## Start here
 
-- [Laboratory architecture and source map](../docs/laboratory/architecture-map.md)
-- [Identity and TIN](../docs/identity-and-tin.md)
-- [Native credit accounts and proof ABI](../docs/laboratory/credit-abi.md)
-- [Invariants and recovery](../docs/laboratory/invariants.md)
+- [Laboratory architecture and source map](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/architecture-map.md)
+- [Identity and TIN](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/identity-and-tin.md)
+- [Native credit accounts and proof ABI](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/credit-abi.md)
+- [Invariants and recovery](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/invariants.md)
 - [Public protocol and SDK handbook](tsn-docs/README.md)
-- [Architecture terminology](../.codex/architecture-terminology.md)
-- [Documentation maintenance manual](../docs/DOCUMENTATION_MAINTENANCE.md)
+- [Architecture terminology](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/.codex/architecture-terminology.md)
+- [Documentation maintenance manual](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/DOCUMENTATION_MAINTENANCE.md)
 
 These links target the actual workspace documentation tree. Consult applicable
-[repository instructions](../AGENTS.md) and current executable contracts before
+[repository instructions](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/AGENTS.md) and current executable contracts before
 editing protocol behavior, and preserve user-managed keys, deployments and
 services.

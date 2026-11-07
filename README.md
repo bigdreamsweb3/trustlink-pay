@@ -17,7 +17,6 @@ balance accounting used by the current credit architecture.
 
 ## TrustLink Labs resources
 
-- [Build and operate your own TSN](docs/RUN-YOUR-OWN-TSN.md)
 
 - [Earlier hosted TrustLink Pay application](https://trustlink-pay.vercel.app/)
 - [TSN research blog](https://tsn-protocol.blogspot.com/)

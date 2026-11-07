@@ -12,7 +12,7 @@ hold protocol authority.
 
 For the exact payment-data retention boundary, Node verification checks, and
 Cranker proof flow, see the repository guide: [TSN Receiver verification and
-Cranker settlement](../../../docs/laboratory/architecture-map.md).
+Cranker settlement](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/architecture-map.md).
 
 State flow:
 
@@ -30,13 +30,13 @@ Settlement exposes `fundingRootAccount`, the canonical global `tcap:funding-root
 
 Later deposits advance the funded root. For unsigned work, an exact Node authorization rejection `TCAP_FUNDING_ROOT_CHANGED_BEFORE_SETTLEMENT` requeues the settlement for fresh verification. The active Cranker lease owner can also request `POST /api/cranker/work/retry` with `{id, expectedVersion, reason: "TCAP_FUNDING_ROOT_CHANGED_BEFORE_SETTLEMENT"}` after its root preflight or Node co-signing rejects that root. Receiver checks ownership, lease expiry, state version, confirmed funding and immutable settlement lineage; it clears the obsolete verification/authorization and retains the original funding envelope so Node derives the same nullifier. Any persisted execution result prevents this retry; saved signatures require reconciliation.
 
-For unsubmitted REJECTED work, the authenticated Node-service retry also admits the exact former error `GPRU transaction record is missing its twelve public hidden-head inputs` after loading the corrected thirteen-input Node validator. It preserves the original confirmed funding and rejection history, then requires new verification/proving. See [operator recovery](../../../docs/RUN-YOUR-OWN-TSN.md#12-diagnose-failures-without-repeating-uncertain-payments) for the guarded utility and other supported reasons.
+For unsubmitted REJECTED work, the authenticated Node-service retry also admits the exact former error `GPRU transaction record is missing its twelve public hidden-head inputs` after loading the corrected thirteen-input Node validator. It preserves the original confirmed funding and rejection history, then requires new verification/proving. See [settlement recovery](../../tsn-docs/sdk/troubleshooting.mdx) for supported failure boundaries.
 
 ## Expired Cranker confirmation reports
 
 Authenticated work PATCH can reconcile a native CONFIRMED report after lease expiry or immediate expiry reclamation. Receiver requires the exact expired authorization/version, durable signed checkpoint and original reporting payer, then verifies finalized execution, both signatures, wire hash/size/blockhash, exact instruction/Memo, canonical accounts and the resulting TCAP root. Concurrent lease reclamation may change coordination fields, but no replacement attempt or changed authorization is accepted. This updates status/history only and does not renew signing authority or wake settlement execution.
 
-Transient receipt/finality unavailability leaves work unchanged and the corrected Cranker retries the same report within a bounded window. Other receipt or authorization mismatches fail. For an existing FAILED receipt, the Node-service-authenticated reconciliation utility defaults to read-only verification; explicit execution repairs only Receiver status. See [the November 5 diagnosis, tests and command](../../../docs/references/TSN-OPERATOR-GUIDE-20261105.md#expired-cranker-confirmation-report).
+Transient receipt/finality unavailability leaves work unchanged and the corrected Cranker retries the same report within a bounded window. Other receipt or authorization mismatches fail. For an existing FAILED receipt, the Node-service-authenticated reconciliation utility defaults to read-only verification; explicit execution repairs only Receiver status. See [the November 5 diagnosis, tests and command](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/references/TSN-OPERATOR-GUIDE-20261105.md#expired-cranker-confirmation-report).
 
 ## Runtime boundary
 
@@ -147,4 +147,4 @@ only the Receiver service and its Firebase integration boundary.
 
 The current replacement hides individual credit amount in a freshly blinded commitment, keeps reserve liabilities unchanged on credit, and uses dedicated `TCAP_FUNDING_POOL` and `TCAP_EPOCH_ACCOUNTING` work. Node validates positive unspent captured members and source-wallet counts, prepares current-root proofs and complete ordered epoch openings; Receiver paginates/defer leases and serializes native verification; Cranker submits exact lease-bound Mother-authorized transactions. Pool capture needs two notes/two wallets, and complete accounting requires 2–64 credits. Common windows adapt to traffic; zero-value actors never qualify a pool. Signed uncertain attempts remain locked for exact finalized receipt reconciliation.
 
-Node must retain its protected amount-opening journal and configure both credit and six `GPRU_EPOCH_*` artifact settings. [Operator activation](../../../docs/RUN-YOUR-OWN-TSN.md) specifies explicit credit rekey and the separate epoch verifier. [ABI](../../../docs/laboratory/credit-abi.md) and [offline evidence](../../../docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md) distinguish implemented checks from unverified SBF/activation/live payment. Deposit amounts, aggregate totals, metadata, Node knowledge and recipient/head correlations remain privacy limits; provider admission/rewards are outside this change.
+Node must retain its protected amount-opening journal and configure both credit and six `GPRU_EPOCH_*` artifact settings. Explicit credit rekey and separate epoch-verifier enrollment require matching keys. [ABI](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/credit-abi.md) and [offline evidence](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md) distinguish implemented checks from unverified SBF/activation/live payment. Deposit amounts, aggregate totals, metadata, Node knowledge and recipient/head correlations remain privacy limits; provider admission/rewards are outside this change.

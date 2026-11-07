@@ -1,4 +1,4 @@
 {
-  "scope": "Two documentation trees, .codex Markdown and AGENTS/root/protocol README entry references: local targets, Mintlify navigation, frontmatter, fence balance. Remote URLs, anchors and Mermaid rendering require separate validation.",
+  "scope": "Two documentation trees, all tsn-protocol Markdown, .codex Markdown and AGENTS/root README references: local targets, exported-subtree boundary, internal-only operator-guide publication, Mintlify navigation, frontmatter, fence balance. Remote URLs, anchors and Mermaid rendering require separate validation.",
   "issues": []
 }

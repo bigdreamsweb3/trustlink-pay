@@ -190,7 +190,6 @@
           {
             "group": "Responsibilities and Integration",
             "pages": [
-              "operators/run-your-own-tsn",
               "operators/tsn-node",
               "operators/tsn-cranker",
               "operators/receiver"

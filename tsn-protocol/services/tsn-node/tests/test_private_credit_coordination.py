@@ -8,7 +8,7 @@ from funding_note import funded_leaf
 from funding_snapshot_sync import ensure_funding_snapshot, sealed_pool_address, TCAP_PROGRAM
 from gpru_crypto import BABYJUB_FIELD, poseidon_v1
 from hidden_head_witness import SparseTree, hex_field
-from private_credit_coordination import admitted_pool_sources, qualified_sources, schedule, build_epoch_witness, PrivateCreditWait
+from private_credit_coordination import admitted_pool_sources, qualified_sources, schedule, pool_release_slot, PoolCaptureTiming, build_epoch_witness, PrivateCreditWait
 from test_funding_note import note, append_event, funding_root_address
 
 class PrivateCoordinationTests(unittest.TestCase):
@@ -57,6 +57,35 @@ class PrivateCoordinationTests(unittest.TestCase):
         self.assertGreater(target,2);self.assertLess(window,96)
         self.assertEqual(schedule([1]*100,200),(2,96))
 
+    def test_release_budgets_two_censuses_after_checks_on_a_shared_boundary(self):
+        # The old next-boundary timer at slot 100 (192) expires during these checks.
+        release = pool_release_slot([90,95],100,240)
+        self.assertGreater(release,240+2*(240-100)+48)
+        self.assertEqual(release % 96,0)
+        busy = pool_release_slot([239]*32,200,240)
+        self.assertEqual(busy % 24,0)
+        self.assertGreater(busy,240+2*40+48)
+        for start,end in [(1,10000),(100,100),(100,240)]:
+            self.assertLessEqual(pool_release_slot([],start,end),end+5000)
+        for start,end in [(240,100),(0,100),(True,100)]:
+            with self.assertRaises(PrivateCreditWait):pool_release_slot([],start,end)
+
+    def test_timing_observations_are_bounded_expiring_and_asset_specific(self):
+        timing = PoolCaptureTiming()
+        with patch("private_credit_coordination.time.monotonic", return_value=1000):
+            timing.observe("A", 100, 240)
+            self.assertGreater(timing.release("A", [], 300, 310), 310 + 2*140 + 48)
+            self.assertEqual(timing.release("B", [], 300, 310), pool_release_slot([],300,310))
+            for start,end in [(0,10),(10,9),(True,10)]: timing.observe("A",start,end)
+            self.assertEqual(len(timing.observations),3)
+        with patch("private_credit_coordination.time.monotonic", return_value=1301):
+            self.assertEqual(timing.release("A",[],400,410), pool_release_slot([],400,410))
+        for i in range(100): timing.observe("A",500+i,501+i)
+        self.assertEqual(len(timing.observations),32)
+        self.assertLessEqual(timing.release("A",[],100,10000),15000)
+        for slots in (-1,True,1.5):
+            with self.assertRaises(PrivateCreditWait): pool_release_slot([],100,110,slots)
+
     @unittest.skipUnless(os.environ.get("GPRU_TEST_EPOCH_BUILD_DIR"),"compile isolated epoch circuit for witness checks")
     def test_epoch_circuit_rejects_changed_total_count_opening_and_order(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -75,6 +104,103 @@ class PrivateCoordinationTests(unittest.TestCase):
             w=copy.deepcopy(witness)
             for name in ("amounts","blindings","nullifiers"):w[name][:2]=w[name][:2][::-1]
             calculate(w,False)
+
+class PoolTimingTests(unittest.IsolatedAsyncioTestCase):
+    def fixture(self,release=600):
+        value={"assetEntry":"fixture-asset","reserveState":"fixture-reserve","tcapConfig":"fixture-config",
+               "root":hex_field(1),"eligibleNoteCount":"2","sourceWalletCount":2,"releaseSlot":str(release)}
+        work={"id":"fixture-pool","kind":"TCAP_FUNDING_POOL","status":"CRANKER_LEASED","stateVersion":7,
+              "payload":{k:value[k] for k in ("assetEntry","reserveState","tcapConfig","root")},
+              "crankerLease":{"owner":"fixture-operator","leaseId":"fixture-lease","version":7,"expiresAt":"2040-01-01T00:00:00Z"}}
+        rows=[{"wallet":"A","slot":90},{"wallet":"B","slot":95}]
+        return value,work,rows
+
+    async def test_verification_anchors_release_after_the_census(self):
+        import server
+        from unittest.mock import AsyncMock
+        _,work,rows=self.fixture()
+        roots=[{"root":hex_field(1),"count":2,"slot":100},{"root":hex_field(1),"count":2,"slot":240}]
+        with patch.object(server,"read_funding_root",AsyncMock(side_effect=roots)), \
+             patch.object(server,"ensure_funding_snapshot",AsyncMock(return_value={})), \
+             patch.object(server,"_qualified_private_funding",AsyncMock(return_value=rows)), \
+             patch.object(server,"admitted_pool_sources",return_value=rows):
+            evidence=await server._verify_private_coordination_work(work)
+        value=evidence["verifiedPayload"]["tcapFundingPool"]
+        self.assertGreater(int(value["releaseSlot"]),240+2*140+48)
+        self.assertEqual(value["sourceWalletCount"],2)
+        self.assertNotIn("wallet",value)
+
+    async def test_verification_preserves_root_and_two_source_requirements(self):
+        import server
+        from unittest.mock import AsyncMock
+        _,work,rows=self.fixture()
+        root={"root":hex_field(1),"count":2,"slot":100}
+        for admitted,last,exception in [
+                (rows,{**root,"root":hex_field(2)},ValueError),
+                (rows,{**root,"count":3},ValueError),
+                (rows[:1],root,PrivateCreditWait),
+                ([rows[0],{**rows[1],"wallet":"A"}],root,PrivateCreditWait)]:
+            with patch.object(server,"read_funding_root",AsyncMock(side_effect=[root,last])), \
+                 patch.object(server,"ensure_funding_snapshot",AsyncMock(return_value={})), \
+                 patch.object(server,"_qualified_private_funding",AsyncMock(return_value=admitted)), \
+                 patch.object(server,"admitted_pool_sources",return_value=admitted):
+                with self.assertRaises(exception):await server._verify_private_coordination_work(work)
+
+    async def test_authorization_rechecks_expiry_and_root_after_the_census(self):
+        import server
+        from unittest.mock import AsyncMock
+        value,work,rows=self.fixture(release=150)
+        first={"root":value["root"],"count":2,"slot":100}
+        for last,valid in [({**first,"slot":140},True),({**first,"slot":170},False),
+                           ({**first,"root":hex_field(2)},False),({**first,"count":3},False),
+                           ({**first,"slot":99},False), ({**first,"slot":0},False),
+                            ({**first,"slot":140},True)]:
+            with patch.object(server,"_receiver_verified_payload",return_value={"tcapFundingPool":value}), \
+                 patch.object(server,"_assert_stored_settlement_attestation"), \
+                 patch.object(server,"read_funding_root",AsyncMock(side_effect=[first,last])), \
+                 patch.object(server,"ensure_funding_snapshot",AsyncMock(return_value={})), \
+                 patch.object(server,"_qualified_private_funding",AsyncMock(return_value=rows)), \
+                 patch.object(server,"admitted_pool_sources",return_value=rows), \
+                 patch.object(server,"_receiver_work_by_id",AsyncMock(return_value=work)):
+                if valid:
+                    auth=await server._authorize_private_coordination(work,"fixture-operator")
+                    self.assertEqual(auth["transition"],value)
+                else:
+                    with self.assertRaises(server.HTTPException) as rejected:
+                        await server._authorize_private_coordination(work,"fixture-operator")
+                    self.assertEqual(rejected.exception.status_code,409)
+                    self.assertEqual(rejected.exception.detail,"TCAP_POOL_CAPTURE_STALE")
+
+    async def test_slow_unsigned_authorization_increases_the_next_release_budget(self):
+        import server
+        from unittest.mock import AsyncMock
+        value,work,rows=self.fixture()
+        root={"root":value["root"],"count":2,"slot":100}
+        roots=[{**root,"slot":slot} for slot in (100,110,120,200,210,220,230,310,330,410)]
+        with patch.object(server,"_pool_capture_timing",PoolCaptureTiming()), \
+             patch.object(server,"_assert_stored_settlement_attestation"), \
+             patch.object(server,"read_funding_root",AsyncMock(side_effect=roots)), \
+             patch.object(server,"ensure_funding_snapshot",AsyncMock(return_value={})), \
+             patch.object(server,"_qualified_private_funding",AsyncMock(return_value=rows)), \
+             patch.object(server,"admitted_pool_sources",return_value=rows), \
+             patch.object(server,"_receiver_work_by_id",AsyncMock(return_value=work)):
+            first=await server._verify_private_coordination_work(work)
+            work["verification"]={"verifiedPayload":first["verifiedPayload"]}
+            with self.assertLogs(server.logger,level="INFO") as logs:
+                with self.assertRaises(server.HTTPException) as expired:
+                    await server._authorize_private_coordination(work,"fixture-operator")
+            self.assertEqual(expired.exception.detail,"TCAP_POOL_CAPTURE_STALE")
+            self.assertIn("cause=RELEASE_EXPIRED",logs.output[0])
+            # A fresh Node verification uses the later 80-slot pass, not its own 10 slots.
+            retried=await server._verify_private_coordination_work(work)
+            value=retried["verifiedPayload"]["tcapFundingPool"]
+            self.assertGreater(int(value["releaseSlot"]),220+160+48)
+            self.assertLessEqual(int(value["releaseSlot"]),220+5000)
+            work["verification"]={"verifiedPayload":retried["verifiedPayload"]}
+            for _ in range(2):
+                authorization=await server._authorize_private_coordination(work,"fixture-operator")
+                self.assertEqual(authorization["transition"],value)
+
 
 class EpochRealProofTests(unittest.TestCase):
     fixture = PrivateCoordinationTests.fixture

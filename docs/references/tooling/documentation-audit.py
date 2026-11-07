@@ -85,9 +85,11 @@ def check():
             for item in value:
                 nav(item)
     nav(config.get("navigation", {}))
+    protocol_root = ROOT / "tsn-protocol"
     for path in documents():
+        exported = path.is_relative_to(protocol_root)
         if not (any(path.is_relative_to(p) for p in DOC_ROOTS)
-                or path.is_relative_to(ROOT / ".codex") or path in ENTRY_FILES):
+                or exported or path.is_relative_to(ROOT / ".codex") or path in ENTRY_FILES):
             continue
         content = path.read_text(encoding="utf-8-sig")
         if content.count("```") % 2:
@@ -96,7 +98,9 @@ def check():
             issues.append({"file": path.relative_to(ROOT).as_posix(), "kind": "missing frontmatter"})
         # Exclude fenced code before finding Markdown links and MDX hrefs.
         prose = re.sub(r"```[\s\S]*?```", "", content)
-        links = re.findall(r"\]\(([^)]+)\)|\bhref=[\"']([^\"']+)[\"']", prose)
+        if (exported or path == ROOT / "README.md") and re.search(r"run[- ]your[- ]own[- ]tsn|build and operate your own TSN", prose, re.I):
+            issues.append({"file": path.relative_to(ROOT).as_posix(), "kind": "premature operator-guide publication"})
+        links = re.findall(r"\]\(([^)]+)\)|\b(?:href|src)=[\"']([^\"']+)[\"']|^\s*\[[^\]]+\]:\s*(\S+)", prose, re.M)
         for match in links:
             target = next(s for s in match if s).strip().strip("<>")
             if target.startswith(("http:", "https:", "mailto:", "#", "data:", "codex:")):
@@ -104,12 +108,15 @@ def check():
             target = unquote(target.split("#")[0].split("?")[0])
             if not target:
                 continue
-            resolved = (DOC_ROOTS[1] / target.lstrip("/")) if target.startswith("/") and path.suffix == ".mdx" else path.parent / target
+            resolved = ((DOC_ROOTS[1] / target.lstrip("/")) if target.startswith("/") and path.suffix == ".mdx" else path.parent / target).resolve()
+            if exported and not resolved.is_relative_to(protocol_root.resolve()):
+                issues.append({"file": path.relative_to(ROOT).as_posix(), "target": target, "kind": "exported subtree link requires bigdreamsweb3 URL"})
+                continue
             candidates = [resolved, resolved.with_suffix(".mdx"), resolved.with_suffix(".md"), resolved / "index.mdx", resolved / "README.md"]
             if not any(p.exists() for p in candidates):
                 issues.append({"file": path.relative_to(ROOT).as_posix(), "target": target, "kind": "local link"})
     output = ROOT / "docs/references/link-check.json"
-    output.write_text(json.dumps({"scope": "Two documentation trees, .codex Markdown and AGENTS/root/protocol README entry references: local targets, Mintlify navigation, frontmatter, fence balance. Remote URLs, anchors and Mermaid rendering require separate validation.", "issues": issues}, indent=2) + "\n", encoding="utf-8")
+    output.write_text(json.dumps({"scope": "Two documentation trees, all tsn-protocol Markdown, .codex Markdown and AGENTS/root README references: local targets, exported-subtree boundary, internal-only operator-guide publication, Mintlify navigation, frontmatter, fence balance. Remote URLs, anchors and Mermaid rendering require separate validation.", "issues": issues}, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"issues": len(issues), "report": output.relative_to(ROOT).as_posix()}))
     return bool(issues)
 

@@ -2906,7 +2906,21 @@ async def _select_private_funding_pool(asset: dict, request: CreateIntentRequest
             raise
     raise PrivateCreditWait("TCAP_PRIVATE_POOL_NOT_READY")
 
+async def _private_funding_source_row(work: dict, asset_entry: str) -> dict | None:
+    # Each wallet/note/amount is rechecked against its signed intent and exact confirmed SPL deposit.
+    request, asset, context = await _settlement_funding_context(work)
+    if asset["assetEntry"] != asset_entry:
+        return None
+    return {"commitment": request.fundingNote["commitment"], "nullifier": context["nullifier"],
+        "amount": int(context["depositAmountBaseUnits"]), "token": asset["tokenId"],
+        "wallet": request.senderWallet, "slot": context["receipt"]["slot"]}
+
+
 async def _qualified_private_funding(asset_entry: str, directory: Path) -> list[dict]:
+    # Snapshot this census once; concurrent RPC reads never cache an admission decision.
+    inventory = tuple(work for work in _private_inventory
+        if work.get("kind") == "AUTHORIZED_FUNDING" and work.get("status") == "CONFIRMED"
+        and isinstance((work.get("payload") or {}).get("fundingNote"), dict))
     _, root, _ = await _read_tcap_shared_replay_root()
     # Select the same immutable chain-root snapshot used by credit proving.
     from hidden_head_witness import _read_snapshot, SparseTree, _portfolio, field_hex
@@ -2918,14 +2932,16 @@ async def _qualified_private_funding(asset_entry: str, directory: Path) -> list[
         or poseidon_v1([SparseTree(128,heads).root,SparseTree(128,nullifiers).root]) != int.from_bytes(root,"big")):
         raise ValueError("TCAP_PRIVATE_CENSUS_SNAPSHOT_INVALID")
     rows = []
-    for work in _private_inventory:
-        if work.get("kind") != "AUTHORIZED_FUNDING" or work.get("status") != "CONFIRMED": continue
-        if not isinstance((work.get("payload") or {}).get("fundingNote"), dict): continue
-        # Each wallet/note/amount is rechecked against its signed intent and exact confirmed SPL deposit.
-        request, asset, context = await _settlement_funding_context(work)
-        if asset["assetEntry"] != asset_entry: continue
-        rows.append({"commitment": request.fundingNote["commitment"], "nullifier": context["nullifier"],
-            "amount": int(context["depositAmountBaseUnits"]), "token": asset["tokenId"], "wallet": request.senderWallet, "slot": context["receipt"]["slot"]})
+    for offset in range(0, len(inventory), 4):
+        checked = await asyncio.gather(*(
+            _private_funding_source_row(work, asset_entry) for work in inventory[offset:offset + 4]
+        ), return_exceptions=True)
+        # Drain each bounded batch before propagating a failure. No partial census is eligible.
+        for row in checked:
+            if isinstance(row, BaseException):
+                raise row
+            if row is not None:
+                rows.append(row)
     return qualified_sources(rows, set(state["nullifiers"]))
 
 async def _coordinate_private_credit_work(client: httpx.AsyncClient, headers: dict[str,str]) -> None:
@@ -3647,12 +3663,36 @@ async def sign_settlement_transaction(body: dict[str, Any]) -> dict[str, Any]:
     current_kind = (await _receiver_work_by_id(settlement_id))["kind"]
     recent_blockhash = (_verify_mother_signed_tcap_settlement_message(message, operator=operator, authority=authority, transition=transition)
         if current_kind == "SETTLEMENT" else _verify_private_coordination_message(message,operator,authority,current_kind,transition))
-    blockhash_status = await solana_rpc("isBlockhashValid", [
-        encode_base58(recent_blockhash), {"commitment": "confirmed"},
-    ])
-    if not bool(((blockhash_status.get("result") or {}).get("value"))):
-        raise HTTPException(409, "Cranker transaction blockhash is no longer valid; rebuild and request a fresh Mother signature")
     current_work = await _receiver_work_by_id(settlement_id)
+    if current_kind == "TCAP_FUNDING_POOL":
+        # Mother-key and Receiver reads can outlive the census deadline.
+        # Recheck the capture before the final blockhash verification.
+        signing_root = await read_funding_root(solana_rpc)
+        if (signing_root["root"] != transition["root"] or signing_root["slot"] <= 0
+                or not signing_root["slot"] <= int(transition["releaseSlot"]) <= signing_root["slot"]+5000):
+            logger.info("TCAP funding pool authorization deferred: work_id=%s reason=TCAP_POOL_CAPTURE_STALE cause=FINAL_SIGNING_CONTEXT_CHANGED", settlement_id)
+            raise HTTPException(409,"TCAP_POOL_CAPTURE_STALE")
+    # Final Receiver/root reads can outlive the message hash. No awaited RPC follows this check.
+    blockhash_config = {"commitment": "confirmed"}
+    if current_kind == "TCAP_FUNDING_POOL":
+        blockhash_config["minContextSlot"] = signing_root["slot"]
+    blockhash_status = await solana_rpc("isBlockhashValid", [encode_base58(recent_blockhash), blockhash_config])
+    blockhash_result = blockhash_status.get("result")
+    if not isinstance(blockhash_result, dict) or blockhash_result.get("value") is not True:
+        raise HTTPException(409, "Cranker transaction blockhash is no longer valid; rebuild and request a fresh Mother signature")
+    if current_kind == "TCAP_FUNDING_POOL":
+        context = blockhash_result.get("context")
+        signing_slot = context.get("slot") if isinstance(context, dict) else None
+        stale_cause = None
+        if type(signing_slot) is not int or signing_slot <= 0 or signing_slot < signing_root["slot"]:
+            stale_cause = "FINAL_BLOCKHASH_CONTEXT_INVALID"
+        elif int(transition["releaseSlot"]) < signing_slot:
+            stale_cause = "FINAL_BLOCKHASH_RELEASE_EXPIRED"
+        elif int(transition["releaseSlot"]) > signing_slot + 5000:
+            stale_cause = "FINAL_BLOCKHASH_RELEASE_OUT_OF_RANGE"
+        if stale_cause:
+            logger.info("TCAP funding pool authorization deferred: work_id=%s reason=TCAP_POOL_CAPTURE_STALE cause=%s", settlement_id, stale_cause)
+            raise HTTPException(409,"TCAP_POOL_CAPTURE_STALE")
     _assert_current_settlement_lease(current_work, operator)
     if current_work.get("stateVersion") != authorization.get("workStateVersion"):
         raise HTTPException(409, "Settlement lease changed before signing")

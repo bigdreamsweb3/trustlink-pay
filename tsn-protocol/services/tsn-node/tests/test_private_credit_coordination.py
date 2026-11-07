@@ -105,6 +105,91 @@ class PrivateCoordinationTests(unittest.TestCase):
             for name in ("amounts","blindings","nullifiers"):w[name][:2]=w[name][:2][::-1]
             calculate(w,False)
 
+class PrivateFundingCensusTests(unittest.IsolatedAsyncioTestCase):
+    def fixture(self, count=9, consumed=()):
+        state={"heads":{},"nullifiers":list(consumed)}
+        nullifiers={poseidon_v1([int(value,16)]) % (1<<128):poseidon_v1([int(value,16)]) for value in consumed}
+        root=poseidon_v1([SparseTree(128,{}).root,SparseTree(128,nullifiers).root]).to_bytes(32,"big")
+        works=[{"id":str(index),"kind":"AUTHORIZED_FUNDING","status":"CONFIRMED","payload":{"fundingNote":{}}}
+               for index in range(count)]
+        return works,state,root
+
+    def context(self, index, *, note_index=None, nullifier_index=None, amount=100, asset="fixture-asset"):
+        from types import SimpleNamespace
+        request=SimpleNamespace(fundingNote={"commitment":hex_field(index+1 if note_index is None else note_index)},
+                                senderWallet=f"wallet-{index}")
+        context={"nullifier":hex_field(index+1 if nullifier_index is None else nullifier_index),
+                 "depositAmountBaseUnits":str(amount),"receipt":{"slot":100+index}}
+        return request,{"assetEntry":asset,"tokenId":7},context
+
+    async def test_census_overlaps_at_most_four_validations_and_preserves_inventory_order(self):
+        import server
+        from unittest.mock import AsyncMock
+        works,state,root=self.fixture()
+        ignored=[{**works[0],"id":"pending","status":"RECEIVED"},
+                 {**works[0],"id":"settlement","kind":"SETTLEMENT"},
+                 {**works[0],"id":"no-note","payload":{}}]
+        active=maximum=0;started=[];completed=[]
+        async def verify(work):
+            nonlocal active,maximum
+            index=int(work["id"]);started.append(index);active+=1;maximum=max(maximum,active)
+            # Replacing inventory while this census awaits must not change its selected records.
+            server._private_inventory=[]
+            try:
+                await asyncio.sleep((4-index % 4)*0.005)
+                completed.append(index)
+                return self.context(index)
+            finally:
+                active-=1
+        with patch.object(server,"_private_inventory",works+ignored), \
+             patch.object(server,"_read_tcap_shared_replay_root",AsyncMock(return_value=("root",root,0))), \
+             patch("hidden_head_witness._read_snapshot",return_value=state), \
+             patch.object(server,"_settlement_funding_context",side_effect=verify):
+            rows=await server._qualified_private_funding("fixture-asset",Path("unused"))
+        self.assertEqual(maximum,4);self.assertEqual(active,0)
+        self.assertEqual(started,list(range(9)))
+        self.assertNotEqual(completed,started)
+        self.assertEqual([row["wallet"] for row in rows],[f"wallet-{index}" for index in range(9)])
+
+    async def test_invalid_deposit_fails_whole_census_and_drains_its_bounded_batch(self):
+        import server
+        from unittest.mock import AsyncMock
+        works,state,root=self.fixture(count=6)
+        active=0;started=[];finished=[]
+        async def verify(work):
+            nonlocal active
+            index=int(work["id"]);started.append(index);active+=1
+            try:
+                await asyncio.sleep(0.001 if index==1 else 0.01)
+                if index==1:
+                    raise ValueError("Confirmed TCAP reserve deposit differs from the wallet-signed transaction")
+                return self.context(index)
+            finally:
+                active-=1;finished.append(index)
+        with patch.object(server,"_private_inventory",works), \
+             patch.object(server,"_read_tcap_shared_replay_root",AsyncMock(return_value=("root",root,0))), \
+             patch("hidden_head_witness._read_snapshot",return_value=state), \
+             patch.object(server,"_settlement_funding_context",side_effect=verify):
+            with self.assertRaisesRegex(ValueError,"differs from the wallet-signed transaction"):
+                await server._qualified_private_funding("fixture-asset",Path("unused"))
+        self.assertEqual(started,[0,1,2,3]);self.assertEqual(set(finished),set(started));self.assertEqual(active,0)
+
+    async def test_census_retains_spent_duplicate_zero_and_other_asset_filters(self):
+        import server
+        from unittest.mock import AsyncMock
+        works,state,root=self.fixture(count=7,consumed=(hex_field(4),))
+        contexts=[self.context(0),self.context(1,note_index=1),self.context(2,nullifier_index=1),
+                  self.context(3),self.context(4,amount=0),self.context(5),self.context(6,asset="other-asset")]
+        verifier=AsyncMock(side_effect=lambda work:contexts[int(work["id"])])
+        with patch.object(server,"_private_inventory",works), \
+             patch.object(server,"_read_tcap_shared_replay_root",AsyncMock(return_value=("root",root,0))), \
+             patch("hidden_head_witness._read_snapshot",return_value=state), \
+             patch.object(server,"_settlement_funding_context",verifier):
+            rows=await server._qualified_private_funding("fixture-asset",Path("unused"))
+        self.assertEqual(verifier.await_count,7)
+        self.assertEqual([row["wallet"] for row in rows],["wallet-0","wallet-5"])
+
+
 class PoolTimingTests(unittest.IsolatedAsyncioTestCase):
     def fixture(self,release=600):
         value={"assetEntry":"fixture-asset","reserveState":"fixture-reserve","tcapConfig":"fixture-config",
@@ -200,6 +285,155 @@ class PoolTimingTests(unittest.IsolatedAsyncioTestCase):
             for _ in range(2):
                 authorization=await server._authorize_private_coordination(work,"fixture-operator")
                 self.assertEqual(authorization["transition"],value)
+
+    async def test_pool_that_expires_during_final_mother_checks_is_never_signed(self):
+        import server
+        from unittest.mock import AsyncMock, Mock
+        value,work,_=self.fixture(release=150)
+        authorization={"transition":value,"workStateVersion":work["stateVersion"]}
+        key=Mock()
+        key.sign.return_value.signature=bytes(64)
+        body={"workId":work["id"],"crankerPubkey":"fixture-operator",
+              "messageBase64":base64.b64encode(b"fixture-message").decode()}
+        for last,valid in [({"root":value["root"],"count":2,"slot":140},True),
+                           ({"root":value["root"],"count":2,"slot":160},False),
+                           ({"root":hex_field(2),"count":2,"slot":140},False),
+                           ({"root":value["root"],"count":2,"slot":0},False)]:
+            key.sign.reset_mock()
+            with patch.object(server,"create_settlement_authorization",AsyncMock(return_value=authorization)), \
+                 patch.object(server,"_mother_authority_signing_key",return_value=key), \
+                 patch.object(server,"_assert_mother_authority_key_matches_chain",AsyncMock(return_value="fixture-authority")), \
+                 patch.object(server,"_receiver_work_by_id",AsyncMock(return_value=work)), \
+                 patch.object(server,"_verify_private_coordination_message",return_value=bytes(32)), \
+                 patch.object(server,"solana_rpc",AsyncMock(return_value={"result":{"context":{"slot":140},"value":True}})), \
+                 patch.object(server,"read_funding_root",AsyncMock(return_value=last)):
+                if valid:
+                    result=await server.sign_settlement_transaction(body)
+                    self.assertEqual(result["authority"],"fixture-authority")
+                    key.sign.assert_called_once_with(b"fixture-message")
+                else:
+                    with self.assertRaises(server.HTTPException) as rejected:
+                        await server.sign_settlement_transaction(body)
+                    self.assertEqual(rejected.exception.detail,"TCAP_POOL_CAPTURE_STALE")
+                    key.sign.assert_not_called()
+
+
+    async def test_blockhash_expiring_during_final_receiver_or_root_read_is_never_signed(self):
+        import server
+        from unittest.mock import AsyncMock, Mock
+        value,work,_=self.fixture(release=150)
+        authorization={"transition":value,"workStateVersion":work["stateVersion"]}
+        body={"workId":work["id"],"crankerPubkey":"fixture-operator",
+              "messageBase64":base64.b64encode(b"fixture-message").decode()}
+        for boundary in ("receiver","funding-root"):
+            key=Mock();valid=True;reads=[];receiver_reads=0
+            async def receiver_read(_):
+                nonlocal valid,receiver_reads
+                receiver_reads+=1;reads.append("receiver")
+                if boundary=="receiver" and receiver_reads==2:
+                    valid=False
+                return work
+            async def root_read(_):
+                nonlocal valid
+                reads.append("funding-root")
+                if boundary=="funding-root":
+                    valid=False
+                return {"root":value["root"],"count":2,"slot":140}
+            async def blockhash_read(method,params):
+                self.assertEqual(method,"isBlockhashValid")
+                self.assertEqual(params[1],{"commitment":"confirmed","minContextSlot":140})
+                reads.append("blockhash")
+                return {"result":{"context":{"slot":140},"value":valid}}
+            with patch.object(server,"create_settlement_authorization",AsyncMock(return_value=authorization)), \
+                 patch.object(server,"_mother_authority_signing_key",return_value=key), \
+                 patch.object(server,"_assert_mother_authority_key_matches_chain",AsyncMock(return_value="fixture-authority")), \
+                 patch.object(server,"_receiver_work_by_id",side_effect=receiver_read), \
+                 patch.object(server,"_verify_private_coordination_message",return_value=bytes(32)), \
+                 patch.object(server,"read_funding_root",side_effect=root_read), \
+                 patch.object(server,"solana_rpc",side_effect=blockhash_read):
+                with self.assertRaises(server.HTTPException) as rejected:
+                    await server.sign_settlement_transaction(body)
+            self.assertEqual(rejected.exception.status_code,409)
+            self.assertIn("blockhash is no longer valid",rejected.exception.detail)
+            self.assertEqual(reads,["receiver","receiver","funding-root","blockhash"])
+            key.sign.assert_not_called()
+
+    async def test_final_blockhash_bank_context_must_preserve_pool_deadline_and_progress(self):
+        import server
+        from unittest.mock import AsyncMock, Mock
+        value,work,_=self.fixture(release=150)
+        authorization={"transition":value,"workStateVersion":work["stateVersion"]}
+        body={"workId":work["id"],"crankerPubkey":"fixture-operator",
+              "messageBase64":base64.b64encode(b"fixture-message").decode()}
+        cases=[({"slot":140},True),({"slot":150},True),({"slot":151},False),
+               ({"slot":139},False),({"slot":0},False),({"slot":True},False),
+               ({"slot":140.0},False),({"slot":"140"},False),({},False),(None,False),("malformed",False)]
+        for context,valid in cases:
+            key=Mock();key.sign.return_value.signature=bytes(64)
+            rpc=AsyncMock(return_value={"result":{"context":context,"value":True}})
+            with patch.object(server,"create_settlement_authorization",AsyncMock(return_value=authorization)), \
+                 patch.object(server,"_mother_authority_signing_key",return_value=key), \
+                 patch.object(server,"_assert_mother_authority_key_matches_chain",AsyncMock(return_value="fixture-authority")), \
+                 patch.object(server,"_receiver_work_by_id",AsyncMock(return_value=work)), \
+                 patch.object(server,"_verify_private_coordination_message",return_value=bytes(32)), \
+                 patch.object(server,"read_funding_root",AsyncMock(return_value={"root":value["root"],"count":2,"slot":140})), \
+                 patch.object(server,"solana_rpc",rpc):
+                if valid:
+                    result=await server.sign_settlement_transaction(body)
+                    self.assertEqual(result["authority"],"fixture-authority")
+                    key.sign.assert_called_once_with(b"fixture-message")
+                else:
+                    with self.assertRaises(server.HTTPException) as rejected:
+                        await server.sign_settlement_transaction(body)
+                    self.assertEqual(rejected.exception.status_code,409)
+                    self.assertEqual(rejected.exception.detail,"TCAP_POOL_CAPTURE_STALE")
+                    key.sign.assert_not_called()
+            rpc.assert_awaited_once()
+            self.assertEqual(rpc.call_args.args[1][1],{"commitment":"confirmed","minContextSlot":140})
+
+    async def test_mother_signing_requires_strict_true_blockhash_validity(self):
+        import server
+        from unittest.mock import AsyncMock, Mock
+        value,work,_=self.fixture(release=150)
+        body={"workId":work["id"],"crankerPubkey":"fixture-operator",
+              "messageBase64":base64.b64encode(b"fixture-message").decode()}
+        for validity in (False,None,1,"true",{}):
+            key=Mock()
+            with patch.object(server,"create_settlement_authorization",AsyncMock(return_value={"transition":value,"workStateVersion":work["stateVersion"]})), \
+                 patch.object(server,"_mother_authority_signing_key",return_value=key), \
+                 patch.object(server,"_assert_mother_authority_key_matches_chain",AsyncMock(return_value="fixture-authority")), \
+                 patch.object(server,"_receiver_work_by_id",AsyncMock(return_value=work)), \
+                 patch.object(server,"_verify_private_coordination_message",return_value=bytes(32)), \
+                 patch.object(server,"read_funding_root",AsyncMock(return_value={"root":value["root"],"count":2,"slot":140})), \
+                 patch.object(server,"solana_rpc",AsyncMock(return_value={"result":{"context":{"slot":140},"value":validity}})):
+                with self.assertRaises(server.HTTPException) as rejected:
+                    await server.sign_settlement_transaction(body)
+            self.assertEqual(rejected.exception.status_code,409)
+            self.assertIn("blockhash is no longer valid",rejected.exception.detail)
+            key.sign.assert_not_called()
+
+    async def test_nonpool_signing_keeps_existing_blockhash_response_contract(self):
+        import server
+        from unittest.mock import AsyncMock, Mock
+        value,work,_=self.fixture()
+        body={"workId":work["id"],"crankerPubkey":"fixture-operator",
+              "messageBase64":base64.b64encode(b"fixture-message").decode()}
+        for kind in ("SETTLEMENT","TCAP_EPOCH_ACCOUNTING"):
+            current={**work,"kind":kind}
+            key=Mock();key.sign.return_value.signature=bytes(64)
+            rpc=AsyncMock(return_value={"result":{"value":True}})
+            with patch.object(server,"create_settlement_authorization",AsyncMock(return_value={"transition":value,"workStateVersion":work["stateVersion"]})), \
+                 patch.object(server,"_mother_authority_signing_key",return_value=key), \
+                 patch.object(server,"_assert_mother_authority_key_matches_chain",AsyncMock(return_value="fixture-authority")), \
+                 patch.object(server,"_receiver_work_by_id",AsyncMock(return_value=current)), \
+                 patch.object(server,"_verify_mother_signed_tcap_settlement_message",return_value=bytes(32)), \
+                 patch.object(server,"_verify_private_coordination_message",return_value=bytes(32)), \
+                 patch.object(server,"read_funding_root",AsyncMock()) as root_read, \
+                 patch.object(server,"solana_rpc",rpc):
+                await server.sign_settlement_transaction(body)
+            root_read.assert_not_awaited()
+            self.assertEqual(rpc.call_args.args[1][1],{"commitment":"confirmed"})
+            key.sign.assert_called_once_with(b"fixture-message")
 
 
 class EpochRealProofTests(unittest.TestCase):

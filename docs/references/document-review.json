@@ -2239,12 +2239,15 @@
   },
   "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md": {
     "status": "EXPERIMENTAL",
-    "reason": "Private-amount/sealed-pool/complete-epoch replacement with bounded real-proof/native/offline evidence; SBF, activation and full live flow unverified.",
+    "reason": "Replacement proof/build evidence, live deposit/key observations and later off-chain pool timing/lease/recovery regression checks; resumed private credit/epoch flow remains unverified.",
     "evidence": [
       "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
       "tsn-protocol/programs/gpru/circuits/tcap_epoch_v1/main.circom",
       "tsn-protocol/programs/tcap-protocol/programs/tcap/src/private_epoch.rs",
-      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
+      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md",
+      "tsn-protocol/services/tsn-cranker-op-daemon/src/receiver/native-retry.ts",
+      "tsn-protocol/services/tsn-receiver/lib/settlement-reconciliation.ts",
+      "scripts/recover-private-pool-attempt.py"
     ]
   }
 }

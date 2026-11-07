@@ -6,7 +6,7 @@
       "method": "POST",
       "path": "/internal/wake",
       "function": "wake_receiver_verification",
-      "line": 3456,
+      "line": 3475,
       "signature": "",
       "returns": "dict[str, Any]",
       "decoratorOptions": {
@@ -17,7 +17,7 @@
       "method": "POST",
       "path": "/internal/settlement-authorizations/settlement",
       "function": "create_settlement_authorization",
-      "line": 3550,
+      "line": 3585,
       "signature": "body: dict[str, Any]",
       "returns": "dict[str, Any]",
       "decoratorOptions": {
@@ -28,7 +28,7 @@
       "method": "POST",
       "path": "/internal/settlement-authorizations/signature",
       "function": "sign_settlement_transaction",
-      "line": 3606,
+      "line": 3641,
       "signature": "body: dict[str, Any]",
       "returns": "dict[str, Any]",
       "decoratorOptions": {
@@ -39,7 +39,7 @@
       "method": "POST",
       "path": "/",
       "function": "mempool_status",
-      "line": 3660,
+      "line": 3719,
       "signature": "request: MempoolStatusRequest",
       "returns": "MempoolStatusResponse",
       "decoratorOptions": {
@@ -50,7 +50,7 @@
       "method": "POST",
       "path": "/threshold-access/nonces/consume",
       "function": "consume_threshold_access_nonce",
-      "line": 3669,
+      "line": 3728,
       "signature": "request: dict[str, Any]",
       "returns": "dict[str, Any]",
       "decoratorOptions": {}
@@ -59,7 +59,7 @@
       "method": "POST",
       "path": "/intents",
       "function": "post_intent",
-      "line": 3726,
+      "line": 3785,
       "signature": "req: CreateIntentRequest",
       "returns": "PublicMempoolIntent",
       "decoratorOptions": {
@@ -70,7 +70,7 @@
       "method": "GET",
       "path": "/network/recent-blockhash",
       "function": "get_network_recent_blockhash",
-      "line": 3769,
+      "line": 3828,
       "signature": "",
       "returns": "dict[str, Any]",
       "decoratorOptions": {}
@@ -79,7 +79,7 @@
       "method": "GET",
       "path": "/intents",
       "function": "list_intents",
-      "line": 3790,
+      "line": 3849,
       "signature": "status: Optional[str]=Query(None)",
       "returns": "list[PublicMempoolIntent]",
       "decoratorOptions": {
@@ -91,7 +91,7 @@
       "method": "PATCH",
       "path": "/intents/{intent_id}/status",
       "function": "update_intent_status",
-      "line": 3801,
+      "line": 3860,
       "signature": "intent_id: str=ApiPath(...), body: UpdateStatusRequest=...",
       "returns": "MempoolIntent",
       "decoratorOptions": {
@@ -103,7 +103,7 @@
       "method": "GET",
       "path": "/intent-work",
       "function": "list_pending_intent_work",
-      "line": 3830,
+      "line": 3889,
       "signature": "limit: int=Query(50, ge=1, le=500)",
       "returns": "list[IntentWorkItem]",
       "decoratorOptions": {
@@ -115,7 +115,7 @@
       "method": "GET",
       "path": "/metrics",
       "function": "get_metrics",
-      "line": 3847,
+      "line": 3906,
       "signature": "",
       "returns": "MetricsResponse",
       "decoratorOptions": {
@@ -126,7 +126,7 @@
       "method": "POST",
       "path": "/crankers/heartbeat",
       "function": "post_cranker_heartbeat",
-      "line": 3875,
+      "line": 3934,
       "signature": "req: CrankerHeartbeatRequest",
       "returns": "CrankerHeartbeatRecord",
       "decoratorOptions": {
@@ -138,7 +138,7 @@
       "method": "GET",
       "path": "/settlement-networks",
       "function": "get_settlement_networks",
-      "line": 3895,
+      "line": 3954,
       "signature": "",
       "returns": "list[dict[str, Any]]",
       "decoratorOptions": {}
@@ -147,7 +147,7 @@
       "method": "GET",
       "path": "/network/overview",
       "function": "get_network_overview",
-      "line": 3909,
+      "line": 3968,
       "signature": "",
       "returns": "NetworkOverviewResponse",
       "decoratorOptions": {
@@ -158,7 +158,7 @@
       "method": "GET",
       "path": "/epoch/status",
       "function": "get_epoch_status",
-      "line": 3997,
+      "line": 4056,
       "signature": "",
       "returns": "EpochStatus",
       "decoratorOptions": {
@@ -169,7 +169,7 @@
       "method": "POST",
       "path": "/epoch/close",
       "function": "close_epoch",
-      "line": 4005,
+      "line": 4064,
       "signature": "",
       "returns": "EpochCloseResult",
       "decoratorOptions": {
@@ -460,6 +460,13 @@
       "method": "POST",
       "path": "/api/internal/node/work/reconcile",
       "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/reconcile/route.ts",
+      "line": 6,
+      "authReferences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/node/work/recover-pool",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/recover-pool/route.ts",
       "line": 6,
       "authReferences": []
     },

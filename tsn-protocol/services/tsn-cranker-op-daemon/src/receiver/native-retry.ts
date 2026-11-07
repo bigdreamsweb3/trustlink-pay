@@ -3,10 +3,12 @@ const NATIVE_REVERIFY_REASONS = new Set([
   "TCAP_FUNDING_ROOT_CHANGED_BEFORE_SETTLEMENT",
   "TCAP_SHARED_REPLAY_ROOT_CHANGED_BEFORE_SETTLEMENT",
   "TCAP_POOL_CAPTURE_STALE",
+  "TCAP_TRANSACTION_BLOCKHASH_TOO_OLD_FOR_SUBMISSION",
   "TCAP_CREDIT_EPOCH_CHANGED_BEFORE_SETTLEMENT",
   "TCAP_EPOCH_ALREADY_ACCOUNTED",
   "TIP route root changed since settlement verification",
   "TCAP credit authorization expired",
+  "Cranker transaction blockhash is no longer valid; rebuild and request a fresh Mother signature",
 ]);
 
 export function nativeConflictReason(status: number, rejection: unknown): string | null {

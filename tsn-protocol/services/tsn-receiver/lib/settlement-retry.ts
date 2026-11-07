@@ -7,7 +7,9 @@ export const FUNDED_ROOT_STALE = "TCAP_FUNDING_ROOT_CHANGED_BEFORE_SETTLEMENT";
 export const NATIVE_REVERIFY_REASONS = new Set([FUNDED_ROOT_STALE,
   "TCAP_SHARED_REPLAY_ROOT_CHANGED_BEFORE_SETTLEMENT", "TCAP_POOL_CAPTURE_STALE",
   "TCAP_EPOCH_ALREADY_ACCOUNTED", "TCAP_CREDIT_EPOCH_CHANGED_BEFORE_SETTLEMENT",
-  "TIP route root changed since settlement verification", "TCAP credit authorization expired"]);
+  "TCAP_TRANSACTION_BLOCKHASH_TOO_OLD_FOR_SUBMISSION",
+  "TIP route root changed since settlement verification", "TCAP credit authorization expired",
+  "Cranker transaction blockhash is no longer valid; rebuild and request a fresh Mother signature"]);
 
 function assertFundingLineage(current: ReceiverWork, funding: ReceiverWork) {
   if (funding.kind !== "AUTHORIZED_FUNDING" || funding.status !== "CONFIRMED" || !funding.result?.signature) {

@@ -5,7 +5,9 @@ import { nativeConflictReason, nativeWorkRetryReason } from "../src/receiver/nat
 
 const reasons = ["TCAP_FUNDING_ROOT_CHANGED_BEFORE_SETTLEMENT", "TCAP_SHARED_REPLAY_ROOT_CHANGED_BEFORE_SETTLEMENT",
   "TCAP_POOL_CAPTURE_STALE", "TCAP_CREDIT_EPOCH_CHANGED_BEFORE_SETTLEMENT", "TCAP_EPOCH_ALREADY_ACCOUNTED",
-  "TIP route root changed since settlement verification", "TCAP credit authorization expired"];
+  "TCAP_TRANSACTION_BLOCKHASH_TOO_OLD_FOR_SUBMISSION",
+  "TIP route root changed since settlement verification", "TCAP credit authorization expired",
+  "Cranker transaction blockhash is no longer valid; rebuild and request a fresh Mother signature"];
 
 test("exact FastAPI and Receiver conflict envelopes become guarded native reasons", () => {
   for (const reason of reasons) for (const field of ["detail", "error"]) {
@@ -25,8 +27,10 @@ test("unrecognized, malformed, mixed and non-conflict failures never authorize r
 test("only unsigned native work is eligible for a fresh Node decision", () => {
   for (const kind of ["TCAP_FUNDING_POOL", "TCAP_EPOCH_ACCOUNTING", "SETTLEMENT"]) {
     const work = { kind, verification: { verificationType: "TSN_TCAP_GPRU_HIDDEN_HEAD_V1" } };
-    for (const reason of reasons) assert.equal(nativeWorkRetryReason(work, new Error(reason)), reason);
-    assert.equal(nativeWorkRetryReason({ ...work, result: { signature: "signed-or-uncertain" } }, new Error(reasons[2])), null);
+    for (const reason of reasons) {
+      assert.equal(nativeWorkRetryReason(work, new Error(reason)), reason);
+      assert.equal(nativeWorkRetryReason({ ...work, result: { signature: "signed-or-uncertain" } }, new Error(reason)), null);
+    }
     assert.equal(nativeWorkRetryReason(work, new Error("LEASE_INVALID")), null);
     assert.equal(nativeWorkRetryReason(work, reasons[2]), null);
   }

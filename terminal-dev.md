@@ -316,8 +316,15 @@ Before the XP credit test:
   cargo build --locked --release --manifest-path tsn-protocol/programs/gpru/Cargo.toml --target-dir tsn-protocol/programs/gpru/target/node-native-funded-note)
 - Why do we have to run and when "Set-Location "C:\Users\codepara\Desktop\trust-link"
   node scripts/hidden-head-setup.mjs rekey-verifier --rpc https://api.devnet.solana.com --wallet tsn-protocol/services/tsn-node/keys/mother-node-keypair.json --args protocol-test-runs/private-credit-20261107/credit/dev/verifier-init-args.json --send"?
-
--
+- We ran this requeqe unfinished jobs in the network, why "PS C:\Users\codepara\Desktop\trust-link> .venv/Scripts/python.exe -B scripts/recover-private-pool-attempt.py --work-id tcap-pool-7b7b479c5887fb58af1b111167d949ac74b6d6aa92b3f85da75b08a531cf05af --expected-version 123 --signature 5JGGbGoxNx8Ri6D9tLQuuUp9eiUwdXRwDKusijoKU2KFMbgYAH2858ckgNJx26ZGAgfiywGpe41QmxwYmPwZbXUa
+  Settlement: id=tcap-pool-7b7b479c5887fb58af1b111167d949ac74b6d6aa92b3f85da75b08a531cf05af status=FAILED stateVersion=123
+  Expired attempt: signature=5JGGbGoxNx8Ri6D9tLQuuUp9eiUwdXRwDKusijoKU2KFMbgYAH2858ckgNJx26ZGAgfiywGpe41QmxwYmPwZbXUa finalizedSlot=519722885 blockHeight=506871271
+  Read-only recovery check complete; --execute requeues the unexecuted pool and may lead to Cranker submission
+  PS C:\Users\codepara\Desktop\trust-link> .venv/Scripts/python.exe -B scripts/recover-private-pool-attempt.py --work-id tcap-pool-7b7b479c5887fb58af1b111167d949ac74b6d6aa92b3f85da75b08a531cf05af --expected-version 123 --signature 5JGGbGoxNx8Ri6D9tLQuuUp9eiUwdXRwDKusijoKU2KFMbgYAH2858ckgNJx26ZGAgfiywGpe41QmxwYmPwZbXUa --execute
+  Settlement: id=tcap-pool-7b7b479c5887fb58af1b111167d949ac74b6d6aa92b3f85da75b08a531cf05af status=RECEIVED stateVersion=124
+  Expired attempt: signature=5JGGbGoxNx8Ri6D9tLQuuUp9eiUwdXRwDKusijoKU2KFMbgYAH2858ckgNJx26ZGAgfiywGpe41QmxwYmPwZbXUa finalizedSlot=519723627 blockHeight=506872013
+  Pool requeued for fresh Node verification; existing deposits preserved
+  PS C:\Users\codepara\Desktop\trust-link> "?
 
 <!-- TO DO -->
 

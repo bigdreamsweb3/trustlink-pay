@@ -53,6 +53,18 @@ test("sealed pools and epochs paginate, defer and serialize across concurrent No
     const leased={...deferred,status:"CRANKER_LEASED",crankerLease:{owner:"payer",expiresAt:expiry}};
     assert.equal(nativeWorkRetryPatch(leased,null,leased.stateVersion,"payer","test","TCAP_EPOCH_ALREADY_ACCOUNTED").status,"RECEIVED");
     assert.throws(()=>nativeWorkRetryPatch({...leased,result:{signature:"uncertain"}},null,leased.stateVersion,"payer","test","TCAP_EPOCH_ALREADY_ACCOUNTED"),/EXECUTION_STATE/);
+    const lifetimeReason="TCAP_TRANSACTION_BLOCKHASH_TOO_OLD_FOR_SUBMISSION";
+    for(const kind of ["TCAP_FUNDING_POOL","TCAP_EPOCH_ACCOUNTING"]){
+      const native={...leased,kind};
+      const patch=nativeWorkRetryPatch(native,null,native.stateVersion,"payer","test",lifetimeReason);
+      assert.equal(patch.status,"RECEIVED");assert.equal(patch.stateVersion,native.stateVersion+1);
+      for(const field of ["verification","authorization","nodeLease","crankerLease","result"])assert.equal(patch[field],null);
+      assert.throws(()=>nativeWorkRetryPatch({...native,result:{signature:"recorded-attempt"}},null,native.stateVersion,"payer","test",lifetimeReason),/EXECUTION_STATE/);
+      assert.throws(()=>nativeWorkRetryPatch(native,null,native.stateVersion-1,"payer","test",lifetimeReason),/STALE_STATE_VERSION/);
+      assert.throws(()=>nativeWorkRetryPatch(native,null,native.stateVersion,"other-payer","test",lifetimeReason),/LEASE_INVALID/);
+      assert.throws(()=>nativeWorkRetryPatch({...native,crankerLease:{...native.crankerLease,expiresAt:new Date(0).toISOString()}},null,native.stateVersion,"payer","test",lifetimeReason),/LEASE_INVALID/);
+      assert.throws(()=>nativeWorkRetryPatch(native,null,native.stateVersion,"payer","test",lifetimeReason+": unrelated"),/REASON_NOT_ALLOWED/);
+    }
     const funding={...createReceivedWork({id:"funding",kind:"AUTHORIZED_FUNDING",payload:{}}),status:"CONFIRMED"};
     const credit=createReceivedWork({id:"credit",kind:"SETTLEMENT",payload:{intentId:"funding"}});
     await db.runTransaction(async tx=>{

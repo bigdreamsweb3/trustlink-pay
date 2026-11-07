@@ -1,0 +1,1827 @@
+{
+  "tsn_receiver_state": {
+    "6d17a1bece320dce49de1fc7045f2f37546cd6ee57081779eab757295595e619": {
+      "key": "tsn:epoch",
+      "value": "{\"epoch_number\": 3, \"started_at\": \"2026-11-07T14:52:09.564477+00:00\"}"
+    }
+  },
+  "tsn_receiver_cranker_challenges": {
+    "c3c6760be26a6bc1aa7752d2489dff5438314bb1fd1b8781db4421622999233c": {
+      "publicKey": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+      "nonce": "7HjIwHO1lFpKRoP8PcjD7DJQc_uSMoWgyvFPK5alSGU",
+      "expiresAt": "2026-11-07T18:01:02.857Z",
+      "used": true,
+      "usedAt": "2026-11-07T18:00:05.273Z"
+    }
+  },
+  "tsn_receiver_cranker_sessions": {
+    "x-6nzETCG3pmB8kdrL283hiUfALQh7yO": {
+      "publicKey": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+      "tokenHash": "69cac4fd0619fe4bc09a812fb0fd358fc645acdc5f184c2f282d4408ec858468",
+      "createdAt": "2026-11-07T17:30:21.598Z",
+      "expiresAt": "2026-11-07T18:00:21.598Z",
+      "lastSeenAt": "2026-11-07T17:59:50.761Z",
+      "lastCounter": 672
+    },
+    "YvfsMZq5d2QadvtTEoWEBIVbQjoW2hQh": {
+      "publicKey": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+      "tokenHash": "e7d9a9f619b947779c59f7f5e6ac046e7e39e1c848689a8a77544c68df74d37b",
+      "createdAt": "2026-11-07T18:00:05.298Z",
+      "expiresAt": "2026-11-07T18:30:05.298Z",
+      "lastSeenAt": "2026-11-07T18:14:01.667Z",
+      "lastCounter": 336
+    }
+  },
+  "tsn_receiver_cranker_rate_limits": {
+    "a079d01362db1d1e3f046f1d2ab2f4aa172db210735d2f28ebb38e4566fb274d": {
+      "publicKey": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9",
+      "bucket": "ATo2C5pesfsauFMKqXw2sXHD1v3PXb1wxqrnMLxFLCD9|29901253",
+      "count": 24,
+      "updatedAt": "2026-11-07T18:13:59.403Z"
+    }
+  },
+  "tsn_receiver_work": {
+    "3dd2b789-06b0-4908-992b-1793fae9261d": {
+      "id": "3dd2b789-06b0-4908-992b-1793fae9261d",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "REJECTED",
+      "stateVersion": 3,
+      "payloadCommitment": "f029066381ba08bd896346f46842e9e2f758d6219dbaae6d4e86ada2e825a313",
+      "payload": {
+        "paymentId": "3dd2b789-06b0-4908-992b-1793fae9261d",
+        "recipientHash": "1ce60077c5d59262b2843e90292200da49254a3a937660275c343af7c42186c3",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "mI9FLjn71gPLi3oz",
+          "ciphertext": "VkhaXO5wjD55k4N4ev0IODyDBeefiXL_IPeuqbYAmR20dYL7GJWK_riL9snKN68-jK_l-PfKyWnhbywr68InOWk9lop6Wi-a4B1caf1XloFsVN0q0AhYg4VdspMK8oHTfSnV0J-f5NmD1f2Z7Zt8We6rnye1E7MaGXh28M1FNfcWr8cQ66GqvigjVXOva0gzG-IjvcFUzemWy8jL3V2fKlkdqH4CV8rTjF20QNudSW43jh77SmRfnsAJOVYOXJEw_dU7AYa6oM_ZWd8pBL9DScDZHtgDE9gLMUbrsETqrJouWv2HIHCAMXPitOCvCoUVvqObtgJnyVQK82jkNKvrh1aWHDiY0iea3v0CFLDPrUtCwJRv45Z3s8XjINbVbwl0AwkK3-lrq7rMNgaYijp2k0a8EcjX1VQjRXpvcp_f8ZGDWPWXs6HeXR9VcHl3AvslYXKHdwP8u8zgtxyVWX8bGwCnVfdpXSx9EjPxbZpZ52i756soe_CJpFaOT9DN7GMKD3LaMdQMXdu_t7VeEuaCZA4C3kRJRlmHWlKWT1rOuYLK-e9DIbOKykJrUXVoJxASvjwpvXb1oKSDVZip4J-oQYYjty1BsKgpzVw2oZqmHnGWyFLuUyan6e87zK-8v2AyvtrGtJ6Euopm9OU3ob6MsuxHjZes1tTWjMvZjUHdgEJZfHObk67dSZ-yuNMp1j4Th-_ewGD6X0CVyKPdbalzuJsxS-IctMarR4q3M3O7CeffaEgj7oB-wxr3luZQWka9_mlImt7mUoD_vvWS_NPu1F8L51JKbF1_q6jS6oAvnvTaE_E8vzlJQRvDZwe0CKbnwv3gtjZa89OlT_RdCxv4VI3NiYAjhMPBA4bVqw5XzGvPIynWwENdJiGkFYTxi00jJ_DJUGIrOj0raxbDVI7RC4NMLtCKrO1ehxPOOLCDxIWr8UWwZM7Xp2lLlHOe9B_K8wctfxtcMzC0KzyBbTwWS8qhqypQMSNRFOfcCqDzQcKCK7P7PGebUIQgpcS8p3IWVKZpBM_B506PfeHdsLzBgyC2A2xdPXBL6RfKmpHp_-X0XUUOKq5mquSeuW3uvRW0gAJz09Zd5DHfgmicwzg22DT6ZmLS16TgmWbrMOiNjP_Io7GL_7Pb9pkmE8h9YAOQBdSD1KI-9vuvmeOzFi0kbydk11TakJnjcFziWR7A_6W7g4BED44mlbekGrrnkJR-MtwEVGypTR7UDy-1rtkA-EKnYu1logFeifJwL1Hsx5mqtt0JQ1xXpHY5biu_jO8gZH609Si3T1lZWbzQz5fQxt7veYbOgSOOdEDKvY4m342K7NUVwd3SR6GZUj33VUFdB3E8iNNFtcCrVevDZHdEIA6HHLxNISkG_1ZWC7Kk6XCmYyyJ9Lqgnt4dHWDs3ytpfgnDywLSHUkzPQxbG2mH5LUoqB4Kzo2bRkgZAIP3SgdcLzDSzAV-WQd8eIiGCHCinaBSDs9kRx2R9548TnFPIhVCQwv-UDgJqCufqrDbSOLwW9Whpz7-tJiuAJIhbLXQJV1cNAuwGJ3OlTDPxa1bYMh18kN8gBa_vw1y4BbW0XnbElR2KIkIKaMLyWvMsyR0rN428LQv8nZ7NJMnMZSRsbOqYT6othdUfUBmmVlsuCJfW4j_6v5tzhrX_WbhWTyAjKxajkPsmuYMK4CxzkqiHCSKn9UGisZ7rhtDQNMHIhrfVANfKwRKHhim10IhpXkMjLSUYtLYVEjdqjaS5AYdeUx2XfxNfAM60_D8o9NvA4NVYo5nJ3c_NkYTH1ZrmDwL2b30GTAz1nBoT1__3IR7R5oGANfE58ElljRdNCWZgkB5_yhmEiQZs1Z0JTOe_j5GejR0nz0y9RbRdZVaxcRzlFSjAvfj-nOer9S12TVgI4pQNLfxQLWrFcQ6FpkWHD8Df8OP8WujxHEGDvWxKg1gk5ekmI-e-oiSyHdvjoTirlxDnBidvLzEIIIxsfvdGK60Hw_Hrsviyse0zwvtv4-LbJHw8FoumwvTFHNY4egsqVz_cMEukdNtbBFMtZijKm35y3DBasuq6pN0L2gI6bnPxkeo5OGhWt2NCpM3-XwWfZwqiF48ixy0qqFnNk1EwHbVPtyAwT79umeeSjBRoTrjSiXcktm3F-WYnfmYdn6kASGBtZx3zx0DwuhXQwc6GmbuLKpBgRIOuq4wb8fracpgmHkLzyxf1Nj_b9b4oqWFKDei6ckGdqC_OnctMoJrdEUvGQmrY1S6wtg0KGAOxLI_iw89PG76rRkLdPx5FPdXtOuZpg-hqqh4e5omvkBcvlwYHXCsXdpNdd_Sds3jDHBSKbsfjv_JEZpwDDqM8mWvnep09x_kKBs0xI-gJsooftbYsUIoZdxkoWa9yUerNUPCb4AGDgW7RRenCPNksFrv9UULBQoIL7l3o70knjn23VQWpSieV6L0SRt_A7LGJ4cdOs2KK7zMI3rnXu_M90gM5SZ4ONWVGkDtyT4bWe3qn4drV-j5wxvSuzfxrmieHgz87kabo7bv_hv4bUoF3ASrlb1U3qHCwFLC4WSgQuVDNJGfMC7B4xzrplbTXf1V-Qzv-FaLg57TufcBTsMIC77NuYTv3ltOkGGnDr0vzfY0KWFtuWn4ZuLFv44xoIMx8EIAk5lmwtajvD9PMfi5eHHnmeoHaE6uOW3hPt_VvLY8DLYIxJ3S7RRDnx5gnUmlscITNpo6pcKRA6p_vI7O6WXO4BehNbwn_rKvR_zP7pf_UUY_GmcQ6nec8M7pm9mTln5MIVpfFBuqLRxXDWTWHu28F1abO3vG5_xcQljAbOdxAQA7vatBSVmaOy-NX-kjPC9KLm4a6k9XXWtgGRHC4zISaTUVqMbC0Yc_y0iahwxjjUbjTVfuiLe6p6-bwsmlO6md_2Tv-kkrws0nJcdO9XjIdyd0snQkw_7JNMDEPPFB4AjIxxZG24cmHad5slGGk4ESobkn3g",
+          "tag": "UH8IuA8VONFlV4K5MyGhGw"
+        }
+      },
+      "receivedAt": "2026-11-05T13:11:40.690Z",
+      "updatedAt": "2026-11-05T13:12:00.261Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "reason": "Signed deposit blockhash was not recognized by any configured Solana RPC endpoint; prepare and sign a fresh deposit transaction",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "3dd2b789-06b0-4908-992b-1793fae9261d",
+          "kind": "AUTHORIZED_FUNDING",
+          "stateVersion": 2,
+          "payloadCommitment": "f029066381ba08bd896346f46842e9e2f758d6219dbaae6d4e86ada2e825a313"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "3dd2b789-06b0-4908-992b-1793fae9261d",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "REJECTED",
+          "inputPayloadCommitment": "f029066381ba08bd896346f46842e9e2f758d6219dbaae6d4e86ada2e825a313",
+          "evidenceCommitment": "98e60b7564cc96604708508bd3b2bd483eefa010c0e9159bce745bb52d744f93",
+          "executionPayloadCommitment": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "verificationType": "",
+          "leaseId": "3dd2b789-06b0-4908-992b-1793fae9261d",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-05T13:12:00.124472Z",
+          "signatureBase64": "pzF6Zx1JY5E0lyXBXWjYhVIOBPjIYJipO2VN7gXvb2UiJgYIsms4pYnljm3lz5MyPs76veN+oLPrUgnNy2BKDQ==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        }
+      },
+      "result": null,
+      "authorization": null
+    },
+    "settlement-191212b9412e7da16d90886670e9a49e": {
+      "id": "settlement-191212b9412e7da16d90886670e9a49e",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 1,
+      "payloadCommitment": "be70173a6ae4286ed88c34f8a7c7beb41e292ba3bcc6a52da6aaaf8da0e760e4",
+      "payload": {
+        "paymentId": "3dd2b789-06b0-4908-992b-1793fae9261d",
+        "intentId": "3dd2b789-06b0-4908-992b-1793fae9261d",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-05T13:11:41.161Z",
+      "updatedAt": "2026-11-05T13:11:41.161Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null
+    },
+    "dd2cc54d-7683-4984-a812-c80e90b4a4d8": {
+      "id": "dd2cc54d-7683-4984-a812-c80e90b4a4d8",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "FAILED",
+      "stateVersion": 5,
+      "payloadCommitment": "826b5a85deb4964f4c643b7fe03fd2150c65ba5b460eda6a446d51aba73a911f",
+      "payload": {
+        "paymentId": "dd2cc54d-7683-4984-a812-c80e90b4a4d8",
+        "recipientHash": "1ce60077c5d59262b2843e90292200da49254a3a937660275c343af7c42186c3",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "6OJvvuNmYEvw-dn6",
+          "ciphertext": "-X-3z49AKjCp88s0RNytZzNJFMX8FC_y_Ybso0bt_6vvkVJbu2GIUxkGBADLWwnWoBRd7BXnl5kT7aW2OEUlVTDbLPTJPGFCMjryhOLppY-31fo2WY6skjzoLL0_ZsG1Ugr7I1dlglfwetsyz5Bq-IvVICsvMTF5JRGypyaNNwdC82hxBSeFstzrRHSJqwpuYXDeQK-RwuX-eVvN8u0RryeL65VckyRsSIplfF5u-tjrkhoGo2k7N-Nt3uFLnG0B1PaoTyIFi2iahAUflE_GRgFL1wcLuE-rWgHvfbbUm_3U7yw4C9Mg4pmaMv6GqnAs-u3sXobPwtGTRq-jO5Zv7Nr9B0S8M6VRTD0m9GiYuioLdUV5MS31Bl7ll_E9bkKSX_LXHPTDu1qYL5Jbr6Sf6AvlrMk9IZ9B3SP_PEbADqsi54BLE6u4q_82TO5a2F27Z2bY5PZZq3o2M_0Rmx3MT3RMAdEQjCGPmzrclcbDO0fNjDzGby6WYm_XXy6R0J1u-M0_KKUHCXY0D6FAHOfe5ytOCc2serzHPEFTdAK64YpVCdGxLsffLBYEX6ozrYQbTXQXgCj7D3w1F_7e8LsrsonPD15EjekMBfXEZ3v6pEekr7SU_5hKMC_qyMR43PtIEG13U94nmpmMw72fPhZMKfHSOnO0d6TjXkMu3pQ0D7EyC3QNxfpoNOU9GrhDbiw3qAlW2GJ4-JpMLhylJ6QRSBIF3beKj-NjIBf0ra7eMqmd0xwOF-mf68qBN-5F8uuRG8sakfAE_wOjRJ7veE_4N0s1IMA3vnB0djSsN99ErTznJboZYJv5m2i74Qa_aV-CdVg6wRiNUnbHjTb7jRQWKXZhHNcdgQlmlhCOMT1Zd6_kVFuMvAWrEmO2VLSbP11jryIu_nYwH-XQ3ikuD_DmyhcsHARX3oyZbju39Yk5VO8l6woQ0UDaTWuOj0XakN-gy68VMmWmc6yUm8RE3rKZB9ygLjRhzJdfEkqe1FyKk2Ql-L94MonO8TwchAWQMmi94dohRF8iaokE2ZMbt1R5hGTTBsZ39gE27Qxyf8jNXeF7DniBSRjfQ5xPKv5Y9X0qXSb8nijuhOL2_QuYPTv3YaRqT36q8nZhxZCsyBI8ShDSTGzY1wRWHH_Z2pBmlw3bDzPg_FafF6g3gPnNcGp1ytW12JoUrtcji3L6nlwGFCMianro1_7TI7mz_i-0n3r1V3bF0RJ9q26SEY1ol45iRdk9SoIFq-68anJh5-OpwnEpeoAbaYHxcYyf8Q8h7qp-oPcz2lOaxdbojDKfYRf7htVkfunaUj1pxPq8WGMhbJKEdbCd4fYPy0WnHcAuBxu-NpoGkNCQyQaN3ftMxjVwKDMdr7PmhpcmUyOrEkSVPl6kqCl7735JeX6sGEGFiizTcqpaZeof5ybujSWv26CKxHBLDASkiWgstgeFZcMgLAghfuPzKkLwpUa-MwQkzptms-JQZ9crjwvJh1UxPRIZZJoAGXxCxwmJ1tfS7u2gANfXigzPHk5ordbHL0pPXrTKppsO9Fjv3Aeo2nkJTyKducw87wmy9Njf1RNyu_M9CX57FlaE5TtFFX7adtpY-uW_cMZcs0bGfeRODYU8H5KuLY_2aTFoz5hboCVZkE6fZ-alE76xfSfFYVsG_fJfxmTvaEHRzog8Yy42okxYSmEAnsLM-X3EVjcQex-KgYQp3K1UT_viYbOahjImIEaOCEPDcjW4r9TZ_kU8mn4d4d-CJvZGWrktYkH3Z5888smvob8-JwQtSs53z9Kfn_PgVEgl7wF7NajUpnTsvbPo8ftEg_srufHbRdE2SBnTdCJPNkcJtFovqKU2hdO0eydF7BcbUTsqw2vGDopdT15-EGfK5jLeb7QaQ7ywn0JCUUB2AesCPhSOh0pkl0W_e1cshbLFZa7CjPapdUcP-iYi8hyNXZUzarHdZDiXSORXFNcan_SncZGTa98EbzKLKMnap4RjzFpoS585fva3YZJmLmOe-1bz50Ac4eaNIvGGIVTFkcmIQRyJUvIia9_v9fBHJ29E1wS3N7aQCPYPS1qRmJRQDTCmNfVXI3aXmKvha_wgi33iPtejOlGjFcWmZCac7rVeJxzwQl9UJMnSYOei1YnDwrULbK-WUS6dWHn0IwbzS98zWTSjyqJCgWQbeGI41pUN450YekhEfz3pq_m2tAVwgb64pB5bnsdwEYcBwPtrcOHJJZvhfOgdLqLqP4EprZgF75CkPiu8mY-urw2-m1YFoNuHEGLUSEvrN-BH_WUyNgI8kq7KQUcGGVJQFdmo2KZsSSA_DcOITm67tQXBuim-3Q_vwyGcuvKYp8dfG0TPJMxsQthgmLoaJYEidpF1CdiP8GyPVEFYx12TUnT_B3NLM0Gjfe8sJIEwcWe90JYBZyU6ZN-urd0m-kwV64meHuXDz9HHFbaACUkWQAAi-7aSrxrEyZ0B6V0jDTA_CFIrSkaZucOtqNStHxt7m87SxQz3qsPpsmkzPIkwr4s-q6td6--g_7nxasStDB5KmfkBDpGy4StTmm1IIdsr7PgpFsfQ22-swhAbJ-mlgf7KgvGI31XSvL00vQRQbroHVIqVK8121Y4U8bx6pR7qAEwt6Z7EkdLkib5RDJLqrwwMXwKby6som0Nm30fgDFPUa9ApOREsdSt90CT9VdCrCqtPdcz55eIQ5neyBU2EHxWGIDleSKUO6qPxRlhJjcnBJQFeCtNXhuDcX8dvQxqqBtmrAkMwR1kGyjfg2GGLs8vZF57lTgug7-gzs4uBX8h2QVtJ9Ewbocy02AXPXbbdTK2t1r5fnqE63-gCuvhCtT8vy3cxLTCucsRI1VyAzFAYXd4-5UIAW2zcaFOrMOcgMsf934mmnh1FUThJDgSRWBuvcgQrYA58uDbL0ObDx3kLs3DVh8asiE25PP7iwixEeY4d2D8ZC5k-a_Qvl9swy7vTZs0mJhssAg",
+          "tag": "vZwRCCOE3foi5pepnClNsQ"
+        }
+      },
+      "receivedAt": "2026-11-05T13:13:09.244Z",
+      "updatedAt": "2026-11-05T13:13:23.078Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "verificationType": "TSN_TCAP_V2_GPRU_CREDIT_INTENT",
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "dd2cc54d-7683-4984-a812-c80e90b4a4d8",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "VERIFIED",
+          "inputPayloadCommitment": "826b5a85deb4964f4c643b7fe03fd2150c65ba5b460eda6a446d51aba73a911f",
+          "evidenceCommitment": "002d61e71d1cea5a30f3a05fec873f48e49266ea2f56c72d146e2154a903b4a4",
+          "executionPayloadCommitment": "0ea253d1661781a5e5318f72886d7ce7d8525ad3683680b28a5e430fddd22cd0",
+          "verificationType": "TSN_TCAP_V2_GPRU_CREDIT_INTENT",
+          "leaseId": "dd2cc54d-7683-4984-a812-c80e90b4a4d8",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-05T13:13:19.690626Z",
+          "signatureBase64": "k1aO6N0AHzMwBPDa5CJ+WNhyWSA4i3iX22QWfAhpfO1c3RQyFVl5dyllW+DRX6dxmfedVlQfCTNHDcckx/Z4CA==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        },
+        "programSimulation": {
+          "programSimulation": "PASSED",
+          "computeUnitsConsumed": null
+        },
+        "payloadDelta": {
+          "addedFields": {
+            "tokenMintAddress": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+            "amount": 1,
+            "senderSignedFundingTransaction": "ASnpDs1gRN9wDXO3/9NqKTSOb5EDhjcz/KtCuFNck4muZtXxfOtx4qdOG0kxrFUXs/XMjX0GS47lq49NLyMubgkBAAUKqVO9EtYX5U0D8BHesjGnI7z3Wg9YQz5Op0T30cZybr4TEaeJ4clQo7QzS6JZV69GyzxbSQp+bVtz8w2RO31T3BR8Opkdbk0QbAUZUZ/IyHluN2Vi461rh93mLi5jpMhIS2l7sokevyH8YHF32hDez85kFv31Kq1jw5AyqBxspBbeL2MDkoSa92WHEZZ30fBRxQY6i6jv4QAEKVYMKapuOjtELLORIVfxOpM9ATQoLQMrX/7NAaLb8bd5BgjfAC6nO+0VXP2h8frN1BayeHMTDwcgF4jNnLtSIyT3Jg0e1/GNB1Ktb2rSrDoIUhtG6KdN4HWvI2OZr8eunpiwHtTWiA0dtbJw7ClTNwNYHhsNkXFkwOgmB2XPPjnJL9mh9UWCBt324ddloZPZy+FGzut5rBy0he1fWzeROoz1hX7/AKnYGs0IquzAcMLuiswb9yNHsEOW9/3fP1ne/v4o3UZAOAEICQAGBwMBAgUJBDA1I/KIlO4uNkBCDwAAAAAAF5MBsBdRvQLAURXSGmCsEGTU4+bQ83QaJmxMaiMCR+Q=",
+            "senderFundingMode": "tcap_funded_note_v1"
+          },
+          "changedFields": {},
+          "removedFields": []
+        }
+      },
+      "result": {
+        "reason": "Simulation failed. \nMessage: Transaction simulation failed: Blockhash not found. \nLogs: \n[]. \nCatch the `SendTransactionError` and call `getLogs()` on it for full details."
+      },
+      "authorization": null
+    },
+    "settlement-d2994da8e007a4d7f580a46ca49d09d2": {
+      "id": "settlement-d2994da8e007a4d7f580a46ca49d09d2",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 1,
+      "payloadCommitment": "b1f5ba06c5146631b51389e3d7436fe785cab0ac38c322eb0b7683a5350e7386",
+      "payload": {
+        "paymentId": "dd2cc54d-7683-4984-a812-c80e90b4a4d8",
+        "intentId": "dd2cc54d-7683-4984-a812-c80e90b4a4d8",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-05T13:13:09.265Z",
+      "updatedAt": "2026-11-05T13:13:09.265Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null
+    },
+    "e4e67e52-293a-4e3a-ae0e-31ebf0ba2592": {
+      "id": "e4e67e52-293a-4e3a-ae0e-31ebf0ba2592",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "REJECTED",
+      "stateVersion": 3,
+      "payloadCommitment": "5052dfee4488c6d6fed7e6d969b86fbcd0d59137b7dc37e375b7a974e9d204f5",
+      "payload": {
+        "paymentId": "e4e67e52-293a-4e3a-ae0e-31ebf0ba2592",
+        "recipientHash": "1ce60077c5d59262b2843e90292200da49254a3a937660275c343af7c42186c3",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "YraJMDBXwuUGI3Gz",
+          "ciphertext": "jAGiyL9_hoahyLcNhvk2PQl3hefe93rCAlVgk2J0UlxNObyVLvQFWh--NWQtX1KgCWnBC8lkWMNPSIbf61eULVcNKCn8ogOcp7fFUy0thhfqPXsS9EBkC-VvYdgcnuu9lOiU_AeBqWJ_ltcDxbaJ8_B-PCmFXzaR1UPUiQBvp5cYgdPaJekhbRDtdmGkPqRRQfJck6NMdqoCLY-v4hkV4OkarF5t98B86E7Kxpk-AuCFHRqLf7D_oOYrIMvkhmNPgUBp11GnNLpUWSKz5ZM72fkt4PwGDHLaac0e3bH3VW8v_iMCWx3Wt6w5nzdY6IAEmuHfIOy-_S1IlFzE2-R0NrMlfORpkwFxqAsPZiQmuw2ABSFhd8cNvBL7Y3F3jnFrWXKvOR5mg15atlQcd7pa1ymWO3bA7cNDcmoMGdpODXVWaY3v7JQOq4MFgzFmvFyn-CcSh4Pns7JDf4qGtKjgVk4ZLzxaqR7M_KJgN7ufgmu9D0UZbe0gFO1CXY2kHellZVd7xnOzvDDvN3v-7Jeu3Oq2iDKlvGyz6o9SycgPMUOwHReerCV7qqnZP3JnDjgQuxdkkZ3gEw6Iv8m_t_eOAoh67D-MwcovmXCQKddEdGKMdETKuWrwZVW7dBI5YIe17ORp3srkTv6rZxgYd3YoX4mQ6Be1rXmRykF1gKxsyL_-iFW-HkGPJr9hpfKulY3l98GCklT6tkQrb_aiwcsrkqG7n0d_8zematGNDrcrck19h_fpHhreY2OyXtAVzMhBedU0xJtIAqR2YBy53mMnM04KZ-PpzKrlVIiLtFr_wJRiYNtqnUlCRHNBUtT9Vrp8TpnnwiRZZ07yKhUSGh9cKx7jAH3RPTFKga1zhbmjqgcs_1vo9qdv5r3zFQ4SHV2e_01mgY-_3QNI6-Yc2co0yAtJrusgUHeFiBn3K8ENsFw8ukvDedLznmchD2GjO6L-yKDUGC2hf-ENG3pPneewB6EYV1KRymFGDPWKlKeiofVWbPlIdpDFmTdHFSSkQinjdnsNXjgFa0AyQPb9bSmCTYCS2ADhxLryOpfaYnGkLLP5zlTvmfKYLcWrzAa-8LrWVGFj6nd0nildP-l_IG2RaFRVnNICEyfG_wd2i2hkc8e-4LDD54vMHp_dwRh6mCP6-uK-BTUafFi0yG_QVwiHaY_tEeUDqqPmuCHZPwRKyxPfA03azWPasHQjPIP01H5U8eziyqWw1WJvlNbIH8lea0sxndJdPwhiX5VxLgZ9Tvnz7IP6yB5jCjchn8sgrGvzcybOs35E2b69cJ7siIYbpM4ybnC8AfG886aFKwYgZhbO-csW2TjL19-EVJspiZ30WE374j3rBN0TA8eXb5wnb-mdXZadh-PUSVBgziEsVcPib8hL5HploaLuPvTaf9Acwn6HxecP5GBDiU1yD1vtfJNTS0EpInm5TVJlKlN4FirUBa24yE5iP8Mf6Filg64Ro7svaASnJ7t_JDapGjUL2-m-q2G0Bua05EGaVEn8Gu9SWKeCHyH2_hRk5vVNhYj9GNfotBHx76WtJtwUXs27MjQUHuichf_dzatLT7WRR_ndkTJppqGC9iu5eV_FnipCb_TBY5xzx42gZXDfXX3VMHeomfWsYtwcGxukurIf9BMYDqauyPCeJL9bw5LynmISQrrhWcvX6OUJ4fnG1A_Yehqbdt44sv4VdMOOq1RBgblj55myVgKGxMH1HrtYUGkwCmVKp1PcyNdXk5FbyIuLoL77XuVGTu6NBIoKVBrVsk5l36k4ZRJZTK8w5Rul8IAmwRdMJtofHKCk0TdYJ1vIAodDUBugHM9NYTYmN6gL_wLVxMg-5koyU2w6yQWoXgWp0HiKSPYFAJdHmZUwninNDshkYrQC3-f_mU8AmZGhGCsLbLOm4_DiF6M7UmeykVj3AgR0a9GoIUpeeBiC8UL78Zelbf4o5Z9geFjj-YrbOfmNL50yj1IvJTQE5TvBERGwKuekqXePFOpLT50F6m8rR9vQepmnyYv8m2NyYRVIfM9RKR6m6GRzXH0Vk6lk68nNbDxyx9l9O_EShs5WXhrOMTecY2PUK3hrthvXElyJHWr_2rUI7ij9tAx3f9wDrHmthnXJJFSIwZifGWVaaHJ8fnXAyTrUyf3dtaL9Vg4c45a5DxB7M9iGTKdJWJKN6fcOjbwLIYdZOoAIP6QyEaNyq_GYDAQOZe6f8NlnMIvwdTzfwSzilDKtHj09mHNDKg3B7Act8aGFJzKKrpfBdE2xHaNwNbb5G2-pG1ia0duBRpQp9eOiiPxt_-aG17SfEvYD4C7h51VdirstyjPlUOwVoGsAEVxuOYGzFRIVMM4zLPE_IN2NUoVWmEJO0AKtvmzpGyyW4CGj8GIw7r5Jrp4_4RWg0nRxbRDCXziUffihWHkqE851bCac10rSe9VwrJJAyCsAbjBSCdC8CrBJltMXNWnIycNX4r_Sujm1yFJUelxuwBLWykUZhXdjce6Pl4KhxF2b03CZMy0y3seAc0etWcAZtZ14xV2Xo-S5mTJ-qpOhR_82XvV3XPFN-q8PVFplGofXFTLe2ZFDr0kzVo66Z9AQfjLj9iGsPIqYHaMLpt5bKAaBDkNkYPiNWF9Bx1UOLC1hFkuWZCKuJ7TrXfXN755CUVZtin9IygkNBpRhiKJ8WWPgr_iLa-AZLyCJKARRJTpwgxOixW-K41q_Sxz_f7zf8Jb1oCcw0QJdEkkwHi4e4nRxeW0i2fHYz67-BDVBPRZmRzWwtOo2wnqyIfZbSTTlt6RlyjUjXsi6RO6NgU3Wbane0HkEgplWDBkBnShkE2fxGZXI1jeZ3C10u9w-Cq4_G-RRe_40Wq4flS2CkGW9BXClAx9-UChOAjFTtflemmWx0yP5R6qwB2xdOIWXx8sxVAFANUvHtTgAHX5MXmum_c-wI4CebA9VZ9vu9Rhkx2G4qtw7PlpylyjM8VXNa9cn_g",
+          "tag": "f6F3GdSK_VhjAbR8JgTHQw"
+        }
+      },
+      "receivedAt": "2026-11-05T13:44:19.148Z",
+      "updatedAt": "2026-11-05T13:44:34.806Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "reason": "Signed deposit blockhash was not recognized by any configured Solana RPC endpoint; prepare and sign a fresh deposit transaction",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "e4e67e52-293a-4e3a-ae0e-31ebf0ba2592",
+          "kind": "AUTHORIZED_FUNDING",
+          "stateVersion": 2,
+          "payloadCommitment": "5052dfee4488c6d6fed7e6d969b86fbcd0d59137b7dc37e375b7a974e9d204f5"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "e4e67e52-293a-4e3a-ae0e-31ebf0ba2592",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "REJECTED",
+          "inputPayloadCommitment": "5052dfee4488c6d6fed7e6d969b86fbcd0d59137b7dc37e375b7a974e9d204f5",
+          "evidenceCommitment": "f847ad79744d13c68f15094e510964954faec7d6709ed0add398141783f43be6",
+          "executionPayloadCommitment": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "verificationType": "",
+          "leaseId": "e4e67e52-293a-4e3a-ae0e-31ebf0ba2592",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-05T13:44:34.723657Z",
+          "signatureBase64": "Uoj1qa3yTY/FsTdOKYJUSYgxyW+PpxWSCDrBy3N+a37SluGcKdvKpyJd3FCGczKHTOuDUg5Wm9ffuhLKR6BlAg==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        }
+      },
+      "result": null,
+      "authorization": null
+    },
+    "settlement-8dcd427e4c5217d787d15e8aeab7f575": {
+      "id": "settlement-8dcd427e4c5217d787d15e8aeab7f575",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 1,
+      "payloadCommitment": "54e46a75b7ff67c84f0d3536ff0d714e7f099c2653f3b88ab86e04656a7c0473",
+      "payload": {
+        "paymentId": "e4e67e52-293a-4e3a-ae0e-31ebf0ba2592",
+        "intentId": "e4e67e52-293a-4e3a-ae0e-31ebf0ba2592",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-05T13:44:19.211Z",
+      "updatedAt": "2026-11-05T13:44:19.211Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null
+    },
+    "57efffbd-5ae8-4a96-bade-722e8e973f5d": {
+      "id": "57efffbd-5ae8-4a96-bade-722e8e973f5d",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "REJECTED",
+      "stateVersion": 3,
+      "payloadCommitment": "5dee45664e5c43d58845a18d4f8a014706718483741d880f8079add2ce59b283",
+      "payload": {
+        "paymentId": "57efffbd-5ae8-4a96-bade-722e8e973f5d",
+        "recipientHash": "1ce60077c5d59262b2843e90292200da49254a3a937660275c343af7c42186c3",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "OTo6i9kr5uO3-odq",
+          "ciphertext": "44GsfwcYYuEqwlFrSYTMA9auKDL7ERshIj4jA9jwKQ_b9Z7-PPBga96OuNAHnWXcgG1gDnofCucV0H6dh9y1W8pSeMShZ8nsmdwqoCpxygnhPko2m-f0Y-_9VrnHhGHgsVLSTk1o1hc47PeBykMQUBHHCUZWd-Wse50R1d3g08Wh00-NOFmJXjd2xgq2R3mLcmjCPhByeD8va_Yf3Nd4gMF4fsJvnLg_jl08Et7xY_QXsSLrNtzXJNn0e3R5IhXVHTaK9M7cssXbKvgVUg_IjQMeFbpBy-Z3lCsih9GpPtPm8g5EsUYpjVY90pFuglwlyaS3Wa83ydm6vq3cWaySVwgb4vlTOTa123n7Dn63QvEcgHXM5H7BUoVj_O5fFfGe_k5ED68ICNqWowtH0c9ObXDMmtrvptI0DFZIAoOvVUuwDAbXM2ifUylH2qv6neHfTcy8omH8aPlyXSCEny8r6NpF_Hnp5TbiNjrW1GBnqOSPGORtWMiuTx5wGKqXAVxrGhKVj0tc0LxO9JUVB00F-MnMtxGTZiluS7UIzCKOIpXmJvZMVi4pkCFInBzu5-n6qHqXo5eRNHRRn18eoSpQf4DlaszfEtaRjuqmxsA4pervZrTG54C1mV7xpusV4mpYliWxixaMSAe0Z_LAednKBFAncxAX44tC3h-k349_sEXd6_BzblhcL6FbSVQkat17t43kK3zbDJJMyCvCe5q4IM5Dd_z-Sxb7TIURnf08gdtbgDJsk26ZVWUVoYYtjiGXuVB2fOGeGKJc-pSnkcVsqUBa7HBFvzrMpbLjbdQ99RuUP_PiXadcgGQ8OTfIpe17sWteF7op2ckKZCVBp9QfynuHMXIgGGnCyPPqUgtEm2yrmzXgx68erTMpaGbDgH9-BjesB7I3H2rKsgPUF7VGcyIqTotnbGri5L391ttQTYYBjcEURhLQ_JNkw3hzWxOf2Y6qIWz-eJowFBLZF-ElpEXB2nR_KpMWWXc9_njPy1LT_HbaTFMTHXyquzO-wpSDITgccJyqNfvrUxkKCkXFHzOZPeCCe210WQv7gOa9AKKz_XbPRAiW19nxKb0y-EGmiJqq5Q6Xj3dKI1i3UyWGPfJpDNpMQE5uSANw4NLZyupM73Q4vwxAn-rUrbh7oX5_UenY5NrafWRDO_WYh3eQYyAeVSVP32az9fHZEMdLS4w1vFS9aNrQZRRNquDebpauJn6z-t8fTBpBJDch8pfkdvpjPtsMkINaNAm-dV9Yl0eyS-Vjl0vve_h7YtddH7X6nOPvRGmnZVdOxo2WrZ9NVUzYGyqMB8I7em34OA9LwxEzPw6R4Ipi8_FyBOv83SKKlqiYlaj5ummgHxTkXDya_vY9CEuCQG1yjtNuqRe7CVUY6EdCL2d6mg7OFwQj4MRl_zGuXcY-jnF6ZQ9EipRmDFMy-QtdtHExIuqaXJlDHnwJ_gqMafZrWjqCJHYzY6gQHAwGh1xgerPK7fXocSaAHhCc4Ck0ZhHrOvWUZ56uq9JIFGpywLatwGvGwcOd6XIzyZ_2P45NbzW8p28TZESDiAMixn1RnFxCBwG5qibbI2LfCbRu09hPEMfCQn8Lkpiu0ZekaMfJtygQZ3xvNVMwkFbgTk4j4_MnssKU7VvowRBNj6EfYMpRhfIjTKel7ij4paDQj3Xtvh21UgYcJmG0uCValRDGAQ-vl531ZxeEafkTPzKUdLhDGDpYkY7_xPd0r06TA3df6TDA_o_Rztr4FQ1r1VDGFylqzpgDzg8fD9aB1huhoj4K_ttXigDfCphC5z1MjIILwweKRmG60RZX5glzzLQdQlO8sQqiPWBdHSzWcMoxBUXuMGF_nIQa8ECCI_uOSuMhxeV0xLbHVGTZB-eI9T7qxhAlooEMWm24m_FeHTv5fMSrSPhC6gJ2TSbaYpGq5Dm6PfpBEkcPPcCJZFA4M13eIkdPCK2GlqLUU9exhiRlo4rbcEFa0euBwEx1EX52bwsjv9rxBVPIxIk_m1n0hd9vpz0swsnHsvEET6aDPAGTkpYNeZ_JZyppmblnPwMmHi0YXsNLHIz2KI6loyEzkR36y2tWZKOlY7RPKn8QDv0I0-NLbDMormLPPcSkabUfmXEJJ4chAtvBKtaFAV_-Qyt3N3hri5CLj2jxwm6q7oVNS1btpeLc6RmsH2_VOqbYe5WQDTgu4Ff3B8MAYWwZ2IIRltqirb8-UsFdmGdCgAsm504XxHGEmPn4X_L9AJetFOEKCNRTOkQ3r18u8bh5vL-o8I3IPIy2IQyg7_izsBeYhhSJFYZZtF8Z3ogsWjHHtwaOZ3XXk76oQfTgJdT66gUtILkbynIl-z8XvE71ZHvxdgHChh2zQzIR6gCMwX243wQGBfofGnUDn9mKe6Kt1Jnp2Dd2rd3LdjlieYwr7nGn7kKR2Kq3XbjAHDRlI-PcQuttlKppbp4oF0zTgTCljE18FPT2E-S5SHhgtUFzfBaH4ojMy6Cwqf6jw2WK5t1aOklrKdj7uxf8vWddKBXsUj-4RwkFsaMOhrw-iKv0vfxwv9b_y5uvipo3lIGM_qNmf4zx0S0COjbO7JBp8Ax0DoZxqVqElrUoW0aaNoEDPWK04fS530vDHxZS1Po65dE-YkkLfRxrJ739v0d6azQkUBkcBOiXgoya-godoZqw_r5N7_qjl8wdRm4W8y28240ZSShVVd2iSSjHLx7CdljiL4FJQaYQVmpMaeAfx8EKzmHzeCMTzlu8XsEDVILQBfK4FmcrS_kIY5wto9mlafWm51yqMChdqU7NI4tGM2R4OAE3OGplQRSGhG-yoFyUmqIpOlbt4wYxeiKwh4UoX_N_QmK70GhfH4y6grSxjlz-0RzkgbrT70JMspVcCnXU00RL3f9VcjnsKbemD9B5EpDssgUwzgZfqXsh9-FRiEaYX3yXIwkTcOr0V6R6TdO7bX52Dpqm49erj5o00mQ71WWswg",
+          "tag": "ZxdNCc5xpR0hPBOmJzqBOw"
+        }
+      },
+      "receivedAt": "2026-11-05T13:45:12.898Z",
+      "updatedAt": "2026-11-05T13:45:22.250Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "reason": "Signed deposit blockhash was not recognized by any configured Solana RPC endpoint; prepare and sign a fresh deposit transaction",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "57efffbd-5ae8-4a96-bade-722e8e973f5d",
+          "kind": "AUTHORIZED_FUNDING",
+          "stateVersion": 2,
+          "payloadCommitment": "5dee45664e5c43d58845a18d4f8a014706718483741d880f8079add2ce59b283"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "57efffbd-5ae8-4a96-bade-722e8e973f5d",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "REJECTED",
+          "inputPayloadCommitment": "5dee45664e5c43d58845a18d4f8a014706718483741d880f8079add2ce59b283",
+          "evidenceCommitment": "e90624c9dc71b76bf7aead62a695008149e4e421be488622dee652254c8f4609",
+          "executionPayloadCommitment": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "verificationType": "",
+          "leaseId": "57efffbd-5ae8-4a96-bade-722e8e973f5d",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-05T13:45:22.183809Z",
+          "signatureBase64": "nkY+Bs7UlzGMRnQ9ljrzouHDXjOo3ymGnpR+6A8WRMRffNQc5Hg+psf6f0LQvT1ntVAq1jgCIvXSWJeEVEBKDw==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        }
+      },
+      "result": null,
+      "authorization": null
+    },
+    "settlement-d8945b8a5102a13f8812ee13236a7a8b": {
+      "id": "settlement-d8945b8a5102a13f8812ee13236a7a8b",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 1,
+      "payloadCommitment": "ea27f9b497606d8e62eaf8d771cdc541db8dcb0a8d098810f0ccffbc3f009340",
+      "payload": {
+        "paymentId": "57efffbd-5ae8-4a96-bade-722e8e973f5d",
+        "intentId": "57efffbd-5ae8-4a96-bade-722e8e973f5d",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-05T13:45:12.902Z",
+      "updatedAt": "2026-11-05T13:45:12.902Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null
+    },
+    "fb78c7a4-284d-4505-8b82-044faabeda92": {
+      "id": "fb78c7a4-284d-4505-8b82-044faabeda92",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "REJECTED",
+      "stateVersion": 3,
+      "payloadCommitment": "7be7a2611f5cea8232789f80330c065723fee486f7efbf6f266cf970b2e5f96e",
+      "payload": {
+        "paymentId": "fb78c7a4-284d-4505-8b82-044faabeda92",
+        "recipientHash": "1ce60077c5d59262b2843e90292200da49254a3a937660275c343af7c42186c3",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "2k4fCCDxgHhbGobQ",
+          "ciphertext": "BD3S0ncQ9JafOjBfe437xYR3DaDreg3rMvvapPZmW99qCBbi3mADsP5D8vJsvBg1_Lo4fbUgQKVG9bt8lDePIuEqIK50J0RBXC0RY0iqz3ZpfYCKSW1UIvxR0ax4PYJCcZ3iw4nvcNwd17szk87cLIBydhx38rhEdUiaUCJrArlLjskyjRXxrYFm7V5FYMUsXfz3MrMzfpaql7bgyftwW2JDUK6-ufe1HKyYZTD9XhERQ92ovI89S1E2lrVQS3j-0E21rWgfKS1RIqgxTu5INmvYvOKTHi-5o2EwyqUV23dt1OoqiCb8AM5QUxYl7_NzX90DrXbU4SM58h35ltnhVCG98aL-zC97QEF4bzOstM8nHRt_MMJSe5QSwUGMWFH63jtoF2ELWWhBpLCQvVjMvykFDP87NaJPiSTDRQ18a2zFtGn0gjo3YFp-dZP43veB93-1_oVZmATzp9uFxgV8TOon9DqkajBATsuYQeHAgQbi7JyGakCy9sEPj2kDPfkTsASpbTgWpjs9WP4IqEydicTqJxW81YIpAlS5lVabJYOpmGbK_wQCQG75isL7Q3g9GYcBHC51MGpI0ntNhANSjZGQzlYTv34p1QXwoMWj7hQ8X6mJlUadNHXxJkGJMByeTy3vb_5MqEWWUo3GpI_5mInksITMuBD3hF0AuiIFrzBO5TY_3h7uQ2yi87LEeFq41yYwutMx0mXPKsgzWoCQ7cL7Mqv7lzbna1TYvKhcnRcsg4bqOC-q89YOI9g9yZG2w_w89jBg-X0g2pkEsioz9w4MN-JOFeWQM7Tk34MU8xvq-CC4_NoVrkio-qPdDdFxuAhmWF5hyLzDaFiyYKtTDJdqLszi4QSq_nQF5HNyX3qm49ZpCqMVA9My4tKh9zaRPVni6xOjoiZZ12Q14tEpE71kCooQmkgN4NyP4qRbC0zhVQSspHBZa92DmNyg-9ySKHcpo516M-5zav_71AHua9cdq32ecsTmobOO-dfd7YwVOQzOeBtITUjJ25R80Bcv96ndLQkqCP1PTe9fTIX_EOPO0AYoefeh5tIR9Lb2aSLifSv9X_VCQhbcebbR2sNM9T2yQcbsKxL_14IRt3comYIyl-Ylhn4A8VNRll5XPoWh7xeoz-_m60Wk27936d9n_HA3VfQqbGrLMC2VcSfY7ib2ZmAS2Hd1cPp0iONrkZa1hsah6tDlnL5_mNOe4MpRJqFsbwST7jEHdnahZbRHDrryMAgWHg3WrRIT1pyyyDYHHRc4n3bzkllbI5ENBn282C6KxaktSb29redRYj0TMQ_kQpb8PqRvB70NBt5OP8gEUa0OfkH8HU2kplFhKdrILls3wKSDrMdBsVVzMRun8H54a2GCwhZenmwu8eHL8BymlV7tuhZp2_X7uJB31yAd_3QCOJOjiEU-bCF6I574DqAjgVrz_YaSdbis0nYudf_HI5bDXQDfm1aMCH8m1DvA9FWJQhTPH7sW2NhGp6nBCeV9hJzFIqh2wBB4V8x2MQ8xgosg0DSqBABRFziD2-d46sZZ7gTJpdEQVEEj1R2PkINZUMrSPHW4FEBTwWWe_-btDItGQoWWKSLk9UjXlQVkv0V7vnBG175BMq4qHTQ_U5J61TWTaELX1UlfRzkZ0L92lZBUcIMYwEIsnFSWIrhHdOuUPlvrRyXmQFXkI3t68Io1vG4rUp1hbFTim5TLiPCMxUDdNdTRhBLkjwlkWnNiwGRea5Rl3T5hOy6v8c2MTCAo_bggbVeZFHC8Y3tI-oKDsJr3V70peOkZ4xvlhcMjXIQW0rHkVQ1e7P4tEzwjmb452aZ58mtr-gTWDplprTQ6RzrzhLP14mz8x7joXVbytdhGZKyAvYP4eT07i_zt-pRko0O3nULeYhalzQzIWRR3Bo5Qh0ogHRlpN-Kv2WiRw2MTkUKOxh38P7hL0ra8pTuDLnaYb_b4WXMx4V-RGDRyX_yx3llwoqXFiuUCOEH_WARICEo13Va5AnG9osFwmQjaya5DlJPBCke-Qn54ep5yQSvp2yZyqDdPzTDMiLMlsWoyJ7mmQG7JbOAsi-BA49q3gXEyKd2GzPig_tbk-fgvtRKSKbmgvK4vdH69SlJA4jMlrnII1oq7m1wO-voAnYxQpH7CFRCBGOuUpQ6Si72kwnydEI6lJ5sdTbZri9HyHC7Oc7IGdPg1kIJB1Wf0_dESmbBgTlJFCF3ZsNLu6dv-8KrRcxmIGXjkIAaA86Ij912He9dkLcePNMmYtjhpHVj5iEPJkhAmwIGTgt9NqKlJQh2z_MOxD3HMlmungveMA_fOo-X1mNmBJYBrOH1OWO1fy-3VPib6qYZOUDjPmDxUmQBqQqCKgwlLcAXMSSyjKbjqlEHslYAKcNeW8ICeNBf8bz9p3WrTk8nqf5_OkZH-unLQfoYXQnfsESZ3xCgS4MdJlAX9Z3MskKLbXa2iqTMR1B55jlnb-D6pvpLfOnEaVxMSv0Dvo7Ib6t4Z-fvKBMWDNQmTyatH6nrfHSV9dRK-kcvQGM8857xqOFehl9JtrZNnDcaN4VyzsCz42-dTHC9oTPnYTkFDTti8jdRv_goolhX2VfcbV55N9FRFk79yxzXQLL5eNr6ZONB9Tqu-o-c84lDpJQ_XqScR2hA7fmEza_nBKgM_-MPz76jcZ8heOcM4-Cl1KDta6CzdVfedkcbezL_1tp0G4RfmrGGy79NuU-cA2DZwFyR0mIbPA6m1vVMcqfMlnyT6VXwKmWTC8h3Feo19JjfRJGRPYBGl1R9IBebg355n6uxOTi7HsCXjUyHwpGrmMuN8-9LjV4tEAHIZomdb-t81Mz5LCkXwgmYA1ZbRS1QPQaS8b5h9v_-q-esH3rBoWiQBqT_bwsEnQ6IEnUmp6QxNp0ZCnP-kTVJFQklG6sXzp-p_WdSfA8vnI6W7TyZHotipNL6B3xQT-jOa83wTHVeDNQEP3j9H3CPuIw",
+          "tag": "jXmYH4m_cBd66dGM2jHnkw"
+        }
+      },
+      "receivedAt": "2026-11-05T13:56:55.913Z",
+      "updatedAt": "2026-11-05T13:57:09.412Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "reason": "Signed deposit blockhash was not recognized by any configured Solana RPC endpoint; prepare and sign a fresh deposit transaction",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "fb78c7a4-284d-4505-8b82-044faabeda92",
+          "kind": "AUTHORIZED_FUNDING",
+          "stateVersion": 2,
+          "payloadCommitment": "7be7a2611f5cea8232789f80330c065723fee486f7efbf6f266cf970b2e5f96e"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "fb78c7a4-284d-4505-8b82-044faabeda92",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "REJECTED",
+          "inputPayloadCommitment": "7be7a2611f5cea8232789f80330c065723fee486f7efbf6f266cf970b2e5f96e",
+          "evidenceCommitment": "1c49cbc471591c15e544261ffe71631269e348fd35c6242f4c828f5a57ad17bb",
+          "executionPayloadCommitment": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "verificationType": "",
+          "leaseId": "fb78c7a4-284d-4505-8b82-044faabeda92",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-05T13:57:09.339205Z",
+          "signatureBase64": "vFA9wcLJCYRdLsW06z1E1oNjr1R2pOAnobRfy1l/yFwOWIFwrWDBF4l85dgZbz3uMBjF0BpsdIdbfgPQYANeAQ==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        }
+      },
+      "result": null,
+      "authorization": null
+    },
+    "settlement-6b13305b4320d9a2906f08d24cbdfd20": {
+      "id": "settlement-6b13305b4320d9a2906f08d24cbdfd20",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 1,
+      "payloadCommitment": "196d8916058bb1a23bcecac3171a814fcae55b96ec2a5cd2a767c6354cec8b6d",
+      "payload": {
+        "paymentId": "fb78c7a4-284d-4505-8b82-044faabeda92",
+        "intentId": "fb78c7a4-284d-4505-8b82-044faabeda92",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-05T13:56:55.919Z",
+      "updatedAt": "2026-11-05T13:56:55.919Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null
+    },
+    "ae009498-4be6-461f-a126-81c29b0bf9be": {
+      "id": "ae009498-4be6-461f-a126-81c29b0bf9be",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "FAILED",
+      "stateVersion": 5,
+      "payloadCommitment": "523238a0b4b0e3e2ec93c0b186538808482a9fae7d8863e8fd4603c5e8f75fcf",
+      "payload": {
+        "paymentId": "ae009498-4be6-461f-a126-81c29b0bf9be",
+        "recipientHash": "1ce60077c5d59262b2843e90292200da49254a3a937660275c343af7c42186c3",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "dsn1cuVY8_pydHXe",
+          "ciphertext": "lHjmcghaZ7rRkyBIdfI1j_n-StMm79u90YHRznD4upDuUkXAkBOI26nL_3o5RqmTzyWLtu6KHXPWq9PpX8trMQ7_yh-zsE8Fy3AjlY2uCThslm2fL8bz0rOCQuMWtI20L9yCGLhENhuWCVku04oJrm7lwieInYYiIIja_kPLyXUuMXXclsIPFIrEf9FsfoCBtnLCbyG-Chgw8nOtzonfqu60quX3R38oIZ08N2SHuarigAFfVqGZbF9UCNCKMG4cQcEnPSGsjZ1Km_kiVmO3N9MygSO-YroMdjHu0E5-v7ljf2JF07ggACxnPmHjn_Ct7_d1ritH7bFwi2TTbxGZ8RfJ8zxvEMd4SDH2UeBTzxHiHokRpuHdB_DsFJsFnot4iCGVXF6mueT-N4bwl8NH8aDm0p1AFN3mJ0DFFWBK_hyDznXQSfClyDmKSdbsyp-GFoFsmLxTTa7zkGcK8SKDiSaHpwUbEuIDYNmbF5HGkWgCTcBFE_3sNL4pjdFLVmtwyOFJSaA9O_KMuaxd9QZXgv63A8Jp_fqv2eOot2roybV6XvlN2n5TJEoz1yTSWL4J-r45DX_5onfbZP5XPdVzX-I7bU_YoLtpar-gl2613hCHzPafZCH8hJnMm8CIU9rZvAuNcMciiK80kMdExy-obouL5-6FebxZENx55CqZzbLaBXf8winxhJwBn2ywfsGwZBzmHv0a2xIuv2k1BIQbEHvyl3_apLb5v1hT-QLdMwrkuSMGULtqQQ2aVnzjwWYjEw5KJxrKKt--OGMBmjhuvA3X0XAktwnnvCzfK2_1xsAG5-uYg9lOnaFTrYfH3pgHS29tkztlzY6Gr8dAIpYWRHiOuWi27y3hLB_mVHOaBjwndgD3-Vva4QArvM2bd9cgF6Pwe_ggB4KuR52QB8d_OwG5P_TkcNznRk3qLrY75w75Fiqop3nBXPBR1dBZcnnB0-QwvdFX1EuTKuZ6LcMZvhm1Hq62sE2WgeWhKFdNxQNugule256HUCN6MPOI_fIsOon3Ofb8-oURaZCIWlPyC_qgDRuqiTyGsfHQYjIjP-iQ_FuI_Z-IFTLoiG-9pn8zwgqfAFuXvGESgUw6jU2Ze-OhFQWaujLbklJfs_tmnweQj4p0QbR6vaElBa2IrAJE_obJbT6G-p9nPfPU5ffJ69cfCcSaZzr_1koHYfFZXEeT1ZdQhq4yXl3e9khnH4l-9JW2J2qH3-7JXBxPjCuMnHeFpmRgj1iXGVDddcTP6xpRQx4fJ5Gummi7JeEo2DpYSdo6JnlF_jCzRN8ij18O0H_RDQIxh-6RPgAWFbN8zhTyThxFHipAjf5jXEYyI-i-z0n2ekmEJU2RzAHzzB1wZw7SNc-aFK6apdLPh1r1OnoE0dGItux0fAg0XYdEJl9EWYZYHLoIr_lif5BhWJoTQObOJfNZIVk4FSRNlv-NBeWc6jhfDTboEznRpamf48j1FsJd4JlAX8Kge8Cem6Xr5Yl_BfCBtUDIfm7UmLwtWHQog6wPoM88Kb1Erxy1vnsdBVDHeZ6O1fsv6Z0aV-TM06XNAtiEUTu8Kv8SBZFrl-La-_riP4xsqwciYqzfVS5miQiQWd5_q5vYqLdLD8MeUuwbZxiW8bD8n25FxoTJzoVYD9vtVebIHXHJHn43sLnHc4BDaGZZrrz5Q4tS6stcqBNUJq2sfu45o0kE_u6DpDhvqIqNZ62BtLgO-0AWXok9_VNm3z2JQpAXgrCQB9ndkh7Gy-3AT2snNaFqtNa0Lyrl4k4PUqWTD48YEgBofqzeJOT2On-15gvjXwpw_m1sHROcFlbogA6J3_ujk8C8CKUbx8-U8pJzA8JsmzwVpL6q1JcPaLl2Xcvcj7G6K8lrYRutGgnJmsDSbwc-W19cXzvyvnMaM8zmXwlCFH88Im_ID5LqK6q0ugCMDVp_ouQ4M7jjay-Sr8A1f88mCJovaNiEVpJwN19IEYteYqmcH2-gBzY8ygYupoZ6yPudA4aDeu6Wfjbqh0in9aL_2y0BsytIivf-GonGQZTUk-BXr0aW_o8Yk1NkzRYY-NAGXNBOFWIluI2mPJ_y7k3GWVQWLczA5ahUqk8TJFoBeEDNt_5_af91YL3s0o543hLUowdE2lH0reNaGEqv1BKmB_NqznOJg5caApmibSc0hxUGzyICPETbQcIxV4mp5rngj_Nq4YVD9-oNPrkLXW0adYzdbZp9QPs7WddPQgMOhV9BTmLTqzhOgSn3pFkDCRHh9eiqkzU6l7CyBEnXbdDyQ-_QyYyY2wTRg6acXErU_o6KzBVuyDLO_l7DjGKkp13DW5zdIQHTG6iI0_7mTzCsoJM-UYnIB6EEkYOTwmmpjwslvwZcqj5_3HHhT2jdDutppEUXkHBk3Pgf6-giqP88hje5fadzYJW_LGGesl9TncfPsne7NB2To7b_6MxpRLVNP_FSvVepgH-PB32CKSWIL22WrE4wAssYcs8qgv-1LUC44VMC7wzte6wJPPyYi-1YElQGdrC4cbRfKzBDbXD13UosAMETWJSvgWAKhXbQIXpyfhhP9qlGP78yrMnLYNlmOKyktQqeu6RAigc_0CsQo-HbSg3IbEcf-EEOcZzvj-Ijy_RSrfVweVb8qtMtMSLR-CWuq39E8qiaCYh87Rz_Whmek8ser3K1TR_wnkWL86AxizheF8gV7dNF9O64pBS0wOlrZQ9Y2Dlq6lvgNkdqzqR0LqQ0lFEahkD8meH6JLz0AmeBOhw6lw-k0dIg1OKAlQ8Mh5ESAUcOH8-h-ZMNFsr1wqPfq0kUa6a8Nxm9U7xlxcOSI7J_lZBc188KFOxTfbVAX1zTeBIAQF7pklHEAmucaSsr0056MVhpMwrwVudPXOrfJqohf-o__AV_GyC622CokZpxEPEsD0NcnowbAHs0vFen9axn20QW8K9uQlDe-gBPzMVpR_B-We4rSBdftpwoUp_PHw",
+          "tag": "9WAu4ZXsRuk-ys97MAHXRw"
+        }
+      },
+      "receivedAt": "2026-11-05T13:58:09.343Z",
+      "updatedAt": "2026-11-05T13:58:23.399Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "verificationType": "TSN_TCAP_V2_GPRU_CREDIT_INTENT",
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "ae009498-4be6-461f-a126-81c29b0bf9be",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "VERIFIED",
+          "inputPayloadCommitment": "523238a0b4b0e3e2ec93c0b186538808482a9fae7d8863e8fd4603c5e8f75fcf",
+          "evidenceCommitment": "637d249a8d0ca7dcf467ff403128623004944ea07c3ba41a14966ba4efe6c2ce",
+          "executionPayloadCommitment": "af3825c426353a7870eaae9bef63a977c696a8e74c7f5cfff36f7b3867d6f1e5",
+          "verificationType": "TSN_TCAP_V2_GPRU_CREDIT_INTENT",
+          "leaseId": "ae009498-4be6-461f-a126-81c29b0bf9be",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-05T13:58:19.395163Z",
+          "signatureBase64": "dDHlRpcdLDn4HMWfTEqS/e7rZVpAzz9FZIvnoRyv0O2M68R27li9HyDNQcffwXe5OK33Gc0zuwb1ovYdlzn4Dg==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        },
+        "programSimulation": {
+          "programSimulation": "PASSED",
+          "computeUnitsConsumed": null
+        },
+        "payloadDelta": {
+          "addedFields": {
+            "tokenMintAddress": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+            "amount": 1,
+            "senderSignedFundingTransaction": "AQmU4BKjGhn/fye7pqqdoGR/ph24rBmBYdhiXivDmgQKgXWrVP1JU6zFDulO5LA6AGEijK256EaBgUHU1l8nZgcBAAUKqVO9EtYX5U0D8BHesjGnI7z3Wg9YQz5Op0T30cZybr4TEaeJ4clQo7QzS6JZV69GyzxbSQp+bVtz8w2RO31T3BR8Opkdbk0QbAUZUZ/IyHluN2Vi461rh93mLi5jpMhIS2l7sokevyH8YHF32hDez85kFv31Kq1jw5AyqBxspBbeL2MDkoSa92WHEZZ30fBRxQY6i6jv4QAEKVYMKapuOjtELLORIVfxOpM9ATQoLQMrX/7NAaLb8bd5BgjfAC6nO+0VXP2h8frN1BayeHMTDwcgF4jNnLtSIyT3Jg0e1/GNB1Ktb2rSrDoIUhtG6KdN4HWvI2OZr8eunpiwHtTWiA0dtbJw7ClTNwNYHhsNkXFkwOgmB2XPPjnJL9mh9UWCBt324ddloZPZy+FGzut5rBy0he1fWzeROoz1hX7/AKmWTvH5AbmEImdor5thRvP8jVIg9vFSF4Sq09rUGUR1MQEICQAGBwMBAgUJBDA1I/KIlO4uNkBCDwAAAAAALCI5x5nN4prO9Gf/a3MH3pTTq3zsfEpZFTTdkd+G1Hk=",
+            "senderFundingMode": "tcap_funded_note_v1"
+          },
+          "changedFields": {},
+          "removedFields": []
+        }
+      },
+      "result": {
+        "reason": "Simulation failed. \nMessage: Transaction simulation failed: Blockhash not found. \nLogs: \n[]. \nCatch the `SendTransactionError` and call `getLogs()` on it for full details."
+      },
+      "authorization": null
+    },
+    "settlement-e674529cb25dfbc90136ec11b6a8785d": {
+      "id": "settlement-e674529cb25dfbc90136ec11b6a8785d",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 1,
+      "payloadCommitment": "f0ad7d5ddb50a4eb5c780fa1391935c25f4238c6e568f19c3993d28a79734e8e",
+      "payload": {
+        "paymentId": "ae009498-4be6-461f-a126-81c29b0bf9be",
+        "intentId": "ae009498-4be6-461f-a126-81c29b0bf9be",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-05T13:58:09.348Z",
+      "updatedAt": "2026-11-05T13:58:09.348Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null
+    },
+    "def3ee3a-b8f0-4ff1-89eb-03d0bdd7290b": {
+      "id": "def3ee3a-b8f0-4ff1-89eb-03d0bdd7290b",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "CONFIRMED",
+      "stateVersion": 5,
+      "payloadCommitment": "56e6cfec15af6b8a63dbe74cffce8840d1fc56cf680935d04b67552a1e6ffa61",
+      "payload": {
+        "paymentId": "def3ee3a-b8f0-4ff1-89eb-03d0bdd7290b",
+        "recipientHash": "1ce60077c5d59262b2843e90292200da49254a3a937660275c343af7c42186c3",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "KeVkuMco8I4Vq-fz",
+          "ciphertext": "rZXbvGmVUn_zDTZTGvLLC7QpAQz-xJV2xf0bf6h5ZormWn8S8yNvzQVFmJchkxQzyYmPeCthBwizGxLoLKnUrs0ea9xBikXcxLEmvbfJj-wamwzAIHM8YlL4xmGr7rbhIVN05NSq-LweyRLA_DWYpSF4yRnAnrWeRjc2Gqn2xoWetvIxLNWVs1HPrY7lb4sIT32O1VLhlpM6CH9WhkqaVmxWPz_u5-iRJe4IyXBAGwp6fYxKDWXK2ppqwxipx0Mkc1HXiKZ53bEXvKe4hBBVAa1m8PLGM-Fi4OoFYwMRishljp0gY3LLfyf1TCo29_F2L4dqwbLK_IizWXm2O4PLy1-YxnJ0Y0PGfRRjYJ0Tbp2q6r_N3OEbe04507lzFa5-gsduXEpIWuwhlbtiWktrKmVfFgM_R-V5AiQLBg7-tcUZpxJkQzQ107Y_jvBe3kOI5XIvxWYrRxio595Agdmo0dldf7k0XnyvN59-N9ZtfXj0tWVMS-_JJX_G6JL4-xXRI6AFrL8j774rGwbi6FxWWmeMAKntSMZl-ZkGDWLzXcg8cNGqgHJUS1RA5njD4mhO_51ompGpHfDXv261KaXmNbJ8CA0g3JV4LHSo985KL7LD5b1X8X0f6qCdmcm9PWiYAZHBR9ggUgqjDLqantTf1ZWBRTBgYCzd4TTvehNdBR_VSErslvxyXmDF0dpGddrZ3kDGI2LhzNPWOUUoFzgvQY3y7vMv7KRb_8MbCl3TlNjlm66xiAr4eX8C3xK2RQwWhnfutL5WvxECDvSeakWtzqwsekQ4AaYKqq0O3O0pNG_9sskuAF_JOMxiuKpjIC6U8rjKz0dTHRPS0nE9ki5TyCHSVOQnG6KDJeYiOJjg8bt7J7KtgzNOlUXMQhEdhVlSzlVXVzZio1DlsWUHnmdXALB2ozBQ5cjWNqnuIsPDkV_NrVqyO_gur1P9CyLKMsYsODiZUvDCxNTXYp3pUFInolshpDwkY8TLZqBYe2ddekQCO2u8Ihn28YQPRlMdgSxrdyULbgJm98G3WS_YF8xrR8qFOIvuea7VZXslTyEeUVXOi9LXC-FAyUE1-6ve5Hq-DrZ_9cn2oyhrM6pYo2hpp4No2fddGveTQrtv4l9ZcvLP_Wa6Ha1C5x7c3E5ZCaTSSScGjbtlvSagLkeLox8nblu82BSZTFVj-ce7FMOSMt8bDyLS6fppS2SnWthW-cnXPRkik14jbVoXiYl_7nYH7pNJmwXcB1zPp4bqbKGPjlYrp8Hwt2YppaQZsndwsE6_38yqzOzGSxZ6vtTPmApZ79A5MdOt7voxNHn343aGnmg9oarCvNmVqUVZsTqjhix3YHL491O_aqR7bxLKJU-wPisj-WFqkNUHVkOoZEBCOq0gAfWrWPxJYYO70dTddGPqmbwcr3drop8t4thxDkgDQGdGdZApsTYNoO8I6GxzWA2cme25I3EKMiUYNX3ktvx59yRiBLeKoYPsZxQpYHUnkBM7n93Opg-3t30GS2BSggI0nrp8XPgwbCUea9BYfPwHQDGAt23vZyTcXmPScdTaI66YkyA6-Ma2k4kL8B8sQobWFU2nrAl1WNtzVp-QKkrJ0TlDT2VIidHMfOm9jhsdF36ZplDQealRGBa3VUVGVgAX7a1usXStedBZixaqrS8qUVdJNwdQhTOcwQ1a3zo3fJ4zBqQFu6scRqm0t9Uekewgo8cOHpoDyfMC8FwqhpIXa5Nja1uXyFujJbqEYxSNTna0P2rswgoYyhmaRpBS21I4_qtarEIi6L2P2-iZStoPR7rdgLQmOJ1yx1XRbGTgaj45Ew7g-DjULnnQK9kJain-BQBu8F1EpGRvb-KZHROyceVt80CqMMOLuLEpWcF8vTfpFjbpUZ8IvAqBzAZygs1KYYNx6xtmIFJ441HyrBuw1G86Yss5heUb4zgKqVpgJKUt1fANwLQDzPfrKdw_CM_c1VqAkFRGE_Wrl6NNWCr9yZ8iWVmP-dWzp2bSErWzd1M2EBH08XbFqNpmydMppMvUjKs-TcNHXKrNztAAsMl2H307mTEDIiOPSVSgQtXkMD96dYJIqQFoogzGA3SuucDrybIYa1VlUDkMe7LbcL3oYxPBu2EAjMPD68nQ9OEa5ZtleoEFrNSK6mOtj9ae9g_VpZ06sTCLooDqu51ifRImTGkEvIT0l4yjI8X-t5Kqbk3NwS6Ez_a5HmM9tMugK4BxZePTBH-03x5ORi0VN892yL2XW_0pEOPKo_JSHzIK5ifMi79xrgNlfA2aS0TKTCrPdV6KhROjA_yS9AA2aMwuG9VYBqeQpgbIn6IcKwMmS76jEZHMAlFWJo1ezqlIHHqTCUDLd6zJ5ENMVv6Q5E9c59IXCnVM7UB7OBQ6VdS6ysZbIulcBWceyBdXl-kVZYXr_lsQh2V3hEJDhr2-Cel_hOWLEe4SgR9SqrGummbyGcMgJaIE-5C336UuJcsP58KBy6Otqh5XjgHL0pcYr8vKX2dSH22CprUajblSsB7BysyaNvUntp2kT4SryI5RQRH48prMA2kow0nGa9KmpW4wUb662PR_d3sgNDdxzpGE2QEj90a3_kSYZuXaMQCk2lsjwA9ThhEWj0uxUTFbviMWG8rvPYLuicDs8-H8YBzzdwrx8dvWe4U1bAYrhidTug78INjNahrLS0zQ-Cl6dw__kwCCmWgF_rL2m8kzK5skSHT0XNQ6zSwYLqWfvCK9GFwp5AECNZpcplS8ppc8LIzgz_uF8OSkDf5X4oxbfFQveueVU3F_a8e40_Vgd-b1r-DNFexjKWw26iR-OPR4xkK5laKu5n9klqEpzwvIU4tIKXir03nvphOExBJv5UCdnHENLPiiY1zD5PA2cku-emPZw4aJZtrk78-1PwuYbY5f1oiW6lxDBQA1IjKltl1a2u-1YEFymweNt2_utbJFKeSCZAwhx4vkfgsofidQ0V9JHarcJ60",
+          "tag": "oxSffYh54fgqf74m5kV42Q"
+        }
+      },
+      "receivedAt": "2026-11-05T14:32:34.896Z",
+      "updatedAt": "2026-11-05T14:32:53.303Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "verificationType": "TSN_TCAP_V2_GPRU_CREDIT_INTENT",
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "def3ee3a-b8f0-4ff1-89eb-03d0bdd7290b",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "VERIFIED",
+          "inputPayloadCommitment": "56e6cfec15af6b8a63dbe74cffce8840d1fc56cf680935d04b67552a1e6ffa61",
+          "evidenceCommitment": "c195fd00baebeecb39fa32ccc57bd51fc23898b0ebd59972c62f462470ce383d",
+          "executionPayloadCommitment": "d2829167751b45bff179411c1c8ea789c9468c2ec9ec1d7fd71673fdc71ce7c3",
+          "verificationType": "TSN_TCAP_V2_GPRU_CREDIT_INTENT",
+          "leaseId": "def3ee3a-b8f0-4ff1-89eb-03d0bdd7290b",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-05T14:32:49.426719Z",
+          "signatureBase64": "Pvcn1RXzVTjE8b9v3y8eHGiuDlImPSRczbh0RgNkVSv9pZ1QHdZfJiUP/bQvhvfK9hhV8P5QshiJ/J1pm6DiCQ==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        },
+        "payloadDelta": {
+          "addedFields": {
+            "tokenMintAddress": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+            "amount": 0.5
+          },
+          "changedFields": {},
+          "removedFields": [
+            "recipientHash",
+            "nodeEncryptedPayload"
+          ]
+        }
+      },
+      "result": {
+        "signature": "24Qibbt6MSy9WPp6JTrMAzD3NHDRow8gcZXppbxoVmKMK8Mo7ru49PjA2VPxruXbBJfrSmjopnTp6Vg6atLzUiL7",
+        "stage": "TCAP_PRIVATE_FUNDING_V1_CONFIRMED"
+      },
+      "authorization": null
+    },
+    "settlement-69f6df71a5e93936ae0ba0f2a451b30c": {
+      "id": "settlement-69f6df71a5e93936ae0ba0f2a451b30c",
+      "kind": "SETTLEMENT",
+      "status": "FAILED",
+      "stateVersion": 9,
+      "payloadCommitment": "7282e380a0c7f7bd306fb5b9fd7fe7d18fdd82ad75673930cd1508e1a04c6450",
+      "payload": {
+        "paymentId": "def3ee3a-b8f0-4ff1-89eb-03d0bdd7290b",
+        "intentId": "def3ee3a-b8f0-4ff1-89eb-03d0bdd7290b",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-05T14:32:35.460Z",
+      "updatedAt": "2026-11-05T15:03:54.722Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "verificationType": "TSN_TCAP_GPRU_HIDDEN_HEAD_V1",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "settlement-69f6df71a5e93936ae0ba0f2a451b30c",
+          "kind": "SETTLEMENT",
+          "stateVersion": 5,
+          "payloadCommitment": "7282e380a0c7f7bd306fb5b9fd7fe7d18fdd82ad75673930cd1508e1a04c6450"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "settlement-69f6df71a5e93936ae0ba0f2a451b30c",
+          "workKind": "SETTLEMENT",
+          "decision": "VERIFIED",
+          "inputPayloadCommitment": "7282e380a0c7f7bd306fb5b9fd7fe7d18fdd82ad75673930cd1508e1a04c6450",
+          "evidenceCommitment": "bd761ba9798620dea29731e650afd596f2db81344623617f8a1a72227546783e",
+          "executionPayloadCommitment": "d7e187fd5ee1005c7afe29254c10c0c152318cac5609594e0d3f8a007611d12d",
+          "verificationType": "TSN_TCAP_GPRU_HIDDEN_HEAD_V1",
+          "leaseId": "settlement-69f6df71a5e93936ae0ba0f2a451b30c",
+          "leaseVersion": 5,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-05T15:02:51.372493Z",
+          "signatureBase64": "kpLoyL4qSv6rmCzyL9i7c4sNaB/E/rD9lSOZdaXQwA4L6A8IEvKc9+hMh0+54Df0Vu1ytC37lfwdgJsozD1vCA==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        },
+        "payloadDelta": {
+          "addedFields": {
+            "tcapCreditTransition": {
+              "commitmentRoot": "ESunnNGeKYHiJx6ECsCUEh95zTVwsmJKRRZBo6vQwWbq",
+              "previousTcapRoot": "18c7a837c64208efc9bc31b922a20aee3033a48b977894e97ed5cd20ba68ca26",
+              "tcapRootSequence": "5",
+              "tokenId": 1,
+              "amountBaseUnits": "500000",
+              "nullifier": "0c67bf2dc318471d21b27152918d23ec76a655643047cca55a2f60942c829b9b",
+              "validAfterSlot": "518976623",
+              "expiresAtSlot": "518978623",
+              "tcapConfig": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+              "assetEntry": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+              "reserveState": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+              "fundingRootAccount": "FxKRFAtT1zJfAe5wtAPKbt4HKMc3NoQngW3qU5wfZsGm",
+              "authorizationDigest": "f65a7ba43ab12c4b62db5c41fceb8acd5f95ad565daf7f64dd5a6f88dedfcfd7",
+              "memoBodyPayload": "eyJhbGdvcml0aG0iOiJkYnJpeC1jb3JlLXNlY3JldGJveC12MSIsImNvbXByZXNzaW9uIjoiZGVmbGF0ZSIsImRhdGEiOiJ0ZDlURWloZmlUNm45WXp1cVk2dkhKK1I5Zm5uYm5HQ0pFOUFWek4vOUNYS3JxaDFaQzNzd1RoSCsvOGRQekgzMmdkZU5yNi9vV2dkQ3ppcEx2TUZxcUoyZTR3SGh0V3dEeVJuVkhTZ0xGRU5IdFp3Skh3VmE0a2p3Rjc3V29xWnFjUDZwWlYwNW9oUXloaFNvWVBWRHVod2dsazZsSmlVWjJkamI4WHBNNGF4RytvSDBCMmJ1M2hoc0FVYkJERFNkZnMwVVlOZS9HeTdLMEZPZEpQbk1LQmIxV2MzeUdITjdReGE2V00yendOeVYwclRidXY0OTUreUhBZjRHcTNMb05hYnlrOGZINkgzRFhJYTVNdTZoMjFkbTVZeUJWVjl4eFNCN1Y1TGVseEFpVnhMdURZdk1pVU5zcVFPSHNqT0phUUQ4bFljOXkvK1FWWDNxL29QMEhOMUhlOE94VlpmblFCRU1DSGpyZ3JQeGlRNU0xdE9meTJvVm5sMXFmdUFSRmQ2QXo4WjdqYmo0STEyTW5oMTNZNkNmNXZvSlRDbGhlUHl0NnR0NmpVbEVXRTMzRGc5cFM3eUs2M3kvUTZBTXdYOGtRPT0iLCJkbmEiOiJhM2QzZmJhNmZlMmRmNmNhNjUxZDQzNTNjMzk3OTQ3NGZiM2JkNGI5ZmUxNTU1YzQyZTc0ZTkyYmExNjg0MmI1Iiwibm9uY2UiOiJGbWhYMkQrYUV0YW0ybm84N2hoakI5WHpzMnhIenludyIsInJlY29yZEVwaGVtZXJhbFB1YmxpY0tleSI6ImU0NWQwMjQwY2Q3MGE0NGRjZjYwZjVhMjk2NjY4MGI5NGJmOTUyNzc4OWU4NGZhM2Q0ZDVmODYzZDcyZDI4NWEiLCJ2ZXJzaW9uIjoxfQ",
+              "memoPayload": "TSN_GPRU_HEAD_V1:0aee7db433b2027ab3d622f808dd3bbf02d400589f63b2195473f95ac9e1fb70:1c8c00b393d47fcdf9825cf1a95380df531d94867814113c1a10973456985f8f:1b5a1a54aa8ae631ae5614dafd2bdb9b77944aad2e3e8551110e44df4be42796:1dcf6ea2f151f2936d55071ca46bdf203ce93c3c6daf5eb8ff59dc29cb6bd3d4:02398c4b7477209f24f0a97bed992970f1523f2a05fc4ce255a3e15a050fabae:169609a6ad42315fbe2442078174f732e961ca6e03485549cf1b26138129d97c:1d5ef2a409cb36bc95a5698df5f54edd88a8602cf999e39dbb0bbf888af70dfd:eyJhbGdvcml0aG0iOiJkYnJpeC1jb3JlLXNlY3JldGJveC12MSIsImNvbXByZXNzaW9uIjoiZGVmbGF0ZSIsImRhdGEiOiJ0ZDlURWloZmlUNm45WXp1cVk2dkhKK1I5Zm5uYm5HQ0pFOUFWek4vOUNYS3JxaDFaQzNzd1RoSCsvOGRQekgzMmdkZU5yNi9vV2dkQ3ppcEx2TUZxcUoyZTR3SGh0V3dEeVJuVkhTZ0xGRU5IdFp3Skh3VmE0a2p3Rjc3V29xWnFjUDZwWlYwNW9oUXloaFNvWVBWRHVod2dsazZsSmlVWjJkamI4WHBNNGF4RytvSDBCMmJ1M2hoc0FVYkJERFNkZnMwVVlOZS9HeTdLMEZPZEpQbk1LQmIxV2MzeUdITjdReGE2V00yendOeVYwclRidXY0OTUreUhBZjRHcTNMb05hYnlrOGZINkgzRFhJYTVNdTZoMjFkbTVZeUJWVjl4eFNCN1Y1TGVseEFpVnhMdURZdk1pVU5zcVFPSHNqT0phUUQ4bFljOXkvK1FWWDNxL29QMEhOMUhlOE94VlpmblFCRU1DSGpyZ3JQeGlRNU0xdE9meTJvVm5sMXFmdUFSRmQ2QXo4WjdqYmo0STEyTW5oMTNZNkNmNXZvSlRDbGhlUHl0NnR0NmpVbEVXRTMzRGc5cFM3eUs2M3kvUTZBTXdYOGtRPT0iLCJkbmEiOiJhM2QzZmJhNmZlMmRmNmNhNjUxZDQzNTNjMzk3OTQ3NGZiM2JkNGI5ZmUxNTU1YzQyZTc0ZTkyYmExNjg0MmI1Iiwibm9uY2UiOiJGbWhYMkQrYUV0YW0ybm84N2hoakI5WHpzMnhIenludyIsInJlY29yZEVwaGVtZXJhbFB1YmxpY0tleSI6ImU0NWQwMjQwY2Q3MGE0NGRjZjYwZjVhMjk2NjY4MGI5NGJmOTUyNzc4OWU4NGZhM2Q0ZDVmODYzZDcyZDI4NWEiLCJ2ZXJzaW9uIjoxfQ",
+              "memoLedgerSlots": [
+                "eyJhbGdvcml0aG0iOiJkYnJpeC1jb3Jl",
+                "LXNlY3JldGJveC12MSIsImNvbXByZXNz",
+                "aW9uIjoiZGVmbGF0ZSIsImRhdGEiOiJ0",
+                "ZDlURWloZmlUNm45WXp1cVk2dkhKK1I5",
+                "Zm5uYm5HQ0pFOUFWek4vOUNYS3JxaDFa",
+                "QzNzd1RoSCsvOGRQekgzMmdkZU5yNi9v",
+                "V2dkQ3ppcEx2TUZxcUoyZTR3SGh0V3dE",
+                "eVJuVkhTZ0xGRU5IdFp3Skh3VmE0a2p3",
+                "Rjc3V29xWnFjUDZwWlYwNW9oUXloaFNv",
+                "WVBWRHVod2dsazZsSmlVWjJkamI4WHBN",
+                "NGF4RytvSDBCMmJ1M2hoc0FVYkJERFNk",
+                "ZnMwVVlOZS9HeTdLMEZPZEpQbk1LQmIx",
+                "V2MzeUdITjdReGE2V00yendOeVYwclRi",
+                "dXY0OTUreUhBZjRHcTNMb05hYnlrOGZI",
+                "NkgzRFhJYTVNdTZoMjFkbTVZeUJWVjl4",
+                "eFNCN1Y1TGVseEFpVnhMdURZdk1pVU5z",
+                "cVFPSHNqT0phUUQ4bFljOXkvK1FWWDNx",
+                "L29QMEhOMUhlOE94VlpmblFCRU1DSGpy",
+                "Z3JQeGlRNU0xdE9meTJvVm5sMXFmdUFS",
+                "RmQ2QXo4WjdqYmo0STEyTW5oMTNZNkNm",
+                "NXZvSlRDbGhlUHl0NnR0NmpVbEVXRTMz",
+                "RGc5cFM3eUs2M3kvUTZBTXdYOGtRPT0i",
+                "LCJkbmEiOiJhM2QzZmJhNmZlMmRmNmNh",
+                "NjUxZDQzNTNjMzk3OTQ3NGZiM2JkNGI5",
+                "ZmUxNTU1YzQyZTc0ZTkyYmExNjg0MmI1",
+                "Iiwibm9uY2UiOiJGbWhYMkQrYUV0YW0y",
+                "bm84N2hoakI5WHpzMnhIenludyIsInJl",
+                "Y29yZEVwaGVtZXJhbFB1YmxpY0tleSI6",
+                "ImU0NWQwMjQwY2Q3MGE0NGRjZjYwZjVh",
+                "Mjk2NjY4MGI5NGJmOTUyNzc4OWU4NGZh",
+                "M2Q0ZDVmODYzZDcyZDI4NWEiLCJ2ZXJz",
+                "aW9uIjoxfQ======================"
+              ],
+              "memoCommitment": "839839e00684dc00d7d65fb2a4f7b319ca61cfae2728c55e5a42b98ada1a9465",
+              "memoCommitmentField": "22cf9cfa44219bad6735d445a1f5025f79f9ff1d33b5e43bd27ece62fa1a9463",
+              "memoDocument": {
+                "version": 1,
+                "algorithm": "dbrix-core-secretbox-v1",
+                "dna": "a3d3fba6fe2df6ca651d4353c3979474fb3bd4b9fe1555c42e74e92ba16842b5",
+                "recordEphemeralPublicKey": "e45d0240cd70a44dcf60f5a2966680b94bf9527789e84fa3d4d5f863d72d285a",
+                "data": "td9TEihfiT6n9YzuqY6vHJ+R9fnnbnGCJE9AVzN/9CXKrqh1ZC3swThH+/8dPzH32gdeNr6/oWgdCzipLvMFqqJ2e4wHhtWwDyRnVHSgLFENHtZwJHwVa4kjwF77WoqZqcP6pZV05ohQyhhSoYPVDuhwglk6lJiUZ2djb8XpM4axG+oH0B2bu3hhsAUbBDDSdfs0UYNe/Gy7K0FOdJPnMKBb1Wc3yGHN7Qxa6WM2zwNyV0rTbuv495+yHAf4Gq3LoNabyk8fH6H3DXIa5Mu6h21dm5YyBVV9xxSB7V5LelxAiVxLuDYvMiUNsqQOHsjOJaQD8lYc9y/+QVX3q/oP0HN1He8OxVZfnQBEMCHjrgrPxiQ5M1tOfy2oVnl1qfuARFd6Az8Z7jbj4I12Mnh13Y6Cf5voJTClhePyt6tt6jUlEWE33Dg9pS7yK63y/Q6AMwX8kQ==",
+                "nonce": "FmhX2D+aEtam2no87hhjB9Xzs2xHzynw",
+                "compression": "deflate"
+              },
+              "recordEphemeralPublicKey": "e45d0240cd70a44dcf60f5a2966680b94bf9527789e84fa3d4d5f863d72d285a",
+              "proof": {
+                "publicInputs": [
+                  "18c7a837c64208efc9bc31b922a20aee3033a48b977894e97ed5cd20ba68ca26",
+                  "2d630689b7f7910d1b51b90b278081cb42478d0505758b36654a5daa1ba2c608",
+                  "22cf9cfa44219bad6735d445a1f5025f79f9ff1d33b5e43bd27ece62fa1a9463",
+                  "1dcf6ea2f151f2936d55071ca46bdf203ce93c3c6daf5eb8ff59dc29cb6bd3d4",
+                  "0c67bf2dc318471d21b27152918d23ec76a655643047cca55a2f60942c829b9b",
+                  "1dd57b0388973f1b8f1c9f8aca768bdbbe5ec1db4117f100b34b8c7ce357d19d",
+                  "0aee7db433b2027ab3d622f808dd3bbf02d400589f63b2195473f95ac9e1fb70",
+                  "1c8c00b393d47fcdf9825cf1a95380df531d94867814113c1a10973456985f8f",
+                  "1b5a1a54aa8ae631ae5614dafd2bdb9b77944aad2e3e8551110e44df4be42796",
+                  "02398c4b7477209f24f0a97bed992970f1523f2a05fc4ce255a3e15a050fabae",
+                  "169609a6ad42315fbe2442078174f732e961ca6e03485549cf1b26138129d97c",
+                  "1d5ef2a409cb36bc95a5698df5f54edd88a8602cf999e39dbb0bbf888af70dfd",
+                  "1529e9498f4a16267a4234f5120a7527161f6d2ae5030c8a615c9632bccc3692"
+                ],
+                "proofA": "0bd2ea6e031fc003085e9a9dbdbaaa205f2d3c32a3a7331deca4e2f245340009000b0a92529fba422e7c5127720b91fbe96fe41a9843f71b84c8fed5e04bd351",
+                "proofB": "06ff5d396ef27ffc3af3945f4770bc65539607141f4003f47c61b3b7215bb0bf2b26c33e70d474f7c26f3a6887c38455bda7156929ed8c6a51ade2a52d953e2c1b17ff8ca1dd0ca0f13c8cafc9487b21e090bce5cdc2466ca475568c11e74f121c2828e48dd8e7ae94e80dab6c04d3fe5ca62531e110052f379ca7a8386d395f",
+                "proofC": "19234d41a831adf2c3757f6c6c557895b469bd0b9cfcfc6b0f5f1fffb4ca6bf200a405c6230068f09096f3a5a1f66e7bf3947d529453930fedbe872a2df01e85",
+                "actionKind": 1,
+                "tokenId": 1,
+                "amount": "500000",
+                "authorizationCommitment": "0464f365d4b90b7ac949ffb17564d0fb969223ebfd104c8e89f0a3a52edfcfd2"
+              },
+              "dna": "a3d3fba6fe2df6ca651d4353c3979474fb3bd4b9fe1555c42e74e92ba16842b5",
+              "actionCommitment": "1dcf6ea2f151f2936d55071ca46bdf203ce93c3c6daf5eb8ff59dc29cb6bd3d4",
+              "tipRootCommitment": "1dd57b0388973f1b8f1c9f8aca768bdbbe5ec1db4117f100b34b8c7ce357d19d"
+            }
+          },
+          "changedFields": {},
+          "removedFields": [
+            "paymentId",
+            "intentId",
+            "source"
+          ]
+        }
+      },
+      "result": {
+        "signature": "2U9KCqFjxvVuRbW8UZVAQ5ecWHT5cAQdz4ZStc5hcLKbRZ5cW1uzwkqhiQHCRV82XzGfnmp5tghPXk7pFq5TWT8V",
+        "blockhash": "GcAY6FJ8KweUNaXMcj4rGTQBS47VNkQnjooy92FzuUrZ",
+        "lastValidBlockHeight": "506133565",
+        "wireSha256": "460efe7aa251f0f4014a056790c8c1c0aba8017afc9eb60b0fc59a6dab6ab91e",
+        "wireBytes": 3044,
+        "stage": "TCAP_GPRU_MEMO_CREDIT_V1_SIGNED"
+      },
+      "authorization": {
+        "kind": "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V2",
+        "workStateVersion": 7,
+        "leaseId": "settlement-69f6df71a5e93936ae0ba0f2a451b30c",
+        "leaseVersion": 7,
+        "leaseExpiresAt": "2026-11-05T15:03:53.607Z",
+        "expiresAtTs": 1793891033,
+        "transition": {
+          "commitmentRoot": "ESunnNGeKYHiJx6ECsCUEh95zTVwsmJKRRZBo6vQwWbq",
+          "previousTcapRoot": "18c7a837c64208efc9bc31b922a20aee3033a48b977894e97ed5cd20ba68ca26",
+          "tcapRootSequence": "5",
+          "tokenId": 1,
+          "amountBaseUnits": "500000",
+          "nullifier": "0c67bf2dc318471d21b27152918d23ec76a655643047cca55a2f60942c829b9b",
+          "validAfterSlot": "518976623",
+          "expiresAtSlot": "518978623",
+          "tcapConfig": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+          "assetEntry": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+          "reserveState": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+          "fundingRootAccount": "FxKRFAtT1zJfAe5wtAPKbt4HKMc3NoQngW3qU5wfZsGm",
+          "authorizationDigest": "f65a7ba43ab12c4b62db5c41fceb8acd5f95ad565daf7f64dd5a6f88dedfcfd7",
+          "memoBodyPayload": "eyJhbGdvcml0aG0iOiJkYnJpeC1jb3JlLXNlY3JldGJveC12MSIsImNvbXByZXNzaW9uIjoiZGVmbGF0ZSIsImRhdGEiOiJ0ZDlURWloZmlUNm45WXp1cVk2dkhKK1I5Zm5uYm5HQ0pFOUFWek4vOUNYS3JxaDFaQzNzd1RoSCsvOGRQekgzMmdkZU5yNi9vV2dkQ3ppcEx2TUZxcUoyZTR3SGh0V3dEeVJuVkhTZ0xGRU5IdFp3Skh3VmE0a2p3Rjc3V29xWnFjUDZwWlYwNW9oUXloaFNvWVBWRHVod2dsazZsSmlVWjJkamI4WHBNNGF4RytvSDBCMmJ1M2hoc0FVYkJERFNkZnMwVVlOZS9HeTdLMEZPZEpQbk1LQmIxV2MzeUdITjdReGE2V00yendOeVYwclRidXY0OTUreUhBZjRHcTNMb05hYnlrOGZINkgzRFhJYTVNdTZoMjFkbTVZeUJWVjl4eFNCN1Y1TGVseEFpVnhMdURZdk1pVU5zcVFPSHNqT0phUUQ4bFljOXkvK1FWWDNxL29QMEhOMUhlOE94VlpmblFCRU1DSGpyZ3JQeGlRNU0xdE9meTJvVm5sMXFmdUFSRmQ2QXo4WjdqYmo0STEyTW5oMTNZNkNmNXZvSlRDbGhlUHl0NnR0NmpVbEVXRTMzRGc5cFM3eUs2M3kvUTZBTXdYOGtRPT0iLCJkbmEiOiJhM2QzZmJhNmZlMmRmNmNhNjUxZDQzNTNjMzk3OTQ3NGZiM2JkNGI5ZmUxNTU1YzQyZTc0ZTkyYmExNjg0MmI1Iiwibm9uY2UiOiJGbWhYMkQrYUV0YW0ybm84N2hoakI5WHpzMnhIenludyIsInJlY29yZEVwaGVtZXJhbFB1YmxpY0tleSI6ImU0NWQwMjQwY2Q3MGE0NGRjZjYwZjVhMjk2NjY4MGI5NGJmOTUyNzc4OWU4NGZhM2Q0ZDVmODYzZDcyZDI4NWEiLCJ2ZXJzaW9uIjoxfQ",
+          "memoPayload": "TSN_GPRU_HEAD_V1:0aee7db433b2027ab3d622f808dd3bbf02d400589f63b2195473f95ac9e1fb70:1c8c00b393d47fcdf9825cf1a95380df531d94867814113c1a10973456985f8f:1b5a1a54aa8ae631ae5614dafd2bdb9b77944aad2e3e8551110e44df4be42796:1dcf6ea2f151f2936d55071ca46bdf203ce93c3c6daf5eb8ff59dc29cb6bd3d4:02398c4b7477209f24f0a97bed992970f1523f2a05fc4ce255a3e15a050fabae:169609a6ad42315fbe2442078174f732e961ca6e03485549cf1b26138129d97c:1d5ef2a409cb36bc95a5698df5f54edd88a8602cf999e39dbb0bbf888af70dfd:eyJhbGdvcml0aG0iOiJkYnJpeC1jb3JlLXNlY3JldGJveC12MSIsImNvbXByZXNzaW9uIjoiZGVmbGF0ZSIsImRhdGEiOiJ0ZDlURWloZmlUNm45WXp1cVk2dkhKK1I5Zm5uYm5HQ0pFOUFWek4vOUNYS3JxaDFaQzNzd1RoSCsvOGRQekgzMmdkZU5yNi9vV2dkQ3ppcEx2TUZxcUoyZTR3SGh0V3dEeVJuVkhTZ0xGRU5IdFp3Skh3VmE0a2p3Rjc3V29xWnFjUDZwWlYwNW9oUXloaFNvWVBWRHVod2dsazZsSmlVWjJkamI4WHBNNGF4RytvSDBCMmJ1M2hoc0FVYkJERFNkZnMwVVlOZS9HeTdLMEZPZEpQbk1LQmIxV2MzeUdITjdReGE2V00yendOeVYwclRidXY0OTUreUhBZjRHcTNMb05hYnlrOGZINkgzRFhJYTVNdTZoMjFkbTVZeUJWVjl4eFNCN1Y1TGVseEFpVnhMdURZdk1pVU5zcVFPSHNqT0phUUQ4bFljOXkvK1FWWDNxL29QMEhOMUhlOE94VlpmblFCRU1DSGpyZ3JQeGlRNU0xdE9meTJvVm5sMXFmdUFSRmQ2QXo4WjdqYmo0STEyTW5oMTNZNkNmNXZvSlRDbGhlUHl0NnR0NmpVbEVXRTMzRGc5cFM3eUs2M3kvUTZBTXdYOGtRPT0iLCJkbmEiOiJhM2QzZmJhNmZlMmRmNmNhNjUxZDQzNTNjMzk3OTQ3NGZiM2JkNGI5ZmUxNTU1YzQyZTc0ZTkyYmExNjg0MmI1Iiwibm9uY2UiOiJGbWhYMkQrYUV0YW0ybm84N2hoakI5WHpzMnhIenludyIsInJlY29yZEVwaGVtZXJhbFB1YmxpY0tleSI6ImU0NWQwMjQwY2Q3MGE0NGRjZjYwZjVhMjk2NjY4MGI5NGJmOTUyNzc4OWU4NGZhM2Q0ZDVmODYzZDcyZDI4NWEiLCJ2ZXJzaW9uIjoxfQ",
+          "memoLedgerSlots": [
+            "eyJhbGdvcml0aG0iOiJkYnJpeC1jb3Jl",
+            "LXNlY3JldGJveC12MSIsImNvbXByZXNz",
+            "aW9uIjoiZGVmbGF0ZSIsImRhdGEiOiJ0",
+            "ZDlURWloZmlUNm45WXp1cVk2dkhKK1I5",
+            "Zm5uYm5HQ0pFOUFWek4vOUNYS3JxaDFa",
+            "QzNzd1RoSCsvOGRQekgzMmdkZU5yNi9v",
+            "V2dkQ3ppcEx2TUZxcUoyZTR3SGh0V3dE",
+            "eVJuVkhTZ0xGRU5IdFp3Skh3VmE0a2p3",
+            "Rjc3V29xWnFjUDZwWlYwNW9oUXloaFNv",
+            "WVBWRHVod2dsazZsSmlVWjJkamI4WHBN",
+            "NGF4RytvSDBCMmJ1M2hoc0FVYkJERFNk",
+            "ZnMwVVlOZS9HeTdLMEZPZEpQbk1LQmIx",
+            "V2MzeUdITjdReGE2V00yendOeVYwclRi",
+            "dXY0OTUreUhBZjRHcTNMb05hYnlrOGZI",
+            "NkgzRFhJYTVNdTZoMjFkbTVZeUJWVjl4",
+            "eFNCN1Y1TGVseEFpVnhMdURZdk1pVU5z",
+            "cVFPSHNqT0phUUQ4bFljOXkvK1FWWDNx",
+            "L29QMEhOMUhlOE94VlpmblFCRU1DSGpy",
+            "Z3JQeGlRNU0xdE9meTJvVm5sMXFmdUFS",
+            "RmQ2QXo4WjdqYmo0STEyTW5oMTNZNkNm",
+            "NXZvSlRDbGhlUHl0NnR0NmpVbEVXRTMz",
+            "RGc5cFM3eUs2M3kvUTZBTXdYOGtRPT0i",
+            "LCJkbmEiOiJhM2QzZmJhNmZlMmRmNmNh",
+            "NjUxZDQzNTNjMzk3OTQ3NGZiM2JkNGI5",
+            "ZmUxNTU1YzQyZTc0ZTkyYmExNjg0MmI1",
+            "Iiwibm9uY2UiOiJGbWhYMkQrYUV0YW0y",
+            "bm84N2hoakI5WHpzMnhIenludyIsInJl",
+            "Y29yZEVwaGVtZXJhbFB1YmxpY0tleSI6",
+            "ImU0NWQwMjQwY2Q3MGE0NGRjZjYwZjVh",
+            "Mjk2NjY4MGI5NGJmOTUyNzc4OWU4NGZh",
+            "M2Q0ZDVmODYzZDcyZDI4NWEiLCJ2ZXJz",
+            "aW9uIjoxfQ======================"
+          ],
+          "memoCommitment": "839839e00684dc00d7d65fb2a4f7b319ca61cfae2728c55e5a42b98ada1a9465",
+          "memoDocument": {
+            "version": 1,
+            "algorithm": "dbrix-core-secretbox-v1",
+            "dna": "a3d3fba6fe2df6ca651d4353c3979474fb3bd4b9fe1555c42e74e92ba16842b5",
+            "recordEphemeralPublicKey": "e45d0240cd70a44dcf60f5a2966680b94bf9527789e84fa3d4d5f863d72d285a",
+            "data": "td9TEihfiT6n9YzuqY6vHJ+R9fnnbnGCJE9AVzN/9CXKrqh1ZC3swThH+/8dPzH32gdeNr6/oWgdCzipLvMFqqJ2e4wHhtWwDyRnVHSgLFENHtZwJHwVa4kjwF77WoqZqcP6pZV05ohQyhhSoYPVDuhwglk6lJiUZ2djb8XpM4axG+oH0B2bu3hhsAUbBDDSdfs0UYNe/Gy7K0FOdJPnMKBb1Wc3yGHN7Qxa6WM2zwNyV0rTbuv495+yHAf4Gq3LoNabyk8fH6H3DXIa5Mu6h21dm5YyBVV9xxSB7V5LelxAiVxLuDYvMiUNsqQOHsjOJaQD8lYc9y/+QVX3q/oP0HN1He8OxVZfnQBEMCHjrgrPxiQ5M1tOfy2oVnl1qfuARFd6Az8Z7jbj4I12Mnh13Y6Cf5voJTClhePyt6tt6jUlEWE33Dg9pS7yK63y/Q6AMwX8kQ==",
+            "nonce": "FmhX2D+aEtam2no87hhjB9Xzs2xHzynw",
+            "compression": "deflate"
+          },
+          "proof": {
+            "publicInputs": [
+              "18c7a837c64208efc9bc31b922a20aee3033a48b977894e97ed5cd20ba68ca26",
+              "2d630689b7f7910d1b51b90b278081cb42478d0505758b36654a5daa1ba2c608",
+              "22cf9cfa44219bad6735d445a1f5025f79f9ff1d33b5e43bd27ece62fa1a9463",
+              "1dcf6ea2f151f2936d55071ca46bdf203ce93c3c6daf5eb8ff59dc29cb6bd3d4",
+              "0c67bf2dc318471d21b27152918d23ec76a655643047cca55a2f60942c829b9b",
+              "1dd57b0388973f1b8f1c9f8aca768bdbbe5ec1db4117f100b34b8c7ce357d19d",
+              "0aee7db433b2027ab3d622f808dd3bbf02d400589f63b2195473f95ac9e1fb70",
+              "1c8c00b393d47fcdf9825cf1a95380df531d94867814113c1a10973456985f8f",
+              "1b5a1a54aa8ae631ae5614dafd2bdb9b77944aad2e3e8551110e44df4be42796",
+              "02398c4b7477209f24f0a97bed992970f1523f2a05fc4ce255a3e15a050fabae",
+              "169609a6ad42315fbe2442078174f732e961ca6e03485549cf1b26138129d97c",
+              "1d5ef2a409cb36bc95a5698df5f54edd88a8602cf999e39dbb0bbf888af70dfd",
+              "1529e9498f4a16267a4234f5120a7527161f6d2ae5030c8a615c9632bccc3692"
+            ],
+            "proofA": "0bd2ea6e031fc003085e9a9dbdbaaa205f2d3c32a3a7331deca4e2f245340009000b0a92529fba422e7c5127720b91fbe96fe41a9843f71b84c8fed5e04bd351",
+            "proofB": "06ff5d396ef27ffc3af3945f4770bc65539607141f4003f47c61b3b7215bb0bf2b26c33e70d474f7c26f3a6887c38455bda7156929ed8c6a51ade2a52d953e2c1b17ff8ca1dd0ca0f13c8cafc9487b21e090bce5cdc2466ca475568c11e74f121c2828e48dd8e7ae94e80dab6c04d3fe5ca62531e110052f379ca7a8386d395f",
+            "proofC": "19234d41a831adf2c3757f6c6c557895b469bd0b9cfcfc6b0f5f1fffb4ca6bf200a405c6230068f09096f3a5a1f66e7bf3947d529453930fedbe872a2df01e85",
+            "actionKind": 1,
+            "tokenId": 1,
+            "amount": "500000",
+            "authorizationCommitment": "0464f365d4b90b7ac949ffb17564d0fb969223ebfd104c8e89f0a3a52edfcfd2"
+          }
+        }
+      },
+      "retryHistory": [
+        {
+          "rejectedStateVersion": 3,
+          "retriedAt": "2026-11-05T15:01:15.385Z",
+          "requestedBy": "authenticated-node-service",
+          "rejection": {
+            "reason": "GPRU transaction record is missing its twelve public hidden-head inputs",
+            "receiverLease": {
+              "source": "tsn-receiver",
+              "workId": "settlement-69f6df71a5e93936ae0ba0f2a451b30c",
+              "kind": "SETTLEMENT",
+              "stateVersion": 2,
+              "payloadCommitment": "7282e380a0c7f7bd306fb5b9fd7fe7d18fdd82ad75673930cd1508e1a04c6450"
+            },
+            "nodeAttestation": {
+              "version": 1,
+              "algorithm": "Ed25519",
+              "workId": "settlement-69f6df71a5e93936ae0ba0f2a451b30c",
+              "workKind": "SETTLEMENT",
+              "decision": "REJECTED",
+              "inputPayloadCommitment": "7282e380a0c7f7bd306fb5b9fd7fe7d18fdd82ad75673930cd1508e1a04c6450",
+              "evidenceCommitment": "fc559de7c2d41633fb29548ff5cba15a83d27fcb023fcb4b75e12484daf33abb",
+              "executionPayloadCommitment": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+              "verificationType": "",
+              "leaseId": "settlement-69f6df71a5e93936ae0ba0f2a451b30c",
+              "leaseVersion": 2,
+              "nodeId": "tsn-node-local",
+              "keyId": "658161d5d4f0990d57f68045",
+              "signedAt": "2026-11-05T14:34:51.047143Z",
+              "signatureBase64": "wCDQat0rRqTwvxAQteGjRFmPJJu7C9vD6iT/poO2dVYSmxHWXZACv4/qRTMlYecuN+oShxEXMcbdnnrlzipgAg==",
+              "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+            }
+          },
+          "fundingWorkId": "def3ee3a-b8f0-4ff1-89eb-03d0bdd7290b",
+          "fundingStateVersion": 5,
+          "fundingSignature": "24Qibbt6MSy9WPp6JTrMAzD3NHDRow8gcZXppbxoVmKMK8Mo7ru49PjA2VPxruXbBJfrSmjopnTp6Vg6atLzUiL7"
+        }
+      ]
+    },
+    "eb985986-f4dd-43cf-93e7-2ffb0c50d7a9": {
+      "id": "eb985986-f4dd-43cf-93e7-2ffb0c50d7a9",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "REJECTED",
+      "stateVersion": 3,
+      "payloadCommitment": "7b3682e816bfc7f1ec52e3b76285cdd03779e5ee4f8563b53145922389958077",
+      "payload": {
+        "paymentId": "eb985986-f4dd-43cf-93e7-2ffb0c50d7a9",
+        "recipientHash": "1ce60077c5d59262b2843e90292200da49254a3a937660275c343af7c42186c3",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "zTC17bCc5b2OMXu7",
+          "ciphertext": "ureKDdrerN2n4hpUMxpp0DVflnMvERUPJ121Oj4Ms-lSfQFFbTBRArn-RFCaW-SJeu1XWOeySWhISbmOLSCgTTthileYCjfWNJQIasbRDZaMDJwTCJCqZ7WFZu4ppPccP-K0T8ZCy-VAKmL3ZTyAxVrqhAQehsP9113pt5zi_MY9XEp-c6i-6oPq4ULBZNFsA9Rwn8XRG2PhHOairEh-kw84XIXOXgEL-ha7kbOg7o7soKj-oR56W2O8dU_cSrstmtMTjZYQVBVALpmTIAVG8-has7DWmepjtaYtMFz-21wuQHA_qGdn7EMSYpya1rOUwn34Fr988Q8b7d3ils1690xbXUCrK4tKAsuBecyJascrou_yrj3wd3lesFzw77q0gSFkwUgpGq8K5RQjVautNNQazsaSEl8tCqRjUMZW3ZlLWx5IVI1OxqQJJ79UhapT_idG7aRl00c_QlEe6CV79Bru4Z_yNVCZemdhpbAZrmTAnl5heIcJi1XjitIg15oNZAoNh9r5XmRSzHzGAwXkDHoTJwPiTAafWPvZ0ynd363igp9_R2gH5lQypRkkV8PzQbPX3eLNWVFdWXvucRpjD1ETOKAgY38KjQBp1N09k3elcHwCecEP5330mKoAMe1nB5MZbMeUiyCFn-WSnRhyu86eUhdpL52OWyAY40CP9lqcBvCw9Nqn-EmNyxGk7LEqm0b1LcO-7BOldx-qLxHZthIiPNTmBvBQxFQ6Pb_XXMFwoGcgFyWCiW1wx-g2ONc2LjsfRh1O9qic2jnovzhgdzDmvnuwb5N2ZL6DQgmi9sqZKBKa4t6Ity2SDfTsWLjMFjW2o1Poka8Q-ZX7OE2B8ipsQrfuS1Lu7Zq8HVMzrBD2Yy8JXg5-U1Wr2aqFXmZP6OLOd93eaD15XmSAVvNvSMBY-WCsG_B3A5M6vNu7k0593Jz_xkH9xGM1q6IlVZvWOM5R1G6MgwgxBp9_WC6mkxaBLUfHGwfgfHX80YRfsAux-ldo7WVSpHXh3MYztpMi2wuaWC8QwU0Op1wBWwMmD9RD7xz7EZrYkZBMLe6xeogaJbXuyQOueAt_N9sxLXPQqaSeW2-mLXRz8vxa6rV4RYzttBMGzUIFpzE8iJk5AWff9EjkCF9VdYrwgqlEwIyA7hRBWs5c0p3JFYiha9r2VLbicXbsxmQuYCrcmM7AVOHuI29MTkA1sp4B6xxyRIgaXAt-v1kM8OkLKxYEI0Q_Ok9WDMmvg5lknHQWPG1Sg_-qfw8kwLTEIqR1-aHo0LVSnqMWIUhSbaJH8JIJHM4LGsqFldc5b6Ef3zg504r_TTe3NhgqhMJs4soHtZQB_3BKSEWLgHnaPEWtbm3B39Sh1UC57VFGXoOIj9rVqyvh3FZRxQ0iOkNFTpX_pY_w0oJajpjzfyoe45wU2RdetcV_y4NHyqDUSBHGCurcVh24uTTyYwM60g-ILO7VDdIedqapsDZ7ePcvnLLCRGRS6rOEB5xKKrr52UTwH-Ze7WOLQn0fBoHxZU7wV0B7Y9iS_0U2IOSe5SPxVBgxU8C2C0Pwi3kcocSY_-NbGoEmT32hGphY1ZIcszRU6h40IcUq9tXm-N4oVnoeh2_yyoIovz7S15AKzaw-aRkmK6OgCXD6Y9jFhNjNz8HVq6_itCa24pbK8_CbWPOW5GjOjz6HzLwDw6w7r9FO9dSOJLN_Dg_oa58rmb1FSV4t4uUTO0Kc8dDWu-GN6Zeoe_IImSFHjrTuiYMbXEdlnGTGntr_6QsdwY6unbZ5ViU4qMh3EQBIkdkdcJ2AR09F_z4GK14JGOShxpYKVvK5eqOt-5jF8UhZcCeGaBCQnZXvWpxMc14D4tlxGmKR4dhKytiILH80T0XsPyYCNdDEbFv2F9kOQyd9XQEafeWmuWBoVBxoIkZjLbhk8Wm7uXFSb2tU0jWHMSTb2uGdUM6OOhMjlUngfoyjeOMN84Tfi6UwTeJAjG6j2RpccJJJwvBIheyKyaUrTP09xsH_AsnjQBZQNPbQ1-NsbYDFK1OqPFExU2PE3Eh0DX3ZknZwag1w-JGIzru_NVAMgAiMSqEUmAOmpjBBN9aI9PyqjHAxcqOKC3XxUiIHa_DvVFHQj3Yyif1ItoOabQ3WvtxpP29YAdhkfRAYCOj_XnapMxWxYXYAO2_I12uGW7J7VUZNEDbQGtui2Ea7qQshz9U9-B3AGp_xEEYbtMaFcsM9qKJer90XEmatph_4G2n6B2pYx_wZ2cl3dXrdPwbZ2gs5Cwcnrk1lLooQB4hZBuA0PebfNOfFpYLcNbAOf8XeqOEV97hXordvTeLyaRyKRGL7MGmWG_CORWR6K59K6N97V-09Pv_HVP566U4Y97YRb2akWfhWZNsiOD_3OlYRcTh52bUfFCTNknRevFCsm4uZqYc32tYn2trmRq8wHsYM3pzaFCNmrHrmEr1hONaLoVugv-0D_jhWeSaViFpVE06fAmoaGSmOCiRlDP86t2XlAgQ5HOIU5oUdaIL8qvivFSPh1HlHVt6bZPVEEfmL0ivdtcFn2aY5nQ-ct9Hmwxaj--af7T374pA2ygwHF-MSdm5rn-XZopH9PJDugyfqhFufiUeQ5Poy2w5RAOHZhF9akgd9L363vPI1kTE2rPlQp9ppO6j_XPUz6s2Uc7DHIWAWmuAOHPkYG2NeYRJJOHpXJZaiABqCOdmpewFDgRok1zVVfIvrCAFftfe-3MjcmFVQvHjPlDsWw38JEyMk8JsRvsEEjtSxilXKxlvYKE-AUnJ9EyPrcK90E1JKodWGhT2Bfq3TBql2WocpkOfHeNIdSwqjlFbM1ZaP5aZi44-QsUMpuBEzha5TktCBaneB2XVo0IBGT5S0ZBkv3ptecm_cc0C5S0gglKEjwAVAB2L_5E-sNl9iPW5DBmUeTcb5BhssILk1HyHqChewXkWkwxOxRU2HMyeULA7L2Rw4kcu4-CiboA",
+          "tag": "ezt_ekGXBcmTVkjBTMQmwA"
+        }
+      },
+      "receivedAt": "2026-11-07T15:00:55.457Z",
+      "updatedAt": "2026-11-07T15:01:12.827Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "reason": "Signed deposit blockhash was not recognized by any configured Solana RPC endpoint; prepare and sign a fresh deposit transaction",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "eb985986-f4dd-43cf-93e7-2ffb0c50d7a9",
+          "kind": "AUTHORIZED_FUNDING",
+          "stateVersion": 2,
+          "payloadCommitment": "7b3682e816bfc7f1ec52e3b76285cdd03779e5ee4f8563b53145922389958077"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "eb985986-f4dd-43cf-93e7-2ffb0c50d7a9",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "REJECTED",
+          "inputPayloadCommitment": "7b3682e816bfc7f1ec52e3b76285cdd03779e5ee4f8563b53145922389958077",
+          "evidenceCommitment": "6ae32574b309c8ee00760c8237a09e444e7a08b236954bf77eca39a5b7195e55",
+          "executionPayloadCommitment": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "verificationType": "",
+          "leaseId": "eb985986-f4dd-43cf-93e7-2ffb0c50d7a9",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-07T15:01:12.616148Z",
+          "signatureBase64": "V5fwsa6uEMuUSIYYrlKbqAX7T6EpLztNSKCg0gUEZNz210saCKhUX5ALYj//8Pr65vsbwULwP5eYuZXlkwBJAw==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        }
+      },
+      "result": null,
+      "authorization": null
+    },
+    "settlement-cac04cdd710824a68c64d7b147dfc358": {
+      "id": "settlement-cac04cdd710824a68c64d7b147dfc358",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 1,
+      "payloadCommitment": "8aac8119580c828802c751384ea2d7cd86ef208383c1c1a2f38e3d111f0469e0",
+      "payload": {
+        "paymentId": "eb985986-f4dd-43cf-93e7-2ffb0c50d7a9",
+        "intentId": "eb985986-f4dd-43cf-93e7-2ffb0c50d7a9",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-07T15:00:55.624Z",
+      "updatedAt": "2026-11-07T15:00:55.624Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null
+    },
+    "a9f5b8c1-6cd1-42c2-9964-e8745f5d955e": {
+      "id": "a9f5b8c1-6cd1-42c2-9964-e8745f5d955e",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "CONFIRMED",
+      "stateVersion": 5,
+      "payloadCommitment": "3d32f0531042e97e9cf0cb341c863cbde5d7ea8534f4bc96df999cbf29681eb2",
+      "payload": {
+        "paymentId": "a9f5b8c1-6cd1-42c2-9964-e8745f5d955e",
+        "recipientHash": "1ce60077c5d59262b2843e90292200da49254a3a937660275c343af7c42186c3",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "rapZaAiQy-u6ygx_",
+          "ciphertext": "OP_R_oDP2APq-W5S_QOxKY-1tkTMYbMxzMEFqCAClQpbdpRvAwevOVrGWJ85VWih0hJlDr3UiEqA_L7xhpArTNC7X21dhLKBdye9dQYaIV8zjh4XpG1T3QSZVB6Xi5UcDi3GnDliU2C2lavHrY1kbmz_gOClLbNh15r4Y-M6nah66zuP_UPyF_D-6KwSTtMLvwnWYPJ4TfnQ-SkcY_iMfxdSC8KGATxZozLm61zFMDRbwW4neUzAWUJo3SOMVHg0Z25GzfjKsazowMhsW9NLvTz4zVO4S-GTyGi8n-nhJmnjVddEi6yzZLZ_pDEqRZwBcp3_viwDc41azNPc9Wxi-5dy50BG_Ueynikx-fWmOzPNHcWbjNBaacRaU65a4IBxj33TFmfH8Ov4XrLdt25Xzq_gM8Tu484kGFUJxjxjihhyLtPfKgeGCtGnCTu2gL-yYVKzr6U0lyxmX3h2yn0dtq15iKXrgM7mBwXsJdIrKXMyG_9zSYtnvsSDayQNtqOIB9bELWO2p8ZrYZxifkSAM6mA4PopTOEXoVrdNX8PbDAcnGYaNV_nxxt2FF65VFV3C4v7D-2ZtF034QaYPnYd5K73t6CAtF0BhQ587pTbHxgVrzjxSyIS1BnyNSmxE9rbPEiPUhy8zJzERziKbza1788HTn5PoNTpG9plvYl8Edh2tJLlEHhQ79mvMCSgIR1xI0B_Xn21D_qypWMiLclADJa53tjxgc1kRU3ELGr5BKB80YpPCZYzJc9aytNao-n-N3i9EsajVlyabyFJCo-pdGxglOzak2SwfhyYoSc-9uIKbczYdq7IChQ65NWHahHHRmTCwO1oAyKF9Zz374eWnFDm4jWpa1HRrgwjSGWlJ_GeElZDRuuJAojxAH8SBjC-iNCZlEIMdSwjwmsC8A7iNeJh89ssamrt5l1dN7JeVf1_NG0vMkC74j8asPCCjJzoqbeAsEkw0xygVw3_eioSqPg0K2GPHdj_DYW_CCS4OMhOAEA4pyfY1meSZnhCXNgGEUfBJd7GfMo85OrlW25_urtsco1A85WS4vzQPKK5OQTvniG-CxI2BXycpGPb0nqSIc1-tQv_7YuSd8l4OnGmWI98jB6yl4ewNALPoJrdoNRWLUfZVILLfZCyaPq_yJwDJOd_OH0jfjLNeXeJKcwknIXAFeK18sSXb1Etjg8P7GdPblRqOEFovy4_1O2MniYX7KHyOLnsMhxHFp2iyTobIv9TKx-HOGsw2F1jgOmS-bfNd9QS2Tn5OzQPp-dbdYGwfaqMnecy-r32F0zVOCNEkcbOGvz2VcEOKQ8qA1HLySbCKKggs_bDEinR0uloGWrpaQQ58dIT17V_yNQ6dR43IdpOeALnAIbVClzmnE0_IoCJ1aN-Ck-vwyrRPalUT3Z9XdH5aGHMIR6xB6fDWd9v_k0Zh1ZD-7kj8Gbnww1LsNUzEZ9qkyEXPBlcR9cdC46AE1xbP7vLaOVS-c32KXchMnAEh5ExuSKTuAR0rKOU6svJEQScgytXgWrizCa3I8rnOhNOWdQ4jlsCAroeyXaZ3N94tB8UUg1k8e0DcDMg6wLfnzV0MLu10K2SKH1pAe-nA2Z1OO3x414KhjibGE0SUUEMdGPZ6D8TYzN4D6BP7wDZfnz-EO--jNaIF46PioKvJp9uv_KQn1jG1IH0aRhDoUyZVFm-CK1Nl9r0AorwBfmJAdSLQ49-rsTXKW9v-PAL7Jx1N4QSx8XjNKYG-H1ioPW_n-bLTG4EujjJNW3fr9Y1-o9lcmi__Q4tb9Ha7OE4u_rqUTYRFd8yW2uyxqw4PkT7AyW7i0Jaagc9eCZATEdVSzAzD8hCmmIcLJ92HNiMYCx5HsR_uprtHMZfk954cGgSEMsaAg39VOpMhD_XOgWk5eWhRPLqHXooHQArHJ1Sq0IyHzvH1K5iAzxgw2rRge7bs5erfS6iUWeQBeu0KIS7NOLLyjk5AKBRz8nawU8r_9HaDsg9nO69XbqjpJUhw8wKJ29gKIiGjTIzaH62nKH_6UVbBhD5SzdYs2zLA4_cmKCG6xYL6L56i1ZyNM0ao5ddx1YoMoAlXSFAa7rzGnhgJFFAiJ6Ya1Wr_mpOE56ChFkSraLzu3j-mwJqnTUXUr17uHwZ1ypx29foaemQjyiE_3XUPHUgesfXRd786evPTfPiTU-sipT_QhoRKo023-v8F9M2e_-Vf8LZOTDY0z_Z9h0T-DcQI2irwFamP_VdiNENwlDAuUiaamDKsJUAbYJJaqMc4osVBR_6z2f3EiNx6J-oZ8pvZ56iX02tPO52EZN1ubkVWZVpy-irkpobTfvL9vhYpPT-9a1DL5fHP1KFjX9VXiYalSKi0Czlz69n7aH_ZiHZEuoQaCoc5eYdt3nusCeCK1-8zgXDwV2Li26WrLP4ZZlb1eMnsAyukA8k2Hg5Pyom2A0iF3OC1_P2NtGttQAFpGKzU_Bv55sAyq2-9yrSD8IMctieepZNTHBu-tVuZe6wHdkocT5MRjFW5n6sq-anIiV21LIykX49ncqw-ZlSonSMIb5cLT7jUv6TwXsG304OjpchfRRcEJ09z-6DjnRC3mVTe8128E2XaUK-SX_G0C7KMklSJFPsv6QGSTDPAqKyZ782JN2TOh2p7_RyTl9YkGF1VtJO9dUJE44m1PQyN2RNsjspHq_rWEcFY6qb9qX9_sizN5j5bVZW2hD79ezPGlQ_S_2ONT-dAiQ0cjGnBEFXc3nw-wm-XjG_UqDo2q5BW9P6laiyTWR2DSPqbMmMVdzcAPt3R73m9L8CM3ksY51jm8dRhPqf3_Miwfu6akHyEC79gOyApb5imohx5S0GZak3eE39GYavMHysCwfT5Vcrq3EmPli24asIUA-nA4whWpeAk555XUzYnZ7u4KynBuB6zm9Z9WPTP9oWwo6wCjICZ6EMsb-VxQG_Soo2WobIdC0HgI59yTypcfES2w",
+          "tag": "0f6dK1HkZPJhKUa6CnpdMw"
+        }
+      },
+      "receivedAt": "2026-11-07T15:02:13.812Z",
+      "updatedAt": "2026-11-07T15:02:32.712Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "verificationType": "TSN_TCAP_V2_GPRU_CREDIT_INTENT",
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "a9f5b8c1-6cd1-42c2-9964-e8745f5d955e",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "VERIFIED",
+          "inputPayloadCommitment": "3d32f0531042e97e9cf0cb341c863cbde5d7ea8534f4bc96df999cbf29681eb2",
+          "evidenceCommitment": "193c388a2335eb3886f4d74145c2f6f2e0e50daae31120f6f1d815d04ae2268a",
+          "executionPayloadCommitment": "c5f4c93d2832e400339fef4bbb54276dcea40406394135046123fe3b123f2fed",
+          "verificationType": "TSN_TCAP_V2_GPRU_CREDIT_INTENT",
+          "leaseId": "a9f5b8c1-6cd1-42c2-9964-e8745f5d955e",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-07T15:02:28.143043Z",
+          "signatureBase64": "7wzZ/SmJGmidRxgpvXHEy+aEJe1Dg1pYB+LsNH9Aq9fS2M+7tNKyb3on42eUz527eg7tRm0ka3n+nARMGmbaAA==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        },
+        "payloadDelta": {
+          "addedFields": {
+            "tokenMintAddress": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+            "amount": 1
+          },
+          "changedFields": {},
+          "removedFields": [
+            "recipientHash",
+            "nodeEncryptedPayload"
+          ]
+        }
+      },
+      "result": {
+        "signature": "4BPGCpbnTcCuhusNkJuySRYqMvL8bUXYbPcSVR69SMhc5TMR3KqVZ7Q5oqV4p393Q7D5vKcKripPzvTHso2VEQXL",
+        "stage": "TCAP_PRIVATE_FUNDING_V1_CONFIRMED"
+      },
+      "authorization": null
+    },
+    "settlement-54bbac67ede3175e52ece131ca2279f3": {
+      "id": "settlement-54bbac67ede3175e52ece131ca2279f3",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 257,
+      "payloadCommitment": "e4d86ab767a5d1d53284726f7b8c6f50dc58d6766cfbceb087ba913d79f893eb",
+      "payload": {
+        "paymentId": "a9f5b8c1-6cd1-42c2-9964-e8745f5d955e",
+        "intentId": "a9f5b8c1-6cd1-42c2-9964-e8745f5d955e",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-07T15:02:13.827Z",
+      "updatedAt": "2026-11-07T18:13:57.197Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null,
+      "deferredUntil": "2026-11-07T18:14:05.197Z"
+    },
+    "3adf6d64-bf8f-4733-9a9a-e95a534f2961": {
+      "id": "3adf6d64-bf8f-4733-9a9a-e95a534f2961",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "REJECTED",
+      "stateVersion": 3,
+      "payloadCommitment": "dd8e742ea663c1b9a4f80cfd5d4666ea6394a2b174b44a87cf3ef15883d880f1",
+      "payload": {
+        "paymentId": "3adf6d64-bf8f-4733-9a9a-e95a534f2961",
+        "recipientHash": "1ce60077c5d59262b2843e90292200da49254a3a937660275c343af7c42186c3",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "z3quBp_tTNvx-buj",
+          "ciphertext": "4HuzjJoTz_vsHNDLPC5rITbclkJX-Zqs7w2QF33VKc814fCaIzqdVqoj_uWQ-OoyeG47XV_IUqQSmOJTbgNbJI0GYf01mhYl0en0pUd7lJAFWhJxnDGIjY-hjCop778k5nIi1cl_2ze0faZIYRFFNyT0EXVFAiPPpnMJ8d5OcPnZob-O4VYXzNZSBUgUpvGy-kaq8EWign03ELcM3PHbdejb37wz9O3BIZVVSibjaySOHB7mDNrGmCO9YNBMTPqxh-kNJo8Bk-FvYEFEK5nu6RPcww_l4EY7ax1YTAn9C_qs2D7eEpjcXzQi_EuDmmukuUtmfiycZ768pauaewQr3zXxncd1vkbQ4Xtk2vTeTY75hsmwTNzebnDdtpLFF2tkcwkoWHoyn_Xej2ig-ZaxFbru-63he6JpdDOwLUJQM6bYrivvDOxgAIGYC6-DQvHm3XfVQ7HLdp8LJGmWspCnrnTBjP3NLjqQ3Tuth2XUz0T_yrrEnOq_S_mhU7z1PCs18fIvQ7e7GAvM10DOvYoYCQewBZP4TmnlUB22NaVj_5_n2HV6ek-EWGwKAN8KoDqjNNFKnl9qfWfZTddUAetNgLSq_WDhtcwunCVAPmre2NjrCJG7Lu6wSDFzH58wlyGtXpvB5E2tsXZPESKFPNuTTb_RjFOkj1j2KYsBG6P0hA9UnwWSLWS3pJsaiImprEoG7wYMi2laIJdZivEL7PgPXzRFglSQeqa6iuqXPdUsBqoaJN_uXPaCGwQNtphPhi3WeqRjmiiUtBUPmgt_D2C5KcWw3IaOUqaVyCCfb50rwPhIC_mua3Zev5hQJPJx64QzJU-PZ-WTaN6pGeMr1G9A1rIj0vTemt0zvSRtj_qrXo_3jnjUvIB-SL7iFyzYXb4WZuIoyMA9qtYMnNLGQtR2TukvlBMnccx2y_CP9p1hlYaDis-M4-F2KXfxwZ10LG9kpHBgYjSUy1_YezzJm1ZVlbifkLave6ODDLvh6gobhNn2mpbOOW9WicqF62fDeOyY_d_bTVjLrD8MZxHYxofnz_JJ7gpP90ULxkq1oRfEP2phIjLIPWXrSBw7-0Cd3c1Ac-NzC8ey398sKMvxJanotW8iu_WrG0AGlr7qV5UkoVyg3MF33JdENLUgIwvR-heA9HPYQO_It7_mL8N4a2CfR4UeQH4azxMBy-7prO3p8XpIqD2yEtSOAlSj_aMK8ei5HUgIbpo0ccJV98g_D5GY_1Vg5WJtx39EHLBBM84qG2QkRPDr7EvZB32zJbEkzkVPd86yZPcgaQm69-78m99jpa5Sz6AifRK-4QVAoXDggF07eOv0JhfyRDC6wPoMlgYQtw4-TfsMbuI0q3YmxuB8vv3BRRHRgGBHmSdOv6Qu6UDKlHQQLXEixwsUmaUG6HIkr712Yc7YomHwJtbzvXaUscHpYGJHOTAhnO3aV75Tm3qvgmQDG2AzgdTm6ubfibUlZ2LHHmQwWY0Ocv7KC5mq5rgwpJO8zLS786V2H-wKhcr5ATgB7tCAPERs2DHERj3VjcX1KCifEFVUrjwt1kDvEstsQr-1fIqFM8hO9X_bJAgVg6DDmvSDGInzTNAyUZcYaeP5DibSB7hZ40jFsubeg3ZugLS-KP9mstsC_oZRi8OrKiwR_p9tJ9I_x6IRxSkMxo_q8lmYuMm5uCiJcOlKceOsIHhP-gT9k0HJGgV3WNwr5PU-NbS2SYPaWTBuHd_cNC9zgPYYXvJdeWlN_Ji0LWwsgAYFCBotpV2zRTIe6Z9sYjcutoX3hkRVppxAkrM0Cfvu6FUealiaiJGyES-41WuIf-L1Mr2Ryf6kYG2okTRcPdPpkqaVpbwNBEXopG5lVovJUNeVKp-FWHihqJ7p-Swc6zWyv31aZDbAtRvDfeMDmGOpfPUO7bO52wGklmU3peBc58pUDq7N6NvpjiZe51Z4VFnD2LrxBw1HrGy2Z0bNDXyglESn4UhFHDifV1gqD-qO0rqh1lzbLdACtKrZPk6bCFDAUKubVlPXHBJ6Us1Q7NwTe4TD3cEJqXqIbJiwT90w0LRYcbThBtvd742lUmu65LUO9R7uKK3-UJTIEtNP0QacRpm_UAEAhJiEilxt__mnDSAW55fKZLKWnsTUKgWChpEiMEWh4MmHk1U2Lgmit0SuuF_-BOxBeFEaHT7VxEdrHFPH-KBOCzWtT7HKmh2zOlyTyUqy1n2BF-91uaYT3Y5ejdy4ZsElHGvt7ll31F33Z02HA8SPWNxy5iBc-9PM5r6EEl59oug39fcbIq7LXKdCe3RD7JPN8lmnIAvDYJd7RCtmoRmoWW969Xy8HRETHvyQIvuF_WgLUCeJQCoP5Dejz0H4MaTVfVlXcHpdvDEiBYSQ5Fxrta0PSmn_Nm7P98Qe8y1qfqyoydzBF5lfKXDCOBwH9rkg9RlTCYNVIvxwws5N5bubv-asacl2kMHp9w-sBh3uVY368x6qA3nryHYKLYvgNg80x2LydL1rLF292aH7tXD4GOcThq4m3lBDiGw65VdT751Z-6aQgseUqsP3tI_pTPPO3FHqFeOQ4wFrtYPyEexU5dYATRJGOOvjc_DnQbqrKSSzGF2cGclroQhoOzfB4uvipDwo9CjS7W7StdxoWBjWWxfmISXoWeaw-i2m9YTnzakX9RR8AWrmUBR12HWJGUE-JjQaNxuV_Ew68A7JXxajsCYifSetH8Qxw0WnDvJ7nro-oybuXW5SVdaS24DWEc5ABLlUgOxkH862uIG8Y4KEh3ZIG9N6vxIb5F4vhMfSZwcPUAHrTJpAr8iOu-tNxoSoDf2u7IPF_w07t6mhYE9YFpWsc5hIeMeS4BwCA3DKKtyhvcUOFECv4ZKn_6h85zVmugkAM1al0KImmye9H99LrqMgH5qQBP3l4ehM2Uhc-EHQXqo9esOK7RiewMJLSsDhBm9eIA4lx3-ImVXu1cYNPhOHDAaqgFjeEw",
+          "tag": "xIpkkE-7-6DKf5USzvhOZg"
+        }
+      },
+      "receivedAt": "2026-11-07T15:04:56.603Z",
+      "updatedAt": "2026-11-07T15:07:10.808Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "reason": "Signed deposit blockhash was not recognized by any configured Solana RPC endpoint; prepare and sign a fresh deposit transaction",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "3adf6d64-bf8f-4733-9a9a-e95a534f2961",
+          "kind": "AUTHORIZED_FUNDING",
+          "stateVersion": 2,
+          "payloadCommitment": "dd8e742ea663c1b9a4f80cfd5d4666ea6394a2b174b44a87cf3ef15883d880f1"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "3adf6d64-bf8f-4733-9a9a-e95a534f2961",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "REJECTED",
+          "inputPayloadCommitment": "dd8e742ea663c1b9a4f80cfd5d4666ea6394a2b174b44a87cf3ef15883d880f1",
+          "evidenceCommitment": "9bb184a32a0b68f3789ead979870e30ce27e82ab21a6f5d6040512324954a4aa",
+          "executionPayloadCommitment": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "verificationType": "",
+          "leaseId": "3adf6d64-bf8f-4733-9a9a-e95a534f2961",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-07T15:07:10.738384Z",
+          "signatureBase64": "Qb3nopVd6fSj7DsqJtfmVXO4SXnqdMM2Qw9+bNFdGm2J4y9VGc3NqMOZukd8KokEePZ8JjXCXiVx/3Dfkx3xCw==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        }
+      },
+      "result": null,
+      "authorization": null
+    },
+    "settlement-5303b2c9a4bee75416a4d887fa40be44": {
+      "id": "settlement-5303b2c9a4bee75416a4d887fa40be44",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 1,
+      "payloadCommitment": "c4a0845804d8da65ebcbad1178f4bbd3c791caf43420bb3e3e282ef559790edf",
+      "payload": {
+        "paymentId": "3adf6d64-bf8f-4733-9a9a-e95a534f2961",
+        "intentId": "3adf6d64-bf8f-4733-9a9a-e95a534f2961",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-07T15:04:56.658Z",
+      "updatedAt": "2026-11-07T15:04:56.658Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null
+    },
+    "f5949736-16cf-49d6-9d4c-2595317dd102": {
+      "id": "f5949736-16cf-49d6-9d4c-2595317dd102",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "REJECTED",
+      "stateVersion": 3,
+      "payloadCommitment": "f06be55cdaa4ace0a0f1de04e872dd6af99e9721e40f5f3961aac290d26284f3",
+      "payload": {
+        "paymentId": "f5949736-16cf-49d6-9d4c-2595317dd102",
+        "recipientHash": "1ce60077c5d59262b2843e90292200da49254a3a937660275c343af7c42186c3",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "5PDTRVX3Nb6u_X0w",
+          "ciphertext": "KyhxYymYMD2lsSnLTE9CmAPNVWZZdtc8HUfPRw7S3Ddvn2BLlxVJKZY_solgYJFTY3uWvKs7bhUw3JIelp4GwxRXP0RMWAItKjLt4XZCWwr34kFSmE5bmzx1mnyx0YTHxaf-v5BoRHn7DrctJNj59pP1l8xqpohOEse_RyykPx8swvcwkA9tftjputl19TIQ8fYJnmlAH_vMP894n2fnO87Njl-46CZbVaSP94WyNhIw_2QVUC-bGLj0smSRuFBIn0og7dGkIMDlujmwJ9D7DkwdKTsoDpAywGOdDxEkA8UGDoT_9fdlGUgOAkQt1iaEN8hqztF91x9MupTSOnpuNMO_T-rUt1qyxZzrQrGG9h9AC76EwOLmW5SkqCwTkALwRYhS5LtitHt1E6d-Nik64cw1KyPXeBhayz_ohVPgOXNLxzhEu58Kmt4QdSUY_FYpvnPAqp_QFE1BLhBScpucdqhMpAEq_GDajwDAaPbLATj99bSqnbFE4tFlZ8F2LKKcvwcGn_1WMWjIk_a7lbrbxE6S2FlJ1tvi5sT4hVi4k1uwkiso-yTOJc6-2jxSNDoWtOLpbZlNiekYTxQOV3XNMrvWDt_NNDJHrNWVpitmJ1R125CkwTLr27noMHsRvk9ztid0jn-17hCXCYbaP4qQK38UFfLp4NEKoLogkRhSD1IwYk1FkT8dha4B_DGG4nks7UFIhjI2xc8tbBYiaD4PGnX_hrwf-HgtTgpw2TQUOxPylMM1CG3nJTFr9GdGAI5xSLwvQuVRjp5xm_VfVIbDfXsymhEIyUgkPh6Ncn7pqzV1jL71x4qUb1HNBLKAh_Bd9PGmOpAxT2e0WmSIy-CPtYF4JgmLHD4Du8UeDNRh2_TRO5QoG32lwViakOwy1zkUj23mqzbZLeRu5DVWYqt7UmxnpgW3myMbGNK5kiVuwiJk1rRyGgcot25ZZjCwvT4IBaq7Q-w6XlQe03fLZ1041NvqemGHHN0mqUKraypK27pTFePLoILXViYsVGYn3_GNC6lHJYxi2iz7j7CWe9jQY8DFNLqz__9n-NfbbbYF3PelTxciAOu5V_TS0A8ZShsHJSbWDeJJwDdnvLUge-K5EcPDuMigjMmxKtG2jJ8Ue_rKvkMHNaB4pZHhInZCSZ7JUbDfB40xV9rNQodrZyl70n8ehVugp-DnVQEd9uA6YhURgrwnSoMr5qHCs6x8zxpsnMv-9PVVDDPO144ieTPRCfX3Y85SuzLVFDEMcH6dhB1Pe47lHdA9vKWmU1XjOEG4bi6cMR3ZexztpXI8MTPZPMHRg4SPc7aA7lbEXYnsDb8VK2RLgcb_hWTIeEnoKq9lQekB-_-qbXBUB44CeQ6WW88mzvOsFrRVOTYKwbV-LiEkbycqfxBUWoiBzBdJZVtdOWYiQZnxHVqJ7GgKzeFeg0a56cmgNMEYXxg_NJxKPLXTgKVFXh3mqH0UN8ABsUYe_gtRim3CjttqaqXA1oFIZ9BuxUx967zxx2WXHWoOJVH_mXWav_TAG3tmUJR0HJzoayhWJs_-B4ktvpu68PpLW9M9FA6kMY8MgPgkvXeV7hAfB8F_P8IynlxPLGrbrssnAO8ZBgA-CAJULDwDkRzcRLoNU78rkt7hhPkZ-bNZdZfu3vDSSNSrPzGBk6KJDYfDf_P-tRd3eh2ZDFzE6XNXKPZY-NYfmSbvUW-totmhpJy6hjVUujo_E4ukjDZ3YWS7JhBvohXp6qhDz5QtZWWnYc4fgqT1EhhEBZDIl3aIhtBNOIW7UjuWSQaImXBN4lDMs3CJ0080DRIBcOCKRxA_nIMG0NQNCTtkf6Nw1WqkQ26ZOON7cWHcjcdEG_-7CxHKO21ztfbcr4OqMGUq6YNinNadPc1ipDlj8E85AcndwoyjGYJ-arxZGI0g-e_qWFIikj8hiZeNDDNg6YLkP_0yBeyODIdo25H1B9u1cDQr3PWY66c6glzRaaOAQkpd96hfSo_mCkofd6Ecr82n2uIMmjdnnMAwI2ThuwQyCecoKpOzEV7D-aXlU43Zkm4gBhfr-AV2QwVhlZLDSenDsFA8mBZks64m5KE1639fkTDugAZP9Eb2k-81mNEFoT2nIhR-3wnkz8eyGBmiry_LHcaScscUEBHTBkcG-G8XEz2npgd70S4jCsUkyLAgydBcCw6LaQs5KcF8NA_w_G-Q0UhmWmuKNHWziH7OV3gKnPE25ToY0q3nONMSd7Rwk7a1OTVzE3Yo7YXjIBRBQGt8yP8WRkG61qhw5VWCCwq6C6Po79aYTytptqqFmzBaC-4W9BccfNiYzO8NQnosexfFkF9wItcOx2HSXBnpdLRRFCJkbyTfKE3qexO6gVZaPjUZ_rALLvSqCO1K98lPpZpNgVyVwO-nj17VkoF5AGtVm_1sy0KDhhfHnyZ09jQBIRIh82NR103U66xd7c-yjbgIEDVDKwKiSLER-FoEb4cZ-rZg_KpB5oiCAkQhO-EDfaamZZAWFw3hMkCv_-aBr62x0x4TxKRHdtL8MsWzEg7F4ywoH4WtsPjsyKTb04ghBQ4n6H9GaInhWOikm5Euc2qNRIjPnDruDqwjBqyVPCDNA64hyoYLXSPDYV07FgpgC5mmS_uGTUYWEJ-260PBSnWd8Pom8n2BFjn_Wz5NEAfFZv2_unHRELEnZswXWRh9Pe5BCyXgQPEOHCrsq5DUhRcXDFYstE5Wf8DX6PyLtMSzs59ifM_trrpR2DSOBXw_ZXhMlmiYcM-VjAE2CvsZL3F0TnFq79XBo_X7YbuW0GNa-B-pn9I5pB9IOg83p1189Gs8dddMKuTpjex19Npy_WCNwqnWu7VrJRmpKEYpyI-B6Kgi3Vsof7hmIhj16ltQTo6VZz-OVqpi1MV2OYw9Kv1aHFI0X5662Zjuq5_zUyytfqtZtlcW-mm3zWEqMNwvVcezAZ3bRq_rHYXJm9wgQfhAOblxJkukww",
+          "tag": "aLiPwdiMxJf9QK2n0gTt4A"
+        }
+      },
+      "receivedAt": "2026-11-07T15:07:59.859Z",
+      "updatedAt": "2026-11-07T15:08:31.106Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "reason": "Signed deposit blockhash was not recognized by any configured Solana RPC endpoint; prepare and sign a fresh deposit transaction",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "f5949736-16cf-49d6-9d4c-2595317dd102",
+          "kind": "AUTHORIZED_FUNDING",
+          "stateVersion": 2,
+          "payloadCommitment": "f06be55cdaa4ace0a0f1de04e872dd6af99e9721e40f5f3961aac290d26284f3"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "f5949736-16cf-49d6-9d4c-2595317dd102",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "REJECTED",
+          "inputPayloadCommitment": "f06be55cdaa4ace0a0f1de04e872dd6af99e9721e40f5f3961aac290d26284f3",
+          "evidenceCommitment": "9afe76d98ea9c6633de3785ac6ff0f10d829aaa3ecf53a170498f0554861aaff",
+          "executionPayloadCommitment": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "verificationType": "",
+          "leaseId": "f5949736-16cf-49d6-9d4c-2595317dd102",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-07T15:08:30.974439Z",
+          "signatureBase64": "zzyXegVsk4OYQr4T372DgiZmImuuWIrUuhoAbKIa5qbrjs+liJjuIV0qIsZJVr1fGzUdMbrDDFNGoeXESHwaAg==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        }
+      },
+      "result": null,
+      "authorization": null
+    },
+    "settlement-aaa6155198ade9c94263905ec70416e7": {
+      "id": "settlement-aaa6155198ade9c94263905ec70416e7",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 1,
+      "payloadCommitment": "43ecd5eae27232662afc5334cffe5e46e06b0b9cdf45085eaf92e63005aa4ea5",
+      "payload": {
+        "paymentId": "f5949736-16cf-49d6-9d4c-2595317dd102",
+        "intentId": "f5949736-16cf-49d6-9d4c-2595317dd102",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-07T15:07:59.865Z",
+      "updatedAt": "2026-11-07T15:07:59.865Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null
+    },
+    "2fb68e74-6fa5-46b5-ab97-7d7ff4f93aba": {
+      "id": "2fb68e74-6fa5-46b5-ab97-7d7ff4f93aba",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "CONFIRMED",
+      "stateVersion": 5,
+      "payloadCommitment": "f8b4c7b9860bbdc35ca5ed6ce4cb4a5bc904761ca727da5c8e1fe2c14880c591",
+      "payload": {
+        "paymentId": "2fb68e74-6fa5-46b5-ab97-7d7ff4f93aba",
+        "recipientHash": "1ce60077c5d59262b2843e90292200da49254a3a937660275c343af7c42186c3",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "mtACA7O9KOAMY-Ap",
+          "ciphertext": "VAIVPST2W6pyzJ0I0ggMnnr6UJJ1vo5QNQE7Enywz81xyuyFVorAg8Yow8G5DmYgqCNNmYBRmRdRQ7YuKi-j7i9j5CI22VW54ZkP3o6y6ohSbZTOCayLLarxUaPL2ynUxJEIQKfGtDfkHGU3bkuDZEx81cEyEYf9ST5XngYlRbRMGEFiXWaZbjU3G2s3Lb8QcCt5xvBaktMu9FSyMboovBCF8pixhavlORk4dPtV9ZrQkZcsBpRkm0wDf4OoUxWDd82-lXIbkqLw3m7QCCEZDcEAHUagU6Kc-5iEB-kwyWToPsecziwxGHIcweTtDNI1lmhfpUMjjvjPkfGJbpxZ817MCHBRJDCi8ADuQzM5GIn-kO70prF4xmaOw60HKVNd4Eu3vXTqEOaAajcBiOjArDqN_Go35Lo7xhyvKcQmWLdXYIfSXQEhcZCprBJ8_aUCPrLyB674tX-STAcxCwzaw5V3JEYPvQI3GkmWp7HndCw2L_UDicxVgws4iVrgTFLWsOGhjLmVEZGiWUdn7WZAMOee9l0Nyw4196VRlBj1bfFk5xymxD5U9gFIdzeFUGjFTeo7cvzNZ0PnnLwL6pmlh0tNnodc_ez0KD98i77IjTp_D2X5dbk_Wu8hIWGwE10XcX0YzZF2EMTAaWLfIWZd8O-sSZT78KmrMNsF3MX9kjVAwmMhrtQVtb8jDKoJ_8bZi4I7X0S1J7gvewA0KpcGxqkbPt0JovvpLkVj3BNE0KyS0ibRObrjTiesxboPrRkZ8XlDEToYo6NZMK-tg4AsAd_2NUsre_OSPJjw-e2KwnuIUzx6eEhfbcZsD_Wktr8m3hbL3J9EHQES8HqZV9u6Z_Hnufe0bN5hwTxZOYrSLBF95q3OqRDQE5fWzBAJWz7QSQf4ULlLgMD8CCAPf9T69Fo0PmORDQklXuDtvjoBS2-6y9PWSAPSR0PHccbY-nKDMp-7OHNrWUF8CDx6mtWUYuwTd51f_o3j2wfELYHwYUJ3jeROz9fgM6PktxDx4_WHYQpFQLU54j7ELWwfRD9oXQwyLjpo6JJ4_Pvli_T7sJhbpwoTEI8NsrfqH_S2OmeAy2AtjyvNvmBvtbFiQOkdtGvMl95PmFbXdF5V3rbjAt4LZVG27-qUwC4H5fb7eGNanxwjCtBtwD5okwPT7izY6cp6G7EeAsLPAQxOx1FLMoiM6XFgcQSzVD81mz7dUZ-ikUKzP58gLFkOS-zTwz126x6rAncd3uhQC0h20yndmTHCV66-CEFCQkPLkQqM_emS7-15esx0WGulmExKt70WxmdKOUhAWP0ZHmG0zCS2spHn1L5x3OZS7actK59bQ7S1VB3g_jMis5_HowHE3qBO_0zt2LY8awOmkNieTcOQgtNd9vpdG6XSOtLAxp4-659rS4kM85K3x7zWj3lGq8OekGnDRO9ARrs8VP8znLgj_Z5ihfFXgLK1qjwNYlf1GgM3qsLhrSzwHZnD5v2Jj-e1qvK4wHAry0pl1t9MYGSdvm3OmqQbiybnVOs9PWc-PHG1Z6M_bcQNm-iMIvQ75i4lI6EvkV4ibl4FHe-5eCXjG4vG9wuzeQj9Y97hz4KXVKpp2cKOPm5QXHAvBvlIxv9lUGwLzYcnUuxX3a5YwoeDuXJ_yAl5HnZkz2k3mtYq-f4_8D7fY-jvbNhGdD7IQ4df3zJhpEgBWvqjPLndwolPerApryVTVd33oEmD6yQgE29em_pFzxIYkiWECsz0FU2OB140sCF37U0U-QwjzwBreQ_xKGadjFqFU5TIjxdYDnZ76kDgzvKRoWsKwfnWGeoHXOgwpb2b9i7_mwhyEV0yd02HENroBOAxyy9gTJmLwcKUxtKrcAj2Dz5Txa0BEKTZbOmBvYX0SU4zmbfA5FyW7cNjEcNiQfU5CvyhkE0NyBXBuuLPw20z0j8wIZHXKrZ__E9s93R3JYeyRRtdZ-9bwbDqWOMJ0KfdLvwrR5PDO4efpRTPS-0-Lv0TrHdoNIesgpWyUMHhi6ptSdGAIqWVJAmslYEA_3cx-7A-U2yz5_Y9c6TIqS9sToYMgiip1Fb4Jw9KReW9F244NOT8FNv8A3eM4fd0MGC7RjMoFbKgQhWXDV6We9wqaBjZ7jwfaDgNjjGVDDrffaFy0bei4paelgSkLXvnuBasYxE3GsZBg4r8ULmsCrnxbAlqo5tmj-82vcf4bEtJuBuRYxnOBm1WnMj7D-NoRUdKxKNTSKbmP2F9pwbadQDxhrQdnoM8mXjQRuh3n31gjJLdlo9J6PLodvJBTMpCLZcx5OjcKGA4wOIvr-Y9Hxt2IKzQ-dc-tnhCv3ApK81aiE77JJiE__ub_c15JnuMA0TI5WOSFTfzmdWsuI8UnlNpFwuK-DEoZK-LJxPhD3l-L7cHh8eOd0lhBs7iTGPh7eXXjMPcrYjrPdOA4IqxjE838MAVH4q5E1UMJLzphYvoz7HVikshxFj9mF1m9F08qCUiDmgJ2tG4WlIy6PaXmof3mom_o_iIw-IeChBv1vYP7T_itpipBxD7fwa0o2os1nSj0X1kyJrElfc8RyEjnUkgW3zlMbJarbc_NJo9QPFIqFOvAV6De_eajT74Cw7Mjy2f4LEI2jeJtBHrvXhfFPZxQmxpZ8354UVFvkyWaOoboEPRUBGPqBMliu0MjMtssTur6QWwJ5S2iP_4fT5KqOtKBrLA2teruy6EZzHaHSS91S38ttSZBjPDbN3wpddy1Ldxt9kcTs4XcYNclfGfHZT2f_JNVjsbvpBK8Z78mhQonO_fYa7-u2qhWtrpABMp3widpCIBAgjAQJC9M9MF_eVcdpS6ngfd7BLuoftfWyXNmH376f5KcZ5kGWg1payGt3Ysp9ai-N5lVqtZEWZp4LpkCYwdOFy5D6Px_S_wUUaNIAIfrGwZOP9ZfNekPWkN24UBxKnenQ4Fi7fRiAIx35VYDdSSNqfSf19T268EHg",
+          "tag": "mYAiEzg_ovJpCKuOyqyA1g"
+        }
+      },
+      "receivedAt": "2026-11-07T15:09:16.029Z",
+      "updatedAt": "2026-11-07T15:09:27.724Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "verificationType": "TSN_TCAP_V2_GPRU_CREDIT_INTENT",
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "2fb68e74-6fa5-46b5-ab97-7d7ff4f93aba",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "VERIFIED",
+          "inputPayloadCommitment": "f8b4c7b9860bbdc35ca5ed6ce4cb4a5bc904761ca727da5c8e1fe2c14880c591",
+          "evidenceCommitment": "f935050b3d3c49f68e0b41d15b74f1b6c694716f0f9eb87996061b5f0e11c74b",
+          "executionPayloadCommitment": "e5b66eb4201e91b7a1e8d812de6f96bd94be1cba7d2a462c566daad449f70780",
+          "verificationType": "TSN_TCAP_V2_GPRU_CREDIT_INTENT",
+          "leaseId": "2fb68e74-6fa5-46b5-ab97-7d7ff4f93aba",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-07T15:09:22.412634Z",
+          "signatureBase64": "z4VhChyqqIGuKPMvwixka8OWuLN73njCLb0rTUyS7T933VGZ1G73T/cxl/f4VptLcHyFDNHZPJdiVL7g/WDOBw==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        },
+        "payloadDelta": {
+          "addedFields": {
+            "tokenMintAddress": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+            "amount": 1
+          },
+          "changedFields": {},
+          "removedFields": [
+            "recipientHash",
+            "nodeEncryptedPayload"
+          ]
+        }
+      },
+      "result": {
+        "signature": "57bwEfrCcVCJUGx8eWMQbgTr4p8geSjBWsrxWo9CKdMfiL6mKMRguVf7fQnPifkheFBcR4nLdBaM7FoqsE7TH3Gs",
+        "stage": "TCAP_PRIVATE_FUNDING_V1_CONFIRMED"
+      },
+      "authorization": null
+    },
+    "settlement-62e424aa6ebf25982c65e9b498507223": {
+      "id": "settlement-62e424aa6ebf25982c65e9b498507223",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 179,
+      "payloadCommitment": "bdfb5d57e78d8abd526d81eb855b881b31e3cce4228dfdb82019139b2a4b115c",
+      "payload": {
+        "paymentId": "2fb68e74-6fa5-46b5-ab97-7d7ff4f93aba",
+        "intentId": "2fb68e74-6fa5-46b5-ab97-7d7ff4f93aba",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-07T15:09:16.034Z",
+      "updatedAt": "2026-11-07T18:12:28.742Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null,
+      "deferredUntil": "2026-11-07T18:12:36.742Z"
+    },
+    "tcap-pool-7b7b479c5887fb58af1b111167d949ac74b6d6aa92b3f85da75b08a531cf05af": {
+      "id": "tcap-pool-7b7b479c5887fb58af1b111167d949ac74b6d6aa92b3f85da75b08a531cf05af",
+      "kind": "TCAP_FUNDING_POOL",
+      "status": "FAILED",
+      "stateVersion": 156,
+      "payloadCommitment": "06a84c8d698dfa535bf1c8c68adbe1169a9abdd8d825646f60ff8a782f4b6828",
+      "payload": {
+        "assetEntry": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+        "reserveState": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+        "tcapConfig": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+        "root": "1f8a1bc024e737943f3a8039a785ac13158b4ab8c19b9bbdc95fdbfca7e28a81"
+      },
+      "receivedAt": "2026-11-07T15:10:15.329Z",
+      "updatedAt": "2026-11-07T17:39:02.849Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "verificationType": "TSN_TCAP_FUNDING_POOL_V1",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "tcap-pool-7b7b479c5887fb58af1b111167d949ac74b6d6aa92b3f85da75b08a531cf05af",
+          "kind": "TCAP_FUNDING_POOL",
+          "stateVersion": 152,
+          "payloadCommitment": "06a84c8d698dfa535bf1c8c68adbe1169a9abdd8d825646f60ff8a782f4b6828"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "tcap-pool-7b7b479c5887fb58af1b111167d949ac74b6d6aa92b3f85da75b08a531cf05af",
+          "workKind": "TCAP_FUNDING_POOL",
+          "decision": "VERIFIED",
+          "inputPayloadCommitment": "06a84c8d698dfa535bf1c8c68adbe1169a9abdd8d825646f60ff8a782f4b6828",
+          "evidenceCommitment": "236c2fd71ca205e0681019574db24e7938a41988fb63388633e4d87e1a6b97b8",
+          "executionPayloadCommitment": "41e1e3bc7d1f472eb77c9af23b90cee918eccea1812ff5a3bc42b13a3a52dc5b",
+          "verificationType": "TSN_TCAP_FUNDING_POOL_V1",
+          "leaseId": "tcap-pool-7b7b479c5887fb58af1b111167d949ac74b6d6aa92b3f85da75b08a531cf05af",
+          "leaseVersion": 152,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-07T17:37:53.808047Z",
+          "signatureBase64": "j7xjozvze0bszhP54W/lMPnKZqllCgGZVyvWsUdyiGlex1juWfccCAREUG3MU6yONCvZO9/13rR2r7YsQUEXBw==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        },
+        "payloadDelta": {
+          "addedFields": {
+            "tcapFundingPool": {
+              "assetEntry": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+              "reserveState": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+              "tcapConfig": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+              "root": "1f8a1bc024e737943f3a8039a785ac13158b4ab8c19b9bbdc95fdbfca7e28a81",
+              "eligibleNoteCount": "2",
+              "sourceWalletCount": 2,
+              "releaseSlot": "519737952"
+            }
+          },
+          "changedFields": {},
+          "removedFields": [
+            "assetEntry",
+            "reserveState",
+            "tcapConfig",
+            "root"
+          ]
+        }
+      },
+      "result": {
+        "signature": "2Ez5r9ZR4DeeviYzntsB4zDqxGMkBsp1xgHAZboeYVBx8yQjqwsiA5ZE15Px35HntcE5wiMCRQ8BeoZCegQsh537",
+        "blockhash": "EwRN6QxP3PE3jjFEugH2xzjsx3BQqovynX7c3HuENVWg",
+        "lastValidBlockHeight": "506886110",
+        "wireSha256": "1f69e873b253e2472955af787fc7df81be6bd25aee05be813901441c2d2796e6",
+        "wireBytes": 535,
+        "stage": "TCAP_FUNDING_POOL_V1_SIGNED",
+        "reason": "Settlement submission/confirmation failed phase=SEND reason=PREFLIGHT_REJECTED rpcCode=-32002 solanaCode=7050008 transactionError=BLOCKHASH_NOT_FOUND; reconcile signature 2Ez5r9ZR4DeeviYzntsB4zDqxGMkBsp1xgHAZboeYVBx8yQjqwsiA5ZE15Px35HntcE5wiMCRQ8BeoZCegQsh537"
+      },
+      "authorization": {
+        "kind": "TSN_TCAP_COORDINATION_AUTHORIZATION_V1",
+        "workStateVersion": 154,
+        "leaseId": "tcap-pool-7b7b479c5887fb58af1b111167d949ac74b6d6aa92b3f85da75b08a531cf05af",
+        "leaseVersion": 154,
+        "leaseExpiresAt": "2026-11-07T17:40:55.969Z",
+        "expiresAtTs": 1794073255,
+        "transition": {
+          "assetEntry": "AVWxnem32oZGoSKEfiufcLFb1CZ5V9HbWqD9hNbeST67",
+          "reserveState": "65NsJGexNZUs7etWTUiuN84mCJjGhqXTpjvySy6nvm6D",
+          "tcapConfig": "52vjTMjqRoCjTLvPKPqKh2QjfVjcskiAkfhHdjw34xwa",
+          "root": "1f8a1bc024e737943f3a8039a785ac13158b4ab8c19b9bbdc95fdbfca7e28a81",
+          "eligibleNoteCount": "2",
+          "sourceWalletCount": 2,
+          "releaseSlot": "519737952"
+        }
+      },
+      "reconciliationHistory": [
+        {
+          "previousStateVersion": 123,
+          "previousResult": {
+            "signature": "5JGGbGoxNx8Ri6D9tLQuuUp9eiUwdXRwDKusijoKU2KFMbgYAH2858ckgNJx26ZGAgfiywGpe41QmxwYmPwZbXUa",
+            "blockhash": "BnngkQsKjbkqd1k2hogg6Wy4tmsb3oeELhtnoWewvMFc",
+            "lastValidBlockHeight": "506858191",
+            "wireSha256": "162c5b81874dd6a095fa4758580f6b89a10fa1acd413dc586a9d20d0f6bcaabf",
+            "wireBytes": 535,
+            "stage": "TCAP_FUNDING_POOL_V1_SIGNED",
+            "reason": "Settlement submission/confirmation failed; reconcile signature 5JGGbGoxNx8Ri6D9tLQuuUp9eiUwdXRwDKusijoKU2KFMbgYAH2858ckgNJx26ZGAgfiywGpe41QmxwYmPwZbXUa"
+          },
+          "authorizationCommitment": "a5db5fa168ef3876c6cf01d0ea0d683cf0f06b4a96730990c3cb4254bef2b687",
+          "reason": "EXPIRED_UNEXECUTED_FUNDING_POOL",
+          "recoveredAt": "2026-11-07T16:42:17.023Z",
+          "signature": "5JGGbGoxNx8Ri6D9tLQuuUp9eiUwdXRwDKusijoKU2KFMbgYAH2858ckgNJx26ZGAgfiywGpe41QmxwYmPwZbXUa",
+          "pool": "2mezp9QLonMnRQxgYqTzDKEkNzoZggY66xhk4H3a7Y7f",
+          "finalizedSlot": 519723627,
+          "finalizedBlockHeight": "506872013"
+        },
+        {
+          "previousStateVersion": 134,
+          "previousResult": {
+            "signature": "64WjWHNHyRNwYSpx4o8gdHQK2Nx8kWqL6eyDcmG4AWcjENjZPTvZ1ErZHqdihD3ZXCM6WwR5CWj4P5ZSFcaQGSBU",
+            "blockhash": "5t4VvSYoXzXDihL3nx1Auzx1EGq4eaPnbG7mqiibBC5C",
+            "lastValidBlockHeight": "506872861",
+            "wireSha256": "e8dcd1409153927c9cda42a4f7f656a4640a01f81abd5a555448c184ab86f339",
+            "wireBytes": 535,
+            "stage": "TCAP_FUNDING_POOL_V1_SIGNED",
+            "reason": "Settlement submission/confirmation failed phase=SEND reason=RPC_OR_TRANSPORT_ERROR; reconcile signature 64WjWHNHyRNwYSpx4o8gdHQK2Nx8kWqL6eyDcmG4AWcjENjZPTvZ1ErZHqdihD3ZXCM6WwR5CWj4P5ZSFcaQGSBU"
+          },
+          "authorizationCommitment": "49173f5f80ab36dcbe5c513a1328a40d3ad7ea85a236b2f2b0e9e56f523d0841",
+          "reason": "EXPIRED_UNEXECUTED_FUNDING_POOL",
+          "recoveredAt": "2026-11-07T17:03:07.424Z",
+          "signature": "64WjWHNHyRNwYSpx4o8gdHQK2Nx8kWqL6eyDcmG4AWcjENjZPTvZ1ErZHqdihD3ZXCM6WwR5CWj4P5ZSFcaQGSBU",
+          "pool": "2mezp9QLonMnRQxgYqTzDKEkNzoZggY66xhk4H3a7Y7f",
+          "finalizedSlot": 519728847,
+          "finalizedBlockHeight": "506877190"
+        },
+        {
+          "previousStateVersion": 145,
+          "previousResult": {
+            "signature": "3r3VeeU2FitcAPX33h1jTHkMFH8gKKPEeYxhcaEDZBUio4MdRXP5UxkHPSuzcecUYJ8JdPrSCABcH2KSji74mGpv",
+            "blockhash": "DgURGCHZcDxkr44A2rTy6QGVfTzRQdgWTrqZ6erwXGTi",
+            "lastValidBlockHeight": "506877914",
+            "wireSha256": "f2437615382d9f7852d2542fdce2328fd38911121b573db143315293b04f0c62",
+            "wireBytes": 535,
+            "stage": "TCAP_FUNDING_POOL_V1_SIGNED",
+            "reason": "Settlement submission/confirmation failed phase=SEND reason=PREFLIGHT_REJECTED rpcCode=-32002 solanaCode=7050008; reconcile signature 3r3VeeU2FitcAPX33h1jTHkMFH8gKKPEeYxhcaEDZBUio4MdRXP5UxkHPSuzcecUYJ8JdPrSCABcH2KSji74mGpv"
+          },
+          "authorizationCommitment": "2e346b4875ec323061e065cfdf28e6252fcb13e57c5a294bbe0e0384df924462",
+          "reason": "EXPIRED_UNEXECUTED_FUNDING_POOL",
+          "recoveredAt": "2026-11-07T17:35:55.138Z",
+          "signature": "3r3VeeU2FitcAPX33h1jTHkMFH8gKKPEeYxhcaEDZBUio4MdRXP5UxkHPSuzcecUYJ8JdPrSCABcH2KSji74mGpv",
+          "pool": "2mezp9QLonMnRQxgYqTzDKEkNzoZggY66xhk4H3a7Y7f",
+          "finalizedSlot": 519737075,
+          "finalizedBlockHeight": "506885358"
+        }
+      ]
+    },
+    "c500fb74-5104-4a5a-bbb0-cf870289b906": {
+      "id": "c500fb74-5104-4a5a-bbb0-cf870289b906",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "REJECTED",
+      "stateVersion": 3,
+      "payloadCommitment": "e2938024ecb4fc362cce01c61f56b582642f74d377d221d9918b026c3605ee86",
+      "payload": {
+        "paymentId": "c500fb74-5104-4a5a-bbb0-cf870289b906",
+        "recipientHash": "a08c4296b8715aa1cc25a4c7cd0d32b6eb04ac488e2049624bfdfd955257dae9",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "egxMBFaMcJ4lAnlf",
+          "ciphertext": "XKXLNIgLl_srKe64yE4PfTFlie75wXxnynzL0JNcwJk-LSpDduYkqjHe02BJuMnWCciaBy1FZtpbZPv91PLncf6SyHlmDss1stl-d1ogrJA9Pl_HV1CAiGgjJINLMiDCoupZ__lnNLL78WILasgPriHKVbcypPlfEuVTJF-YfUWKfGAi3tfASf1EebfJJVbfILE78TNGqOachMCWdMGzntBpIzCnxf-VmpXoWJjgMvMxQ60HmEQ5150xTurPbbaBdqIOrDlmP3MPbaUeqtCFGpQM4rck_Ot4tnS81AhsIovxPoLPxk6EiUbDXlcBN9LTAEhjwZUaDsubV2O5vkctG9o1blcCPRREBEG5_ER6EnEnLhIrM1I12Pp83VjAMT54vX8A_fCgwW9UvtoeCYXZaJbAsdAAyc_IGkS-FKrK0REYSA1eq1xbaRZPh57O3VqlBKzQi3s7r8qWsPCgKRc4SvvZUariwvbLR6dZ_bls8KJbHebLfVdl9FVZw_YcrLGwq51s0HS6DYejqDQh1sQWv7LHrmajqpBcx4n4jm0kTbBn4wm4sCx_CbSF0b7iD-OXRJc2RB72devc_EAsR5hjZFxyeV3GJToHoaaXUsi3F2baUhtD-j5sbTepFKuDLHCLpPepZC60Wc0e0EERVqKtnLPkb7U4yVZnDLBAmR97Sk7h2r22YcZ8w460Zil5IqVXgWAgZP5LoMgT9Xx2wdnQ56TgN9fKoI_UWABRJNTDFRGwNfIqDgPFYkWxZp3h4scWW0Bve6d0UjCGw3SAtwFfMXm5Ia6eL88S8lWOywn8vUd6QtzfIzqivTUY7CrJS2vUVTtbQTspPDOh8e3UDlSHk7ne-hhK-IvjUy4a5Bpt8qZheY45WfXD9npl06c_1GVBKUToqbqDJtA-JNJjViMmi_vh4O8ayijLdCPHnTBeu0sbVvwKpkbGAW_wL-FviILks2u1qS6fABem94CkM_6UtsKM7HNGwnpVbdrr_Ewq4tWKp_yK1XPAsTmqOikXNxOzM4SwSzfbelnISjsjTgMYaXp-CLDlNYqtR36xBorvuhoxSGx3iSRc9yM27ikwjr3O1jKgK4fsJbqxuusr7WZgwvmShQ9GeBaq6J9PWEb13pWAKfxtWnpGeu5bJzPX-JONS1Jxm83THG92LZMsg-NzVEJLU-0EuqtMg98j4bUx8deyZLJl27-4vT-iphM7Ln6aeRYrJId5SUPD7DeKK0qxnsXZFDaYwdNaHqOaxaqrnNR6oXCb4MfWCmNKlvV7hbLC28dbjkv5Omaz6fq7--92FqzGvJjOQ0gtxUUEKsiqIhHXY1QA8z5g5tE0lHkNzM3EBOcG-RVret0hLLxlyTGwant8GYZlSCkCP2JpQRK2gQAwFeFSQgKJx3q7n3xn-75R8BnHrTgCSem__0uwE3uE7ppatRYfRz2jXW4XoCZiSeced3aImbQCHA2xA7pXnerYhxFB9dGEb5oP9cjg2HYahPd4CNhtITWpr-lVoXRO3d1JVYiNm22kdSyoX0zg5oe06jP0hCytubNFMlGsVIYXM3Ii27l21cYkgnSyUwG9zRTOas81DC2R7FBNhZLe5Li_LUouaT5YNOXReKkSA72gH_ia8JdobVAgtfum7_9xinpYC1iMxe1nsvVuahWB0d6NIezw3PThwwgwo8CCUe1Rto_UU52w7t19CITgjFqhsAWy4kp3SkUSMwhJ2fEgTEgKf8DeHxJmafypqXlWsjQVucOndRGxDTCL-Lq17Uzysv_Pgm_SKBM_0T40DjGGly9-BiNu3psaBTlOR1YaDwShZtWYojsPCG8MHaPBqM9FfNlvrxR353hz6lbUpGK7H6OU-VgHNgGeA7seeT121uq4rqXJXoVzzPm4wuVS4oSqRXL6NwjCjqbTWtSW6D1Spxc2E73Mo8bCIKqL70VNwmAOjJbyamoF4Rogc6ctLSncA6hQZP5-e979dhiRq4n0yWG44A1OcSYpDEoBXhlhj3ZKjYj9fy8_t9ug_i6QwT5t0q2qbu6gNt_3AZk4PWTOwlMWL2hcOOfWTsVbmuZxWJSk-Ss-pSWP4eo-XrhQRluCO6KZCKxTQe_bxnAeGrCcM6fR235P502gP6Y5Xm2AAc_5BPr7Xk_uuZksKRfIZ_gl9pZPhh7WQWU_X9LNOzvJEf6km2xTyiSwkY6t_aqiRZHsaqTFckz248AEYsZCOnnp7Xk0f0zMZnUi8pHmyXobHt2l1JCJcsg7mQly_pQJFfNXb_lgS9BzNqgKy5zF5yafMaXXM3oUDtsHJ9ZmjP6FHQHYZFBa_PmJwsV2pmc6M8pVttOpS6xsLDgV5DQoAtNXDXd6YxrHO5hQBzBmkYRP3UEDADlbKJ-UX7nZaMeDklzgdQM4a_0RapEOfvO40Ja5bRNbLi78p-CsuQVypvg_YGRYW_KnutvcMtKOMWfBWQ0lCjhF_Iq5pASN7w3P5cuK2pDOW57DOjPMPBG-ZD3XYwzXRihICzaekHHw8CTiR-3y3OFvY7ZGuLTqnEr4lEXnTLgHFV25orbthLReNX6P9SuSvnqUtmOsSd69L8ldv7Md0eJISzXb5PFF6jmKQJSHyp6gKlwRxCn6SVpBeiVubrYVkXczd_zvukCLuGmFIo7K2GzMLUMeqGgYJ02MQbB1maWKsxODoOV_DxruqNUhG2G575I8gzuGXKZTIyozAdUOX8kTjcVZKmblPPwhHf7kTrGRIOOcITIAnZc7Z4S05vteNOJwBZjwv2fZiMbkHjsgfxdBjq9kpf3xpjvyH5cgNWtdTqnP-lkCfJKgDTDZEq27XpGX6NO7sNt9_egbP29n5ntAV7IYHRD_j6wNLq1t6dZeGW74l8W3lONyt35ZxeK61B-Qur5Wv1oQwqtksTK1nZNww_ZNMwWvCNTJNtszZqwiSA08My16impSwf7sNYLKkHlctfmaxMNFxwo",
+          "tag": "z6RuIpXA2ro14bHZOSkd2g"
+        }
+      },
+      "receivedAt": "2026-11-07T15:22:40.829Z",
+      "updatedAt": "2026-11-07T15:38:46.086Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "reason": "400: signed message has expired",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "c500fb74-5104-4a5a-bbb0-cf870289b906",
+          "kind": "AUTHORIZED_FUNDING",
+          "stateVersion": 2,
+          "payloadCommitment": "e2938024ecb4fc362cce01c61f56b582642f74d377d221d9918b026c3605ee86"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "c500fb74-5104-4a5a-bbb0-cf870289b906",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "REJECTED",
+          "inputPayloadCommitment": "e2938024ecb4fc362cce01c61f56b582642f74d377d221d9918b026c3605ee86",
+          "evidenceCommitment": "9f10cf6cf06c7a26345c92caf610cf6959bf464fc99055841d9c4ab9927c6099",
+          "executionPayloadCommitment": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "verificationType": "",
+          "leaseId": "c500fb74-5104-4a5a-bbb0-cf870289b906",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-07T15:38:45.941725Z",
+          "signatureBase64": "U7GnZWZ/Z72eFMPDOlL0fVpixphNQMccTmwjtYzDIiobUgDxWEUAQl1IF6p8anCKYN3gx0cSxihgzurlv2JFDg==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        }
+      },
+      "result": null,
+      "authorization": null
+    },
+    "settlement-3e834f13415ff27a05b2d0767c3db593": {
+      "id": "settlement-3e834f13415ff27a05b2d0767c3db593",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 1,
+      "payloadCommitment": "c7c282fa7ef45a2be0cb840821e7f0d0ae116f0e13bb2c0cb5c095152cd163f7",
+      "payload": {
+        "paymentId": "c500fb74-5104-4a5a-bbb0-cf870289b906",
+        "intentId": "c500fb74-5104-4a5a-bbb0-cf870289b906",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-07T15:22:40.955Z",
+      "updatedAt": "2026-11-07T15:22:40.955Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null
+    },
+    "c85e6022-68b7-48d6-9731-2cbb21d34f46": {
+      "id": "c85e6022-68b7-48d6-9731-2cbb21d34f46",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "REJECTED",
+      "stateVersion": 3,
+      "payloadCommitment": "b73a9db89555fb4a7d148f7aa24e36e68db73e587e56bf4831533d3376215e35",
+      "payload": {
+        "paymentId": "c85e6022-68b7-48d6-9731-2cbb21d34f46",
+        "recipientHash": "a08c4296b8715aa1cc25a4c7cd0d32b6eb04ac488e2049624bfdfd955257dae9",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "nunOWkQjsjezn-ez",
+          "ciphertext": "pODjkeHuHZw_C-_SA_w6c20nAxcx3jLa-D-V9YtPBgJwY_JN5iYAzkprEvFCP5T65VOzv_1z0Vz0b0ts_Bfn5Giz6xxI_s_tIyu5hdmDy8Ry8lL7F-dGw0cqsqwZiOEgVlsf_mZg1se9oyr8fg-2KtH3380YsIZHmdNVVwQPBHxnnGE3AcL4Ok5aZdXUnHF0H4eQ0SeNcLSwrN08tp-zCzVu-cF3XX75B9WXVxSUpcVvZ0SAbbynfDh9Le_xW1b-V9H9p44DEh-ajzEfulbhbXAoZJyAbh4Iib82cBNvjuuqATNwnJPtuBY5MTE54VWbOUIPQinhAkgqO8IIE3ZKajtyvKBlsuAb8VNM41Vs-U4M2lMNNFiQO2i15idT5f-Eo8rR_rN59B730HjpbImHkIhJvPzJBoPDAkLDnnhH9l6vFmbe2hL8k75m2DDONclQ0FUuu3fpCOF44KyDIDmehHpdaq9Mb3R54zSgNex76FGXuv7fLzLjAjXzRKGDzkB3xV4z-iBmf3Jd0XZg7z4O3mA-GFQa7s3rJKxTfiI8h7E8SfBZZd0Otxn-TVqDFeE4qKID-pg8IUx3OcwfNtVNtdS_tkvii0Es3zEm6o5cxnnUZHQIld4pXFXjMuIgFkQ0pbntCLlFqayW5FiVm3c9nzTZs0EO0Pjl7oFMVLpGPZT4JaH1SYaYs8-eq-vipcVsPQ98rF76Zrw2d7IP9tkiXHaCHtJcl2140Mk_qKevz0RRx7yVGhdAZUXt-nMylq_ACxTWQV0Dc0r6Zj-D3TrLqsR3E6Mz-h-KQb6Q65GTOBV4p9k7v916QGyEPX5Dd26GCvB9g-dWFD2yVAZJAwvMyZ2W3YKCXB_QB4vpck6-4ypQmoeGiBB7YPLwUzCR5Mbd5fvbl5aENFV9dZoNtB5TsC42ciFZ5pa073EY2aYyhBNBXD25Clegg-Z54O6qV_47A29unYr4C0hUXe5p9ti0J6YOfwySP9jjDKFAja1PHwGZRTg6atTn3PJqzy1QZVQ_jY6-8sAr_g8GGrFB4Czw5foW9RHRnyPfRhBYDsBEKj5Z8FSxJ1IQ5pRULYM2ospaNQroce3rv7Iancr4cElxzriu8ajWWfbfDFVcPDs6FlcbCkwz5OOgHykMKm8JM6FHyu9nIwBCIuBmeXYBBcp6w6JzkQPGHd-1MPZT4xoBNDEwTKbM_of68avB8El3zohuhXFExBiqj6-ORmsUWWFfNNCilih4OzPLhgN8r8nfnwvLEc85iBXSUtu8j1VNEKVIKeqSsJajDcxtRPfUrh6dKcrn8IVyiARgl-ogv90cIbuiR_WqG7uvy113yOAAUykDvCHRDuPC6Iacdvl7uSmbKyiRP59wgFYy4mgp71OdMVTxljfDT_PPTPlv1Xb5gn3DZpG9diEr9L751VPyFkHiqN42dPO7QhctclxV5Y8TaMyqv8taOaJY1HOp_M_-ZAjBahrPik847DMKi_jhBhPi9Bao7TFa863hQ95ysuE_i-XJ8t-Ju3uWR6Tv1uaLXTKTz9mTNYNAQt1_12Qa2gf3MCzWXVoc_733vt10ewv6zxnfiYF7bWHspdsszpw9pG3NPKFtnslpDsxEFb3kyTfNjhydGsOL7RaJhpTS-S4frtPq3vPRDKG0Za8SaLtxKjvFqmf8sSwfv559l9nsp1wyelvkKe_Mzdsde9t3mc5YzxErH6sU__gNwiBJun8UCnI9xgIZkxAESuC1BSODM00R2J3_S3q4MGHIioODI1DbW6B_Gz_pk09W3_2JMCDyFqp1fUCELwnOwuBhrDfDbfpZjZR42MmYgZHgsMt-BDtIxvRsN4OcZXOeqgQfSi8hM14eGujQNK0UEVyyawdqheAs1kZauFAtWDRxLhucYSJLMIC1Ae5bKAWYyvHp9Fiafi_4aTtgxJWGjkyvColJmDsGOfJd3J4QZ1Pc2b8mueGHkhBKrsL9U5KSiBWMaebVI8lSIsJ5MLKfXKL6_ZSS_DehPCE7ZNiS70XSVNazS3ugPR0gUSXx-7YcDuWguBTgR0I6MsO4ZEo8M-LGLEI-WFdSMdQ4dqNzw2FjuTTbS0qrBtTdRj8lZOebTTMw65rsXOfVgrVd4NH8QzT8swO4IXAGLvdBvL8TxTcwdgFohFf9aVUUmwwP6rDsPspBQwq0s3aKQQK9Ontc-Di3-S9JHNdPcFucmo15TC47TiMLqfpJ1lYHrCm23wQsDx2uNgyT3LtI7RqHsMtxS-vRztLLHi3LRf2z1op_kdPGvsjT9KQzb_wv54CjmWkFACti8X42Vy4zFhzI7ekBotIhoMerfZtKUeleHxlzQlf5gDp8QxDVpiJXaGpaPu2wNlmRtWD61ev9EoWaZFsWatHrBpztEOYFMUZsK1DWkv4PVdG9J0X06UJ41aBiStf5D7YlrmqJHeXcwVcas3yNRDoZn54b0iowevEMTRVsnT_r3zErp5JI-JeIQ9B6trnNrg-5sW0nRniQoUIf_NRABeh7Cv7tVYs__mj2Cl1A3W8_4EmtEA6buXTxmtBKZkzEoy939LjXLy9xAppty0Lgyr4Wul1jBCRY51r1J8-GRzGuRcDHsHs1B4k4Kw9-U2QJUGxzb4Oct1iUwKvf0Im_WmhQ8U6HZ-OFushuMHe4G7r7YEA4BRxKBNtjOpH3-_-sbuyCur4KMST3dNJFIGJXdYqKkT-a8vKyVsIqc4RWdBZW1khRQ38rFAMPEMNuOJ3XJuB5xXcK8Wlwgy3rLWjU6uA9vV5kihWX6DvD57G8g5ZQcjI7UoSO8y7Zv062a39RWMVVHulKGLc53jh60_JdFkmw2kdOqPLz1dKOBeyRt1X4MVO9bYDP5yRjFX7DHUtUZQuz-CN_Y7RvwPfnA4QDIS6cjRSmy32DrWRakWFqCWeVfMGj0gpF4rlgnixBYNbWbggi5U48S0EJ8t15ty635abxjho",
+          "tag": "jX6BN2VbtESSdhF2LL905g"
+        }
+      },
+      "receivedAt": "2026-11-07T15:25:37.729Z",
+      "updatedAt": "2026-11-07T15:37:16.938Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "reason": "400: signed message has expired",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "c85e6022-68b7-48d6-9731-2cbb21d34f46",
+          "kind": "AUTHORIZED_FUNDING",
+          "stateVersion": 2,
+          "payloadCommitment": "b73a9db89555fb4a7d148f7aa24e36e68db73e587e56bf4831533d3376215e35"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "c85e6022-68b7-48d6-9731-2cbb21d34f46",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "REJECTED",
+          "inputPayloadCommitment": "b73a9db89555fb4a7d148f7aa24e36e68db73e587e56bf4831533d3376215e35",
+          "evidenceCommitment": "8f4564b23945c9b264cad0b8df7dbff5071efe11171b58a2430c75bf3532eebe",
+          "executionPayloadCommitment": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "verificationType": "",
+          "leaseId": "c85e6022-68b7-48d6-9731-2cbb21d34f46",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-07T15:37:16.855994Z",
+          "signatureBase64": "IEf8/EL2hR0yL2eTmMzEWWA25cLLxV99aPh7iXPBx6dggEFux3lhgSoWqTUXV6s7QmKOL4HUAolbqLBEG+tODg==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        }
+      },
+      "result": null,
+      "authorization": null
+    },
+    "settlement-2f96902f08167de5f55617e858a5bb84": {
+      "id": "settlement-2f96902f08167de5f55617e858a5bb84",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 1,
+      "payloadCommitment": "f37eb17978688bc2114645b074d5f7028e9006dca52a74ccfa4ca6a700da4fd3",
+      "payload": {
+        "paymentId": "c85e6022-68b7-48d6-9731-2cbb21d34f46",
+        "intentId": "c85e6022-68b7-48d6-9731-2cbb21d34f46",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-07T15:25:37.734Z",
+      "updatedAt": "2026-11-07T15:25:37.734Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null
+    },
+    "ffc3d058-f7e6-4a7a-95f1-566587fdc572": {
+      "id": "ffc3d058-f7e6-4a7a-95f1-566587fdc572",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "REJECTED",
+      "stateVersion": 3,
+      "payloadCommitment": "44486519dec826f2b93157940c3b49fd33276b035e4f29c64dca5169cd40cd57",
+      "payload": {
+        "paymentId": "ffc3d058-f7e6-4a7a-95f1-566587fdc572",
+        "recipientHash": "a08c4296b8715aa1cc25a4c7cd0d32b6eb04ac488e2049624bfdfd955257dae9",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "QtPUkSKn9bFrCHch",
+          "ciphertext": "XyBaHY5ZsSJ81ef7n0yyTSAQoobMMN_P_YRGMww5pTSV8Xqm_ofr0gQ5ZZPNGiKfeS1Sw7Nd7dXvAFo4v8CnGTZMwxposvaBN7m3J2xug04sUuQXX4sTZG4x8-vggTGWQxmZDBj9Km0r6qhLs2FwR3-G8pAdYoXxFImZAeCwaWuaW4-GAHxH_eTuYLKP-D_AL5Pl59h9tAyprff3qipnG-1jmBkVtIkJn62-JzL0Wv3nKzkuHSDiqDqisnQWzgGlAni7ZMLIUcCnBimZB8fMNBRIg4IT3C2PJvCrN4eaLuX-p28_gYNcZZSszWBYMOPHEYpJlJdWSLpnptqHPX71CT9Vs3URuv42sSA5xYvqOgdvQc887d3Q1KKsMPI-l6A4i2ak6-fLVLLXcsNPt6Ur5n6LembrRonV9g5KImQeVHta6ifD5MB3NYVG_IsA4Rf091J-mB9LqxCbsNnE3PE2iGpnibWHDui03rEuFPUXQkGbcmdzi3CZzVGY36AbGtAHujftQf14UqrbXpesEQXd7v08wJpf098iJmK0DG1OdDDOkXpIMLkH4LL8THaNkf2KxJpX39SOv6bVcpOLfBXpgZ0QPEsKUn5UOYHrFAVOr3HTcM01b88YgdnJmUtJdSJWy96XehzStEr7rh8Kk3Hhh1-p4E4HCCg7DcJvTxtA8kbdQPWF-VLewBD0YrzTtfdfdDAPIbT6TkJoH8PfYHebz9PjkaeoyktUpC5LNR6CfsxhKNwW9g8OVJUsCiOeLtUhtCOQEZ7ZBZusMAV-5dzXS8Ax44sdGPa9urIYz9nz5VoFPKYR7Xjbp4JoC5MohHAA0bs96aIexkZwsTJeKJzpzDp6UXXlOO6VZwQsOP_3-aXSqMVIHPEBX4qNlUFffW2tsh6BMbScf4ZXi2GGaHZzKROYcMolPhkJ1HDaspnjOMeukTKs-8WJr3BOI5MMpTqIwfIDAyD0N-CjBZXip3CSlYkKbPnnZRxmUEMC3_JzrO66LOXZmztQqKRJRA1RVPoPSx4P6A6MBeo7aaH5PM0b-k1Twfc0P4MxXq4PpJSLW8MHamTsirpbucqnR1mvRzrE3La95C0lydqOiJ98HlzhZsNp85tbQ5rPCjAPN0r9JfYgUmXJ7v9qfTYZyBRm2wjTNjCdfyroHjzRVOy2Tj4OIfymEP1wUtPOItizfphV4LvLtILRUjdWYYC0xFTYFn7cInzl0gHMCMddx3eVSb9rG85UCQpH8MD48lUxbCeUvxh8KxhSX_rzv6InIneU4s_NoCEEOOwi5RXlVthwMJi9boai3wYrv6fyf3mplFIdJbSta5a-TxRMj2BcaeY7PQcoPvCeBTRPKK3ppQhqG13XJ1pBBMPRPo_F9f8JTBbxwK5v0pxauzWTPpacGoRI5CGLsZXCx1AZBkykyoN2dbm8rPLOcfgV-Nquw8c-EC48G8QGHqB4FoLkkrNotpHJwD3BvSXkagxuJbShr5k2wh_fHqhN6kwfy66m35bbA1ZH0MuBaHm-unKvIUhAIGnF48E_ATMKSCXZZgfQ8flH9mmOTP8RFBElDothUSjQvWRTOf9htYq76ZwLfTnAVgOKTmJi3PZA7-qQGGKtuZ4PqbAsJFy6Jzrjuy6i_Cswbwog3SoKDb7m5_ErUfEoLUKW14kfZC_Sk4-CFXQVr0w3OTJqQtFADzU0Mz5sMbMPvESlxTGrsDH4oR4lbqrRjSEZpqqGsWCAGf3mjPFzzg7ApATTESTQRm065oWH9sPcOuyaBkOYurOiNMMTkJjlB3TOy2hmZUv-63y8e9OCBTvt3OoztTx8_v9fNu7Vm71b7-Cj0zy-dxRI0OYpSnGqQ5nKj5cQNEb3FzSChvSpnaqeSDb6-fK10ohGQfr8D07S08tD3qa6xhWhs_tKPZGQHdBfyHT9e-axkgsYD5mdaXfJxjVyE5OybNQ5WguapqOyprMXAg-nOAVt5jcI0uRvgVikEQ_GBaNcMNnZAssWtY4zB-dEvfKoMaxTGcDar47yDtUI3TkSdM9Vfz2LilPqOhyDZXIwLatRvjzyzt0WDmJ9O5iICBP4NIu6e3aCX43IFakh-04RveM2LeY3MbvIujkI-FaWHCivhPMttJVx8uYK3k6McTI3uIubWvaADaj8aiEp_74GrigGPQmLedI0-CL_td6VgC0LIkRzrZVBkiXNYTIAriqqcpnJmmrLRz7r_haKyIUkDKEVmsn8_jmfeGlrteQd3RniWGKbHwtNM1BFSpfE8crnYpSXeE7PK3RZro_jJDV9p9qJYNcPW_hjtyjmeseXhdzj_jS2_jqbZDrFgbjYJZuPI9TwNdvu0-__oUDkYFKQmu3j2pQulwJTBUMTRXTi7dwPkx3i3WhCrvwLtR4wwB3eNinbqOv8ZUNLkJcascRTxFUZur5Q29iewGS9YOD2RaFmD83zw71jQ4Ml0C0IVfj_oiQXvEIKZ9gH8n6yOIbkK6JRbuEoQoLWcw7iLopKTuJUzsmlQzS1TA--2Fd5oxr1t5zbBl2Kr7oiyThqQyUEAcoS4g3G3_nQUCDxXnolpItUTjFL4QTUsyrgWLEmaAeLg2uo7bLEfd32Lp2pwonIzSSndo6UvS1qYSkcrj-4bcBNakCqWnunNHjU2-5UM_juwHbjcCmxADmE7DWMTW-QYdw3dHnImH8rQ4XbMxU7dV0IfGhIjt6lKjmtkS5cAsPCOwyaibMUgwqsowz2A-OQRmle7S6l3q1DlptEjqawu0NKqJO-nh8aHl6femHWcYokFGzCO11zqvhFeRhVsAAviQFuVSbN5dNjIYsLd1qvsXkDeGI9I9AIueikQrXK74mt6921okJvTqQZxRrBxbY0rCQnfHIV2vioDKnh6Rnasm6GUCnramlkSi0M2CRFXedy78g3YSKhOswNpXmFy0tOd4g_EDejwPsrKnb6yMrAOpYsSrFVLZFgNEE",
+          "tag": "98v9td7uaerGUdFF07TDkg"
+        }
+      },
+      "receivedAt": "2026-11-07T15:47:56.040Z",
+      "updatedAt": "2026-11-07T15:52:31.830Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "reason": "400: signed message has expired",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "ffc3d058-f7e6-4a7a-95f1-566587fdc572",
+          "kind": "AUTHORIZED_FUNDING",
+          "stateVersion": 2,
+          "payloadCommitment": "44486519dec826f2b93157940c3b49fd33276b035e4f29c64dca5169cd40cd57"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "ffc3d058-f7e6-4a7a-95f1-566587fdc572",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "REJECTED",
+          "inputPayloadCommitment": "44486519dec826f2b93157940c3b49fd33276b035e4f29c64dca5169cd40cd57",
+          "evidenceCommitment": "6ce5bc05a6aa45481afc0cc1333bedc87ead4522de60204455fc024b14569488",
+          "executionPayloadCommitment": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "verificationType": "",
+          "leaseId": "ffc3d058-f7e6-4a7a-95f1-566587fdc572",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-07T15:52:31.723966Z",
+          "signatureBase64": "iCB+qSJ+i8VFZjD+QvqgylivzT8YBXT5vODotfKpPA3FolOmzZ6qWiN0/wrMyKmIFrt1xJYIqlwNOTL9baq2AQ==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        }
+      },
+      "result": null,
+      "authorization": null
+    },
+    "settlement-87b3141a13ecd930ef70037827697df3": {
+      "id": "settlement-87b3141a13ecd930ef70037827697df3",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 1,
+      "payloadCommitment": "31b39aa368e370052e2b52d92d90cafa574830259191252e5eedaa707fe10a79",
+      "payload": {
+        "paymentId": "ffc3d058-f7e6-4a7a-95f1-566587fdc572",
+        "intentId": "ffc3d058-f7e6-4a7a-95f1-566587fdc572",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-07T15:47:56.133Z",
+      "updatedAt": "2026-11-07T15:47:56.133Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null
+    },
+    "05c0c393-0f4b-4e4c-b380-118e2115bc27": {
+      "id": "05c0c393-0f4b-4e4c-b380-118e2115bc27",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "REJECTED",
+      "stateVersion": 3,
+      "payloadCommitment": "8b8a3f0c7fc4b36e26b6542a3a62d0315c78eb9e584d585cbc4200155516dae5",
+      "payload": {
+        "paymentId": "05c0c393-0f4b-4e4c-b380-118e2115bc27",
+        "recipientHash": "1ce60077c5d59262b2843e90292200da49254a3a937660275c343af7c42186c3",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "ZtAQaXCX85nCkX91",
+          "ciphertext": "wTp3PwyClrVustf-Qppb4MuQjgG0OKSFaXp4Iibq_iiqwqq_rcecPz381yyqDVuXrtMyvLAmcPcVcHPsOPz5CzwDsBkOoLd3oSerw3UB4tG-9dMD-NzuF4hyvVAT554GlLU6FMZFIyp__e-vXy_7xT_TZacIIL_ABbDqL8KGRJ3K0Dc6ecwfMc-V43nxNm7xpzdSkEPleJctYmZWDGS78buKxEi5_zXpxMxDIMTUA_yWoYGpWKKluauMIyHi85A0yNeEwu8nb_yka5hchjSiDk2am7D0AXrHLnsbkFfoEVbOgSwULRBLxLpsKcifpCrPfSR9cjbN08_gH48OpMXbqPDCAow8HoidbAKcxzT3kE8jm6xGSd6UhzhPWC9Z5hw9w2LsbglApLeAncx1HbxbLxeLps7T5I1ZyVWi4Nyg92jDfq-1WI-RaENMQ3CN4vuzWo94Mmrv5QAfCovLsZ9bGsj83RED2WpRK9qRJwRUq4x-SFUzzZx6W-61BZG1H95B5vMEbrZKfj4sls6wKzn0bYXozAYxiwElwmkQnmcmaPXtlaVNMUgmgxKfjf0_wVgSpys7bekGRYfXtr4oofC_awi80P0-T3nN96AlGHEAF9dw0lvL1IpWs6rFe1qeuT5E16SKWIqWZ_4cD5dDGJ3CNA8on-W0oV7KNz58ib2fwEBXUTS4-l1huszQ05dU-CuH8nw2PSCmfoNXVmzAW0qc3aFoZ6YRggTzhrbkA-Gktxs1PK_rj-GWqQ6bFtbxsAKuKoQMoJIxdAqOBRhQ-xaoVQzI6nQrVkwnpepHjHcAuNlVf5bRYc6ZecVEzovdo3JAazUOC1X_el0s6XAXXbD_s_b8GbbYxXxOvFIFMsckqATH5xYYge5iyry1eg2vV7hIqUbXlOhbdgn3LFCB5kMHl-Gb0kCD6XbcLDwdVL2Gyg7I_OY0VZvgle33k5y2VIzDZz2mOjxV8S-_Zv_k4od4-HuXqsQ-zNpPIP67_C6zmQIEMA98FHvtaqZRNWSPZvnRDumAJGE4_f5cwTCax9MYPHlqv1xJhyLeXHBebLtSd3QKFL0sw_MTnme3_MUqJqcPr5ipi59aVl_KZIxDP73cj-4zPXCJdd4Shi3dMveCsv5aNsaZ7UQZS-ZZfAjYCcD028GDeDQDgYGLD1mmvMFYFN0NfVf_GlCQnck-69ldPlvk1AnCeN2lUb7HmMWUGdpQoekB9aXHK_kxwc23pYWrQaItDh3wuwYck8YSCD2sO-GmrkZz41e1mUzqRzyQ531K6dfo8xzKO57Hn4Okw30rMJ7MuivLkf_UADW0lqJGFWby0Jwd8t8xUgLd6-6H9dGZkqpa1_0f8pbcunhupS91DniAZRWVWNVTxoAcSR52wF5DNHK2D7UCRA2jJsKS8K2BQSJ8yhqv42tJwS0RKjkcmTq3MpgepLWFFANL9MaALZppzzJWGkfaimjKnYmCBysAuv9ltKcfQqJvTZKBTi3sqjJkg82N0kdbMYV9oN7Xt7h8R0j33Wg7scQWyoed6fcL5pJhOGjy2aop-FUW3nCXvlquyuAVHKJI4eii_SsA3ztVq7F8OjcpnSjWkMlnG4dvlgNE9yV37aWvhlOehgA_Kw2qvz4jrLC8_PUaapwV9Ki-bAvLK2iabQrmChFgeNy6J4t9gUvlnyDOeXnSFvt1WMeQHAvfW8x5q4Z8ro979vbI3o8sP1Qa78jNYSwLqDCuv7IRVGDkMr7IMLdP_1v2yOYTWUY6kK58rai8ajFR9aZB_8GfE5itAfUM6aRBTyMQWEghsXPj_VJEyLc3seHUW5rKrFK_ld2xAA8L1hAg_hFlTMyAVuswHGaceGiKhMi9-cBp6c7teliAEcssiisK6vKS434-JrTtxsnYUeHIT1vCaWuD1LWwT-ct4JI8_oOWClXHHhoODzT0OBDvseZbltsl0tPgfkuhBW2NC3zcXKls6VmMoXdnB6f7wwljlUymVX164qGgoBP6wEnp0SMckJsFN0bcBGUKgNHzORehwC5FatJsH-6h3QTFAyGRXdfBQnVdnHY4KyEGeNya2Y6BLprv0CfNSjwMEt_e3q5MBbpPYLHTA_x9AWADntGePpgHbjy7-q3yl_FHpMtIq4chgCJbAmwekgtIpKj6o74Yd1mgkLZ1cW1vqCkdhLZfrq6QucgVfDCjm5XQUrQJIryF_TiraN6hf14hlnnbahDekXkHYdktJekkT8INBJKleiAgUvQqXjjEYr6OOKali7q22Fz6IvP3WBYfmtILlF71g43EQkp9TeOP3nb5hxGRrFzGgwGXek-1cb7KVbaGZ9MbwjZweThJmmtalYkK78ECQ9FHlySY2zOpfTtsyQJCfkrnf7vZgNsE8oKhsrgg2uKmBqWHkZLjauubSu5MxtnZPsLj19UH_vCF3OhXWsD0j3X1Eeb3CEzqDosB8YKAuwx5MXHW8WiiDh4MTBzdnz5Gu-4Eajg3LImI7Qotrhr7bLeTczZ4BcHj5J9Fvwnu-u04VMbOqmwu7UXsZzHTFxAI6v08GX5D834O8pEJQD9sKoGi5omYYdiqkE44742mrRuWNE1DDXsGUvbi1DY1x8mdov7J9lSsKnDMxWFdeGXmX_m-HAewl25CZue5xSjGGeJUDSYRK_AfUA1oZiUmQo5kgYS77xiOSSrSQYLdyqK3rQF1TNhRhJr-hdL2q65LiQ0aUt77jLXqTrr_5sZP5Tg9QzkDrwOvykx8UWc22XCmeJ37-2QobhzwFCkJWgMIi7xoejPfiycyw-DfhxR_ERjOrPV1oupZSnjbKi_u-Pg3sIRhp2BUAOtc7G5EwUh9IwlGF2-H9vgWPcKTa9tzx26kFhaqOXRWXMxeL-aWIPtPwiw50j3iDkyn256Wz_3z0ICE-ExG8Wgx0pb9u92mVMEhkbTkeip8BnQT3I5DiHOKhOd6FJLrka5A1a3IEd5SiXQW7P45z3CIeDqZprMAn4qXhT5z-z3Vp-xEEhrkwvuqL6zcy4Ov01qIcqF1az_-UMtQ4mX8GPJQtZjHo3CUpVQIOr4mNDmNzxL6DQ",
+          "tag": "IlHwg3LCyr0icM7ZVzFlCQ"
+        }
+      },
+      "receivedAt": "2026-11-07T17:24:44.171Z",
+      "updatedAt": "2026-11-07T17:25:44.512Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "reason": "Wallet funding transaction must contain exactly one TCAP reserve deposit",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "05c0c393-0f4b-4e4c-b380-118e2115bc27",
+          "kind": "AUTHORIZED_FUNDING",
+          "stateVersion": 2,
+          "payloadCommitment": "8b8a3f0c7fc4b36e26b6542a3a62d0315c78eb9e584d585cbc4200155516dae5"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "05c0c393-0f4b-4e4c-b380-118e2115bc27",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "REJECTED",
+          "inputPayloadCommitment": "8b8a3f0c7fc4b36e26b6542a3a62d0315c78eb9e584d585cbc4200155516dae5",
+          "evidenceCommitment": "86b463bfc89aec3774303189693a2b54eb3e7d737883159462dbfb0699657c10",
+          "executionPayloadCommitment": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "verificationType": "",
+          "leaseId": "05c0c393-0f4b-4e4c-b380-118e2115bc27",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-07T17:25:44.410662Z",
+          "signatureBase64": "EdiNIaQm0poaqqEtqHZohe0OMYfRallsiJFFn9K4ckT+Q7hhT1t0mzBHB9wAqlBXGBUSn1I3ohhjmaYl0mR1Dg==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        }
+      },
+      "result": null,
+      "authorization": null
+    },
+    "settlement-d361c9210f43d53359e5b9af01ff3dda": {
+      "id": "settlement-d361c9210f43d53359e5b9af01ff3dda",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 1,
+      "payloadCommitment": "a5cb4954a49f0d4740e37868cf3b598070d47e10b5d3c5da3f66a1954bf57d68",
+      "payload": {
+        "paymentId": "05c0c393-0f4b-4e4c-b380-118e2115bc27",
+        "intentId": "05c0c393-0f4b-4e4c-b380-118e2115bc27",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-07T17:24:45.024Z",
+      "updatedAt": "2026-11-07T17:24:45.024Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null
+    },
+    "e445f679-c39e-4367-a6c6-310f775e153a": {
+      "id": "e445f679-c39e-4367-a6c6-310f775e153a",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "REJECTED",
+      "stateVersion": 3,
+      "payloadCommitment": "e58b574a2a52c4bad9a0ba45d9b9d69844f3e3c53287872fdf51ae65a1a395b5",
+      "payload": {
+        "paymentId": "e445f679-c39e-4367-a6c6-310f775e153a",
+        "recipientHash": "1ce60077c5d59262b2843e90292200da49254a3a937660275c343af7c42186c3",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "QtuhsqdIDoNrtSMY",
+          "ciphertext": "d-Xg3E7mKEClogN-3yy7YSrbdmeQTlbp1ZRGB6q43DGmJThvjQ9B6fpcZK8gJaoIMu-yNCMP4tx6y2qS_uhqF6esteyuRGVRnXVf_JuxWWhRIY9FsikldQYSa1ytB6-rxnm1F2UrF4BqRbx-EjUUuq1uNFcVw01mK5zm1QFjOcCs5TVm6V7GoXEsJdBZUalG6G4iQU-ePKhl2eRvusvjjHgGrsuhQFqzKDj_8p800pjh9wggRHzSopy6OJfrX8eFM_3RCIVqWjTYjmfWfvGx2lI4ygOhMo-pfcNvGZKQLSHswbsFL0u8M_9OVMV1XOvQ6y0c_AqinO2424VOyhSEkOtnk_hGO8wIAN6zmb54p18ecS7t8PwVWZQnuvZd9fWR6gDvzL9yUFzO4AYYGcqn3h7xKijobdFc_CFx-MydCjGc70Lr6Oy3UDjp-w7w-FouS_uKfjwJzYLUgClzUMpzwz6jecWxihfbqBrKV2iM0cNKum9yjTSgQoCras_dq0hV18nFaL8s6MLluFJbe5jSLG1L9BQlVFjzwyZCK9RcCI5TQLj9c4hcW2hUWnFG9oHgFv2cpiyo0V2OEclwS3aBFlJTriHMv_4x7tSGte9H258kvHpGGFH7WQClBHD0sagViIamIpIXJZMHevuCwkSchzyLrWo7BZ2Ig8o4RBjDXGgZCvYpNdSbuVkH1XcfnU1TVihOHwzOY9WgnuXaXozUzHWmIJu3KPBXVjIm4NL41pcQg9rd6fxZFONKwFmQ1-RZrjH2Ssj_vzIeHf4d4VyfvElRLajHG68poAzpXGzt9Om14BtX8JcmXfpKFHOfZqlS2q4hKUigyM4FFYoaoyhh_d3wZsOs6J1EggS2iQ7BWWirvq-jp-Alp0tl0dHMNqJfmKjfSus-4B9iywlwpRfkIMhh8xYkK0NHkotInjnxHCfq9oLJCNCerovRXZSt1rh0Wm2lHg-Q76TzN9nFhBA5C818AVsYgoQg5ts5pR6nh_VJgPn_3-8FGPebN92UK5cYq2PwQKv_drf7N-ireWBk7EfXKN-Nm1nrsabuOdFrlCnuy8IhpxbZrA53FYa3OI43fHfWCUM7QkTUFqhQEALRZeKzdvg8RA2OaO_o-Yrq1NCW-I8Ao9QnUVsVWBHXDO9-0f3niW6dDvQ45Qq4ZviGhTHyjNNZfarpxY1KVHIOpa1sPDoZ49L2OvyPnXT9tkYExOCgsEq8c-lG6KZRwx56axigenMA_L3nMe87s9CGKJV92eoj3bozi8BAUapLM40sJysAZ09dEFzu4VuAVUsZPWtHLU9QF87GmlNXVJwBLIbWIEr1UQMUU7UmymKQq8fZRgbZXP1UGLS38cnjvjR6Xob1kMFcgkNVEnNUZZmFISeGSulDUc5YKOuYK89xoCHhikikU83eap4snBQ83jObSvUQ4erfNvLDzaWajO8WrS0LBJWwFyjGhxcb6OxJmuU6GEGUG2YsEZ-BI_zdjzsIvdCxxbrnEYGkHLjY9vKkCIDg5V5KUPlUL5EssBnB2Yv-X-yJG33HG-JOz7pMw6OSKykENaP5N1ly7IrHE3sGYsVZu9hdlvC2zDaxicbOsuNLbuUjJgfxuxqEV044EFzp5E2ucHAiZqE2TBDoBf3AQXAf2apd5eZ2MYCWruOWXBtQvE_8ta2v0Qpz8eGotwfKRfS8vzsCAn1XaYsAId3SpwW_0qw8keGqUnQds3vqb7X0JSiO7_9olZ7KIfNKvopFDlN7GZwo446GoRNXvWEL9xVv114xQ3qTLHHEcEDIr_0Hmd-BKVobNiZi_qniUd4bghwLf-DNRL_OhpkAOTghQlDTts5AYAHfdDUHIyKbe_Lf6hls9uMgAmsPzE9DssAq-R1GOvRORsy1QvZFa55Ru_0CHUYIk2CAkpElLO6TbQUoxmOH9e8omOnWE6XGdmsor6K-uArth5Vsy-HTA3zo7IFmnD541PV_KnBcfCN3SH65fefvmXjbqLCUdulas8_tKgPiF6MFkB4l6Cl_Qg__X6_Xlq-N8aI2iiqmpfpwBtuGO7K-FqZ1PxAiHnuBkTD1NZ4ozFWvTujnGERsGu2JQ-6bRI1w3OFUNa8AEeCYQX900f0JyZKqUt8eKjnil4ehU82Tfy89TsS4O9SsRebJDOF9GgTzUW3IQh5VyybICEi68avnoVoPXyAKgY8QL3YBXXbw5luUkaXBOt_3uynGe-IiLNZwLIacSPHMZK1FIUMpFhJBI-6B-7eOOXhpUGfLkfawzZld8fL_Zrt9Di5xePirbCa0Tdyygkh6Hi2hjbrY43udQdctNeQdSHklDY9qB2ReqtO7uGFZpZHMiu5Acqba6a82DMLGelYRZReRyd2BSgyvVOuAegcAQC-2p3WBluH64Z6SfhS6vQxm5A67M0wHLVUKJ8Zir3vU3vs1qH1Ipep5gMzFUpFSL4ij44kwg7HNheHDRQWQwtz6PEZBQ4h_zwxUhyaGB_52U5P0A6cBanFroEBINWRseL-3NMe31uuIFnD89b7w5a4ZuSXLLDEce1TFu9iyHy2ydbNDwN9gw2XP2REGkeAfQq_-jLPY91vWXLVZTunTCo_jX7k8jb4ZQEsLc93VnwEIaLY3R7iVRVKktwdkuTllv7J15u0OtEyUJSSZL_0Ou-JoUA-ioqhuDsCRZjDE6v0HLq30RBfifhlAS7ryKb7RZ8prIFkkKjKnJPWXq8B7Vdm3ijDv39wr1xwhztPzBsW86XOlmreei01vgCxiPQT7gIfn5acNutPcFYoQoxHUOztq5puEHkOmEJuAMWvfdLdpTvaecDZnxaaNWj1AfDNNhzF-z8LV7O9SPfsByC_P_IpDaobDqVWuBFv7-xt98Xm9XUlX-lXH1cCq8XbNFwYqHjuiol_MoNRXn663aizB8LleflqPJxWpOsntmI0LjdUg7X0IzVXXVjONQFiYdqswR0w8ZwklHYIbg2j0R5Jif_NkUecL3WyWCHvLhF3ruWFYAdeszf5ksUrQ4BBBz5JP3jLPAbpwa-dr9KcfFQ1j2z0N9HtGfaGmpfc9AvLwTA",
+          "tag": "1PkZYjnjIsa8nLF-8_K1iw"
+        }
+      },
+      "receivedAt": "2026-11-07T17:41:57.897Z",
+      "updatedAt": "2026-11-07T17:42:23.554Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "reason": "Wallet funding transaction must contain exactly one TCAP reserve deposit",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "e445f679-c39e-4367-a6c6-310f775e153a",
+          "kind": "AUTHORIZED_FUNDING",
+          "stateVersion": 2,
+          "payloadCommitment": "e58b574a2a52c4bad9a0ba45d9b9d69844f3e3c53287872fdf51ae65a1a395b5"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "e445f679-c39e-4367-a6c6-310f775e153a",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "REJECTED",
+          "inputPayloadCommitment": "e58b574a2a52c4bad9a0ba45d9b9d69844f3e3c53287872fdf51ae65a1a395b5",
+          "evidenceCommitment": "1beaf408759d3bcee676a931973d2545710942c07106ccfd3a4040c974a3e529",
+          "executionPayloadCommitment": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "verificationType": "",
+          "leaseId": "e445f679-c39e-4367-a6c6-310f775e153a",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-07T17:42:23.514323Z",
+          "signatureBase64": "DoUDG6WaL3ScyokxznZeA8gglSd5h/kKIF/lBsensiIMMsY7GslPRaaaMcQAIGHZA1AH6VKgw8qEQx4EuIYNCA==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        }
+      },
+      "result": null,
+      "authorization": null
+    },
+    "settlement-3fbd291d07b1f5d67f22e776d4ff7235": {
+      "id": "settlement-3fbd291d07b1f5d67f22e776d4ff7235",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 1,
+      "payloadCommitment": "30b004ca2ec99f0175fb483a2921c6b0dc8383900d3235794ba2ff6f5a22dce2",
+      "payload": {
+        "paymentId": "e445f679-c39e-4367-a6c6-310f775e153a",
+        "intentId": "e445f679-c39e-4367-a6c6-310f775e153a",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-07T17:41:57.989Z",
+      "updatedAt": "2026-11-07T17:41:57.989Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null
+    },
+    "a8aca24f-c2c9-44ed-bee0-c78dfa4ec7f3": {
+      "id": "a8aca24f-c2c9-44ed-bee0-c78dfa4ec7f3",
+      "kind": "AUTHORIZED_FUNDING",
+      "status": "REJECTED",
+      "stateVersion": 3,
+      "payloadCommitment": "466c2d46d4d0bd059ce5019c28a7073df07c282c0b60e5efaf1333ee80e88728",
+      "payload": {
+        "paymentId": "a8aca24f-c2c9-44ed-bee0-c78dfa4ec7f3",
+        "recipientHash": "a08c4296b8715aa1cc25a4c7cd0d32b6eb04ac488e2049624bfdfd955257dae9",
+        "nodeEncryptedPayload": {
+          "version": 1,
+          "iv": "mvh8tV9Y604JeMpd",
+          "ciphertext": "8UIbM1wEGxppSR9vHkNWdfcMr22iv79BxiOfCexbwHABIgPqaCogv0tyAwAPhgJP0PF18Ykgwd-vEkyjRLVn6ccxe_bdvKiesT3O4IRJioSujsDr_BMiSzjECUxbTBE_Rg1BjvK2yX7S9SY6gspdmmEJVW1sjD75j0m6eJVst3te0EAhSTKwzuzleEq92ZLU4WTZL1U2sNL0tncQVDxFDL6LBM1z_n7LpRsq4w24FxLLIi-UkfGY40drFb-LZz3Sms_P4Xsnm2AVBI4E1ppuofrwksKSfZCA_MwQHxSUItNJ2FqWTYtstFgCSFFtkYvOnDYh_f2lcM_bogkybHyD5ZibFN6GEacsZ-urt4_zEIRKZOtCXzM6a-qkt-T9mdMF9GB-uS874adyEx4-tI1X8iLuotxwY6zFnFIKUuK_nDs_EZNGL9dIH8rwbmv96CNsJ5vg-bSoTk1cOQuJBCjo8Qv6OfMbi4OeOexEJe0E9vj-vijS87iEVcsfeJWGhsRyLDnjQKJWE4GyIPS1XCq_8GfE9VgbiT5IqPU6O6gdw7-ogLTR6cJMpBcAB33ZtotYojT8J8tNOMbjb9yIqKgk8b00JCYnYKWYCg4xkpqd3jlsrValCxm0mgrGyoPxaYwsoExTxdDS0GtALQoJPJjVeXrJPhgdJD7eD29hGlux_hpawth5j46RfN4u2EjKT7RNTEfPKtGLFBfljEmuK8RUDbLYBI7xgH7Rc0vAUfwVT413Fd1BrKwTjUlSIzZjQt_ujZgIYrkwjRdeb5g3MDDBD9uCHdy-jTE-gNbUC-PL5_mZQBuVWFzQHJz1KZgSzoXbuNkE_rpSOW_R6FHO_vzFbskQNYspZQH53_k9_SSGtQbrFdsUPN73aAw1yIXTg0QHBuetijS9nxoN-w6xaSQR4W6ctbiz9wp9nwSwfXDhOcWkSiIIlnNSeqMz0M7cBSPBBGS0Fv-RAbZZ_-w397fcxjFbRSjkP3htUf6OFS17QIocbrTjZ-jkyZD7IgOwbdZ1Y7cl8PEYtBQhXQ4uT7nMpL5bwGuukErAVlVl7KK5GAwCJRYNuX3jn7LNy6hZioKeJlxT7oHT8ghlvQzopX_StCYsqJkVkdSbESUKA4v2ZULkloWgeMbv8MJ1-71ZO-XZ1oJI6SKuo5rL04joBfHsHGEVK1MzXKOa7zcamQ7qDGlvtZ0Fe3GdkQTjYyU-Ulcz_q6Fk8sEXkpsFXHZMRJmdoqWp8R0IY5Gvn7_NP_BIyHkmROIhE-VqN5z447LbmS6pwtinYGNLcYJEe1MY6Nzg9zJZ5wn29_DqWm4UspedE8f67a0s9LDLhBUUmUMfGc9nFt_Ye4RzB94BHJ5AbkA6awu6tfH8xQDrotKJ07YgYFv7CmVlAI-V9W1Xwu4LIR0E7U0bs4R86919YXLT1pbc0lFzOeeIIXFtWSeC2Laz5cSGTKW8hDi_S26-G_PnqO746tKsgPAIrW6ND5697PBdhr05BBcwVocuDq7eIHeEneCVme1d9clnQNMY2D7pLux-NV5lY_BrJ1NnCnFlJx0EAX2KRT_5KLtN1SRo_ogk_MqrLJi3bcLBuojUCitzReEVVM-3hha8ynAEKnyJ2XwCjowy9PR-LIpAK_v4D2qJVy-4bN4VE_nUJUn_1gYaZQM1oua4baXbJtl4hiydYNGm6bP3R3YqIGVVOEuOzw21NtoTjHWGXz5QvhC8FnpJxqrwBUEKsHWxTLgWERSi7c2nMuAGUgYz9iBXXGLHSo0OdWMAG2j6P86z5nNzZnRrvqVV3sKbFSONfpuyaNv1OVK88KW3EbgkwRJvVk69ceqwj3gXvXnio-lP_8UpdesyQGfVrSmwYqXmnkbAJxXwVDe-LkdvFqxp4nuzB5gj70lHc8GcYd1iN0j4DSwgs8BAniX7GF0IvrWj0r2Z3ir73sfG6O7bBeGjcRfzn8DCei6PhhaLSFJnDcTCs-YGdG0oYrGWyk0D7OivbJv3bY4mjzMDkWgjSkwuUlyGWOqJ38nVYbqbaZimsZ3U9yZdLV9GdfnxpKc5_eOiN4824yQHeSpClLQ3rK-cuwHmQrKC4j9Tixop4okKWSfgkB_0qKI4xIF47nlQAMmx-rWyJJRu9VVCJixukwZeJg_gI0Ojs85tOkCHsEwJeOfZR-VtLhM02yLA7HkfOrLnC20S3xgBT246DTVbWeYr42V4bmkjRkfV2OxfJbaA_9v7pp6k0-I_6KYEqiEPK6sbcpM-wQ4AwJsTc2Da_k1JEGh50Re3Z5iIc3aKjTqEMOnGQzybWmgpIQTNllQWGlyEX2bHrSXvY7K12XzyTf3s5EgMj5LrkFzoifnNrgEx9BDe7lJscdw9X8sf3hUijXWQ2FvZjnUCgPAmjO9CYSwgv149bUe4GFc8uYzkw8aUMbSV20UqNOiJhoV_C5vLAH06iH8anenJYMSUn2NCDBDir_dfz6L7A32PRj063SRt5R9GCo8fiRk7Z4tSJGQeAJxNSTuu2J5QigIyift9p94PvDcDWs-GS2eFr0XZ-bEfUIpbEJA8HvcMzw8J78Ndp1-1QFzx2pv_xDIO-v3I-t7RX0erWagZNlDtQOstBsW5XQq0ge2E7MtIZJaoX-4Ncr5ntSCeqkRwM_MC8nqdcra3UVjtfNsy1hxNfoKAKByh-8M_Dx1LVEmNRG1PVSLUUjMRWPvSPbNgc-6wylzYFB0_FdsHr3tPp5-5OxAvAt6-LAsPsvve5nON1MOfedZrLgN3Vrh8Gk_FaIlSPn0661JccJ3f0GjgvOTNuh3d8waDBpf91HqkpxC7ZbwC6yEihXdw9oQ018KFNzRsj5ghAe7U60y2toXZv06-lt2XR176m0OmTnJ6W0xaTFiQfQUrOKrV1arA_7IsiKQPSH0Y6ejuv77lepUufSM8HfjCC2F9s7qlX6sd3RF9fMBhXzpHESMfmoeaJf7K-2uw4m86zt41ydYD3mq0Oqbyu27IaBlJFZWKMZD5ZxJtF8lbedwhB5GvqjdkrbpdLiudaMMMkNY9uwfiXA6g7RqNyo",
+          "tag": "wUtIltx4F-wc6_NTfAr1iQ"
+        }
+      },
+      "receivedAt": "2026-11-07T17:46:06.780Z",
+      "updatedAt": "2026-11-07T17:48:14.686Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": {
+        "reason": "Wallet funding transaction must contain exactly one TCAP reserve deposit",
+        "receiverLease": {
+          "source": "tsn-receiver",
+          "workId": "a8aca24f-c2c9-44ed-bee0-c78dfa4ec7f3",
+          "kind": "AUTHORIZED_FUNDING",
+          "stateVersion": 2,
+          "payloadCommitment": "466c2d46d4d0bd059ce5019c28a7073df07c282c0b60e5efaf1333ee80e88728"
+        },
+        "nodeAttestation": {
+          "version": 1,
+          "algorithm": "Ed25519",
+          "workId": "a8aca24f-c2c9-44ed-bee0-c78dfa4ec7f3",
+          "workKind": "AUTHORIZED_FUNDING",
+          "decision": "REJECTED",
+          "inputPayloadCommitment": "466c2d46d4d0bd059ce5019c28a7073df07c282c0b60e5efaf1333ee80e88728",
+          "evidenceCommitment": "a1b54b91efc9b129839405a478c567ea7d4af06eb150af1be3c755da89d0eb44",
+          "executionPayloadCommitment": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+          "verificationType": "",
+          "leaseId": "a8aca24f-c2c9-44ed-bee0-c78dfa4ec7f3",
+          "leaseVersion": 2,
+          "nodeId": "tsn-node-local",
+          "keyId": "658161d5d4f0990d57f68045",
+          "signedAt": "2026-11-07T17:48:14.606619Z",
+          "signatureBase64": "QRCtm1vX9mr7suafEH21yFFWq3ewEkwgTr7TITJ8mX1EDZRbYGi4J0AVNV4vex0PYFCmGZavIYcPNm8JqLfuBQ==",
+          "signerPublicKeyBase64": "Nu7wROCYw0PtLolAspC4CG/jeNiSGi41W1AkDiiibVg="
+        }
+      },
+      "result": null,
+      "authorization": null
+    },
+    "settlement-f8d05e890eb9208917a728aea6cb1cee": {
+      "id": "settlement-f8d05e890eb9208917a728aea6cb1cee",
+      "kind": "SETTLEMENT",
+      "status": "RECEIVED",
+      "stateVersion": 1,
+      "payloadCommitment": "7770544fb8b60ccec4d5aa09acb56fdd8b026f1b2c869e637e7d42ec467e1ec1",
+      "payload": {
+        "paymentId": "a8aca24f-c2c9-44ed-bee0-c78dfa4ec7f3",
+        "intentId": "a8aca24f-c2c9-44ed-bee0-c78dfa4ec7f3",
+        "source": "tsn-receiver-at-ingress"
+      },
+      "receivedAt": "2026-11-07T17:46:07.081Z",
+      "updatedAt": "2026-11-07T17:46:07.081Z",
+      "nodeLease": null,
+      "crankerLease": null,
+      "verification": null,
+      "result": null,
+      "authorization": null
+    }
+  },
+  "tsn_receiver_state/0fe599e22c504175bfdaae6cab793f28179f1d272d7af57ff11c77b17cea1727/items": {
+    "8d316d9bba37845bad3bac2e589c6b8c72df0799a9d668765502326c9de077d5": {
+      "field": "40f19023cd06f42a7159eea5aaeed64391fbbf6dc689e116f445bfdefe2e6638",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"CPyxfZ4pshNvZr18t8wH9zqidBNzFjqGcNrQm5tG3XiV\",\"nonce\":\"f4c305b0944678274cad09aac289378f\",\"usedAt\":\"2026-11-05T13:11:56.576730+00:00\"}"
+    },
+    "7745357ccc5680ad233fb3e9b6ccb75e9ab76bf2dc82ddbfbc4a177ccb41f7d1": {
+      "field": "1878de7a73a3137097bdc4c8175a91fccb631c26dea8323f6b0899c7739152f9",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"CPyxfZ4pshNvZr18t8wH9zqidBNzFjqGcNrQm5tG3XiV\",\"nonce\":\"c9a7cd4c90a4048599ca518542b49bf8\",\"usedAt\":\"2026-11-05T13:13:14.538674+00:00\"}"
+    },
+    "6b9e988a3692861eb5f81a253691044214b23adf41bfe04d8d3bb07125f41d20": {
+      "field": "3725c871a23571254f086bf030222010b450432d4641aa6a07104c66a3fb83e0",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"CPyxfZ4pshNvZr18t8wH9zqidBNzFjqGcNrQm5tG3XiV\",\"nonce\":\"260bbe1232ef4c5f6bd7fb80366fe9b9\",\"usedAt\":\"2026-11-05T13:44:29.224163+00:00\"}"
+    },
+    "6dfd5121c6453b12af8fc7ed412cc9eee24d5cb18a4d24759b346781c02adf84": {
+      "field": "edeed496b442b5d68d942a395849e398cfa722c95aa6168e677811326bfdb173",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"CPyxfZ4pshNvZr18t8wH9zqidBNzFjqGcNrQm5tG3XiV\",\"nonce\":\"088a0989c81f50771bd979d11c763a86\",\"usedAt\":\"2026-11-05T13:45:18.264616+00:00\"}"
+    },
+    "b03abf02221bdab45d4db903987ebe881681b88c59da1e0374c0e5e89037bc01": {
+      "field": "14420b7212e796d51f3606c6b9db0afd54f5f32afe1e5248425e01ef045a7609",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"CPyxfZ4pshNvZr18t8wH9zqidBNzFjqGcNrQm5tG3XiV\",\"nonce\":\"21f50683153c1bc0d5b3c69bab28e4e3\",\"usedAt\":\"2026-11-05T13:57:04.755870+00:00\"}"
+    },
+    "d2f3cff4239067de4ea64348179b336d724113ed5e0f3d04e84e26a85560d90a": {
+      "field": "4a819c373063543d6b3059d65bd66606b7aa4ba7a18ea1b13e56959099210233",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"CPyxfZ4pshNvZr18t8wH9zqidBNzFjqGcNrQm5tG3XiV\",\"nonce\":\"640aab9e42c4f9a8b3bf5109a5ef022d\",\"usedAt\":\"2026-11-05T13:58:15.767729+00:00\"}"
+    },
+    "d29d87d1eb410c9106e3daeab87c86a65689dcfdb1d6ade80c3697eafeb07270": {
+      "field": "82ed7e3470a23e35c15912f43f760965a8c4294f461cce814247d4c7babfba2e",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"CPyxfZ4pshNvZr18t8wH9zqidBNzFjqGcNrQm5tG3XiV\",\"nonce\":\"8669576b0434bd350d7f34576a17ee1b\",\"usedAt\":\"2026-11-05T14:32:46.647460+00:00\"}"
+    },
+    "99b3bf04482ab87da6a5433f6fba1d8711be7a5e18cc1215003b95d424b51e59": {
+      "field": "76df2ad451f724c6bf34d7ac7230a6d04a9723708b80114e1f1d0b955d1b7211",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"CPyxfZ4pshNvZr18t8wH9zqidBNzFjqGcNrQm5tG3XiV\",\"nonce\":\"ed76c7fb5c3c7629e58905bf96feb7bf\",\"usedAt\":\"2026-11-07T15:01:06.317845+00:00\"}"
+    },
+    "398bb4e51775b86e8a18573011a57b490d3774c26cb5aac3a1eef16d3972c07e": {
+      "field": "c07005fd0ecd81bef1a38d8cbbf2f119377a360e131969ed0b531658b3d97d63",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"CPyxfZ4pshNvZr18t8wH9zqidBNzFjqGcNrQm5tG3XiV\",\"nonce\":\"2c9ca1ba24d631d3d7fb26cba604b45e\",\"usedAt\":\"2026-11-07T15:02:25.717308+00:00\"}"
+    },
+    "942ea856f2abea38915f30f52d3e8711ff3336755a595fb8fba335fe88e5c3b2": {
+      "field": "cc46a58b523f9276f2533324767f5830c8abc7b1b597e80e789607d6b82f99a2",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"HMumWrk7pC2jrUxn5g8CpfwjRCL2WWS9mA1mE1KwjauC\",\"nonce\":\"bd01c6589bf0dcead4b3ffd9a3132ee3\",\"usedAt\":\"2026-11-07T15:07:06.168078+00:00\"}"
+    },
+    "48735118b9f912135a3e8369e3221da91e73fe354aa2c47d1dd15728aaa56b1a": {
+      "field": "934722b07535b285eb030e39d841cf7e3115172d36f135c25a882fc31a72edcc",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"HMumWrk7pC2jrUxn5g8CpfwjRCL2WWS9mA1mE1KwjauC\",\"nonce\":\"a925d17477f03a610f6dee2cea47677c\",\"usedAt\":\"2026-11-07T15:08:26.610703+00:00\"}"
+    },
+    "a94b981612f03eff4847247bc0e66a92614d4b3600f9e92d07d6934a906ac2f4": {
+      "field": "cc6d79de9a9748f1e9695772121b30d87a4a273673554d34bf975d9f366f815b",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"HMumWrk7pC2jrUxn5g8CpfwjRCL2WWS9mA1mE1KwjauC\",\"nonce\":\"9d7bb499483a6c1971fe55222d5ae543\",\"usedAt\":\"2026-11-07T15:09:19.939910+00:00\"}"
+    },
+    "e1d05b3b04e6436132ce5ccbf4980530ebf4b5e781a77480d6c776bff6e6442d": {
+      "field": "1238d11894a2cc515016a88a2b5c66f488b6c852b317d8f4c1cf198f0becd718",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"HMumWrk7pC2jrUxn5g8CpfwjRCL2WWS9mA1mE1KwjauC\",\"nonce\":\"9d34586780d0a237945aefdb76730b55\",\"usedAt\":\"2026-11-07T17:25:42.183849+00:00\"}"
+    },
+    "e0aee939c083cde6656362cc08f2ed270385ed22406deb8caebabafb784d6bc8": {
+      "field": "16f2ab5013c62d0e5df98f7117578a25332d790ac00f0f38906da963d617f789",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"HMumWrk7pC2jrUxn5g8CpfwjRCL2WWS9mA1mE1KwjauC\",\"nonce\":\"da2ca2831da5ccc40b578b174c32f424\",\"usedAt\":\"2026-11-07T17:42:21.456247+00:00\"}"
+    },
+    "9b49a839c6109d8b1ba923c6340bd49578900afb443d1b684b8657dcfb3f6379": {
+      "field": "48bf52fe4e1a816e79d6198224f1deb44ae8760c2f25c62da1d44db7e57afb94",
+      "value": "{\"domain\":\"...d772e0a4\",\"action\":\"Payment Intent\",\"senderPublicKey\":\"CPyxfZ4pshNvZr18t8wH9zqidBNzFjqGcNrQm5tG3XiV\",\"nonce\":\"161224b991993f61ad1c15b8cec95e33\",\"usedAt\":\"2026-11-07T17:48:12.900128+00:00\"}"
+    }
+  },
+  "tsn_private_credit_locks": {
+    "global-root": {
+      "workId": "settlement-54bbac67ede3175e52ece131ca2279f3"
+    }
+  }
+}

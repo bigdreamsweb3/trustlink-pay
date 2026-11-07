@@ -219,6 +219,9 @@ function shouldRetryRpcError(error) {
   const message = String(error.message ?? "").toLowerCase();
   return (
     error.code === -32005 ||
+    // An upstream behind the caller's pinned bank context can be retried
+    // without changing the request or weakening its minimum context slot.
+    error.code === -32016 ||
     error.code === -32401 ||
     error.code === 429 ||
     message.includes("invalid api key") ||

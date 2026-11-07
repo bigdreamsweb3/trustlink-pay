@@ -59,6 +59,8 @@ adjacent port.
 
 ## Readiness
 
+Native Cranker submission carries the confirmed blockhash read's context slot into `sendTransaction` and block-height polling as `minContextSlot`. A lagging bank can return RPC `-32016` (minimum context slot not reached); the gateway tries the next provider with the exact request. Existing `BlockhashNotFound` failover remains unchanged. The minimum slot prevents reads/submission below that context but does not prove fork agreement or extend a signed hash's lifetime. Reload Gateway and Cranker after this transport correction; no program deployment or additional deposit is required.
+
 The SDK reports the selected endpoint as configured and probes its health.
 The Cranker performs `getVersion` and Mother Escrow account validation against
 the same endpoint before it leases work. A healthy HTTP `/getHealth` response

@@ -46,10 +46,14 @@ test("finalized receipt repair preserves funding, rejects mismatches, and wakes 
     const crankerCompiled=ts.transpileModule(crankerSource,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText
       .replace('from "next/server"','from "./next-stub.mjs"').replace(/from "(?:\.\.\/)+lib\/([^".]+)"/g,'from "./$1.mjs"');
     await writeFile(path.join(directory,"cranker-report-route.mjs"),crankerCompiled);
+    const recoveryRouteSource=await readFile(new URL("../app/api/internal/node/work/recover-pool/route.ts",import.meta.url),"utf8");
+    const recoveryRoute=ts.transpileModule(recoveryRouteSource,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText
+      .replace('from "next/server"','from "./next-stub.mjs"').replace(/from "(?:\.\.\/)+lib\/([^".]+)"/g,'from "./$1.mjs"');
+    await writeFile(path.join(directory,"recover-pool-route.mjs"),recoveryRoute);
     const load=n=>import(pathToFileURL(path.join(directory,`${n}.mjs`)).href);
     const {wakes}=await load("node-wake");
     const {workCollection,db}=await load("firebase");const {createReceivedWork}=await load("work-contract");
-    const {assertSettlementReceipt,reconcileSettlementReceipt,reconcileExpiredCrankerConfirmation}=await load("settlement-reconciliation");
+    const {assertSettlementReceipt,reconcileSettlementReceipt,reconcileExpiredCrankerConfirmation,recoverExpiredFundingPool}=await load("settlement-reconciliation");
     const {recordSettlementSubmission,leaseForCranker}=await load("store");const {POST}=await load("route");
     const {PATCH:reportConfirmation}=await load("cranker-report-route");
     const TSNP=new PublicKey("TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V"),TCAP=new PublicKey("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF"),TIP=new PublicKey("TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT"),GPRU=new PublicKey("6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR");
@@ -228,6 +232,72 @@ test("finalized receipt repair preserves funding, rejects mismatches, and wakes 
     };
     assert.equal((await reportConfirmation(reportRequest())).status,409);
     assert.equal((await workCollection.doc(id).get()).data().status,"CRANKER_LEASED");
+
+    // Recovery is separate from receipt repair and proves the immutable pool absent after expiry.
+    const poolPayload={assetEntry:t.assetEntry,tcapConfig:t.tcapConfig,reserveState:t.reserveState,root:h(11)};
+    const poolId="tcap-pool-"+createHash("sha256").update(Buffer.concat([new PublicKey(t.assetEntry).toBuffer(),Buffer.from(poolPayload.root,"hex")])).digest("hex");
+    const failedPool={...createReceivedWork({id:poolId,kind:"TCAP_FUNDING_POOL",payload:poolPayload}),status:"FAILED",stateVersion:8,
+      authorization:{kind:"TSN_TCAP_COORDINATION_AUTHORIZATION_V1",transition:poolPayload,leaseExpiresAt:"2000-01-01T00:00:00Z"},
+      result:{...checkpoint,signature,blockhash:PublicKey.default.toBase58(),lastValidBlockHeight:"1000",stage:"TCAP_FUNDING_POOL_V1_SIGNED"},
+      nodeLease:null,crankerLease:null};
+    const poolRef=workCollection.doc(poolId);
+    await poolRef.create(failedPool);
+    const recovery={id:poolId,expectedVersion:8,signature,execute:false};
+    const {POST:recoverPoolRoute}=await load("recover-pool-route");
+    const recoveryRequest=(key="synthetic-receipt-key",body=recovery)=>({headers:new Headers({"x-api-key":key}),json:async()=>body});
+    assert.equal((await recoverPoolRoute(recoveryRequest("wrong"))).status,401);
+    assert.equal((await recoverPoolRoute(recoveryRequest(undefined,{...recovery,execute:"true"}))).status,400);
+    const recoveryFetch=overrides=>async(_url,init)=>{
+      const b=JSON.parse(init.body),ctx={slot:2000};
+      const results={getBlock:{blockHeight:1001},getSlot:2000,isBlockhashValid:{context:ctx,value:false},
+        getAccountInfo:{context:ctx,value:null},getTransaction:null,getSignatureStatuses:{context:ctx,value:[null]},...overrides};
+      assert.ok(b.method in results);
+      if(b.method==="getAccountInfo" || b.method==="isBlockhashValid") assert.equal(b.params[1].minContextSlot,2000);
+      return new Response(JSON.stringify({jsonrpc:"2.0",id:b.id,result:results[b.method]}));
+    };
+    globalThis.fetch=recoveryFetch({});
+    const originalPool=(await poolRef.get()).data(),beforeRecoveryWakes=wakes.length;
+    const preview=await recoverExpiredFundingPool(recovery);
+    assert.equal(preview.executed,false);
+    assert.equal(preview.finalizedBlockHeight,"1001");
+    assert.equal((await recoverPoolRoute(recoveryRequest())).status,200);
+    assert.deepEqual((await poolRef.get()).data(),originalPool);
+    for(const [override,error] of [
+      [{getBlock:{blockHeight:1000}},/LIFETIME_NOT_EXPIRED/], [{isBlockhashValid:{context:{slot:2000},value:true}},/LIFETIME_NOT_EXPIRED/],
+      [{getAccountInfo:{context:{slot:2000},value:{owner:TCAP.toBase58()}}},/EXECUTION_FOUND/],
+      [{getTransaction:receipt},/EXECUTION_FOUND/], [{getSignatureStatuses:{value:[{err:null}]}},/EXECUTION_FOUND/],
+      [{getAccountInfo:{context:{slot:1999},value:null}},/RPC_CONTEXT_INVALID/],
+      [{isBlockhashValid:{context:{},value:false}},/RPC_CONTEXT_INVALID/]
+    ]) {
+      globalThis.fetch=recoveryFetch(override);
+      await assert.rejects(recoverExpiredFundingPool({...recovery,execute:true}),error);
+      assert.deepEqual((await poolRef.get()).data(),originalPool);
+    }
+    assert.equal(wakes.length,beforeRecoveryWakes);
+    globalThis.fetch=recoveryFetch({});
+    await assert.rejects(recoverExpiredFundingPool({...recovery,expectedVersion:7}),/STALE_STATE_VERSION/);
+    await assert.rejects(recoverExpiredFundingPool({...recovery,signature:"2".repeat(87)}),/ATTEMPT_INVALID/);
+    await assert.rejects(recoverExpiredFundingPool({...recovery,id:work.id}),/KIND_INVALID/);
+    let changedPool=false;
+    const cleanRecoveryFetch=globalThis.fetch;
+    globalThis.fetch=async(url,init)=>{
+      if(!changedPool){changedPool=true;await db.runTransaction(async tx=>{await tx.get(poolRef);tx.update(poolRef,{stateVersion:9});});}
+      return cleanRecoveryFetch(url,init);
+    };
+    await assert.rejects(recoverExpiredFundingPool({...recovery,execute:true}),/STALE_STATE_VERSION/);
+    await db.runTransaction(async tx=>{await tx.get(poolRef);tx.set(poolRef,originalPool);});
+    globalThis.fetch=cleanRecoveryFetch;
+    const recovered=await recoverExpiredFundingPool({...recovery,execute:true});
+    assert.equal(recovered.status,"RECEIVED");
+    assert.equal(recovered.stateVersion,9);
+    const retriablePool=(await poolRef.get()).data();
+    assert.equal(retriablePool.result,null);
+    assert.equal(retriablePool.verification,null);
+    assert.equal(retriablePool.authorization,null);
+    assert.deepEqual(retriablePool.payload,originalPool.payload);
+    assert.deepEqual(retriablePool.reconciliationHistory.at(-1).previousResult,originalPool.result);
+    assert.deepEqual((await workCollection.doc(funding.id).get()).data(),funding);
+    assert.equal(wakes.length,beforeRecoveryWakes+1);
   } finally {
     globalThis.fetch=realFetch;Date.now=realNow;
     for(const n of names)if(previous[n]===undefined)delete process.env[n];else process.env[n]=previous[n];

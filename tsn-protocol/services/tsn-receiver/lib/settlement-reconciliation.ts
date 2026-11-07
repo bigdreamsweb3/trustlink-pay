@@ -175,13 +175,13 @@ function assertPermissions(keys: PublicKey[], message: Buffer, authority: Public
   }
 }
 
-async function rpc(method: string, params: unknown[]) {
+async function rpc(method: string, params: unknown[], allowNull = false) {
   const url = process.env.TSN_RPC_URL?.trim() || process.env.TSN_RPC_GATEWAY_URL?.trim() || "https://tsn-rpc-gateway.vercel.app";
   const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }), signal: AbortSignal.timeout(15_000) });
   if (!response.ok) throw new Error("SETTLEMENT_RECONCILIATION_RPC_UNAVAILABLE");
   const data = await response.json();
-  if (data.error || !data.result) throw new Error("SETTLEMENT_RECONCILIATION_RPC_RECEIPT_UNAVAILABLE");
+  if (data.error || !("result" in data) || (!allowNull && !data.result)) throw new Error("SETTLEMENT_RECONCILIATION_RPC_RECEIPT_UNAVAILABLE");
   return data.result;
 }
 
@@ -240,4 +240,65 @@ export async function reconcileSettlementReceipt(params: { id: string; expectedV
 export async function reconcileExpiredCrankerConfirmation(params: { id: string; owner: string; expectedVersion: number; signature: string }) {
   if (!params.owner) throw new Error("SETTLEMENT_LATE_REPORT_NOT_ELIGIBLE");
   return reconcileReceipt({ ...params, execute: true }, params.owner);
+}
+
+/** Explicit recovery of an expired, unexecuted pool capture; never a credit/epoch retry. */
+export async function recoverExpiredFundingPool(params: { id: string; expectedVersion: number; signature: string; execute: boolean }) {
+  const ref = workCollection.doc(params.id);
+  const work = (await ref.get()).data() as ReceiverWork | undefined;
+  if (!work) throw new Error("WORK_NOT_FOUND");
+  if (work.kind !== "TCAP_FUNDING_POOL") throw new Error("POOL_RECOVERY_KIND_INVALID");
+  assertEligible(work, null, params.expectedVersion);
+  const attempt = work.result;
+  const auth = work.authorization!;
+  const value = auth.transition as Record<string, any>;
+  if (!attempt || attempt.signature !== params.signature || attempt.stage !== "TCAP_FUNDING_POOL_V1_SIGNED"
+      || !/^[1-9A-HJ-NP-Za-km-z]{86,88}$/.test(params.signature)
+      || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(String(attempt.blockhash))
+      || !/^\d+$/.test(String(attempt.lastValidBlockHeight))
+      || !/^[a-f0-9]{64}$/.test(String(attempt.wireSha256))
+      || !Number.isSafeInteger(attempt.wireBytes) || Number(attempt.wireBytes) < 1 || Number(attempt.wireBytes) > 4096
+      || !Number.isFinite(Date.parse(String(auth.leaseExpiresAt))) || Date.parse(String(auth.leaseExpiresAt)) > Date.now()
+      || !value || value.assetEntry !== work.payload.assetEntry || value.root !== work.payload.root) {
+    throw new Error("POOL_RECOVERY_ATTEMPT_INVALID");
+  }
+  const pool = PublicKey.findProgramAddressSync([Buffer.from("tcap:sealed-funding:v1"), new PublicKey(value.assetEntry).toBuffer(), bytes(value.root,32)], TCAP)[0].toBase58();
+  // Pin height and account reads to the same finalized bank, even when the
+  // gateway routes independent calls to providers with different progress.
+  const slot = await rpc("getSlot", [{commitment:"finalized"}]);
+  if (!Number.isSafeInteger(slot) || slot <= 0) throw new Error("POOL_RECOVERY_RPC_CONTEXT_INVALID");
+  const block = await rpc("getBlock", [slot,{commitment:"finalized",transactionDetails:"none",rewards:false,maxSupportedTransactionVersion:1}]);
+  const height = block?.blockHeight;
+  if (!Number.isSafeInteger(height) || BigInt(height) <= BigInt(String(attempt.lastValidBlockHeight))) throw new Error("POOL_RECOVERY_LIFETIME_NOT_EXPIRED");
+  const [blockhash, account, receipt, status] = await Promise.all([
+    rpc("isBlockhashValid", [attempt.blockhash,{commitment:"finalized",minContextSlot:slot}]),
+    rpc("getAccountInfo", [pool,{encoding:"base64",commitment:"finalized",minContextSlot:slot}]),
+    rpc("getTransaction", [params.signature,{encoding:"base64",commitment:"finalized",maxSupportedTransactionVersion:1}], true),
+    rpc("getSignatureStatuses", [[params.signature],{searchTransactionHistory:true}]),
+  ]);
+  if (!Number.isSafeInteger(blockhash?.context?.slot) || !Number.isSafeInteger(account?.context?.slot)
+      || blockhash.context.slot < slot || account.context.slot < slot
+      || typeof blockhash.value !== "boolean" || !("value" in account)
+      || !Array.isArray(status?.value) || status.value.length !== 1) throw new Error("POOL_RECOVERY_RPC_CONTEXT_INVALID");
+  if (blockhash.value) throw new Error("POOL_RECOVERY_LIFETIME_NOT_EXPIRED");
+  // An absent receipt alone is insufficient. The current TCAP ABI initializes
+  // this immutable account on successful seal and has no pool-close instruction.
+  if (account.value !== null || receipt !== null || status.value[0] !== null) throw new Error("POOL_RECOVERY_EXECUTION_FOUND");
+  const preview = {id:work.id,status:work.status,stateVersion:work.stateVersion,signature:params.signature,
+    pool,finalizedSlot:slot,finalizedBlockHeight:String(height),executed:false};
+  if (!params.execute) return preview;
+  const result = await db.runTransaction(async (transaction: any) => {
+    const fresh = (await transaction.get(ref)).data() as ReceiverWork | undefined;
+    if (!fresh || payloadCommitment(fresh) !== payloadCommitment(work)) throw new Error("STALE_STATE_VERSION");
+    assertEligible(fresh,null,params.expectedVersion);
+    const recoveredAt = new Date().toISOString();
+    transaction.update(ref,{status:"RECEIVED",stateVersion:fresh.stateVersion+1,updatedAt:recoveredAt,
+      verification:null,authorization:null,result:null,nodeLease:null,crankerLease:null,
+      reconciliationHistory:[...((fresh as any).reconciliationHistory ?? []),{previousStateVersion:fresh.stateVersion,
+        previousResult:fresh.result,authorizationCommitment:payloadCommitment(fresh.authorization!),
+        reason:"EXPIRED_UNEXECUTED_FUNDING_POOL",recoveredAt,signature:params.signature,pool,finalizedSlot:slot,finalizedBlockHeight:String(height)}]});
+    return {...preview,status:"RECEIVED",stateVersion:fresh.stateVersion+1,executed:true};
+  });
+  await wakeTsnNode("EXPIRED_FUNDING_POOL_RECOVERED");
+  return result;
 }

@@ -26,6 +26,8 @@ The workspace contains a root application/tooling checkout and an independent `t
 
 Use the owning package's manifest and lockfile to install its dependency tree. The SDK requires its TCAP SDK workspace dependency, ESM support and the runtime facilities used by each selected module. Receiver, Node and Cranker have different manifests, environments and test prerequisites. There is no single manifest-declared tested runtime matrix for all components; use the [technology reference](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/technology-reference.md) for declared versus observed versions.
 
+Source npm packages now disable automatic dependency lifecycle execution and require the official HTTPS registry. Named project scripts still execute code; review them and lockfile changes first. Native dependency rebuilds and automatic pre/post build preparation need individual review rather than globally enabling install scripts. The [repository security record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/REPOSITORY-SECURITY.md) records controls and verification boundaries.
+
 These existing root commands build or test relevant packages:
 
 ```bash
@@ -41,7 +43,7 @@ Run checks appropriate to the changed contract. The first command builds TCAP SD
 
 ## Protocol changes and pull requests
 
-Read the repository's active `AGENTS.md`, `.codex/architecture-terminology.md`, `.codex/architecture-change-policy.md` and `.codex/documentation-sync-policy.md`. Establish account/instruction layout and affected SDK/Receiver/Node/Cranker contracts before changing protocol behavior. Preserve unrelated work, configured IDs and user-managed services. A replacement should remove superseded normal runtime paths after verification; keep required one-time migrations separate and explain them.
+Read the repository's active [AGENTS.md](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/AGENTS.md), [architecture terminology](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/.agents/architecture-terminology.md), [architecture-change policy](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/.agents/architecture-change-policy.md) and [documentation-sync policy](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/.agents/documentation-sync-policy.md). These references apply to agents in any environment and must be opened explicitly. Establish account/instruction layout and affected SDK/Receiver/Node/Cranker contracts before changing protocol behavior. Preserve unrelated work, configured IDs and user-managed services. A replacement should remove superseded normal runtime paths after verification; keep required one-time migrations separate and explain them.
 
 A useful pull request describes the concrete trigger, resulting behavior, affected contract boundaries and exact tests run. Report unexecuted chain results and current limitations. Update canonical architecture, ABI, lifecycle, invariants and SDK examples where their contract changed. Regenerate references from source and label proposed or experimental features explicitly. Do not publish secret configuration, private witnesses or raw authorization/session payloads as reproduction evidence.
 

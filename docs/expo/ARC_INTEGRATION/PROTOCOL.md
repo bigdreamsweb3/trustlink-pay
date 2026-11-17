@@ -1,11 +1,11 @@
-# PROTOCOL.md — what Codex needs to know to direct Arc Builder
+# PROTOCOL.md — what Agent needs to know to direct Arc Builder
 
 This file is the protocol context that Arc Builder does not have and cannot infer. Arc Builder writes
-onchain code well and knows nothing about TSN. Codex holds the protocol model, writes the specifications
+onchain code well and knows nothing about TSN. Agent holds the protocol model, writes the specifications
 Arc Builder executes, and reviews what comes back.
 
-**Standing rule:** Codex never asks Arc Builder to "figure out" protocol behaviour. Every Arc Builder
-request carries its own minimal context block and an explicit acceptance test. If Codex cannot state the
+**Standing rule:** Agent never asks Arc Builder to "figure out" protocol behaviour. Every Arc Builder
+request carries its own minimal context block and an explicit acceptance test. If Agent cannot state the
 expected on-chain result, the spec is not ready to send.
 
 ---
@@ -91,11 +91,11 @@ The only link between the chains is the `routeCommitment` plus the Node's own re
 
 | Party | Owns | Never does |
 | - | - | - |
-| **Codex** | protocol model, specifications, invariant review, repo integration, docs | invent protocol behaviour; deploy to mainnet |
+| **Agent** | protocol model, specifications, invariant review, repo integration, docs | invent protocol behaviour; deploy to mainnet |
 | **Arc Builder** | Solidity contracts, their tests, the app, testnet deploys | decide protocol facts, touch Solana, deploy to mainnet |
 | **Human** | mainnet deploy with arc-foundry, funding, submission, video | hand keys to an agent |
 
-### The spec packet Codex sends to Arc Builder
+### The spec packet Agent sends to Arc Builder
 
 Every request is self-contained. Arc Builder has no memory between sessions and no knowledge of TSN.
 
@@ -120,7 +120,7 @@ TESTS
 <each as: given / when / then, including one revert test per invariant>
 
 ACCEPTANCE
-<what Codex will check after the export: ABI shape, event fields, decimal units, no identity strings>
+<what Agent will check after the export: ABI shape, event fields, decimal units, no identity strings>
 
 FORBIDDEN
 <no TIN in state/events/calldata; no route allowlist; no refund path; no admin fund movement;
@@ -131,7 +131,7 @@ If a spec cannot fill ACCEPTANCE with something mechanically checkable, rewrite 
 
 ---
 
-## 3. DIP invariants — the checklist Codex reviews against
+## 3. DIP invariants — the checklist Agent reviews against
 
 1. No TIN, recipient address, or plaintext identity in state, events, calldata, or arguments.
 2. `intentId` unique per (payer, commitment, amount, expiry). No reuse.
@@ -175,9 +175,9 @@ amounts on Arc. Data minimisation is the claim; APS is the roadmap.
 | ID | Item | Status | Owner |
 | - | - | - | - |
 | C-1 | Router invariants 1,2,6,7,8,9 | conforms per Arc Builder report | Arc Builder |
-| C-2 | Event indexes `routeCommitment`; doc says unindexed | **code is right, doc is stale** | Codex: amend `dip.mdx` |
+| C-2 | Event indexes `routeCommitment`; doc says unindexed | **code is right, doc is stale** | Agent: amend `dip.mdx` |
 | C-3 | Handoff payload carries CCTP domains, no nonce | conforms — Node must read nonce from the attestation by Arc tx hash | Node |
-| C-4 | `src/lib/chain.ts` replaced lost generated helpers | **unreviewed — highest risk in the repo** | Codex: line-by-line review |
+| C-4 | `src/lib/chain.ts` replaced lost generated helpers | **unreviewed — highest risk in the repo** | Agent: line-by-line review |
 | C-5 | Encrypted receipt envelope (flow step 6) | not built | Node |
 | C-6 | Tests run against mocks only; no real CCTP deposit | open | Human + Arc Builder |
 | C-7 | Solana mint + TCAP credit untested | open — this is the "end to end" evidence level | Human |

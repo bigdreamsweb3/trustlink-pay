@@ -4,7 +4,7 @@
 
 ## Context, alternatives and problem
 
-The [Memo finding](../../../.codex/GPRU_MEMO_DELTA_PROOF_FINDING.md) identifies an earlier approach that encrypted a delta independently of the proved balance transition. A Memo hash commits ciphertext bytes without proving their plaintext arithmetic relation. Retaining that approach would not establish consistent owner replay.
+The [Memo finding](../../../.agents/GPRU_MEMO_DELTA_PROOF_FINDING.md) identifies an earlier approach that encrypted a delta independently of the proved balance transition. A Memo hash commits ciphertext bytes without proving their plaintext arithmetic relation. Retaining that approach would not establish consistent owner replay.
 
 ## Decision and rationale
 

@@ -686,6 +686,19 @@ async function handleApi(req, res, url) {
     } catch {
       return json(res, 422, { error: "INVALID_PRIVATE_FUNDING_NOTE" });
     }
+    try {
+      const encoded = request.senderSignedFundingTransaction;
+      if (typeof encoded !== "string" || encoded.length > 5464
+          || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded)) {
+        throw new Error("INVALID_SIGNED_DEPOSIT_ENCODING");
+      }
+      const accounts = Object.fromEntries(Object.entries(prepared.accounts).map(([name, value]) => [name, new PublicKey(value)]));
+      tsnSdk.assertSignedTcapGpruWalletDepositTransaction(Buffer.from(encoded, "base64"), {
+        accounts, amountBaseUnits: BigInt(prepared.amountBaseUnits), fundingNoteCommitment: fundingNote.commitment,
+      });
+    } catch {
+      return json(res, 422, { error: "SIGNED_FUNDING_TRANSACTION_DIFFERS_FROM_APPROVAL" });
+    }
     const nodeUrl = configuredNodeUrl();
     if (!nodeUrl) return json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED_FOR_LIVE_MODE" });
     const response = await fetch(`${nodeUrl}/intents`, {

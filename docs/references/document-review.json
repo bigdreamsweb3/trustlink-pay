@@ -46,15 +46,15 @@
     "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
     "evidence": []
   },
-  ".codex/CODEX_CREDIBILITY_PASS_ORDER.md": {
+  ".agents/credibility-pass-work-order.md": {
     "status": "HISTORICAL",
     "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
     "evidence": [
-      "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
-      "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md"
+      "docs/references/agent-knowledge-inventory.md",
+      "docs/references/agent-knowledge-alignment.md"
     ]
   },
-  ".codex/CODEX_INVENTION_STRUCTURE_BRIEF.md": {
+  ".agents/architecture-source-brief.md": {
     "status": "CURRENT",
     "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
     "evidence": [
@@ -66,15 +66,39 @@
       "tsn-protocol/programs/gpru/src/hidden_head.rs"
     ]
   },
-  ".codex/GPRU_MEMO_DELTA_PROOF_FINDING.md": {
+  ".agents/GPRU_MEMO_DELTA_PROOF_FINDING.md": {
     "status": "HISTORICAL",
     "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
     "evidence": [
-      "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
-      "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md"
+      "docs/references/agent-knowledge-inventory.md",
+      "docs/references/agent-knowledge-alignment.md"
     ]
   },
-  ".codex/architecture-change-policy.md": {
+  ".agents/architecture-change-policy.md": {
+    "status": "CURRENT",
+    "reason": "Active ABI-first change policy includes the experimental first-release v1 naming boundary; it does not authorize services, transactions or Git publication.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/cryptography.md",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  ".agents/architecture-terminology.md": {
+    "status": "CURRENT",
+    "reason": "First-release experimental v1 convention and exact internal ABI boundary reviewed November 14; source behavior, tests, deployment and payment remain separate.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/cryptography.md",
+      "tsn-protocol/services/tsn-node/server.py",
+      "tsn-protocol/services/tsn-receiver/lib/store.ts",
+      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+    ]
+  },
+  ".agents/documentation-sync-policy.md": {
     "status": "CURRENT",
     "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
     "evidence": [
@@ -86,7 +110,15 @@
       "tsn-protocol/programs/gpru/src/hidden_head.rs"
     ]
   },
-  ".codex/architecture-terminology.md": {
+  ".agents/gpru-unlinkable-latest-head.md": {
+    "status": "HISTORICAL",
+    "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
+    "evidence": [
+      "docs/references/agent-knowledge-inventory.md",
+      "docs/references/agent-knowledge-alignment.md"
+    ]
+  },
+  ".agents/protocol-cleanup-index.md": {
     "status": "CURRENT",
     "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
     "evidence": [
@@ -98,52 +130,20 @@
       "tsn-protocol/programs/gpru/src/hidden_head.rs"
     ]
   },
-  ".codex/documentation-sync-policy.md": {
-    "status": "CURRENT",
-    "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
-    "evidence": [
-      "docs/laboratory/architecture-map.md",
-      "docs/laboratory/credit-abi.md",
-      "docs/laboratory/cryptography.md",
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/store.ts",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
-    ]
-  },
-  ".codex/gpru-unlinkable-latest-head.md": {
+  ".agents/pull-docs.md": {
     "status": "HISTORICAL",
     "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
     "evidence": [
-      "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
-      "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md"
+      "docs/references/agent-knowledge-inventory.md",
+      "docs/references/agent-knowledge-alignment.md"
     ]
   },
-  ".codex/protocol-cleanup-index.md": {
-    "status": "CURRENT",
-    "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
-    "evidence": [
-      "docs/laboratory/architecture-map.md",
-      "docs/laboratory/credit-abi.md",
-      "docs/laboratory/cryptography.md",
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/store.ts",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
-    ]
-  },
-  ".codex/pull-docs.md": {
+  ".agents/tsn-verification-prompt.md": {
     "status": "HISTORICAL",
     "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
     "evidence": [
-      "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
-      "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md"
-    ]
-  },
-  ".codex/tsn-verification-prompt.md": {
-    "status": "HISTORICAL",
-    "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
-    "evidence": [
-      "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
-      "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md"
+      "docs/references/agent-knowledge-inventory.md",
+      "docs/references/agent-knowledge-alignment.md"
     ]
   },
   "docs/CRANKER-OPERATOR-GUIDE.md": {
@@ -282,15 +282,12 @@
     "evidence": []
   },
   "docs/TCAP-V2-DEBIT-CREDIT-DESIGN.md": {
-    "status": "CURRENT",
-    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "status": "HISTORICAL",
+    "reason": "Original amount-public instruction/signature-nullifier/per-credit liability snapshot retained with a November 14 current-reference boundary; it cannot direct current private-credit implementation.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs",
-      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/cryptography.md",
+      "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs"
     ]
   },
   "docs/TCAP-V2-DEVNET.md": {
@@ -717,7 +714,7 @@
     "status": "HISTORICAL",
     "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
     "evidence": [
-      ".codex/architecture-terminology.md",
+      ".agents/architecture-terminology.md",
       "docs/historical-archive/README.md"
     ]
   },
@@ -730,7 +727,7 @@
     "status": "HISTORICAL",
     "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
     "evidence": [
-      ".codex/architecture-terminology.md",
+      ".agents/architecture-terminology.md",
       "docs/historical-archive/README.md"
     ]
   },
@@ -738,7 +735,7 @@
     "status": "HISTORICAL",
     "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
     "evidence": [
-      ".codex/architecture-terminology.md",
+      ".agents/architecture-terminology.md",
       "docs/historical-archive/README.md"
     ]
   },
@@ -746,7 +743,7 @@
     "status": "HISTORICAL",
     "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
     "evidence": [
-      ".codex/architecture-terminology.md",
+      ".agents/architecture-terminology.md",
       "docs/historical-archive/README.md"
     ]
   },
@@ -754,7 +751,7 @@
     "status": "HISTORICAL",
     "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
     "evidence": [
-      ".codex/architecture-terminology.md",
+      ".agents/architecture-terminology.md",
       "docs/historical-archive/README.md"
     ]
   },
@@ -762,7 +759,7 @@
     "status": "HISTORICAL",
     "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
     "evidence": [
-      ".codex/architecture-terminology.md",
+      ".agents/architecture-terminology.md",
       "docs/historical-archive/README.md"
     ]
   },
@@ -770,7 +767,7 @@
     "status": "HISTORICAL",
     "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
     "evidence": [
-      ".codex/architecture-terminology.md",
+      ".agents/architecture-terminology.md",
       "docs/historical-archive/README.md"
     ]
   },
@@ -778,7 +775,7 @@
     "status": "HISTORICAL",
     "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
     "evidence": [
-      ".codex/architecture-terminology.md",
+      ".agents/architecture-terminology.md",
       "docs/historical-archive/README.md"
     ]
   },
@@ -786,7 +783,7 @@
     "status": "HISTORICAL",
     "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
     "evidence": [
-      ".codex/architecture-terminology.md",
+      ".agents/architecture-terminology.md",
       "docs/historical-archive/README.md"
     ]
   },
@@ -794,7 +791,7 @@
     "status": "HISTORICAL",
     "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
     "evidence": [
-      ".codex/architecture-terminology.md",
+      ".agents/architecture-terminology.md",
       "docs/historical-archive/README.md"
     ]
   },
@@ -1262,8 +1259,8 @@
     ]
   },
   "docs/laboratory/architecture-map.md": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "EXPERIMENTAL",
+    "reason": "Current first-release v1 private-credit source map uses the authenticated shared funding account, without sealed-pool scheduling. Source mapping does not establish activation or full live settlement.",
     "evidence": [
       "tsn-protocol/services/tsn-node/server.py",
       "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
@@ -1285,7 +1282,7 @@
   },
   "docs/laboratory/credit-abi.md": {
     "status": "EXPERIMENTAL",
-    "reason": "Private-amount/sealed-pool/complete-epoch replacement with bounded real-proof/native/offline evidence; SBF, activation and full live flow unverified.",
+    "reason": "Source-reconciled first-release v1 private amount/shared funding/complete epoch contract, including shared epoch initialization. Actual internal encodings and one-time layout migration are separate from product releases; live activation/full payment remain unverified.",
     "evidence": [
       "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
       "tsn-protocol/programs/gpru/circuits/tcap_epoch_v1/main.circom",
@@ -2108,7 +2105,7 @@
       "docs/laboratory/cryptography.md"
     ]
   },
-  ".codex/README.md": {
+  ".agents/README.md": {
     "status": "CURRENT",
     "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
     "evidence": [
@@ -2132,7 +2129,7 @@
       "tsn-protocol/programs/gpru/src/hidden_head.rs"
     ]
   },
-  "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md": {
+  "docs/references/agent-knowledge-alignment.md": {
     "status": "CURRENT",
     "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
     "evidence": [
@@ -2144,7 +2141,7 @@
       "tsn-protocol/programs/gpru/src/hidden_head.rs"
     ]
   },
-  "docs/references/CODEX_KNOWLEDGE_INVENTORY.md": {
+  "docs/references/agent-knowledge-inventory.md": {
     "status": "CURRENT",
     "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
     "evidence": [
@@ -2195,8 +2192,8 @@
     ]
   },
   "docs/RUN-YOUR-OWN-TSN.md": {
-    "status": "CURRENT",
-    "reason": "Source-backed installation/operation and bounded verification procedure; independent fresh-network replay, production ceremony and live funded-note completion explicitly unverified.",
+    "status": "EXPERIMENTAL",
+    "reason": "Internal first-release v1 operation guidance includes clean forced SDK/browser builds and exact-one-deposit/ComputeBudget recovery boundaries. Clean-machine replay, production ceremony, service reload and live funded credit remain unverified.",
     "evidence": [
       "package.json",
       "scripts/hidden-head-setup.mjs",
@@ -2205,7 +2202,7 @@
       "docs/references/TSN-OPERATOR-GUIDE-20261105.md"
     ]
   },
-  ".codex/tsn-operator-guide-policy.md": {
+  ".agents/tsn-operator-guide-policy.md": {
     "status": "CURRENT",
     "reason": "Source-backed installation/operation and bounded verification procedure; independent fresh-network replay, production ceremony and live funded-note completion explicitly unverified.",
     "evidence": [
@@ -2229,7 +2226,7 @@
   },
   "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md": {
     "status": "EXPERIMENTAL",
-    "reason": "Private-amount/sealed-pool/complete-epoch replacement with bounded real-proof/native/offline evidence; SBF, activation and full live flow unverified.",
+    "reason": "User chose public classic-token funding/private TIN credit; sealed-pool trial is retired, shared funded roots remain current, and eligible confidential Token-2022 funding is an unimplemented future integration requirement.",
     "evidence": [
       "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
       "tsn-protocol/programs/gpru/circuits/tcap_epoch_v1/main.circom",
@@ -2248,6 +2245,16 @@
       "tsn-protocol/services/tsn-cranker-op-daemon/src/receiver/native-retry.ts",
       "tsn-protocol/services/tsn-receiver/lib/settlement-reconciliation.ts",
       "scripts/recover-private-pool-attempt.py"
+    ]
+  },
+  "docs/laboratory/experiments/EXP-20261116-private-credit-epoch.md": {
+    "status": "VERIFIED",
+    "reason": "Three exact finalized Devnet receipts and decoded public epoch state; scoped synthetic privacy controls, with general unlinkability and owner recovery explicitly unverified.",
+    "evidence": [
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/private_epoch.rs",
+      "tsn-protocol/services/tsn-node/server.py",
+      "docs/laboratory/credit-abi.md",
+      "docs/laboratory/cryptography.md"
     ]
   }
 }

@@ -1,6 +1,6 @@
 # Canonical implementation map
 
-**Status: EXPERIMENTAL private-credit replacement, reviewed 2026-11-07.** This map follows the current source contract in [ADR-005](decisions/ADR-005-private-amount-and-adaptive-pools.md) and [credit ABI](credit-abi.md). The [November 7 validation](experiments/EXP-20261107-private-credit-epoch.md) separates offline proof/build checks from unverified SBF, activation and complete live settlement. November 2–5 receipts remain evidence for their historical amount-public ABIs.
+**Status: EXPERIMENTAL first-release v1 private credit, reviewed 2026-11-16.** This map follows the current source contract in [ADR-005](decisions/ADR-005-private-amount-and-adaptive-pools.md) and [credit ABI](credit-abi.md). The [November 16 checkpoint](experiments/EXP-20261116-private-credit-epoch.md) verifies two finalized private credits and their complete aggregate accounting; general unlinkability, owner recovery and mixed-action execution remain separate checks. November 2–5 receipts remain evidence for their historical amount-public ABIs.
 
 ## Repository boundaries
 
@@ -59,14 +59,15 @@ sequenceDiagram
   P-->>C: Confirmed reserve deposit
   C->>R: Report CONFIRMED funding
   R->>R: Make linked settlement eligible for Node verification
-  N->>P: Capture real funding pool via leased Cranker work
-  N->>N: Wait for shared pool release window
   N->>R: Lease settlement
-  N->>P: Read confirmed funding, TIP root, TCAP state/funding roots and V2 verifier
+  N->>P: Read confirmed funding, TIP root, TCAP state/funding roots and matching verifier
   N->>N: Reconstruct witness, encrypt Memo, prove and verify locally
   N->>R: Signed VERIFIED execution projection
   C->>R: Claim VERIFIED settlement
-  C->>N: Request current-lease settlement authorization / co-signature
+  C->>N: Request current-lease authorization and exact unsigned message signing
+  N->>N: Validate, select final fresh hash and Mother-sign unchanged statement
+  N-->>C: Signed V1 message with final hash/lifetime/context
+  C->>C: Validate replacement, payer-sign and checkpoint final identity
   C->>P: Submit TSNP authorization call followed by Memo
   P->>P: TSNP -> TCAP -> GPRU checks
   P->>P: Advance shared root and append blinded epoch transcript
@@ -82,11 +83,11 @@ Node's authorization response binds the exact verified transition to Receiver's 
 
 Receiver work uses `RECEIVED`, `NODE_VERIFYING`, `VERIFIED`, `REJECTED`, `CRANKER_LEASED`, `SUBMITTED`, `CONFIRMED`, and `FAILED`. Its `stateVersion`, actor checks and leases control coordination. SDK intent statuses are a separate vocabulary (`pending`, `executed`, `settled`, failure variants); an application must not equate the two sets of strings.
 
-TIP maintains commitment-addressed private identity records, owner recovery accounts and an append-only shared route root. TCAP maintains an asset registry, reserve state, accepted assets, a shared state root and a distinct global funded-note root. A successful `deposit_private_funding_v1` appends a leaf bound to its registered token and observed amount. Hidden-head credit proves that leaf's membership and a deterministic private-secret nullifier before changing the shared state root. GPRU's V2 verifier stores circuit/key commitments and fourteen IC points for thirteen public inputs; the funding root is appended last.
+TIP maintains commitment-addressed private identity records, owner recovery accounts and an append-only shared route root. TCAP maintains an asset registry, reserve state, accepted assets, a shared state root and a distinct global funded-note root. A successful `deposit_private_funding_v1` appends a leaf bound to its registered token and observed amount. Hidden-head credit proves that leaf's membership and a deterministic private-secret nullifier before changing the shared state root. GPRU's `GpruHiddenHeadVerifierV2` account stores circuit/key commitments and fourteen IC points for thirteen public inputs; the funding root is appended last.
 
-The [private-credit ABI](credit-abi.md) has one current runtime and separate historical receipt readers. Individual credits use immutable sealed funding roots, so later deposits do not invalidate them. Admission rechecks at least two positive unspent member notes from two wallets at capture; Mother attests those counts. Shared-root or epoch races before signing cause fresh verification; signed attempts require exact receipt reconciliation. Signature-only old deposits lack funded membership and require separate handling.
+The [private-credit ABI](credit-abi.md) has one current runtime and separate historical receipt readers. A single confirmed funded note can be credited without pool creation or source-count/release gating. The existing global funding account authenticates current and up to 128 retained root/count pairs; later deposits within that window preserve a proof's funding membership. Retired roots or shared-root/epoch races before signing require fresh verification; signed attempts require exact receipt reconciliation. Signature-only old deposits lack funded membership and require separate handling.
 
-The credit exposes token, blinded amount commitment, roots, nullifier, successor points and encrypted Memo. Its actual amount is private, and its readonly reserve has no per-credit liability mutation. Separate proof-verified accounting publishes a complete 2–64-credit epoch total; sparse or known-amount pools can still permit inference. Wallet deposits and endpoints remain observable, Node knows openings/routes, and recipient-registry/head correlation requires separate review.
+The credit exposes token, blinded amount commitment, roots, nullifier, successor points and encrypted Memo. Its actual amount is private, and its readonly reserve has no per-credit liability mutation. Separate proof-verified accounting publishes a complete 2–64-credit epoch total; sparse epochs or known amounts can still permit inference. The privacy target concerns public observers of TIN activity; Node is intentionally trusted with openings/routes and public wallet funding is an accepted boundary. Current registry/head correlations and public registration-owner binding still limit unlinkability, as recorded in [cryptography](cryptography.md#visibility-and-trust).
 
 ## Distinct instruction families
 

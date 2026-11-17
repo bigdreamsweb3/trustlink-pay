@@ -1,0 +1,16 @@
+"""Credit preparation uses one authenticated global funding tree without admission work."""
+import tempfile
+import unittest
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock, patch
+from server import runtime as server
+from app.solana_pubkey import Pubkey
+from funding_note import funded_leaf, funding_nullifier
+from funding_snapshot_sync import funding_root_address
+from hidden_head_witness import hex_field
+from test_funding_note import append_event, note, root_account
+from cases.global_funding_credit.functions.f001_test_single_deposit_reaches_witness_preparation_without_pool_work import test_single_deposit_reaches_witness_preparation_without_pool_work as _case_f001_test_single_deposit_reaches_witness_preparation_without_pool_work
+
+class GlobalFundingCreditTests(unittest.IsolatedAsyncioTestCase):
+    test_single_deposit_reaches_witness_preparation_without_pool_work = _case_f001_test_single_deposit_reaches_witness_preparation_without_pool_work

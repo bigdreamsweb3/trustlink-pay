@@ -2,9 +2,14 @@
 .DS_Store
 Thumbs.db
 .vscode/
+# Share reviewed editor safeguards; keep other editor files local.
+!/.vscode/
+/.vscode/*
+!/.vscode/settings.json
 .idea/
 .venv/
-.agents/
+.agents/*
+!.agents/*.md
 .logs/
 .codex-target/
 .git/
@@ -86,7 +91,10 @@ node_modules/
 **/*.tsbuildinfo
 
 # Local runtime state
+**/__pycache__/
+*.py[cod]
 **/.mempool-store.json
+**/.receiver-store*
 tracked-node-modules.txt
 git-hygiene-report.txt
 project-coach-observations.md
@@ -151,8 +159,6 @@ C/
 research/Trustlink-Research/
 
 # Local Blogger publication workspace (not part of TrustLink Pay repository)
-blogger/
-blogger_tsn/
 data-guard/
 # resume/
 tools/
@@ -173,6 +179,9 @@ tools/
 
 protocol-test-runs/
 protocol-tests/*
+!protocol-tests/ui/
+protocol-tests/ui/*
+!protocol-tests/ui/recipient-credit-sdk.ts
 !protocol-tests/scenarios/
 protocol-tests/scenarios/*
 !protocol-tests/scenarios/tcap-credit-bootstrap.mjs
@@ -191,3 +200,9 @@ protocol-tests/ui/.env
 protocol-tests/ui/.env.local
 
 tsn-demo/
+
+# Private environment variants stay local; only named templates are publishable.
+**/.env.*
+!**/.env.example
+!**/.env.sample
+!**/.env.template

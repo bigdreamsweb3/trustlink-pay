@@ -1,6 +1,6 @@
 # TrustLink Labs / TSN
 
-The [Laboratory engineering record](docs/laboratory/README.md) connects current architecture, source references, experiments and decisions. The [public SDK handbook](tsn-protocol/tsn-docs/sdk/index.mdx) provides developer guidance, and [documentation status](docs/DOCUMENTATION_STATUS.md) records verification and remaining gaps. Contributors and future Codex sessions use the [documentation maintenance manual](docs/DOCUMENTATION_MAINTENANCE.md).
+The [Laboratory engineering record](docs/laboratory/README.md) connects current architecture, source references, experiments and decisions. The [public SDK handbook](tsn-protocol/tsn-docs/sdk/index.mdx) provides developer guidance, and [documentation status](docs/DOCUMENTATION_STATUS.md) records verification and remaining gaps. Contributors and future agent sessions use the [documentation maintenance manual](docs/DOCUMENTATION_MAINTENANCE.md).
 
 TrustLink Labs is building foundational infrastructure for the **Internet of
 Value** through **TSN (Transfer Settlement Network)**, a hybrid, identity-aware
@@ -11,6 +11,8 @@ verification with on-chain authorization and settlement enforcement. **TSNP
 program. TIP, GPRU, TCAP, and DIP have separate responsibilities; Circle's CCTP
 is an external cross-chain protocol used only at supported integrations.
 **TSN XP** is the active user-facing experience being built on that network.
+The project is still developing its experimental first release, **v1**, with
+a mobile money experience as its goal.
 The separately hosted TrustLink Pay site is an earlier application surface.
 **TCAP (Transfer Confidential Asset Protocol)** provides the commitment-backed private
 balance accounting used by the current credit architecture.
@@ -80,7 +82,7 @@ flowchart TB
 
     subgraph PROVING["5. TSN Node — independent settlement verification"]
         direction TB
-        L["Lease linked settlement and recheck funding<br/>Read TIP, TCAP state/funding roots and V2 verifier"]
+        L["Lease linked settlement and recheck funding<br/>Read TIP, TCAP state/funding roots and matching verifier"]
         M["Synchronize membership and select matching state<br/>Prove funding, asset/amount and secret-derived nullifier; bind Memo"]
         N["Return signed VERIFIED settlement<br/>Thirteen public inputs and bound Memo"]
         L --> M --> N
@@ -89,7 +91,7 @@ flowchart TB
     subgraph SUBMISSION["6. Cranker and Mother authority — settlement submission"]
         direction TB
         O["Cranker checks attestation and leases settlement<br/>Obtain authorization bound to current lease"]
-        P["Build exact TSNP call followed by Memo<br/>Mother authority co-signs inspected message"]
+        P["Build exact TSNP call followed by Memo<br/>Mother validates then signs final fresh blockhash"]
         Q["Cranker signs and submits second transaction<br/>Mother authorization is distinct from Node decision signing"]
         O --> P --> Q
     end
@@ -154,11 +156,11 @@ An expired owner-signed funding wire requires fresh wallet approval and a
 new signature, and a stale proof/root or lease requires re-verification rather
 than reuse of the old execution projection.
 
-The private-credit replacement proves exact funded-note asset/amount membership with secret-derived nullifiers and fresh blinded amount commitments. It omits public note/leaf/index/opening and plaintext credit amount. Pool capture needs two positive unspent members and two wallet sources; zero-value actors cannot qualify it. Separate epoch totals, deposits, token/roots/points/ciphertext/timing and Node knowledge remain observable or trusted. Full unlinkability and recipient-registry privacy remain unproven. [November 7 offline validation](docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md) passed real credit/epoch proofs; SBF build, rekey/epoch activation and complete live flow remain unverified.
+The private-credit replacement proves exact funded-note asset/amount membership with secret-derived nullifiers and fresh blinded amount commitments. It omits public note/leaf/index/opening and plaintext credit amount. A single genuine confirmed deposit is eligible through the existing global funding account and its bounded authenticated root history; no pool account, capture transaction or source-count wait remains. Separate epoch totals, public deposits, token/roots/points/ciphertext/timing and Node knowledge remain observable or trusted. Full unlinkability and recipient-registry privacy remain unproven. [November 8 changes and checks](docs/laboratory/experiments/EXP-20261108-remove-funding-pools.md) distinguish source/offline validation from unperformed migration, deployment and complete live payment/accounting.
 
 ## Core terms and authority boundaries
 
-[Architecture terminology](.codex/architecture-terminology.md) owns the names.
+[Architecture terminology](.agents/architecture-terminology.md) owns the names.
 TSN is the complete infrastructure; TSNP is the on-chain authorization program
 whose internal crate remains `trustlink_escrow`. TIP manages TIN identity,
 recovery and route membership. GPRU verifies hidden state/proof relations; TCAP
@@ -217,7 +219,7 @@ Program-dependent testing is Devnet-only. After an on-chain code or ABI change,
 build and compare the SBF artifact with the target deployment before testing
 against that program. Program upgrades, initialization and signed tests require
 explicit operator authorization; source/build evidence alone cannot establish
-a matching deployment or current account readiness. See [Devnet build and deploy](docs/DEVNET-BUILD-DEPLOY.md), the [TCAP V2 Devnet preparation](docs/TCAP-V2-DEVNET.md), the [TCAP V2 debit and credit design](docs/TCAP-V2-DEBIT-CREDIT-DESIGN.md), and the [legacy TCAP smoke notice](docs/tcap-devnet-credit-smoke.md).
+a matching deployment or current account readiness. See [Devnet build and deploy](docs/DEVNET-BUILD-DEPLOY.md), the [historical TCAP Devnet preparation](docs/TCAP-V2-DEVNET.md), the [historical TCAP debit and credit design](docs/TCAP-V2-DEBIT-CREDIT-DESIGN.md), and the [legacy TCAP smoke notice](docs/tcap-devnet-credit-smoke.md).
 
 ## Historical Devnet evidence: first wallet-assisted TIN-to-TIN test
 
@@ -271,6 +273,8 @@ Current Devnet program IDs:
 | TIP / Transfer Identity / TIN registrar | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
 
 ## Repository map
+
+[Local repository security](docs/REPOSITORY-SECURITY.md) records approved Git sources, disabled automatic imports/writes, the dependency install policy and verification limits. Run `npm run security:check` before explicitly approved repository operations.
 
 | Path                                                | Purpose                                                       |
 | --------------------------------------------------- | ------------------------------------------------------------- |

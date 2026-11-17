@@ -23,8 +23,8 @@
     {
       "path": "AGENTS.md",
       "title": "Repository instructions",
-      "sha256": "9a7df2a616c8abce18465bb9b971574fcbc7ed27d0855047e3946155610bdf5b",
-      "lines": 15,
+      "sha256": "ee3dbda73812db44894a00cc167e07aef09656d9c1b89efacbc900bbbf006753",
+      "lines": 17,
       "status": "CURRENT",
       "reason": "Active repository instruction/policy, not evidence of runtime behavior.",
       "evidence": [
@@ -32,11 +32,11 @@
       ],
       "statusStatements": [
         {
-          "line": 3,
-          "text": "Start architecture work with `docs/laboratory/architecture-map.md`, the applicable component/ABI records, and `.codex/architecture-terminology.md`. Open these references explicitly; their contents are not automatically loaded through a link. `.codex/README.md` identifies current guidance and historical context. Never treat historical brainstorming "
+          "line": 5,
+          "text": "Start architecture work with `docs/laboratory/architecture-map.md`, the applicable component/ABI records, and `.agents/architecture-terminology.md`. Open these references explicitly; their contents are not automatically loaded through a link. `.agents/README.md` identifies current guidance and historical context. Never treat historical brainstormin"
         },
         {
-          "line": 15,
+          "line": 17,
           "text": "Do not invent functionality, SDK APIs, migrations, experiments or cryptographic guarantees. Inspect source/tests before describing implementation. Distinguish CURRENT implementation, scoped test/VERIFIED evidence, EXPERIMENTAL, PROPOSED, DEPRECATED, RETIRED, HISTORICAL and UNVERIFIED claims; source/build/deployment/payment results are separate. Rec"
         }
       ]
@@ -44,8 +44,8 @@
     {
       "path": "README.md",
       "title": "TrustLink Labs / TSN",
-      "sha256": "28eca0931c860038a07d90741843d29b1f2a346d1cb0d6af21c1ecc9b92849e7",
-      "lines": 307,
+      "sha256": "dceca321c162ec1f4e54b1619c55217f6b890df6049a9d806e8f226388671339",
+      "lines": 309,
       "status": "UNVERIFIED",
       "reason": "Current native-credit prose/diagram source-reconciled; preserved historical events and external resources are not re-executed or independently refreshed. Current-flow claims have bounded source scope.",
       "evidence": [
@@ -58,27 +58,35 @@
       ],
       "statusStatements": [
         {
-          "line": 178,
+          "line": 14,
+          "text": "The project is still developing its experimental first release, **v1**, with"
+        },
+        {
+          "line": 180,
           "text": "Current experimental native credit uses `tsn_register_tcap_credit_authorization_v3` → TCAP `credit_gpru_memo_v2` → GPRU `verify_hidden_head_transition_v2`. It advances the authenticated head/nullifier root and blinded epoch transcript with no tokens moving or liability counters changing. Separate Node/Receiver/Cranker epoch work proves the complete"
         },
         {
-          "line": 201,
+          "line": 203,
           "text": "## Historical architecture boundary"
         },
         {
-          "line": 205,
+          "line": 207,
           "text": "only for historical auditability. New integrations must not target ZK-PRU as a"
         },
         {
-          "line": 206,
+          "line": 208,
           "text": "receiving, balance or spending architecture. See the [ZK-PRU retirement note](docs/ZK-PRU-RETIRED.md)."
         },
         {
           "line": 222,
+          "text": "a matching deployment or current account readiness. See [Devnet build and deploy](docs/DEVNET-BUILD-DEPLOY.md), the [historical TCAP Devnet preparation](docs/TCAP-V2-DEVNET.md), the [historical TCAP debit and credit design](docs/TCAP-V2-DEBIT-CREDIT-DESIGN.md), and the [legacy TCAP smoke notice](docs/tcap-devnet-credit-smoke.md)."
+        },
+        {
+          "line": 224,
           "text": "## Historical Devnet evidence: first wallet-assisted TIN-to-TIN test"
         },
         {
-          "line": 225,
+          "line": 227,
           "text": "receiving path. It is preserved here as historical transaction evidence only;"
         }
       ]
@@ -86,8 +94,8 @@
     {
       "path": "terminal-dev.md",
       "title": "Terminal Command Reference",
-      "sha256": "da9f9069b0285a7d1c3c21930c8a1701e24335cf268c32946ffa6fb2ced7bc92",
-      "lines": 341,
+      "sha256": "4b03ecbbcfa79f1506c695d1ba626ddf39422e9bfff8f29460d5fb5c0d9b18c4",
+      "lines": 342,
       "status": "UNVERIFIED",
       "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
       "evidence": [],
@@ -95,19 +103,181 @@
         {
           "line": 132,
           "text": "(node:2664) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead."
+        },
+        {
+          "line": 319,
+          "text": "- We ran this requeqe unfinished jobs in the network, why \"[retired pool-recovery command removed 2026-11-11]  Settlement: id=tcap-pool-7b7b479c5887fb58af1b111167d949ac74b6d6aa92b3f85da75b08a531cf05af status=FAILED stateVersion=123"
+        },
+        {
+          "line": 322,
+          "text": "[retired pool-recovery command removed 2026-11-11]  Settlement: id=tcap-pool-7b7b479c5887fb58af1b111167d949ac74b6d6aa92b3f85da75b08a531cf05af status=RECEIVED stateVersion=124"
         }
       ]
     },
     {
-      "path": ".codex/CODEX_CREDIBILITY_PASS_ORDER.md",
+      "path": ".agents/GPRU_MEMO_DELTA_PROOF_FINDING.md",
+      "title": "Memo delta finding and dated verification checkpoints",
+      "sha256": "a74cfddefa781abf6a41af929311aeb8ffc308d4d5e246110ff863b315b83c6e",
+      "lines": 36,
+      "status": "HISTORICAL",
+      "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
+      "evidence": [
+        "docs/references/agent-knowledge-inventory.md",
+        "docs/references/agent-knowledge-alignment.md"
+      ],
+      "statusStatements": [
+        {
+          "line": 3,
+          "text": "**Status: source finding retained with HISTORICAL November 1 verification scope.** The relation described below remains the current owner-delta contract. Its original missing-witness/prover and no-local-proof statements describe that checkpoint, rather than today's source/configuration. Later [development setup evidence](../docs/laboratory/experime"
+        },
+        {
+          "line": 33,
+          "text": "- No Groth16 proof has been generated or verified against the updated circuit. The Node remains fail-closed because no trusted latest-head/token-map witness source and configured prover are connected. SBF builds, verifier initialization, deployment, and end-to-end settlement are not verified."
+        }
+      ]
+    },
+    {
+      "path": ".agents/README.md",
+      "title": "Agent reference index",
+      "sha256": "e0fbcd307268ec7045ff5e725c1bccb0c7fe20f826d5fac2c7fc927b44d9f124",
+      "lines": 27,
+      "status": "CURRENT",
+      "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
+      "evidence": [
+        "docs/laboratory/architecture-map.md",
+        "docs/laboratory/credit-abi.md",
+        "docs/laboratory/cryptography.md",
+        "tsn-protocol/services/tsn-node/server.py",
+        "tsn-protocol/services/tsn-receiver/lib/store.ts",
+        "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      ],
+      "statusStatements": [
+        {
+          "line": 5,
+          "text": "TrustLink Labs engineers use agents for research, implementation and review. These references support any agent environment; the team must configure that environment's instruction loading and give it the applicable source, ABI and evidence records. An agent's proposed change or successful tool call does not replace engineering review or authorize s"
+        },
+        {
+          "line": 11,
+          "text": "- [Architecture terminology](architecture-terminology.md): experimental first-release v1 naming, component ownership and capability boundaries for architecture/code/documentation work."
+        },
+        {
+          "line": 19,
+          "text": "## Historical and proposed context"
+        },
+        {
+          "line": 23,
+          "text": "- [Credibility work order](credibility-pass-work-order.md): historical five-item task; commit gates and proposed APIs are not standing requirements."
+        },
+        {
+          "line": 24,
+          "text": "- [SDK/UI verification prompt](tsn-verification-prompt.md): historical repair handoff; creation bans and test outcomes do not describe the current contract."
+        },
+        {
+          "line": 25,
+          "text": "- [Docs pull prompt](pull-docs.md): historical standalone-checkout prompt, unsuitable for this populated non-standalone tree."
+        },
+        {
+          "line": 27,
+          "text": "Historical records explain evolution and may preserve old commands. Their original bodies must not direct new implementation or authorize Git, service or chain actions. Consult their current-reference boundary before reading the old record. The [pre-edit inventory](../docs/references/agent-knowledge-inventory.md) and [alignment report](../docs/refe"
+        }
+      ]
+    },
+    {
+      "path": ".agents/architecture-change-policy.md",
+      "title": "Architecture change policy",
+      "sha256": "a5ebe5eb21155f6c0ce769d358d1b2173f1b8f7a9aaec0d91f42a187deeb5480",
+      "lines": 14,
+      "status": "CURRENT",
+      "reason": "Active ABI-first change policy includes the experimental first-release v1 naming boundary; it does not authorize services, transactions or Git publication.",
+      "evidence": [
+        "docs/laboratory/architecture-map.md",
+        "docs/laboratory/credit-abi.md",
+        "docs/laboratory/cryptography.md",
+        "tsn-protocol/services/tsn-node/server.py",
+        "tsn-protocol/services/tsn-receiver/lib/store.ts",
+        "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      ],
+      "statusStatements": [
+        {
+          "line": 12,
+          "text": "All current work belongs to the experimental first release, v1. Do not assign v2/v3 product releases to proof, funding or account changes; use descriptive experiment names and quote exact existing ABI identifiers where required. Do not invent protocol semantics or add compatibility layers to make a stale path compile. Preserve unrelated local chang"
+        }
+      ]
+    },
+    {
+      "path": ".agents/architecture-source-brief.md",
+      "title": "TrustLink architecture and invention source brief",
+      "sha256": "501f436b357c9a34426103c30a4fa9c74054c09678449f8ba55d30659c5295a7",
+      "lines": 35,
+      "status": "CURRENT",
+      "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
+      "evidence": [
+        "docs/laboratory/architecture-map.md",
+        "docs/laboratory/credit-abi.md",
+        "docs/laboratory/cryptography.md",
+        "tsn-protocol/services/tsn-node/server.py",
+        "tsn-protocol/services/tsn-receiver/lib/store.ts",
+        "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      ],
+      "statusStatements": [
+        {
+          "line": 17,
+          "text": "The earlier Ristretto encrypted-portfolio/single-envelope proposal remains [historical/proposed context](gpru-unlinkable-latest-head.md). It is not the current proof-bound credit record. Retained portfolio/key/debit/exit APIs need exact caller/proof/account review before describing their runtime capability; do not generalize credit evidence to them"
+        },
+        {
+          "line": 23,
+          "text": "The experimental private-credit replacement uses funded-note secret-derived nullifiers, authenticated funded-note membership through the existing global funding account and freshly blinded amount commitments. Individual credit exposes no plaintext amount or amount-sized liability delta; complete epoch accounting separately publishes a 2–64-credit t"
+        },
+        {
+          "line": 25,
+          "text": "Record this discrepancy in the [reconciliation register](../docs/laboratory/reconciliation-register.md). Do not invent a replacement nullifier, claim zero correlation, or add a compatibility path. Any proposed privacy change must first specify replay, funding authorization, root updates, proof relations and all participating contracts. Likewise, ge"
+        },
+        {
+          "line": 31,
+          "text": "The earlier Dial on Arc context names the application and “Pay a number, not a wallet” tagline, with an Arc Testnet CCTP deposit router. Its Node-to-Solana mint/TCAP credit was not built or tested in that supplied project context. Recheck external code/deployment before making current claims; do not describe mainnet use or real USDC delivery from t"
+        },
+        {
+          "line": 35,
+          "text": "For each claimed separation, identify the data, its actual enforcing instruction/account/proof/service check, a concrete failure or disclosure, and a falsifiable test with expected result. Label source, test, build, deployment and transaction evidence separately and state configuration gates beside capabilities. Unknown approvals, alternatives and "
+        }
+      ]
+    },
+    {
+      "path": ".agents/architecture-terminology.md",
+      "title": "TrustLink naming and protocol boundaries",
+      "sha256": "11f879bd327ad742ab8fdda6426317d0450a757587d4b19bb251ca4ab60c00c8",
+      "lines": 40,
+      "status": "CURRENT",
+      "reason": "First-release experimental v1 convention and exact internal ABI boundary reviewed November 14; source behavior, tests, deployment and payment remain separate.",
+      "evidence": [
+        "docs/laboratory/architecture-map.md",
+        "docs/laboratory/credit-abi.md",
+        "docs/laboratory/cryptography.md",
+        "tsn-protocol/services/tsn-node/server.py",
+        "tsn-protocol/services/tsn-receiver/lib/store.ts",
+        "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      ],
+      "statusStatements": [
+        {
+          "line": 36,
+          "text": "The privacy target is confidential TIN activity and public-observer unlinkability between TCAP actions, with public wallet funding and Node access to openings/routes accepted as intentional boundaries. Current experimental private credit proves exact funded-note amount/asset membership and uses secret-derived nullifiers and freshly blinded amount c"
+        },
+        {
+          "line": 38,
+          "text": "Keep CURRENT implementation, scoped test/VERIFIED evidence, EXPERIMENTAL, PROPOSED, DEPRECATED, RETIRED, HISTORICAL and UNVERIFIED distinct. A protocol name, source export, compiled artifact or Devnet program match is not an end-to-end payment or security audit. ZK-PRU is retired historical context. Older per-TIN TIP/epoch flows must not be used to"
+        }
+      ]
+    },
+    {
+      "path": ".agents/credibility-pass-work-order.md",
       "title": "Historical credibility work order",
-      "sha256": "9ae95d1dce46b1539481864998fa45fe7d54c9b5cc445f94151f41e26c1b21ec",
+      "sha256": "a34e74c18a0198a4b6c0fa42f626dcf8a69b1b25a58cf49cd56afb77571f27bc",
       "lines": 173,
       "status": "HISTORICAL",
       "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
       "evidence": [
-        "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
-        "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md"
+        "docs/references/agent-knowledge-inventory.md",
+        "docs/references/agent-knowledge-alignment.md"
       ],
       "statusStatements": [
         {
@@ -133,148 +303,7 @@
       ]
     },
     {
-      "path": ".codex/CODEX_INVENTION_STRUCTURE_BRIEF.md",
-      "title": "TrustLink architecture and invention source brief",
-      "sha256": "c75e28f012aa0ad1f683689be5b400d8d8fa835fc4b5edbf8e674eeb403cf074",
-      "lines": 33,
-      "status": "CURRENT",
-      "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
-      "evidence": [
-        "docs/laboratory/architecture-map.md",
-        "docs/laboratory/credit-abi.md",
-        "docs/laboratory/cryptography.md",
-        "tsn-protocol/services/tsn-node/server.py",
-        "tsn-protocol/services/tsn-receiver/lib/store.ts",
-        "tsn-protocol/programs/gpru/src/hidden_head.rs"
-      ],
-      "statusStatements": [
-        {
-          "line": 17,
-          "text": "The earlier Ristretto encrypted-portfolio/single-envelope proposal remains [historical/proposed context](gpru-unlinkable-latest-head.md). It is not the current proof-bound credit record. Retained portfolio/key/debit/exit APIs need exact caller/proof/account review before describing their runtime capability; do not generalize credit evidence to them"
-        },
-        {
-          "line": 21,
-          "text": "The experimental private-credit replacement uses funded-note secret-derived nullifiers, sealed positive-funding pools and freshly blinded amount commitments. Individual credit exposes no plaintext amount or amount-sized liability delta; complete epoch accounting separately publishes a 2–64-credit total. Deposit/aggregate amounts, token, roots, poin"
-        },
-        {
-          "line": 23,
-          "text": "Record this discrepancy in the [reconciliation register](../docs/laboratory/reconciliation-register.md). Do not invent a replacement nullifier, claim zero correlation, or add a compatibility path. Any proposed privacy change must first specify replay, funding authorization, root updates, proof relations and all participating contracts. Likewise, ge"
-        },
-        {
-          "line": 29,
-          "text": "The earlier Dial on Arc context names the application and “Pay a number, not a wallet” tagline, with an Arc Testnet CCTP deposit router. Its Node-to-Solana mint/TCAP credit was not built or tested in that supplied project context. Recheck external code/deployment before making current claims; do not describe mainnet use or real USDC delivery from t"
-        },
-        {
-          "line": 33,
-          "text": "For each claimed separation, identify the data, its actual enforcing instruction/account/proof/service check, a concrete failure or disclosure, and a falsifiable test with expected result. Label source, test, build, deployment and transaction evidence separately and state configuration gates beside capabilities. Unknown approvals, alternatives and "
-        }
-      ]
-    },
-    {
-      "path": ".codex/GPRU_MEMO_DELTA_PROOF_FINDING.md",
-      "title": "Memo delta finding and dated verification checkpoints",
-      "sha256": "a74cfddefa781abf6a41af929311aeb8ffc308d4d5e246110ff863b315b83c6e",
-      "lines": 36,
-      "status": "HISTORICAL",
-      "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
-      "evidence": [
-        "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
-        "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md"
-      ],
-      "statusStatements": [
-        {
-          "line": 3,
-          "text": "**Status: source finding retained with HISTORICAL November 1 verification scope.** The relation described below remains the current owner-delta contract. Its original missing-witness/prover and no-local-proof statements describe that checkpoint, rather than today's source/configuration. Later [development setup evidence](../docs/laboratory/experime"
-        },
-        {
-          "line": 33,
-          "text": "- No Groth16 proof has been generated or verified against the updated circuit. The Node remains fail-closed because no trusted latest-head/token-map witness source and configured prover are connected. SBF builds, verifier initialization, deployment, and end-to-end settlement are not verified."
-        }
-      ]
-    },
-    {
-      "path": ".codex/README.md",
-      "title": "Codex reference index",
-      "sha256": "c968ef562b420e466121c33d768fa43013f4dc07494dbae962b89a83c830bf8e",
-      "lines": 25,
-      "status": "CURRENT",
-      "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
-      "evidence": [
-        "docs/laboratory/architecture-map.md",
-        "docs/laboratory/credit-abi.md",
-        "docs/laboratory/cryptography.md",
-        "tsn-protocol/services/tsn-node/server.py",
-        "tsn-protocol/services/tsn-receiver/lib/store.ts",
-        "tsn-protocol/programs/gpru/src/hidden_head.rs"
-      ],
-      "statusStatements": [
-        {
-          "line": 17,
-          "text": "## Historical and proposed context"
-        },
-        {
-          "line": 21,
-          "text": "- [Credibility work order](CODEX_CREDIBILITY_PASS_ORDER.md): historical five-item task; commit gates and proposed APIs are not standing requirements."
-        },
-        {
-          "line": 22,
-          "text": "- [SDK/UI verification prompt](tsn-verification-prompt.md): historical repair handoff; creation bans and test outcomes do not describe the current contract."
-        },
-        {
-          "line": 23,
-          "text": "- [Docs pull prompt](pull-docs.md): historical standalone-checkout prompt, unsuitable for this populated non-standalone tree."
-        },
-        {
-          "line": 25,
-          "text": "Historical records explain evolution and may preserve old commands. Their original bodies must not direct new implementation or authorize Git, service or chain actions. Consult their current-reference boundary before reading the old record. The [pre-edit inventory](../docs/references/CODEX_KNOWLEDGE_INVENTORY.md) and [alignment report](../docs/refe"
-        }
-      ]
-    },
-    {
-      "path": ".codex/architecture-change-policy.md",
-      "title": "Architecture change policy",
-      "sha256": "1738c7f3cba1c977ffe19929d29ce667ee813c48f66132c160650b4426b87def",
-      "lines": 14,
-      "status": "CURRENT",
-      "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
-      "evidence": [
-        "docs/laboratory/architecture-map.md",
-        "docs/laboratory/credit-abi.md",
-        "docs/laboratory/cryptography.md",
-        "tsn-protocol/services/tsn-node/server.py",
-        "tsn-protocol/services/tsn-receiver/lib/store.ts",
-        "tsn-protocol/programs/gpru/src/hidden_head.rs"
-      ],
-      "statusStatements": []
-    },
-    {
-      "path": ".codex/architecture-terminology.md",
-      "title": "TrustLink naming and protocol boundaries",
-      "sha256": "48f0c3e3eafa6683dc636b379aea0ce41a0a3561c3e9e117e4746873a9ecc4ee",
-      "lines": 36,
-      "status": "CURRENT",
-      "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
-      "evidence": [
-        "docs/laboratory/architecture-map.md",
-        "docs/laboratory/credit-abi.md",
-        "docs/laboratory/cryptography.md",
-        "tsn-protocol/services/tsn-node/server.py",
-        "tsn-protocol/services/tsn-receiver/lib/store.ts",
-        "tsn-protocol/programs/gpru/src/hidden_head.rs"
-      ],
-      "statusStatements": [
-        {
-          "line": 32,
-          "text": "Hidden witnesses do not establish complete unlinkability. Current experimental private credit proves exact funded-note amount/asset membership and uses secret-derived nullifiers and freshly blinded amount commitments. Individual plaintext amount and liability delta are absent; deposit amounts, epoch totals, token, roots, ciphertext, accounts and ti"
-        },
-        {
-          "line": 34,
-          "text": "Keep CURRENT implementation, scoped test/VERIFIED evidence, EXPERIMENTAL, PROPOSED, DEPRECATED, RETIRED, HISTORICAL and UNVERIFIED distinct. A protocol name, source export, compiled artifact or Devnet program match is not an end-to-end payment or security audit. ZK-PRU is retired historical context. Older per-TIN TIP/epoch flows must not be used to"
-        }
-      ]
-    },
-    {
-      "path": ".codex/documentation-sync-policy.md",
+      "path": ".agents/documentation-sync-policy.md",
       "title": "Documentation synchronization entry",
       "sha256": "514a835d43cff859bc53d49daafa1b8349ff9987089809767e5e7c8a0d549cdc",
       "lines": 5,
@@ -291,15 +320,15 @@
       "statusStatements": []
     },
     {
-      "path": ".codex/gpru-unlinkable-latest-head.md",
+      "path": ".agents/gpru-unlinkable-latest-head.md",
       "title": "Historical hidden-head design and unresolved unlinkability target",
-      "sha256": "e836a9d1c940dfff5304e0b1b643afb7ecacfeba4d410dc0709a6ad9174860d6",
+      "sha256": "82903e0ee1dea7c62e4fca0f4f00df7c707a2fc31bc4a3a77cc2dc204b233ff2",
       "lines": 106,
       "status": "HISTORICAL",
       "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
       "evidence": [
-        "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
-        "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md"
+        "docs/references/agent-knowledge-inventory.md",
+        "docs/references/agent-knowledge-alignment.md"
       ],
       "statusStatements": [
         {
@@ -308,7 +337,7 @@
         },
         {
           "line": 3,
-          "text": "**Status: HISTORICAL October 29 checkpoints plus PROPOSED privacy goals.** The original design below records architectural evolution; its eight-input ABI, rolling-root descriptions, Ristretto portfolio proposal and absent-prover observations are superseded for current native credit. Read the [current source brief](CODEX_INVENTION_STRUCTURE_BRIEF.md"
+          "text": "**Status: HISTORICAL October 29 checkpoints plus PROPOSED privacy goals.** The original design below records architectural evolution; its eight-input ABI, rolling-root descriptions, Ristretto portfolio proposal and absent-prover observations are superseded for current native credit. Read the [current source brief](architecture-source-brief.md), [cr"
         },
         {
           "line": 9,
@@ -325,9 +354,9 @@
       ]
     },
     {
-      "path": ".codex/protocol-cleanup-index.md",
+      "path": ".agents/protocol-cleanup-index.md",
       "title": "TSNP Index and Cleanup Guardrails",
-      "sha256": "42468be04275ad6c38a5c661bf8421c643eac4d484d53c95690c6b63d6b14919",
+      "sha256": "87ffcd09ce99326ad94584c6d473bb321dd54ec6cb802faa72ec83dab98a2aa9",
       "lines": 312,
       "status": "CURRENT",
       "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
@@ -355,15 +384,15 @@
       ]
     },
     {
-      "path": ".codex/pull-docs.md",
+      "path": ".agents/pull-docs.md",
       "title": "Historical standalone documentation pull prompt",
       "sha256": "2b4532023f9d40a3c355c537da5c2d2ca12eaacfa003e2768e681a5833c11f88",
       "lines": 9,
       "status": "HISTORICAL",
       "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
       "evidence": [
-        "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
-        "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md"
+        "docs/references/agent-knowledge-inventory.md",
+        "docs/references/agent-knowledge-alignment.md"
       ],
       "statusStatements": [
         {
@@ -381,7 +410,7 @@
       ]
     },
     {
-      "path": ".codex/tsn-operator-guide-policy.md",
+      "path": ".agents/tsn-operator-guide-policy.md",
       "title": "Keep the TSN operator guide aligned with implementation",
       "sha256": "a790cea2fc475d4314a07defdca9ad9ffcd91b4a11607befd8acda84343a8663",
       "lines": 13,
@@ -402,15 +431,15 @@
       ]
     },
     {
-      "path": ".codex/tsn-verification-prompt.md",
+      "path": ".agents/tsn-verification-prompt.md",
       "title": "Historical SDK and UI verification handoff",
-      "sha256": "81caa308043a5709d91f6d4d509f6ae9c3cbcf616344f9ef69c786d41f7ad00e",
+      "sha256": "fe6a44ae1f17d128ddaa45d37a128250e7b51bc9634a7dc13eec51a43d281060",
       "lines": 110,
       "status": "HISTORICAL",
       "reason": "Original work order/design/checkpoint preserved behind explicit historical boundary and current-reference pointers. Old commands, ABI and pass/fail claims are not active instructions or current runtime evidence.",
       "evidence": [
-        "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
-        "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md"
+        "docs/references/agent-knowledge-inventory.md",
+        "docs/references/agent-knowledge-alignment.md"
       ],
       "statusStatements": [
         {
@@ -438,8 +467,8 @@
     {
       "path": "docs/CRANKER-OPERATOR-GUIDE.md",
       "title": "TSN Cranker Operator Guide",
-      "sha256": "256f8e4e56025ea05fd6c6479bb3a9fb85aa411f4b4c9e67b6638348d32558ce",
-      "lines": 384,
+      "sha256": "a65a6221a2eb1743dad8ab4035dedee5f480fc7bd5ea0ed9a385bac8bd40cbf8",
+      "lines": 386,
       "status": "UNVERIFIED",
       "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
       "evidence": [],
@@ -482,7 +511,7 @@
     {
       "path": "docs/CURRENT-ARCHITECTURE.md",
       "title": "TSNP, TIP, GPRU, and TCAP: source-backed architecture within TSN",
-      "sha256": "3a4f2e54f3d3229717ff0d0abb6bcfe076e5a9c068344a4ef5daf44710582773",
+      "sha256": "71a9a5ef7508199133b0925131bfef3082de582e9b2d82193696f825570de241",
       "lines": 54,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
@@ -492,6 +521,10 @@
         "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
       ],
       "statusStatements": [
+        {
+          "line": 11,
+          "text": "This document describes the checked-in contracts for the experimental first release, **v1**. Source code is not evidence that a circuit was compiled, a verifier was initialized, a program build was deployed, or a settlement completed on chain."
+        },
         {
           "line": 18,
           "text": "- **GPRU (Guarded Privacy Routing Unit)** guards the integrity and privacy of the user's private state presented to TCAP. Its hidden-head proof is intended to establish that the hidden state is current and the proposed transition follows from it, without exposing the TIN or hidden per-TIN state in the proof. GPRU does not custody TCAP assets."
@@ -513,22 +546,22 @@
     {
       "path": "docs/DEVNET-BUILD-DEPLOY.md",
       "title": "Devnet build and deploy",
-      "sha256": "6a3934d516899cba479ff0a3c29316c03209f0ac13e8a39f477e237cfb916b25",
-      "lines": 180,
+      "sha256": "2cf7fe109f4509ac460d468f624e9137df4edcb42cc1fdd2a0194dde1fbbc05f",
+      "lines": 210,
       "status": "UNVERIFIED",
       "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
       "evidence": [],
       "statusStatements": [
         {
-          "line": 104,
+          "line": 126,
           "text": "Only after verifying the intended binary and actual old account layout should you perform a required config migration. The historical bootstrap below is separate from current native funded-note setup."
         },
         {
-          "line": 144,
+          "line": 174,
           "text": "## Historical TCAP credit bootstrap defaults"
         },
         {
-          "line": 146,
+          "line": 176,
           "text": "The following retained epoch/AcceptedIntent fixture describes a separate historical smoke-test family. Its commands are not the current funded-note installation procedure and are not present as root-package credit aliases. Use [the current operator guide](RUN-YOUR-OWN-TSN.md) for new native credits."
         }
       ]
@@ -536,7 +569,7 @@
     {
       "path": "docs/DOCUMENTATION_MAINTENANCE.md",
       "title": "TSN documentation maintenance manual",
-      "sha256": "59f305178d4a8d4fb0a4df48f16a3a2473512a6ea0159151476bd4265ee3dc10",
+      "sha256": "4402b3b772c402d53338ef954acc9c5ac5ceff538150a8e0e3627f107f91b56d",
       "lines": 160,
       "status": "CURRENT",
       "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
@@ -551,11 +584,11 @@
       "statusStatements": [
         {
           "line": 7,
-          "text": "Begin with the applicable `AGENTS.md` instructions, then read [architecture terminology](../.codex/architecture-terminology.md), this manual and the relevant canonical pages. Protocol changes additionally require the [architecture-change policy](../.codex/architecture-change-policy.md). The [Codex reference index](../.codex/README.md) identifies cu"
+          "text": "Begin with the applicable `AGENTS.md` instructions, then read [architecture terminology](../.agents/architecture-terminology.md), this manual and the relevant canonical pages. Protocol changes additionally require the [architecture-change policy](../.agents/architecture-change-policy.md). The [Agent reference index](../.agents/README.md) identifies"
         },
         {
           "line": 9,
-          "text": "The [official Codex guide](https://learn.chatgpt.com/docs/agent-configuration/agents-md) describes automatic discovery: Codex-home instructions first, followed by at most one instruction file in each directory from project root to the launch working directory. `AGENTS.override.md` precedes `AGENTS.md`, followed by configured fallback filenames. Dee"
+          "text": "TrustLink Labs engineers use research and coding agents across different agent environments. Configure the selected environment to load the repository's `AGENTS.md`, then explicitly open the applicable `.agents/` references. Automatic discovery, override precedence and context limits depend on that environment; verify its configuration rather than "
         },
         {
           "line": 11,
@@ -595,7 +628,7 @@
         },
         {
           "line": 119,
-          "text": "A changed payment flow requires actor order, signatures, accounts, state names, funding/settlement distinction and recovery to agree across both documentation trees and README summaries. A terminology change starts in `.codex/architecture-terminology.md` and propagates to current explanations; historical publication names may remain under a dated c"
+          "text": "A changed payment flow requires actor order, signatures, accounts, state names, funding/settlement distinction and recovery to agree across both documentation trees and README summaries. A terminology change starts in `.agents/architecture-terminology.md` and propagates to current explanations; historical publication names may remain under a dated "
         },
         {
           "line": 121,
@@ -611,7 +644,7 @@
         },
         {
           "line": 144,
-          "text": "The syntax prefix must contain MDX 3.1.1, Mermaid 11.12.3 and JSDOM 26.1.0. If absent, follow the [tooling guide](references/README.md) to install them outside the repository; do not alter application manifests for a prose task. Link/syntax checks include both documentation trees, root instructions, `.codex` Markdown and the two README entry pages."
+          "text": "The syntax prefix must contain MDX 3.1.1, Mermaid 11.12.3 and JSDOM 26.1.0. If absent, follow the [tooling guide](references/README.md) to install them outside the repository; do not alter application manifests for a prose task. Link/syntax checks include both documentation trees, root instructions, `.agents` Markdown and the two README entry pages"
         },
         {
           "line": 154,
@@ -630,8 +663,8 @@
     {
       "path": "docs/DOCUMENTATION_STATUS.md",
       "title": "TSN documentation reconstruction status and continuation record",
-      "sha256": "44697e81f982f1400e8ef991d9f9f9688ccc45349124d90cc22a42061baccab0",
-      "lines": 273,
+      "sha256": "478023ba0eaab72fa3825c31790c8c1128e9f08c7cd21274bae0ce869da32abf",
+      "lines": 351,
       "status": "CURRENT",
       "reason": "Documentation coverage, bounded test observations and review/continuation policy; no unobserved live execution claimed.",
       "evidence": [
@@ -640,88 +673,104 @@
       ],
       "statusStatements": [
         {
-          "line": 7,
+          "line": 9,
+          "text": "Internal/public ABI, lifecycle, layer, operator, security and README records were aligned with that contract. ADR-005 separately records PROPOSED mixed-action accounting: private internal debit/credit must conserve total obligations, and typed complete transcripts/category deltas are required before counting debits, transfers or exits. The public-o"
+        },
+        {
+          "line": 27,
+          "text": "The [later checkpoint](laboratory/experiments/EXP-20261107-private-credit-epoch.md#release-headroom-signing-availability-and-unsigned-recovery-checkpoint) distinguishes logged release expiry from the following signing-service 404/503. Node release planning now uses monotonic census/full-workflow timing, validated recent slot rate and an initial 180"
+        },
+        {
+          "line": 37,
           "text": "The [latest pool checkpoint](laboratory/experiments/EXP-20261107-private-credit-epoch.md#blockhash-not-found-and-minimum-context-correction) identifies logged Kit code `7050008` as `BlockhashNotFound`. Cranker retains the confirmed blockhash response's context slot for preflight/height polling; Gateway retries exact RPC `-32016` with identical requ"
         },
         {
-          "line": 21,
+          "line": 51,
           "text": "The [funded-note experiment](laboratory/experiments/EXP-20261103-funded-note-credit.md#public-only-deposit-to-credit-regression-2026-11-05) now records a public-only comparison of the two historical signature-nullifier links and the supplied updated deposit/credit. Both historical controls reproduce exactly; the updated nullifier does not match the"
         },
         {
-          "line": 23,
+          "line": 53,
           "text": "Internal/public privacy and operator guidance distinguish removal of the former formula from actual anonymity-set size. Six finalized receipts, two historical controls and the public Poseidon leaf/root reconstruction passed; JavaScript syntax passed. Larger-set unlinkability, new recipient-registry analysis, proof forgery, deployed-byte equality an"
         },
         {
-          "line": 31,
+          "line": 61,
           "text": "The November 3–5 [funded-note replacement](laboratory/experiments/EXP-20261103-funded-note-credit.md) introduced secret-derived nullifier and exact deposit membership while retaining public credit amounts. It is historical relative to the [November 7 private-credit/epoch source](laboratory/experiments/EXP-20261107-private-credit-epoch.md). New keys"
         },
         {
-          "line": 41,
+          "line": 71,
           "text": "[ADR-005](laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md) is now EXPERIMENTAL implementation: blinded credit amount, no individual liability reclassification, sealed positive-funding pools/common release windows and separate complete epoch accounting. Node/Receiver/Cranker contracts, SDK recovery, program/circuit layouts and oper"
         },
         {
-          "line": 60,
+          "line": 90,
           "text": "The internal [Laboratory and Engineering Record](laboratory/README.md) extends the existing team and protocol-flow directories. It contains foundations, an implementation map, component/function records, the explicit native-credit account/CPI ABI, cryptography, invariants, state/route/accounting diagrams, technology roles, operations, test evidence"
         },
         {
-          "line": 76,
+          "line": 106,
           "text": "The [reconciliation register](laboratory/reconciliation-register.md) records fourteen documentation discrepancies and the later locally tested native authorization-envelope correction with source evidence. Corrections include `recipientHash` being the resolved owner commitment rather than the TIN; twelve proof inputs/thirteen IC points; implemented"
         },
         {
-          "line": 78,
+          "line": 108,
           "text": "November 2 public-signature nullifier and November 5 amount-public funded-note observations remain historical. The private-credit replacement uses secret-derived nullifiers and blinded amount commitments with separate aggregate accounting. Deposit/epoch totals, roots, points, ciphertext, accounts, timing, Node knowledge and recipient/head correlati"
         },
         {
-          "line": 94,
+          "line": 124,
           "text": "- The final [local link/navigation audit](references/link-check.json) passed with **zero issues**, including frontmatter and balanced fences. Remote URLs and anchor fragments remain unverified; uncommitted source links may not yet exist on remote main."
         },
         {
-          "line": 110,
-          "text": "The inventory currently covers **257 relevant documents**: 147 CURRENT, 81 UNVERIFIED, three PROPOSED, two EXPERIMENTAL, nineteen HISTORICAL, three RETIRED and two attributed VERIFIED experiment records. No page was labeled DEPRECATED without evidence that it is actually being phased out. The [claim inventory](references/technical-claim-inventory.j"
+          "line": 140,
+          "text": "The inventory currently covers **276 relevant documents**: 146 CURRENT, 76 UNVERIFIED, three PROPOSED, nineteen EXPERIMENTAL, twenty-six HISTORICAL, three RETIRED and three VERIFIED experiment records. No page was labeled DEPRECATED without evidence that it is actually being phased out. The [claim inventory](references/technical-claim-inventory.jso"
         },
         {
-          "line": 114,
+          "line": 144,
           "text": "Historical adoption dates, original alternatives, claimed failed experiments and external governance approvals need original records. The two reconstructed experiments and four ADRs do not invent those missing facts. Complete runtime reachability of retained debit/exit, epoch/reimbursement, threshold-provider and cross-chain paths remains unresolve"
         },
         {
-          "line": 122,
+          "line": 152,
           "text": "3. **Resolve the privacy-design discrepancy.** Decide whether public funding-to-credit linkage is acceptable for this contract. If a replacement is proposed, define the replay/security/authorization relation across program, SDK, Receiver, Node and Cranker before any implementation; do not add an undocumented compatibility path."
         },
         {
-          "line": 150,
+          "line": 180,
           "text": "The final artifact built successfully with `anchor-0.30.1 build --no-idl` under Solana 1.18.26. [Four offline SBF regressions](../scripts/tests/test_tin_route_sbf.py) passed with `.\\.venv\\Scripts\\python.exe scripts/tests/test_tin_route_sbf.py`, covering direct and staged second-route creation, independent Poseidon root expectations, stage closure, "
         },
         {
-          "line": 158,
+          "line": 188,
           "text": "The [Cranker transaction map](laboratory/cranker-transaction-map.md) documents every current daemon branch, transaction/instruction/CPI boundaries, signers/payers, transports, account/result checks and retry limitations. Laboratory, experiment, operations, TIN evidence and public Cranker pages link the record. Current registry version references we"
         },
         {
-          "line": 196,
+          "line": 226,
           "text": "Receiver `npm test` passed typechecking and all 14 tests. Node's focused hidden-head suite ran 33 tests: 31 passed and two opt-in circuit/proof tests skipped. Python syntax checks passed. A read-only invocation of the corrected live TCAP preflight passed at Devnet slot 517908759 for 100000 base units: the asset was Active/Approved, unpaused and non"
         },
         {
-          "line": 220,
+          "line": 250,
           "text": "Receiver typechecking and 16 tests passed; the offline HTTP transport test and focused TypeScript check of the transport/test/Cranker caller passed. The receipt matcher and authenticated endpoint preview passed against the real finalized transaction through read-only RPC. Replacement HTTP confirmation, endpoint live mutation and owner recovery rema"
         },
         {
-          "line": 243,
-          "text": "[Build and operate your own TSN](RUN-YOUR-OWN-TSN.md) now records reference versus independent deployments, actual tool/package/setup commands, authority/key ownership, thirteen-input artifacts, persistent .env precedence, snapshot bootstrap, service startup and SDK/application integration. Root AGENTS requires the [.codex maintenance rule](../.cod"
+          "line": 273,
+          "text": "[Build and operate your own TSN](RUN-YOUR-OWN-TSN.md) now records reference versus independent deployments, actual tool/package/setup commands, authority/key ownership, thirteen-input artifacts, persistent .env precedence, snapshot bootstrap, service startup and SDK/application integration. Root AGENTS requires the [.agents maintenance rule](../.ag"
         },
         {
-          "line": 245,
+          "line": 275,
           "text": "The supplied failures include three Node simulation rejections and one VERIFIED funding attempt failing at Cranker submission. XP now refreshes its hash after amount approval; gateway bank failover preserves the request; Node leaves partial RPC invalidity unknown and retries HTTP 5xx/transport failures under its renewed lease. Failed funding displa"
         },
         {
-          "line": 253,
+          "line": 283,
           "text": "[ADR-005](laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md) and [the ABI](laboratory/credit-abi.md) now describe the experimental private-amount replacement. Individual credits publish blinded commitments and update root/transcript without public liability reclassification. Positive sealed pools require two wallet sources and commo"
         },
         {
-          "line": 257,
+          "line": 287,
           "text": "Both documentation trees, README diagrams, persistent operator/prover guidance and agent maintenance pointers were reconciled. Remaining current overview/lifecycle/security summaries using the old amount/signature-nullifier/per-credit liability semantics were corrected, while dated receipts remain historical. Final checks covered 276 documents, 36 "
         },
         {
-          "line": 261,
+          "line": 291,
           "text": "The user deferred public run-your-own-TSN guidance while TSN is under construction. The complete procedure remains in docs/RUN-YOUR-OWN-TSN.md with an explicit internal publication boundary. Its public MDX page and navigation entry were removed, along with promotion from both README entry points, Node/Receiver/Cranker/gateway service READMEs and th"
+        },
+        {
+          "line": 308,
+          "text": "TrustLink/TSN remains in development for its experimental first release, **v1**. Terminology, architecture policy, maintenance guidance, both README entry points and current private-credit explanations now distinguish that product release from existing internal instruction/account/domain encodings. Exact serialized identifiers remain source-accurat"
+        },
+        {
+          "line": 339,
+          "text": "The user's November 14 recovery output records resolution of `settlement-54bbac67ede3175e52ece131ca2279f3`; the subsequent Cranker log is for a different queued settlement, `settlement-62e424aa6ebf25982c65e9b498507223`, rejected with program error `6023`. The prior chat's diagnostic simulations attributed this to TCAP `InvalidFundingRoot` after acc"
         }
       ]
     },
@@ -881,7 +930,7 @@
     {
       "path": "docs/README.md",
       "title": "TrustLink documentation",
-      "sha256": "f77ded4874e2ffa5981b4a933ca3a39b417f3dce51b8a3344a69cd1661828810",
+      "sha256": "c734ecc560026899d56e2ee44895fcc658685a291cf195c36c6eb1339602c266",
       "lines": 135,
       "status": "CURRENT",
       "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
@@ -896,7 +945,7 @@
       "statusStatements": [
         {
           "line": 19,
-          "text": "Use the [documentation maintenance manual](DOCUMENTATION_MAINTENANCE.md) for source-first changes, internal/public placement, status, diagrams and validation. The [Codex reference index](../.codex/README.md) separates current guidance from historical prompts."
+          "text": "Use the [documentation maintenance manual](DOCUMENTATION_MAINTENANCE.md) for source-first changes, internal/public placement, status, diagrams and validation. The [Agent reference index](../.agents/README.md) separates current guidance from historical prompts."
         },
         {
           "line": 21,
@@ -941,10 +990,10 @@
     {
       "path": "docs/RUN-YOUR-OWN-TSN.md",
       "title": "Build and operate your own TSN",
-      "sha256": "57b61e811983324ac9f1b7b12cf598479a5b6028c6faf9ff466de1032c207edb",
+      "sha256": "4a7ea9b58795c901494fd4297509209e3b3f5722970f58cdacc0567f2a556e3a",
       "lines": 367,
-      "status": "CURRENT",
-      "reason": "Source-backed installation/operation and bounded verification procedure; independent fresh-network replay, production ceremony and live funded-note completion explicitly unverified.",
+      "status": "EXPERIMENTAL",
+      "reason": "Internal first-release v1 operation guidance includes clean forced SDK/browser builds and exact-one-deposit/ComputeBudget recovery boundaries. Clean-machine replay, production ceremony, service reload and live funded credit remain unverified.",
       "evidence": [
         "package.json",
         "scripts/hidden-head-setup.mjs",
@@ -955,11 +1004,31 @@
       "statusStatements": [
         {
           "line": 3,
-          "text": "**Status: EXPERIMENTAL private-credit operator procedure, reviewed 2026-11-07.** This guide follows the replacement source. The operator reported successful SBF deployments; subsequent read-only November 7 checks verified both exact enabled credit/epoch keys and two wallet deposits. Independent deployed-binary comparison and the complete private-cr"
+          "text": "**Status: EXPERIMENTAL first-release v1 procedure, naming reviewed 2026-11-14.** The current source removes sealed funding pools and two-depositor release scheduling. The [November 8 record](laboratory/experiments/EXP-20261108-remove-funding-pools.md) separates offline checks from unperformed program deployment, in-place funding-root migration and "
         },
         {
-          "line": 324,
+          "line": 48,
+          "text": "Use `npm install` only for a package without a lockfile or after an intentional manifest/lockfile change. A missing compiler launcher or local dependency must be repaired before proceeding; do not treat a stale `dist` directory as a successful build. The SDK build now clears its own generated `dist` directory and forces TypeScript compilation, prev"
+        },
+        {
+          "line": 339,
           "text": "**Memo public-input count rejection.** `GPRU transaction record is missing its twelve public hidden-head inputs` came from an obsolete Node Memo-length guard rejecting the current thirteen-input proof. The corrected validator requires exactly thirteen; historical twelve-input receipt decoding remains separate. Reload Node and Receiver in their exis"
+        },
+        {
+          "line": 349,
+          "text": "This guide is the internal installation/operation entry for the experimental first release, v1. Agents must read [.agents/tsn-operator-guide-policy.md](../.agents/tsn-operator-guide-policy.md) when changing any installation, deployment, initialization, service/configuration, SDK integration or recovery method. Update the affected steps, source refe"
+        },
+        {
+          "line": 355,
+          "text": "Current credit uses the canonical shared funding account, its authenticated current/recent roots and the private amount proof. Pool accounts, capture submissions, source-wallet admission counts, release calibration and the pool-recovery endpoint/CLI are retired. Receiver coordinates settlement and complete `TCAP_EPOCH_ACCOUNTING` work. Native settl"
+        },
+        {
+          "line": 363,
+          "text": "Node reconstructs membership at the selected root/count and confirms it remains current or retained before publication/authorization. More than 128 newer deposited roots can retire an older proof context; unsigned work then requires fresh verification under the existing lease/version/no-checkpoint guards. The latest shared private head/nullifier st"
+        },
+        {
+          "line": 367,
+          "text": "The [November 7 experiment](laboratory/experiments/EXP-20261107-private-credit-epoch.md) preserves the old pool timing, unavailable signing, store contention and expired-attempt investigations as historical evidence. Those pool commands are no longer operating procedures. Existing on-chain pool accounts remain inert historical records until separat"
         }
       ]
     },
@@ -993,8 +1062,8 @@
     {
       "path": "docs/TCAP-FUND-PROTECTION.md",
       "title": "How TCAP protects reserve funds",
-      "sha256": "7e6af880cb943e44f0cff2d917a1dacc05d0a0fa615014cb86ff7ca4c945bef4",
-      "lines": 64,
+      "sha256": "74d3012cc429d650f4793954226ad937fbe841bf0c77f5b61938d032f013140e",
+      "lines": 66,
       "status": "UNVERIFIED",
       "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
       "evidence": [],
@@ -1008,33 +1077,38 @@
           "text": "GPRU's role is to guard the user's private state as it is presented to TCAP. The intended Groth16 statement binds the current hidden head, the proposed successor, the balance action and amount, the relevant asset, the Memo commitment, and replay protection. A valid proof should establish that the new private state follows from the latest valid pred"
         },
         {
-          "line": 54,
-          "text": "The experimental replacement checks released sealed pool, asset policy, current root/epoch and reserve solvency, then invokes GPRU before atomically updating shared root/transcript. Individual reserve is readonly. Deposit verifies vault balance/delta and increases assets/pending obligations. Separate epoch accounting invokes its five-input GPRU ver"
+          "line": 52,
+          "text": "Generalizing the current credit batch to debits or transfers is a [proposed contract](laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md#proposed-mixed-action-accounting). An internal debit/credit pair must conserve total obligations, while withdrawals, fees and refunds require correct category deltas and payout binding. No mixed-act"
+        },
+        {
+          "line": 56,
+          "text": "The experimental replacement checks authenticated current/retained funding membership, asset policy, current root/epoch and reserve solvency, then invokes GPRU before atomically updating shared root/transcript. Deposit verifies vault balance/delta and increases assets/pending obligations. Separate epoch accounting invokes its five-input GPRU verifi"
         }
       ]
     },
     {
       "path": "docs/TCAP-V2-DEBIT-CREDIT-DESIGN.md",
       "title": "TCAP balance transitions and GPRU proof boundary",
-      "sha256": "16a154ba5a4ff1a7e7b019c44d58fb698390b2855426a14cbc76d8bb48c1e43c",
-      "lines": 27,
-      "status": "CURRENT",
-      "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+      "sha256": "5858cbba240dc0d1f231f7bf837a4a9887aa30ec2c2499c70309dbf52709ed62",
+      "lines": 29,
+      "status": "HISTORICAL",
+      "reason": "Original amount-public instruction/signature-nullifier/per-credit liability snapshot retained with a November 14 current-reference boundary; it cannot direct current private-credit implementation.",
       "evidence": [
-        "tsn-protocol/services/tsn-node/server.py",
-        "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-        "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-        "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-        "tsn-protocol/programs/gpru/src/hidden_head.rs",
-        "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+        "docs/laboratory/credit-abi.md",
+        "docs/laboratory/cryptography.md",
+        "tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs"
       ],
       "statusStatements": [
         {
           "line": 3,
+          "text": "**Status: HISTORICAL amount-public credit snapshot; current-reference boundary added 2026-11-14.** The original body below describes earlier instruction/proof names, a publicly derived nullifier and per-credit liability updates. Those statements do not describe the current experimental first-release v1 contract. Use [current architecture](CURRENT-A"
+        },
+        {
+          "line": 5,
           "text": "This document distinguishes the proof-shaped TSNP/TCAP ABI from a working proof-generation system. GPRU is intended to guard the integrity and privacy of the user's private state presented for a balance-changing action, proving that the hidden state is current and the proposed transition follows from it. TCAP governs accepted assets, authorization,"
         },
         {
-          "line": 27,
+          "line": 29,
           "text": "The source has legacy TIN-tip account/instruction definitions and a proof-shaped TSN credit path using one shared root and Memo instruction data. Node disables settlement until the prover and witness source are configured. Do not use historical per-tip smoke scripts as evidence that the hidden-head path or confidential debit/exit works. See [Curren"
         }
       ]
@@ -1248,7 +1322,7 @@
     {
       "path": "docs/gpru-tcap-route.md",
       "title": "GPRU hidden-head proof status",
-      "sha256": "a64b999e816a967cf78e4356dccaf6e20bafb417b919ad19ded387b6d20dba1e",
+      "sha256": "8a1b4893187396b388fe9b7d34ee2d9d063cf054ebd9b93b44c7c30262b67d2e",
       "lines": 21,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
@@ -1260,7 +1334,7 @@
       "statusStatements": [
         {
           "line": 3,
-          "text": "GPRU verifies private recipient route/head, funded-note membership and exact amount arithmetic without custody of TCAP assets. The experimental replacement uses a private-secret nullifier, freshly blinded amount commitment and immutable sealed funding root. TCAP atomically updates shared head/root and epoch transcript with no individual token movem"
+          "text": "GPRU verifies private recipient route/head, funded-note membership and exact amount arithmetic without custody of TCAP assets. The experimental replacement uses a private-secret nullifier, freshly blinded amount commitment and authenticated current or retained global funding root. TCAP atomically updates shared head/root and epoch transcript with n"
         },
         {
           "line": 13,
@@ -1571,7 +1645,7 @@
     {
       "path": "docs/dip/DIPIngress-design.md",
       "title": "DIP Ingress: Circle CCTP deposits into TCAP within TSN",
-      "sha256": "0986ec07a711414ae592812e9e0ecff567b9a81f4e34404eb57fc331c1cf4e63",
+      "sha256": "3906cec6056563062b0f946f87249b3991c12574cf7b085c84563ccdc485be15",
       "lines": 356,
       "status": "PROPOSED",
       "reason": "Design/build instructions or external workspace proposal; not adopted native-credit runtime evidence.",
@@ -1645,8 +1719,8 @@
     },
     {
       "path": "docs/expo/ARC_INTEGRATION/PROTOCOL.md",
-      "title": "PROTOCOL.md — what Codex needs to know to direct Arc Builder",
-      "sha256": "0497ce2992d87b0015e6fb5071fe1c3f34e98682ff76257c6140b1be27062db1",
+      "title": "PROTOCOL.md — what Agent needs to know to direct Arc Builder",
+      "sha256": "fca8c7b36c9a5557746b90f24e2dccf250f4cf3bad0b77131fc68d651773ef2f",
       "lines": 221,
       "status": "UNVERIFIED",
       "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
@@ -1673,8 +1747,8 @@
     {
       "path": "docs/historical-archive/README.md",
       "title": "Historical architecture and research archive",
-      "sha256": "540f0ec7447579456e8939faa3127ad121d0e78bc06b72468a07847d98a5dc77",
-      "lines": 27,
+      "sha256": "9b3025dd2fba600bd92d290108f5947be7083be89bee588f6b4ebc4a12f3407a",
+      "lines": 29,
       "status": "CURRENT",
       "reason": "Current archival index. Linked historical publications retain their original content and status; this index does not promote them as runtime specifications.",
       "evidence": [
@@ -1710,11 +1784,15 @@
           "text": "- [Epoch/opaque-slot architecture](../TSN-FINAL-ARCHITECTURE.md), [Mother-rooted DNA](../tsn-mother-escrow-dna.md) and [epoch explorer notes](../tsn-transaction-explorer.md) describe a distinct retained program family. Historical here means superseded as the current native-credit narrative; its entrypoints still require capability/reachability revi"
         },
         {
-          "line": 19,
+          "line": 17,
+          "text": "The [earlier TCAP balance-transition/proof snapshot](../TCAP-V2-DEBIT-CREDIT-DESIGN.md) retains amount-public instruction, signature-nullifier and per-credit liability semantics under an explicit historical boundary. Its filename is an old internal ABI label; the project remains in development for its first release, v1."
+        },
+        {
+          "line": 21,
           "text": "The [research repository](../../research/Trustlink-Research/README.md) is an independent Git checkout. Its README still names ZK-PRU as protected receiving/spending and expands TCAP as Token Control and Authorization Protocol, conflicting with current terminology and the TSNP/TCAP native credit CPI. These claims are HISTORICAL or UNVERIFIED for cur"
         },
         {
-          "line": 27,
+          "line": 29,
           "text": "Record original title, path, known date/commit, former claim, current discrepancy and replacement reference. Do not fabricate an original decision date or successful experiment. If source still exports a historically described capability, distinguish its existence from active runtime use. Historical research remains useful even where its operationa"
         }
       ]
@@ -1747,10 +1825,10 @@
     {
       "path": "docs/laboratory/architecture-map.md",
       "title": "Canonical implementation map",
-      "sha256": "6dbeb8bdca68951eef7aa1299d323b09851adb31433806be153c830c642448d4",
-      "lines": 103,
-      "status": "CURRENT",
-      "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+      "sha256": "5cb040105132958166a1257dce35a87972d23497cc3c5daa3c0b80ad7def7c74",
+      "lines": 104,
+      "status": "EXPERIMENTAL",
+      "reason": "Current first-release v1 private-credit source map uses the authenticated shared funding account, without sealed-pool scheduling. Source mapping does not establish activation or full live settlement.",
       "evidence": [
         "tsn-protocol/services/tsn-node/server.py",
         "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
@@ -1761,18 +1839,18 @@
       "statusStatements": [
         {
           "line": 3,
-          "text": "**Status: EXPERIMENTAL private-credit replacement, reviewed 2026-11-07.** This map follows the current source contract in [ADR-005](decisions/ADR-005-private-amount-and-adaptive-pools.md) and [credit ABI](credit-abi.md). The [November 7 validation](experiments/EXP-20261107-private-credit-epoch.md) separates offline proof/build checks from unverifie"
+          "text": "**Status: EXPERIMENTAL first-release v1 private credit, reviewed 2026-11-16.** This map follows the current source contract in [ADR-005](decisions/ADR-005-private-amount-and-adaptive-pools.md) and [credit ABI](credit-abi.md). The [November 16 checkpoint](experiments/EXP-20261116-private-credit-epoch.md) verifies two finalized private credits and th"
         },
         {
-          "line": 87,
-          "text": "The [private-credit ABI](credit-abi.md) has one current runtime and separate historical receipt readers. Individual credits use immutable sealed funding roots, so later deposits do not invalidate them. Admission rechecks at least two positive unspent member notes from two wallets at capture; Mother attests those counts. Shared-root or epoch races b"
+          "line": 88,
+          "text": "The [private-credit ABI](credit-abi.md) has one current runtime and separate historical receipt readers. A single confirmed funded note can be credited without pool creation or source-count/release gating. The existing global funding account authenticates current and up to 128 retained root/count pairs; later deposits within that window preserve a "
         }
       ]
     },
     {
       "path": "docs/laboratory/components.md",
       "title": "Component engineering records",
-      "sha256": "99d2f56ac6ab8e098b61f048e2599caa61fe904cd8ad3b3ea710a1b1d3a3b505",
+      "sha256": "e208dd1a1146738ed6453b001113416986e57f0d3243c02a3befb7a8e7095dfd",
       "lines": 112,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
@@ -1793,6 +1871,10 @@
           "text": "These entrypoints remain in source despite historical current-flow descriptions. Their production use, complete runtime reachability and every migration precondition require separate verification. See [historical epoch record](../TSN-FINAL-ARCHITECTURE.md) and the [instruction catalog](interface-reference.md)."
         },
         {
+          "line": 70,
+          "text": "`_verify_receiver_work` handles funding, settlement, identity and `TCAP_EPOCH_ACCOUNTING`. Confirmed funding supports immediate individual credit preparation through the canonical global funding account and retained-root validation; accounting work reconstructs the complete ordered accepted-credit transcript and restricted openings. Receiver serial"
+        },
+        {
           "line": 104,
           "text": "The public [SDK handbook](../../tsn-protocol/tsn-docs/sdk/index.mdx) and [full API reference](../../tsn-protocol/tsn-docs/sdk/api-reference.mdx) link exact source signatures. Experimental cross-chain and exit APIs stay exported; tutorials must state their missing execution evidence instead of inventing a complete settlement helper."
         },
@@ -1805,8 +1887,8 @@
     {
       "path": "docs/laboratory/cranker-transaction-map.md",
       "title": "Cranker transaction submission map",
-      "sha256": "fa4d2f473af0cd43bd0bf39ad92dae12ab350d442d1d4fd2e62b036f4263c371",
-      "lines": 249,
+      "sha256": "29b7dc041b7b924edc3deada805a833a5ea22e47256810d5266aa1e628fe46f9",
+      "lines": 246,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
       "evidence": [
@@ -1820,19 +1902,19 @@
           "text": "**Status: EXPERIMENTAL private-credit source map, reviewed 2026-11-07.** Dated TIN, twelve-input and amount-public funded-note receipts below preserve historical live observations. The [November 7 experiment](experiments/EXP-20261107-private-credit-epoch.md) records current offline checks; SBF/activation/live accounting remain unverified. This page"
         },
         {
-          "line": 143,
-          "text": "Current experimental credit calls TSNP V3 → TCAP `credit_gpru_memo_v2` → GPRU `verify_hidden_head_transition_v2`, followed by its proof-bound Memo. The 905-byte instruction has sixteen outer accounts, readonly reserve/sealed pool and writable root/epoch. After verification TCAP updates the shared head/nullifier root and blinded epoch digest without"
+          "line": 140,
+          "text": "Current experimental credit calls TSNP `tsn_register_tcap_credit_authorization_v3` → TCAP `credit_gpru_memo_v2` → GPRU `verify_hidden_head_transition_v2`, followed by its proof-bound Memo. The 905-byte instruction has sixteen outer accounts, readonly reserve/global funding account and writable root/epoch. After verification TCAP updates the shared "
         },
         {
-          "line": 177,
+          "line": 174,
           "text": "From the root, [the operator utility](../../scripts/retry-settlement-snapshot.py) reads Node's configured Receiver credential without displaying it. This command uses the later observed version 10; version 3 above is the historical snapshot rejection:"
         },
         {
-          "line": 187,
+          "line": 184,
           "text": "After the operator requeued the version-3 snapshot rejection, later verification rejected the same settlement at version 10 with `TCAP settlement asset is unavailable or its reserve binding is invalid`. Node's preflight incorrectly required bytes 245â€“248 to equal `(1,1,0,0)`, mixing deposit/withdrawal flags with pause/transfer-fee policy. The [Bo"
         },
         {
-          "line": 243,
+          "line": 240,
           "text": "Read-only Receiver inspection found funding `def3ee3a-b8f0-4ff1-89eb-03d0bdd7290b` CONFIRMED at version 5 and its linked settlement `settlement-69f6df71a5e93936ae0ba0f2a451b30c` REJECTED at version 3 without execution state. Node rejected the thirteen-input proof because `validate_transaction_record_v1` still required twelve inputs. The corrected M"
         }
       ]
@@ -1840,10 +1922,10 @@
     {
       "path": "docs/laboratory/credit-abi.md",
       "title": "Native private credit ABI and epoch accounting",
-      "sha256": "3f93ea35534785915bdb10bdaddf88488c173c264f52728945018b6c13361e03",
-      "lines": 49,
+      "sha256": "8b41007e9a0155f5fe073434df433dae46aff72938ec6568340cea4acc9f8634",
+      "lines": 69,
       "status": "EXPERIMENTAL",
-      "reason": "Private-amount/sealed-pool/complete-epoch replacement with bounded real-proof/native/offline evidence; SBF, activation and full live flow unverified.",
+      "reason": "Source-reconciled first-release v1 private amount/shared funding/complete epoch contract, including shared epoch initialization. Actual internal encodings and one-time layout migration are separate from product releases; live activation/full payment remain unverified.",
       "evidence": [
         "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
         "tsn-protocol/programs/gpru/circuits/tcap_epoch_v1/main.circom",
@@ -1853,19 +1935,35 @@
       "statusStatements": [
         {
           "line": 3,
-          "text": "**Status: EXPERIMENTAL replacement source, 2026-11-07.** This checkout implements [ADR-005](decisions/ADR-005-private-amount-and-adaptive-pools.md). Deployment, matching on-chain keys and a complete private-credit/epoch flow remain unverified. The [November 5 receipt](experiments/EXP-20261103-funded-note-credit.md) belongs to the earlier amount-pub"
+          "text": "**Status: EXPERIMENTAL first-release v1 funded credit, reviewed 2026-11-16.** This checkout follows [ADR-005](decisions/ADR-005-private-amount-and-adaptive-pools.md). The [November 16 checkpoint](experiments/EXP-20261116-private-credit-epoch.md) verifies two finalized private credits and complete aggregate accounting. Earlier source/offline, receip"
         },
         {
-          "line": 45,
-          "text": "Obsolete captures are retired; unsigned stale authorizations return to Node verification. Durable signed attempts are reconciled before replacement. Mother signing and receipt repair inspect exact signer order, permissions, instruction bytes and Memo. Encrypted owner record V2 carries the opening; SDK verifies it against the public commitment. Hist"
+          "line": 13,
+          "text": "Each successful deposit records its resulting root/count atomically. TCAP/GPRU accept a proof-selected funding root only while it is current or retained in that authenticated history. Node prepares from current state and rechecks its selected root/count before publishing/signing. New deposits within the retained window do not invalidate funding mem"
+        },
+        {
+          "line": 57,
+          "text": "Successful accounting marks the existing account accounted and advances the reserve epoch number. The first credit of the next epoch starts its new timer and may create the next numbered account. There is no native epoch close or rent-reclaim entrypoint in this path; an accounted epoch account remains on chain. Empty or singleton timeout closure, a"
+        },
+        {
+          "line": 59,
+          "text": "Current epoch discovery and its circuit cover accepted private credits only. The [mixed-action direction](decisions/ADR-005-private-amount-and-adaptive-pools.md#proposed-mixed-action-accounting) is a proposal requiring typed action commitments, complete ordered proof coverage and conservation across liability categories before debits, transfers or "
+        },
+        {
+          "line": 63,
+          "text": "Unsigned retired funding roots, shared-root/epoch races and exact signing/lifetime/height availability failures require authenticated current-lease, current-version re-verification without an execution checkpoint. Durable signed attempts retain exact receipt reconciliation before replacement. For expired FAILED native credit, the separate authentic"
+        },
+        {
+          "line": 65,
+          "text": "Pool capture, its dispatcher/work kind and pool-recovery CLI/endpoint are retired. Existing historical pool accounts and stored attempts are not erased or rent-refunded by this source change. Their cleanup requires separate explicit chain/state operations; they cannot supply current credit authority."
         }
       ]
     },
     {
       "path": "docs/laboratory/cryptography.md",
       "title": "Cryptographic mechanisms and privacy boundaries",
-      "sha256": "c6738391165905860ec49e0fcdd82b094760fbc5bc99c5584ed7e0a46ccd615c",
-      "lines": 83,
+      "sha256": "36f850873f37d7468987b1fb43d49889070af80cd66908a26eb5c8fe4acd29a3",
+      "lines": 93,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
       "evidence": [
@@ -1878,18 +1976,26 @@
       "statusStatements": [
         {
           "line": 3,
-          "text": "**Status: EXPERIMENTAL private-credit/epoch source, reviewed 2026-11-07.** [Isolated real proofs and native verification](experiments/EXP-20261107-private-credit-epoch.md) provide bounded local evidence. SBF compilation, live activation, complete payment/accounting and independent cryptographic review remain unverified."
+          "text": "**Status: EXPERIMENTAL private-credit/epoch source, reviewed 2026-11-16.** [Isolated real proofs and native verification](experiments/EXP-20261107-private-credit-epoch.md) provide bounded local evidence. The [November 16 checkpoint](experiments/EXP-20261116-private-credit-epoch.md) verifies two finalized private credits and their complete aggregate"
+        },
+        {
+          "line": 61,
+          "text": "Node reconstructs public funded snapshots from successful invocation-bound TCAP append history and verifies their root/count. Bounds remain 10,000 leaves/signatures. The existing global account authenticates a selected current or retained root/count and is rechecked before publication/authorization. A single confirmed positive deposit is sufficient"
         },
         {
           "line": 67,
           "text": "## Historical public deposit-to-credit nullifier link"
+        },
+        {
+          "line": 75,
+          "text": "The selected experimental first-release v1 contract keeps classic-token reserve deposits public and commits the individual TIN-credit amount privately. A November 14 read-only Devnet check found reference mint `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU` owned by classic SPL Token (`TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`), with 82 bytes at "
         }
       ]
     },
     {
       "path": "docs/laboratory/foundations.md",
       "title": "Foundations, assumptions and protocol thesis",
-      "sha256": "7904cff0da647a6a70bee58381a12021f4629faf43ba4dfa1d449c8d06e4110c",
+      "sha256": "aa28ff9fcb41d5b177085e1d965cff236e1b1c02483f819f7935d9d76ae544a8",
       "lines": 35,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
@@ -1916,7 +2022,7 @@
     {
       "path": "docs/laboratory/interface-reference.md",
       "title": "HTTP interfaces and source schemas",
-      "sha256": "c47037dcec271c755a6bf7fc1222c8392e43e5a56e87a2b0fe001a997fdecc7b",
+      "sha256": "f5fc85c8d9638c88a746a76a9846db4e68c2056d11fb9db706cc159ce5e01809",
       "lines": 520,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
@@ -1937,7 +2043,7 @@
     {
       "path": "docs/laboratory/invariants.md",
       "title": "Protocol invariants, state changes and recovery",
-      "sha256": "c245e6574ffcf0147d50475772661945a9687d72bd329696a003711f3044cfbb",
+      "sha256": "497908d6f5e95fa5b0f3f3938975e34ffe56bd4d19bc554525c9d1b2a6fbba08",
       "lines": 64,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
@@ -1955,19 +2061,19 @@
         },
         {
           "line": 31,
-          "text": "The current credit excludes public note/leaf/index/opening and plaintext amount. Pool capture counts only positive unspent member notes and distinct wallets, with a two-wallet floor; dummy zero-value actors cannot increase eligibility. Aggregate epoch total, deposit amounts, timing, metadata, recipient/head correlations and Node knowledge remain pr"
+          "text": "The current credit excludes public note/leaf/index/opening and plaintext amount. One genuine positive confirmed deposit suffices; no two-wallet admission rule or per-pool account remains. Aggregate epoch total, deposit amounts, timing, metadata, recipient/head correlations and Node knowledge remain privacy limits. Retained funding roots never repla"
         },
         {
           "line": 35,
-          "text": "GPRU checks thirteen canonical BN254 public inputs, the approved caller context, canonical TIP/TCAP state and sealed-pool accounts and V2 verifier configuration. The following top-level instruction must be the canonical Memo program. The complete Memo hash and seven fixed prefix fields must agree with the proof. A mutable payload that happens to de"
+          "text": "GPRU checks thirteen canonical BN254 public inputs, the approved caller context, canonical TIP/TCAP state and global funding accounts and the matching verifier configuration. The following top-level instruction must be the canonical Memo program. The complete Memo hash and seven fixed prefix fields must agree with the proof. A mutable payload that "
         }
       ]
     },
     {
       "path": "docs/laboratory/onchain-reference.md",
       "title": "Program declarations and account schema reference",
-      "sha256": "0dac53235e58513f4534dcfafed1f0f0740cec8836b824c3c870ab266db42427",
-      "lines": 5653,
+      "sha256": "add5957047c143e10f94c370af1be7c3daf0c5604135cbd3d406ccec58148195",
+      "lines": 5642,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
       "evidence": [
@@ -1979,7 +2085,7 @@
       ],
       "statusStatements": [
         {
-          "line": 5407,
+          "line": 5396,
           "text": "deprecated: bool"
         }
       ]
@@ -2003,8 +2109,8 @@
     {
       "path": "docs/laboratory/reconciliation-register.md",
       "title": "Architecture contradictions and claim coverage",
-      "sha256": "88db21717918da6c1a18b4e60893f41a5400795c9edfab22ee4b80fc09daedb8",
-      "lines": 50,
+      "sha256": "46dc73d8d4d73267277b0e1d05d3399a9b7afd3a429a7018965570a038775016",
+      "lines": 54,
       "status": "CURRENT",
       "reason": "Documentation coverage, bounded test observations and review/continuation policy; no unobserved live execution claimed.",
       "evidence": [
@@ -2021,11 +2127,15 @@
           "text": "12. **Historical public deposit-nullifier linkage.** The November 2 native credit derived its published nullifier from public TCAP program/deposit-signature bytes and a fixed domain, allowing observers to recompute the funding-to-credit link. This contradicted that version’s no-public-funding-pointer claims while the TIN witness remained hidden. Th"
         },
         {
-          "line": 24,
+          "line": 16,
+          "text": "**Current credit epoch ownership and maturity, 2026-11-16.** TCAP's asset-specific epoch records accepted private credits, not deposits or every action. A first accepted credit creates/starts its shared account; a singleton has no timeout accounting, 2–63 entries mature at Node's 120-slot threshold, and 64 queues immediately. GPRU verifies the comp"
+        },
+        {
+          "line": 28,
           "text": "Whole-page CURRENT means a reviewed source narrative, not a tested deployment. VERIFIED labels apply to specified observations with linked evidence; environment observations retain their captured date/slot. Legacy runbooks, research assertions, generalized cross-chain execution, threshold-provider activation, historical selection rationale and many"
         },
         {
-          "line": 50,
+          "line": 54,
           "text": "The November 5 public-only regression disproves the old signature-derived formula for the supplied new credit, while reproducing both historical controls. It also reconstructs the credit's funding root from the deposit's public index-zero leaf and verifies funding leafCount 1. Thus the same pair remains linkable through a one-deposit membership set"
         }
       ]
@@ -2076,7 +2186,7 @@
     {
       "path": "docs/laboratory/testing-and-evidence.md",
       "title": "Testing and verification evidence",
-      "sha256": "a0744c4449dcc28f21ce00594ea0cb253ec7f29741a952c550e44b1ea8c6138e",
+      "sha256": "848e5615e54cf9cdd9938b7c141584f1ae7d5bc52a67b9360407263c7f464ac9",
       "lines": 29,
       "status": "CURRENT",
       "reason": "Documentation coverage, bounded test observations and review/continuation policy; no unobserved live execution claimed.",
@@ -2095,7 +2205,7 @@
         },
         {
           "line": 27,
-          "text": "For experimental native credit, retain exact funding, sealed-pool capture/release, Node decision and current lease, submitted credit signature/result, expected root/epoch transcript and owner opening/history recovery. Individual reserve assets/liabilities must remain unchanged. Separately verify complete aggregate epoch proof, authenticated total, "
+          "text": "For experimental native credit, retain exact funding, authenticated selected funding root/count, Node decision and current lease, submitted credit signature/result, expected root/epoch transcript and owner opening/history recovery. Verify single-deposit eligibility and later-deposit retained-root acceptance, forged/retired-root rejection and curren"
         }
       ]
     },
@@ -2143,7 +2253,7 @@
     {
       "path": "docs/laboratory/decisions/ADR-003-delta-binding.md",
       "title": "ADR-003: use one owner-recoverable proof-bound delta",
-      "sha256": "559d78445a6b45c0bc6974c6631280307590ce079032235188d45cf3366ac7f7",
+      "sha256": "5d0cbcb9f8f94a0afc56494205e2e793f27cfd45123a36b0717d1a030ab01809",
       "lines": 17,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
@@ -2159,7 +2269,7 @@
     {
       "path": "docs/laboratory/decisions/ADR-004-documentation-authority.md",
       "title": "ADR-004: keep public integration and internal evidence connected",
-      "sha256": "9fe89167fde9f2cf76789de85f330fe2c3debcbc501d1e5f446398b34d7a0572",
+      "sha256": "b6917690589a3617d48355255f837f44f3b0cf9d875fae7e5bfd024d4a2e46dd",
       "lines": 19,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
@@ -2177,17 +2287,17 @@
         },
         {
           "line": 13,
-          "text": "Authority follows executable source, program contracts, behavioral tests, configured/deployed observations, current decisions, then historical narratives. A Published research label, successful build or HTTP readiness response does not establish current settlement availability. This follows [.codex terminology](../../../.codex/architecture-terminol"
+          "text": "Authority follows executable source, program contracts, behavioral tests, configured/deployed observations, current decisions, then historical narratives. A Published research label, successful build or HTTP readiness response does not establish current settlement availability. This follows [.agents terminology](../../../.agents/architecture-termin"
         }
       ]
     },
     {
       "path": "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
-      "title": "Private credit amounts and adaptive funding pools",
-      "sha256": "779dc465604349b20cf56f27f6b04b17052128c4d8a8cf448c1651330c8bbc24",
-      "lines": 45,
+      "title": "Private credit amounts and shared funded roots",
+      "sha256": "ed3b6a5d77029d21572a02a6329af5ff2c58ffbf247d89ca2bbf9a90f6b4ec3e",
+      "lines": 59,
       "status": "EXPERIMENTAL",
-      "reason": "Private-amount/sealed-pool/complete-epoch replacement with bounded real-proof/native/offline evidence; SBF, activation and full live flow unverified.",
+      "reason": "User chose public classic-token funding/private TIN credit; sealed-pool trial is retired, shared funded roots remain current, and eligible confidential Token-2022 funding is an unimplemented future integration requirement.",
       "evidence": [
         "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
         "tsn-protocol/programs/gpru/circuits/tcap_epoch_v1/main.circom",
@@ -2197,7 +2307,7 @@
       "statusStatements": [
         {
           "line": 3,
-          "text": "**Status: EXPERIMENTAL replacement implemented in source, 2026-11-07.** The user requires deposits to move funds into TCAP custody, individual credits to update private recipient state without public amount or liability reclassification, and Node-created aggregate epoch work to be coordinated by Receiver and submitted by Cranker. The [ABI](../credi"
+          "text": "**Status: EXPERIMENTAL first-release v1 contract, revised 2026-11-14.** The user retired sealed funding-pool accounts and two-depositor release scheduling. Current credit proves genuine funded value through the existing global funding account while keeping the individual amount private. Separate complete epoch work preserves aggregate accounting. T"
         },
         {
           "line": 5,
@@ -2209,18 +2319,38 @@
         },
         {
           "line": 15,
-          "text": "The credit remains thirteen public inputs with the funding root last, but its changed circuit requires new matching keys. TSNP V3 is 905 bytes with sixteen outer accounts, including readonly reserve/pool and writable shared root/epoch. Encrypted owner record V2 carries the amount opening; SDK verifies it against the public commitment. Independent h"
+          "text": "The credit remains thirteen public inputs with the funding root last, but its changed circuit requires new matching keys. The TSNP authorization instruction is 905 bytes with sixteen outer accounts, including the readonly reserve and funding-root record plus writable shared root/epoch. The encrypted owner record carries the amount opening; SDK veri"
         },
         {
-          "line": 23,
+          "line": 17,
+          "text": "The selected first-release contract keeps classic-token wallet-to-reserve deposits public and the individual TIN-credit amount private in its proof/commitment. **PROPOSED future integration requirement:** an eligible Token-2022 confidential asset should use its confidential-transfer capability for funding. That route is not implemented or activated"
+        },
+        {
+          "line": 25,
           "text": "Aggregate totals remain public and can disclose individual values through sparse/known-amount inference. Existing credited liabilities and historical head/nullifier state are preserved; earlier signature-only uncredited deposits cannot be invented into new-tree members. There is no generic old-pending-obligation migration in this change. Retained E"
         },
         {
-          "line": 41,
-          "text": "Offline tests cover honest/mutated witnesses and real proofs, serialized native verification, current/historical owner recovery, bounded transport, pool admission, pagination/deferral/concurrent serialization, exact receipts, replay/accounting arithmetic and initializer packets/resume. [The experiment](../experiments/EXP-20261107-private-credit-epo"
+          "line": 31,
+          "text": "The existing global funding PDA retains a bounded history of 128 authoritative root/count pairs. Deposits update that history atomically; TCAP/GPRU accept only a current or retained root. Node uses current funding state for preparation and confirms selected-root/count retention before publication/authorization. History tolerates later deposits with"
+        },
+        {
+          "line": 35,
+          "text": "The previous two-note/two-wallet pool admission, Mother-attested source census, adaptive release planner and pool-specific recovery are RETIRED. The November 7 experiment and dated logs preserve their historical outcomes. Existing on-chain pool accounts and stored attempts remain historical state until separately authorized cleanup; they are not a "
+        },
+        {
+          "line": 43,
+          "text": "## Proposed mixed-action accounting"
         },
         {
           "line": 45,
+          "text": "**Status: PROPOSED direction discussed on 2026-11-16; no replacement runtime or circuit is implemented by this record.** The target is a complete per-asset accounting batch covering accepted confidential financial actions, including credits and debits, with a possible capacity of 64 actions. Current discovery, transcript and aggregate proof cover p"
+        },
+        {
+          "line": 55,
+          "text": "Offline tests cover honest/mutated witnesses and real proofs, serialized native verification, current/historical owner recovery, bounded transport, single-deposit admission, pagination/deferral/concurrent serialization, exact receipts, replay/accounting arithmetic and initializer packets/resume. [The experiment](../experiments/EXP-20261107-private-"
+        },
+        {
+          "line": 59,
           "text": "The November 5 design review's 275-page inventory, 36 selectors, 103 MDX and 39 Mermaid checks are historical documentation evidence, not tests of this replacement. Its runtime-source preservation comparison applies only to that documentation-only review."
         }
       ]
@@ -2228,7 +2358,7 @@
     {
       "path": "docs/laboratory/decisions/README.md",
       "title": "Architecture decision register",
-      "sha256": "3517b8e51daae57b419e8a71bbbe40535205147088f0344272b0294abb7235cd",
+      "sha256": "efa67e7cc22980d24164316b84b9a2834318eaafc82b4a3de5ba059f839fedf2",
       "lines": 11,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
@@ -2250,7 +2380,7 @@
         },
         {
           "line": 9,
-          "text": "- [ADR-005: private credit amounts and adaptive funding pools](ADR-005-private-amount-and-adaptive-pools.md) — EXPERIMENTAL source replacement; private credit commitments, sealed pools and complete epoch accounting passed bounded offline checks, with SBF/activation/live privacy unverified."
+          "text": "- [ADR-005: private credit amounts and shared funding roots](ADR-005-private-amount-and-adaptive-pools.md) — EXPERIMENTAL first-release v1 contract; private credit commitments, authenticated shared funding and complete epoch accounting. Sealed-pool trials remain historical; deployment, activation and live privacy need separate evidence."
         },
         {
           "line": 11,
@@ -2261,7 +2391,7 @@
     {
       "path": "docs/laboratory/experiments/EXP-20261101-delta-binding.md",
       "title": "EXP-20261101: binding the owner delta to the proved transition",
-      "sha256": "6650914846619d116e702ffa4a19949c94e2b4248ad2cb5019d3c1861d0e5c98",
+      "sha256": "a6a5a14f7363aff7e6f83bbe5c84898e23874742ad39ce9fa2722f320a0215c4",
       "lines": 27,
       "status": "VERIFIED",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
@@ -2417,8 +2547,8 @@
     {
       "path": "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md",
       "title": "Private credit and complete epoch accounting: offline validation",
-      "sha256": "8be060f7690c9456c01e6eb83f0bbc9162ac1cee8fd6f01ff5d95b5e87e0368b",
-      "lines": 132,
+      "sha256": "71f6ae4bdee3a5d4257adcd8cfeefa45766c5d363b3d9773e5b42249b37ea6cb",
+      "lines": 178,
       "status": "EXPERIMENTAL",
       "reason": "Replacement proof/build evidence, live deposit/key observations and later off-chain pool timing/lease/recovery regression checks; resumed private credit/epoch flow remains unverified.",
       "evidence": [
@@ -2433,31 +2563,102 @@
       "statusStatements": [
         {
           "line": 3,
+          "text": "**Historical boundary, 2026-11-08:** sealed funding pools, two-wallet admission/release and pool-recovery commands below are RETIRED. Their dated source/test/receipt results remain evidence of the earlier contract, not current procedures. See the [pool-removal record](EXP-20261108-remove-funding-pools.md) and [current ABI](../credit-abi.md)."
+        },
+        {
+          "line": 5,
           "text": "**Status: EXPERIMENTAL replacement with scoped VERIFIED offline checks, 2026-11-07.** [ADR-005](../decisions/ADR-005-private-amount-and-adaptive-pools.md) defines the adopted contract and [ABI](../credit-abi.md) defines exact account/wire layouts. No program was deployed, chain transaction submitted, user environment updated or service started/stop"
         },
         {
-          "line": 15,
+          "line": 17,
           "text": "SDK build and the combined funding/current/historical owner-history suite passed all twenty-two tests. The combined funding/history/owner suite initially exposed a stale V2 import and a new assertion using the wrong decoded field; both fixtures were corrected. The historical twelve-input, historical thirteen-input amount-public and current thirteen"
         },
         {
-          "line": 21,
+          "line": 23,
           "text": "The source compiled 174421 nonlinear credit constraints with thirteen public inputs and 42614 epoch constraints with five. Single-machine development setup verified supplied prepared Ptau and each zkey against its R1CS, then exported exact circuit-specific keys. Honest proofs were generated and verified with both JavaScript and serialized Rust pair"
         },
         {
-          "line": 37,
+          "line": 39,
           "text": "The review explicitly read repository instructions, architecture map/ABI, terminology, architecture-change policy, operator-guide policy and documentation maintenance. Program credit/epoch/pool and GPRU statements were reconciled with SDK serialization/history, Node proving/authorization, Receiver projection/receipts/leases and Cranker submission. "
         },
         {
-          "line": 39,
+          "line": 41,
           "text": "Documentation impact includes both README diagrams, operator/prover/fund-protection runbooks, Laboratory architecture/foundations/transaction/testing/status records, persistent agent guidance and the public layer, service, SDK, security, overview, lifecycle, testing and capability pages. Generated SDK/interface catalogs and examples were refreshed."
         },
         {
-          "line": 100,
+          "line": 84,
+          "text": "Source changes at the time included `services/tsn-node/private_credit_coordination.py`, `services/tsn-node/server.py`, Cranker retry/transport code, Receiver work/retry/reconciliation code and a separate Node-authenticated `work/recover-pool` route. That route and its CLI have since been removed; the [November 8 change record](EXP-20261108-remove-f"
+        },
+        {
+          "line": 102,
           "text": "Historical deposits/credits retain their public disclosures. New credit hides its serialized amount and per-credit liability delta, while public deposit amounts, epoch totals, token, roots, ciphertext, accounts, timing and known prior spends can permit inference. Wallet addresses do not prove independent people. Recipient-registry/head correlations"
         },
         {
-          "line": 118,
+          "line": 120,
           "text": "Finalized read-only checks again found successful deposits `4BPGCpbnTcCuhusNkJuySRYqMvL8bUXYbPcSVR69SMhc5TMR3KqVZ7Q5oqV4p393Q7D5vKcKripPzvTHso2VEQXL` at slot 519698598 and `57bwEfrCcVCJUGx8eWMQbgTr4p8geSjBWsrxWo9CKdMfiL6mKMRguVf7fQnPifkheFBcR4nLdBaM7FoqsE7TH3Gs` at slot 519700332 from distinct wallet signers, a positive asset-vault token balance an"
+        },
+        {
+          "line": 128,
+          "text": "The then-current read-only recovery preview passed at finalized slot 519740448, height 506888693: the original lifetime had expired, its hash was invalid, no receipt/status existed and the canonical pool account was absent. This historical checkpoint used version 156; the [current operator procedure](../../RUN-YOUR-OWN-TSN.md#recover-an-expired-une"
+        },
+        {
+          "line": 146,
+          "text": "At the time of this historical experiment, the explicit `recover-pool` endpoint and CLI accepted an omitted signature for a narrowly checked unsigned FAILED pool condition. The conditions included a finalized expired attempt, exact work version/payload commitment and canonical pool identity; preview was read-only and execution required a separate e"
+        },
+        {
+          "line": 150,
+          "text": "Affected source at the time included Node coordination, Receiver work/reconciliation, Cranker transport and the pool-recovery utility, all of which are bounded by the later retirement record. No service was controlled, recovery executed, deposit repeated, transaction signed/submitted, program deployed, live Receiver/witness state changed or Git com"
+        },
+        {
+          "line": 154,
+          "text": "The operator subsequently ran the unsigned version-167 preview successfully at finalized slot/account context 519765783, then received HTTP 409 `TSN_RECEIVER_LOCAL_STORE_BUSY` on two explicit execute attempts. The reported preview establishes finalized canonical pool absence for that read; it does not establish a recovery mutation. A new read-only "
+        }
+      ]
+    },
+    {
+      "path": "docs/laboratory/experiments/EXP-20261108-remove-funding-pools.md",
+      "title": "Remove sealed funding pools from native credit",
+      "sha256": "4e1d281967c0ccb4ed3a03b26d9f127fb7674bcb88b331f9a92658c14c2e6d98",
+      "lines": 33,
+      "status": "UNVERIFIED",
+      "reason": "Discovered and indexed; whole-document claims need source reconciliation.",
+      "evidence": [],
+      "statusStatements": [
+        {
+          "line": 3,
+          "text": "**Status: EXPERIMENTAL implementation change, 2026-11-08.** The user explicitly retired sealed funding-pool accounts and the requirement to wait for two depositors. This record describes the replacement contract and will record its completed offline checks. Program deployment, funding-root migration, service reload and complete live payment/account"
+        },
+        {
+          "line": 9,
+          "text": "The global account retains its PDA and `TcapFundingMerkleRootV1` discriminator, with internal version 2 and protocol version 1. The 6,209-byte layout preserves the prior current-root/count/frontier prefix and adds 128 root/count history records, a write cursor and populated count. A successful deposit appends its new root/count atomically. TCAP/GPR"
+        },
+        {
+          "line": 19,
+          "text": "Existing sealed pool accounts and stored signed attempts are historical state. Source removal neither closes those on-chain accounts nor refunds their rent, and it does not rewrite Receiver/witness data. Historical recovery reports remain in the [November 7 record](EXP-20261107-private-credit-epoch.md); its old pool commands no longer describe curr"
+        }
+      ]
+    },
+    {
+      "path": "docs/laboratory/experiments/EXP-20261116-private-credit-epoch.md",
+      "title": "Two private credits and complete TCAP epoch accounting",
+      "sha256": "d8f7e16546f55e5db5ca6fda63d6d2ff71b47f8c64f6ec9142da5837fdc2e0fa",
+      "lines": 37,
+      "status": "VERIFIED",
+      "reason": "Three exact finalized Devnet receipts and decoded public epoch state; scoped synthetic privacy controls, with general unlinkability and owner recovery explicitly unverified.",
+      "evidence": [
+        "tsn-protocol/programs/tcap-protocol/programs/tcap/src/private_epoch.rs",
+        "tsn-protocol/services/tsn-node/server.py",
+        "docs/laboratory/credit-abi.md",
+        "docs/laboratory/cryptography.md"
+      ],
+      "statusStatements": [
+        {
+          "line": 25,
+          "text": "Changing Memo keys, ciphertext and successor points does not establish a fresh unlinkable recipient identity: the current witness builder still uses persistent public TIP route material for the head key. Exact observer linkage of these two real credits was not tested. General source/recipient unlinkability, varied-amount multiwallet inference and c"
+        },
+        {
+          "line": 37,
+          "text": "Sources: [TCAP credit](../../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs), [epoch accounting](../../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/private_epoch.rs), [epoch circuit](../../../tsn-protocol/programs/gpru/circuits/tcap_epoch_v1/main.circom), [Node scheduling](../../../tsn-proto"
         }
       ]
     },
@@ -2605,93 +2806,9 @@
       ]
     },
     {
-      "path": "docs/references/CODEX_KNOWLEDGE_ALIGNMENT.md",
-      "title": "Codex knowledge alignment completion record",
-      "sha256": "c211d2119e4d4713adce89a5550737067f6a220277085e1063bc0232dc89552f",
-      "lines": 53,
-      "status": "CURRENT",
-      "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
-      "evidence": [
-        "docs/laboratory/architecture-map.md",
-        "docs/laboratory/credit-abi.md",
-        "docs/laboratory/cryptography.md",
-        "tsn-protocol/services/tsn-node/server.py",
-        "tsn-protocol/services/tsn-receiver/lib/store.ts",
-        "tsn-protocol/programs/gpru/src/hidden_head.rs"
-      ],
-      "statusStatements": [
-        {
-          "line": 9,
-          "text": "Inspected root [AGENTS.md](../../AGENTS.md) and all ten existing `.codex` Markdown references: [architecture-change-policy](../../.codex/architecture-change-policy.md), [architecture-terminology](../../.codex/architecture-terminology.md), [documentation-sync-policy](../../.codex/documentation-sync-policy.md), [CODEX_INVENTION_STRUCTURE_BRIEF](../.."
-        },
-        {
-          "line": 13,
-          "text": "Historical SDK/UI creation bans, missing-allocator/prover claims, eight-input layouts, portfolio proposals, fixed commit work orders and standalone-docs stash/pull commands remain as explicitly non-executable records. The Memo finding retains its November 1 checkpoint with later development evidence pointers. ZK-PRU remains retired context. No unpe"
-        },
-        {
-          "line": 17,
-          "text": "The [official discovery guide](https://learn.chatgpt.com/docs/agent-configuration/agents-md) distinguishes automatically discovered Codex-home/project instructions from explicit references. This repository keeps a single concise root AGENTS entry; `.codex/README.md` routes relevant tasks to current architecture/change/terminology references and cle"
-        },
-        {
-          "line": 25,
-          "text": "Obsolete epoch/vault payout/reimbursement and per-TIN public TIP initialization were removed from current credit choreography. Their distinct retained capabilities are described separately. The root's original dated wallet-assisted experiment diagram remains historical rather than being rewritten as today's native flow. Protocol README links now ta"
-        },
-        {
-          "line": 40,
-          "text": "- `validate-doc-syntax.mjs` with MDX 3.1.1, Mermaid 11.12.3 and JSDOM 26.1.0: **99 MDX pages compiled; 36 Mermaid diagrams parsed; zero failures**. This includes both current README diagrams, the retained historical README diagram and the historical proposal diagram. Browser/theme layout and Mintlify rendering were not tested."
-        },
-        {
-          "line": 44,
-          "text": "- Five historical prompt/design/finding bodies match the original before-edit text; the root README's dated experiment section and remaining suffix are preserved. Active source guidance excludes the superseded absent-prover assertion. Existing newline style was preserved, including the terminology file's CRLF format."
-        }
-      ]
-    },
-    {
-      "path": "docs/references/CODEX_KNOWLEDGE_INVENTORY.md",
-      "title": "Codex knowledge inventory before alignment",
-      "sha256": "b25fc35424b1a1dc92de568740642a78070540f97e2184040abd099a16f46c4e",
-      "lines": 39,
-      "status": "CURRENT",
-      "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
-      "evidence": [
-        "docs/laboratory/architecture-map.md",
-        "docs/laboratory/credit-abi.md",
-        "docs/laboratory/cryptography.md",
-        "tsn-protocol/services/tsn-node/server.py",
-        "tsn-protocol/services/tsn-receiver/lib/store.ts",
-        "tsn-protocol/programs/gpru/src/hidden_head.rs"
-      ],
-      "statusStatements": [
-        {
-          "line": 20,
-          "text": "| [CODEX_CREDIBILITY_PASS_ORDER.md](../../.codex/CODEX_CREDIBILITY_PASS_ORDER.md) | Earlier five-item work order | Explicit task only | Requires commits without current authorization; includes unverified quote/error/prepaid proposals and absolute no-trust claims | Mark entire work order HISTORICAL and non-executable; retain original record |"
-        },
-        {
-          "line": 22,
-          "text": "| [gpru-unlinkable-latest-head.md](../../.codex/gpru-unlinkable-latest-head.md) | October 29 hidden-head design/checkpoints | Explicit design record | Eight-input ABI, rolling-root and missing-prover descriptions outdated; unlinkability goal conflicts with public funding nullifier | Label HISTORICAL/PROPOSED; preserve original design and explain cu"
-        },
-        {
-          "line": 24,
-          "text": "| [pull-docs.md](../../.codex/pull-docs.md) | Earlier standalone-docs Git synchronization prompt | Explicit task only | Assumes standalone docs checkout; stashes/pulls dirty work; initial text truncated | Preserve as historical prompt; point to actual checkout boundary and script refusal |"
-        },
-        {
-          "line": 25,
-          "text": "| [tsn-verification-prompt.md](../../.codex/tsn-verification-prompt.md) | Earlier SDK/UI repair handoff | Explicit task only | Bans direct creation, asserts missing allocator, mandates outdated paths/tests and labels credit live without evidence | Mark HISTORICAL; replace active usage with current contract/verification pointers |"
-        },
-        {
-          "line": 26,
-          "text": "| [Root README](../../README.md) | Workspace introduction and architecture diagram; contributors | Explicit reference | Native credit mixed with epoch/vault payout and old per-TIN replay; historical test valuable | Correct current diagram/prose, preserve dated experiment |"
-        },
-        {
-          "line": 31,
-          "text": "The current [Laboratory index](../laboratory/README.md), [architecture map](../laboratory/architecture-map.md), [components](../laboratory/components.md), [credit ABI](../laboratory/credit-abi.md), [cryptography](../laboratory/cryptography.md), [invariants](../laboratory/invariants.md), [state diagrams](../laboratory/state-and-route-diagrams.md), ["
-        }
-      ]
-    },
-    {
       "path": "docs/references/README.md",
       "title": "Reproducible documentation references",
-      "sha256": "12907917f9cec7d34af546dbd052078489cbc66b1879697add4af7eaff7102e5",
+      "sha256": "d6106e89c8a6ae617ae6bb63a5a82cbabe3eaa3b07ce5a80dfb4eee91491efff",
       "lines": 47,
       "status": "CURRENT",
       "reason": "Documentation coverage, bounded test observations and review/continuation policy; no unobserved live execution claimed.",
@@ -2702,15 +2819,15 @@
       "statusStatements": [
         {
           "line": 45,
-          "text": "The link/syntax validators also cover root `AGENTS.md`, `.codex` Markdown, root `README.md` and `tsn-protocol/README.md`. This explicit scope prevents entry instructions and architecture diagrams from escaping the checks. Historical bodies remain preserved with their boundary labels; parsing them does not turn their old commands into active tasks."
+          "text": "The link/syntax validators also cover root `AGENTS.md`, `.agents` Markdown, root `README.md` and `tsn-protocol/README.md`. This explicit scope prevents entry instructions and architecture diagrams from escaping the checks. Historical bodies remain preserved with their boundary labels; parsing them does not turn their old commands into active tasks."
         }
       ]
     },
     {
       "path": "docs/references/TSN-OPERATOR-GUIDE-20261105.md",
       "title": "TSN operator guide and blockhash correction record",
-      "sha256": "03468ff65e525a87c4e56d878a60404e2bc73a0c820fb1be9a1b4455c5a24133",
-      "lines": 106,
+      "sha256": "21ae978348554cd86db132ba1d386d9b40ecdb1557ce242dd528d1fd1881c0f7",
+      "lines": 189,
       "status": "CURRENT",
       "reason": "Source-backed installation/operation and bounded verification procedure; independent fresh-network replay, production ceremony and live funded-note completion explicitly unverified.",
       "evidence": [
@@ -2732,6 +2849,90 @@
         {
           "line": 79,
           "text": "The earlier `CRANKER_RPC_UNAVAILABLE` Mother-DNA challenge failure is separate RPC availability trouble. Receiver retries configured RPC reads, and Cranker continues polling after challenge failures; the historical provider-side cause remains unknown. Lease expiry in this settlement is established by the stored timestamps."
+        }
+      ]
+    },
+    {
+      "path": "docs/references/agent-knowledge-alignment.md",
+      "title": "Agent knowledge alignment completion record",
+      "sha256": "98eedb2295b9f7e3935f74d3c318dc0851ba967c73bf52b523f3deceffa6c2b7",
+      "lines": 53,
+      "status": "CURRENT",
+      "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
+      "evidence": [
+        "docs/laboratory/architecture-map.md",
+        "docs/laboratory/credit-abi.md",
+        "docs/laboratory/cryptography.md",
+        "tsn-protocol/services/tsn-node/server.py",
+        "tsn-protocol/services/tsn-receiver/lib/store.ts",
+        "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      ],
+      "statusStatements": [
+        {
+          "line": 9,
+          "text": "Inspected root [AGENTS.md](../../AGENTS.md) and all ten existing `.agents` Markdown references: [architecture-change-policy](../../.agents/architecture-change-policy.md), [architecture-terminology](../../.agents/architecture-terminology.md), [documentation-sync-policy](../../.agents/documentation-sync-policy.md), [architecture-source-brief](../../."
+        },
+        {
+          "line": 13,
+          "text": "Historical SDK/UI creation bans, missing-allocator/prover claims, eight-input layouts, portfolio proposals, fixed commit work orders and standalone-docs stash/pull commands remain as explicitly non-executable records. The Memo finding retains its November 1 checkpoint with later development evidence pointers. ZK-PRU remains retired context. No unpe"
+        },
+        {
+          "line": 17,
+          "text": "This repository keeps a single concise root AGENTS entry; `.agents/README.md` routes relevant tasks to current architecture/change/terminology references and clearly identifies historical prompts. Any agent environment can use these references when configured to load the entry instructions and explicitly read the applicable files. The [maintenance "
+        },
+        {
+          "line": 25,
+          "text": "Obsolete epoch/vault payout/reimbursement and per-TIN public TIP initialization were removed from current credit choreography. Their distinct retained capabilities are described separately. The root's original dated wallet-assisted experiment diagram remains historical rather than being rewritten as today's native flow. Protocol README links now ta"
+        },
+        {
+          "line": 40,
+          "text": "- `validate-doc-syntax.mjs` with MDX 3.1.1, Mermaid 11.12.3 and JSDOM 26.1.0: **99 MDX pages compiled; 36 Mermaid diagrams parsed; zero failures**. This includes both current README diagrams, the retained historical README diagram and the historical proposal diagram. Browser/theme layout and Mintlify rendering were not tested."
+        },
+        {
+          "line": 44,
+          "text": "- Five historical prompt/design/finding bodies match the original before-edit text; the root README's dated experiment section and remaining suffix are preserved. Active source guidance excludes the superseded absent-prover assertion. Existing newline style was preserved, including the terminology file's CRLF format."
+        }
+      ]
+    },
+    {
+      "path": "docs/references/agent-knowledge-inventory.md",
+      "title": "Agent knowledge inventory before alignment",
+      "sha256": "fd6e949354af1639ff1b00e27d2b598ab86e85a8c7eefc0ab64764f47a39ddcf",
+      "lines": 39,
+      "status": "CURRENT",
+      "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
+      "evidence": [
+        "docs/laboratory/architecture-map.md",
+        "docs/laboratory/credit-abi.md",
+        "docs/laboratory/cryptography.md",
+        "tsn-protocol/services/tsn-node/server.py",
+        "tsn-protocol/services/tsn-receiver/lib/store.ts",
+        "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      ],
+      "statusStatements": [
+        {
+          "line": 20,
+          "text": "| [credibility-pass-work-order.md](../../.agents/credibility-pass-work-order.md) | Earlier five-item work order | Explicit task only | Requires commits without current authorization; includes unverified quote/error/prepaid proposals and absolute no-trust claims | Mark entire work order HISTORICAL and non-executable; retain original record |"
+        },
+        {
+          "line": 22,
+          "text": "| [gpru-unlinkable-latest-head.md](../../.agents/gpru-unlinkable-latest-head.md) | October 29 hidden-head design/checkpoints | Explicit design record | Eight-input ABI, rolling-root and missing-prover descriptions outdated; unlinkability goal conflicts with public funding nullifier | Label HISTORICAL/PROPOSED; preserve original design and explain c"
+        },
+        {
+          "line": 24,
+          "text": "| [pull-docs.md](../../.agents/pull-docs.md) | Earlier standalone-docs Git synchronization prompt | Explicit task only | Assumes standalone docs checkout; stashes/pulls dirty work; initial text truncated | Preserve as historical prompt; point to actual checkout boundary and script refusal |"
+        },
+        {
+          "line": 25,
+          "text": "| [tsn-verification-prompt.md](../../.agents/tsn-verification-prompt.md) | Earlier SDK/UI repair handoff | Explicit task only | Bans direct creation, asserts missing allocator, mandates outdated paths/tests and labels credit live without evidence | Mark HISTORICAL; replace active usage with current contract/verification pointers |"
+        },
+        {
+          "line": 26,
+          "text": "| [Root README](../../README.md) | Workspace introduction and architecture diagram; contributors | Explicit reference | Native credit mixed with epoch/vault payout and old per-TIN replay; historical test valuable | Correct current diagram/prose, preserve dated experiment |"
+        },
+        {
+          "line": 31,
+          "text": "The current [Laboratory index](../laboratory/README.md), [architecture map](../laboratory/architecture-map.md), [components](../laboratory/components.md), [credit ABI](../laboratory/credit-abi.md), [cryptography](../laboratory/cryptography.md), [invariants](../laboratory/invariants.md), [state diagrams](../laboratory/state-and-route-diagrams.md), ["
         }
       ]
     },
@@ -3017,7 +3218,7 @@
       "status": "HISTORICAL",
       "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
       "evidence": [
-        ".codex/architecture-terminology.md",
+        ".agents/architecture-terminology.md",
         "docs/historical-archive/README.md"
       ],
       "statusStatements": [
@@ -3058,7 +3259,7 @@
       "status": "HISTORICAL",
       "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
       "evidence": [
-        ".codex/architecture-terminology.md",
+        ".agents/architecture-terminology.md",
         "docs/historical-archive/README.md"
       ],
       "statusStatements": [
@@ -3076,7 +3277,7 @@
       "status": "HISTORICAL",
       "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
       "evidence": [
-        ".codex/architecture-terminology.md",
+        ".agents/architecture-terminology.md",
         "docs/historical-archive/README.md"
       ],
       "statusStatements": []
@@ -3089,7 +3290,7 @@
       "status": "HISTORICAL",
       "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
       "evidence": [
-        ".codex/architecture-terminology.md",
+        ".agents/architecture-terminology.md",
         "docs/historical-archive/README.md"
       ],
       "statusStatements": []
@@ -3102,7 +3303,7 @@
       "status": "HISTORICAL",
       "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
       "evidence": [
-        ".codex/architecture-terminology.md",
+        ".agents/architecture-terminology.md",
         "docs/historical-archive/README.md"
       ],
       "statusStatements": [
@@ -3120,7 +3321,7 @@
       "status": "HISTORICAL",
       "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
       "evidence": [
-        ".codex/architecture-terminology.md",
+        ".agents/architecture-terminology.md",
         "docs/historical-archive/README.md"
       ],
       "statusStatements": [
@@ -3158,7 +3359,7 @@
       "status": "HISTORICAL",
       "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
       "evidence": [
-        ".codex/architecture-terminology.md",
+        ".agents/architecture-terminology.md",
         "docs/historical-archive/README.md"
       ],
       "statusStatements": []
@@ -3171,7 +3372,7 @@
       "status": "HISTORICAL",
       "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
       "evidence": [
-        ".codex/architecture-terminology.md",
+        ".agents/architecture-terminology.md",
         "docs/historical-archive/README.md"
       ],
       "statusStatements": [
@@ -3193,7 +3394,7 @@
       "status": "HISTORICAL",
       "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
       "evidence": [
-        ".codex/architecture-terminology.md",
+        ".agents/architecture-terminology.md",
         "docs/historical-archive/README.md"
       ],
       "statusStatements": [
@@ -3211,7 +3412,7 @@
       "status": "HISTORICAL",
       "reason": "Preserved independent publication. Published describes document completion; architectural claims require current-source reconciliation, including retired ZK-PRU and superseded TCAP terminology.",
       "evidence": [
-        ".codex/architecture-terminology.md",
+        ".agents/architecture-terminology.md",
         "docs/historical-archive/README.md"
       ],
       "statusStatements": [
@@ -3224,8 +3425,8 @@
     {
       "path": "tsn-protocol/README.md",
       "title": "Transfer Settlement Network",
-      "sha256": "e9fb12a5295b84d340cc957978c14b53b2257d122f33767d2fe78fd5657fc098",
-      "lines": 174,
+      "sha256": "e87f3e883f7772c53bb4a4c71adfa7c38e582dfeafa26d9c0186ab0d1c5df8cc",
+      "lines": 177,
       "status": "CURRENT",
       "reason": "Native-credit flow and data boundaries source-reconciled, with distinct retained capabilities, explicit configuration/live-evidence limits and corrected local references.",
       "evidence": [
@@ -3238,15 +3439,19 @@
       ],
       "statusStatements": [
         {
-          "line": 139,
-          "text": "Deposits expose wallets, token/amount and signature. Individual credit exposes a blinded amount commitment, token, roots, nullifier, successor points and ciphertext; its reserve does not change. Sealed pool capture requires two positive unspent members and two source wallets, and common release windows adapt to traffic. Epoch accounting exposes a c"
+          "line": 8,
+          "text": "finality. The project is still developing its experimental first release,"
         },
         {
-          "line": 141,
-          "text": "The experimental replacement has pinned witness/prover adapters, isolated real credit/epoch proof tests and native verification. [November 7 evidence](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md) separates those checks from unverified SBF build, operator activation and co"
+          "line": 142,
+          "text": "The primary privacy target is to hide TIN participation from public observers and prevent linking TCAP actions, including intended TIN-to-TIN transfers. Trusted Node access to verification routes/openings and public wallet funding are accepted boundaries. Deposits expose wallets, token/amount and signature. Individual credit exposes a blinded amoun"
         },
         {
-          "line": 159,
+          "line": 144,
+          "text": "The experimental replacement has pinned witness/prover adapters, isolated real credit/epoch proof tests and native verification. [November 7 evidence](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md) preserves the earlier offline checks and activation gaps. [November 16 Devne"
+        },
+        {
+          "line": 162,
           "text": "boundaries. ZK-PRU is retired historical context, not an integration target."
         }
       ]
@@ -3344,18 +3549,26 @@
     {
       "path": "tsn-protocol/sdks/tsn-sdk/README.md",
       "title": "TSN SDK",
-      "sha256": "b1b6d5f1e27578c612caf70f3dd7caa8ceee3edb7f2521c8282f89cf6e91b2ea",
-      "lines": 89,
+      "sha256": "1fc44abe26a162baaf88d2782622cb3a827773206b8c89390054f9041367c0d3",
+      "lines": 91,
       "status": "UNVERIFIED",
       "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
       "evidence": [],
       "statusStatements": [
         {
-          "line": 52,
-          "text": "The current serializer uses a 905-byte `buildTsnRegisterTcapCreditAuthorizationV3Instruction` with sixteen TSNP accounts and thirteen proof inputs. Amount is replaced by a blinded commitment, reserve is readonly, and sealed pool/epoch accounts bind the transition. Separate pool and aggregate-accounting builders support leased Node work; historical "
+          "line": 33,
+          "text": "- Rebuild the SDK after changing source files. Its build clears generated `dist` and uses forced TypeScript compilation so retired exports cannot survive an incremental build."
         },
         {
-          "line": 70,
+          "line": 50,
+          "text": "The experimental first-release v1 credit path uses `tcap_funded_note_v1`. Call `createFundingNoteV1()` in the sender's browser before signing, pass its public `commitment` to `createPaymentAuthorization` and `buildTcapGpruWalletDepositTransaction`, and pass the complete `fundingNote` only to the restricted `buildPaymentAuthorizationIntentRequest` i"
+        },
+        {
+          "line": 54,
+          "text": "The current serializer uses a 905-byte `buildTsnRegisterTcapCreditAuthorizationV3Instruction` with sixteen TSNP accounts and thirteen proof inputs. Amount is represented by a blinded commitment, reserve/global funding accounts are readonly, and the shared-root/epoch accounts bind the transition. A single funded note supports credit; separate aggreg"
+        },
+        {
+          "line": 72,
           "text": "The history reader recognizes finalized historical twelve-input receipts and current thirteen-input funded receipts. `fundingProofVersion` distinguishes those forms; historical recovery does not supply an old deposit or settlement runtime fallback."
         }
       ]
@@ -3363,15 +3576,27 @@
     {
       "path": "tsn-protocol/services/tsn-cranker-op-daemon/README.md",
       "title": "TSN Cranker Operator Daemon",
-      "sha256": "3cedf2bc091468f40415b3e6b462b2c762b0ed265421dc84b80d583f5a4ddace",
-      "lines": 119,
+      "sha256": "91e7b8fdd7a2b1b9b82d3daf7c02817238f97ce2e887895fd4fa8d282195a199",
+      "lines": 117,
       "status": "UNVERIFIED",
       "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
       "evidence": [],
       "statusStatements": [
         {
+          "line": 50,
+          "text": "A single genuine confirmed deposit supports credit without creating a pool account or waiting for another depositor. The canonical global funding account authenticates current and up to 128 retained root/count records. New deposits within that window preserve funded membership; a retired root requires fresh unsigned verification. The latest shared "
+        },
+        {
           "line": 105,
           "text": "## Experimental private-credit and aggregate accounting"
+        },
+        {
+          "line": 107,
+          "text": "A single genuine confirmed deposit supports credit without creating a pool account or waiting for another depositor. The canonical global funding account authenticates current and up to 128 retained root/count records. New deposits within that window preserve funded membership; a retired root requires fresh unsigned verification. The latest shared "
+        },
+        {
+          "line": 115,
+          "text": "Receiver preserves the exact domain 404 `Receiver work was not found`. Missing signing endpoints, transport/interrupted-body failure and HTTP 5xx can use configured fallback; exhaustion returns a sanitized signing-service 503. Exact signing/lifetime/height availability failures may requeue unsigned native work only under active owner/lease/version "
         }
       ]
     },
@@ -3388,7 +3613,7 @@
     {
       "path": "tsn-protocol/services/tsn-crosschain/docs/README.md",
       "title": "TSN Cross-Chain",
-      "sha256": "fbfc27f6222567b8ac6df7af31d74fa816f2006e2a6f9797bc72fdbb62fc38bd",
+      "sha256": "c9e2390a9c6d398d53c04a4c759914f6428fa17bd083df169f604d70d282ca6e",
       "lines": 140,
       "status": "UNVERIFIED",
       "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
@@ -3448,8 +3673,8 @@
     {
       "path": "tsn-protocol/services/tsn-node/README.md",
       "title": "TSN Node by TrustLink Labs",
-      "sha256": "21477a7f90770a8c27c0a24e17cb0aba24fe18f5ce936f91a774eba75abaec88",
-      "lines": 121,
+      "sha256": "d85829fcb2ba4c4a54ab6e7b7cf5484f8fd53c875015276f3fcd3f1d34679daf",
+      "lines": 128,
       "status": "UNVERIFIED",
       "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
       "evidence": [],
@@ -3459,23 +3684,43 @@
           "text": "The Memo validator and full credit digest now require exactly thirteen public inputs. The former twelve-input length guard could reject a funded-note settlement before submission. Load the corrected Node and Receiver, then inspect/requeue only the original eligible settlement through the [settlement recovery procedure](../../tsn-docs/sdk/troublesho"
         },
         {
-          "line": 115,
+          "line": 116,
           "text": "## Experimental private-credit and aggregate accounting"
+        },
+        {
+          "line": 118,
+          "text": "A single genuine confirmed deposit supports credit without creating a pool account or waiting for another depositor. The canonical global funding account authenticates current and up to 128 retained root/count records. New deposits within that window preserve funded membership; a retired root requires fresh unsigned verification. The latest shared "
+        },
+        {
+          "line": 126,
+          "text": "Receiver preserves the exact domain 404 `Receiver work was not found`. Missing signing endpoints, transport/interrupted-body failure and HTTP 5xx can use configured fallback; exhaustion returns a sanitized signing-service 503. Exact signing/lifetime/height availability failures may requeue unsigned native work only under active owner/lease/version "
         }
       ]
     },
     {
       "path": "tsn-protocol/services/tsn-receiver/README.md",
       "title": "TSN Receiver by TrustLink Labs",
-      "sha256": "81dbac67dc50843c4de764ef4574a38940fa08a3f52f15f311d1a35fbe35f2c7",
-      "lines": 158,
+      "sha256": "aa14db37e7990530e5fa9333f122eb3367db48ca3b2b07169c071175fce80d74",
+      "lines": 162,
       "status": "UNVERIFIED",
       "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
       "evidence": [],
       "statusStatements": [
         {
-          "line": 146,
+          "line": 31,
+          "text": "A single genuine confirmed deposit supports credit without creating a pool account or waiting for another depositor. The canonical global funding account authenticates current and up to 128 retained root/count records. New deposits within that window preserve funded membership; a retired root requires fresh unsigned verification. The latest shared "
+        },
+        {
+          "line": 150,
           "text": "## Experimental private-credit and aggregate accounting"
+        },
+        {
+          "line": 152,
+          "text": "A single genuine confirmed deposit supports credit without creating a pool account or waiting for another depositor. The canonical global funding account authenticates current and up to 128 retained root/count records. New deposits within that window preserve funded membership; a retired root requires fresh unsigned verification. The latest shared "
+        },
+        {
+          "line": 160,
+          "text": "Receiver preserves the exact domain 404 `Receiver work was not found`. Missing signing endpoints, transport/interrupted-body failure and HTTP 5xx can use configured fallback; exhaustion returns a sanitized signing-service 503. Exact signing/lifetime/height availability failures may requeue unsigned native work only under active owner/lease/version "
         }
       ]
     },
@@ -3492,7 +3737,7 @@
     {
       "path": "tsn-protocol/tsn-docs/README.md",
       "title": "TSN public documentation and developer handbook",
-      "sha256": "90448820bbe3f180b13a5e4aac6015377f8273946e33721a81a19c01ab1b3f42",
+      "sha256": "c9a34f8afc26c5e530831a275c99a6eb59acf126ebee74d948be2d7aa8210858",
       "lines": 25,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
@@ -3527,7 +3772,7 @@
     {
       "path": "tsn-protocol/tsn-docs/about/contribute.mdx",
       "title": "Contribute to TrustLink Labs",
-      "sha256": "dac5bcced2f26f6572dbde7bfa0d7af61bec4ce672e886adc9eaad65687c760c",
+      "sha256": "5ec085360054d07eaeb55b6cfb5b64b117f3bc877e1c4c71022529cf4b877716",
       "lines": 48,
       "status": "CURRENT",
       "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
@@ -3546,7 +3791,7 @@
     {
       "path": "tsn-protocol/tsn-docs/about/current-technology.mdx",
       "title": "Current Protocol Capabilities",
-      "sha256": "8e6aaf8d97be5f805b2867feda8d829da9a051f8809eb8490f9671aaebf3cbf9",
+      "sha256": "92185a4465fbaae5fa21374bd0242d146fe7b28d89e0c73dc691e04a929064d3",
       "lines": 15,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
@@ -3562,14 +3807,14 @@
         },
         {
           "line": 15,
-          "text": "Experimental native credit uses a private-secret nullifier and fresh blinded amount commitment, with no individual reserve-liability change. Complete 2–64-credit epochs separately publish accounting totals. Public deposits, roots, points, accounts, ciphertext, timing and known history can still correlate payments; Node knows openings/routes and rec"
+          "text": "Experimental native credit uses a private-secret nullifier and fresh blinded amount commitment, with no individual reserve-liability change. TCAP owns complete 2–64-credit epoch accounting and publishes the total after GPRU proof verification. The [TCAP lifecycle](/layers/tcap#native-credit-epoch-lifecycle) explains Node scheduling, shared account "
         }
       ]
     },
     {
       "path": "tsn-protocol/tsn-docs/about/engineering-principles.mdx",
       "title": "TrustLink Labs Design Principles",
-      "sha256": "0da1bd0cd1e0745f85d63287b1bf59242e9bf7798298ad6065a19992a1b477ea",
+      "sha256": "620bf5df6e18fabe9d8a45addb159b47b68f4edd7e8f8700bf952bbc3df2a63c",
       "lines": 21,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
@@ -3585,14 +3830,14 @@
         },
         {
           "line": 21,
-          "text": "Experimental native credit uses a private-secret nullifier and fresh blinded amount commitment, with no individual reserve-liability change. Complete 2–64-credit epochs separately publish accounting totals. Public deposits, roots, points, accounts, ciphertext, timing and known history can still correlate payments; Node knows openings/routes and rec"
+          "text": "Experimental native credit uses a private-secret nullifier and fresh blinded amount commitment, with no individual reserve-liability change. TCAP publishes complete 2–64-credit epoch totals after GPRU proof verification. The [November 16 Devnet record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261116"
         }
       ]
     },
     {
       "path": "tsn-protocol/tsn-docs/about/trustlink-labs.mdx",
       "title": "About TrustLink Labs",
-      "sha256": "55ee8ea9f88b72a6faefa06f46ae85b9dd2a72a9251d052f74df7a857e8b3b91",
+      "sha256": "fa9f3b16a7c64e2d329b7295880fd501de16bb9d8735d125ef915242a7f8adb0",
       "lines": 28,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
@@ -3604,14 +3849,14 @@
       "statusStatements": [
         {
           "line": 9,
-          "text": "The protocol separates transfer identity, private-state verification and asset governance: TIP manages TINs, GPRU verifies private state and TCAP governs accepted assets. Experimental native credit uses blinded amount commitments and secret-derived nullifiers, while complete epochs publish aggregate accounting totals. Public deposits, metadata, tim"
+          "text": "The protocol separates transfer identity, private-state verification and asset governance: TIP manages TINs, GPRU verifies private state and TCAP governs accepted assets and native credit-epoch accounting. Experimental native credit uses blinded amount commitments and secret-derived nullifiers, while complete epochs publish aggregate totals. The [N"
         }
       ]
     },
     {
       "path": "tsn-protocol/tsn-docs/about/what-were-building.mdx",
       "title": "What TrustLink Labs Builds",
-      "sha256": "17933d4c146957f984643766799b72411fab46b11be1bccdb3b628c3508efabd",
+      "sha256": "29d6f18132623c4ce716d33514f5c1e6a6a76fac2156a18004e60923ef5a0079",
       "lines": 15,
       "status": "CURRENT",
       "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
@@ -3630,8 +3875,8 @@
     {
       "path": "tsn-protocol/tsn-docs/api-reference/services.mdx",
       "title": "Service API boundaries",
-      "sha256": "a5a32a9a4ef63ff0295c6b67a16879f1c156a6e496df684169e4502f263b2098",
-      "lines": 64,
+      "sha256": "8d825b6108c745e0816cdc1d6c49d20f7a47531954b0fcf0142d2dc323210998",
+      "lines": 70,
       "status": "CURRENT",
       "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
       "evidence": [
@@ -3643,6 +3888,18 @@
         {
           "line": 12,
           "text": "Use `buildPaymentAuthorizationIntentRequest` for the exact shape and amount conversion; do not build a request from a retired receipt or escrow example. The sender message signature and deposit signature are distinct authorizations. Node forwards to Receiver with its configured service credential using a 30-second HTTPX timeout. This handler has no"
+        },
+        {
+          "line": 34,
+          "text": "The current native-credit authorization includes `kind=TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3`, `transition`, `workStateVersion`, `leaseId`, `leaseVersion`, `leaseExpiresAt` and `expiresAtTs`. Coordination uses `TSN_TCAP_COORDINATION_AUTHORIZATION_V1` with its own verified epoch transition. Both preserve the exact verified transition and bound expir"
+        },
+        {
+          "line": 68,
+          "text": "## Retired pool API boundary"
+        },
+        {
+          "line": 70,
+          "text": "Pool capture work, its recovery endpoint and CLI are retired. They are absent from the supported runtime. Historical signed records and on-chain accounts are preserved for separately authorized inspection/cleanup; source removal does not refund rent or mark payment confirmed."
         }
       ]
     },
@@ -4282,8 +4539,8 @@
     {
       "path": "tsn-protocol/tsn-docs/api-reference/sdk/modules/tcap-gpru-credit.mdx",
       "title": "tcap-gpru-credit API",
-      "sha256": "8c0b286c7f74ceeb064d162b1287fe50163d389fbc74139b69c3a422c3fd7066",
-      "lines": 138,
+      "sha256": "baee7be66d065da499b716d1e11650e49db54f82833d907a3ac4a70ff3b71cd6",
+      "lines": 143,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
       "evidence": [
@@ -4507,7 +4764,7 @@
     {
       "path": "tsn-protocol/tsn-docs/developers/confidential-settlement.mdx",
       "title": "Confidential Settlement and State Protection",
-      "sha256": "51b18dfc7ece935c539a8ca44018e389355b1acfecdd51b56a273174fb6c5283",
+      "sha256": "51c294f7eae3bc08ad5c5d430222a0b26ebbe19b470f24733cb87ba265d06e01",
       "lines": 30,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
@@ -4523,7 +4780,7 @@
         },
         {
           "line": 28,
-          "text": "The experimental native-credit statement uses a secret-derived funded-note nullifier and a freshly blinded amount commitment. It omits the plaintext amount, note opening and private route/predecessor witness; individual credit updates shared head/root and epoch transcript without changing reserve liabilities. Public deposits, epoch totals, assets, "
+          "text": "The experimental native-credit statement uses a secret-derived funded-note nullifier and a freshly blinded amount commitment. It omits the plaintext amount, note opening and private route/predecessor witness; individual credit updates shared head/root and epoch transcript without changing reserve liabilities. TCAP owns that credit-only transcript a"
         }
       ]
     },
@@ -4546,8 +4803,8 @@
     {
       "path": "tsn-protocol/tsn-docs/developers/groth16-hidden-head.mdx",
       "title": "How GPRU Proofs Guard User State",
-      "sha256": "428b7c574090085e74349673d8a846768697418b1859ca54fee21c65fdec94e3",
-      "lines": 20,
+      "sha256": "e8fbd8a9d6bb3d88417a39795a6e93e5384be888f83f9093eb00129f1cfb8473",
+      "lines": 22,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
       "evidence": [
@@ -4560,11 +4817,11 @@
       "statusStatements": [
         {
           "line": 6,
-          "text": "The experimental private-credit replacement keeps thirteen public inputs and a V2 verifier with fourteen IC points, but needs newly matching circuit keys. Existing V2 amount-public keys require explicit rekey; V1 accounts require their separate one-time layout migration. Complete epoch accounting has a separate five-input verifier/key and six IC po"
+          "text": "The experimental first-release v1 credit uses thirteen public inputs and fourteen verifier IC points, with keys matching the private-amount circuit. Existing amount-public keys require explicit rekey; older verifier account layouts require their separate one-time migration. Exact internal account/instruction identifiers are documented in the [credi"
         },
         {
           "line": 16,
-          "text": "The current experimental credit publishes a freshly blinded amount commitment instead of plaintext amount, and advances the head/nullifier root plus epoch digest without reserve liability changes. Node prepares a separate proof for every ordered opening in a 2–64-credit epoch; TCAP/GPRU reclassify that authenticated total once. Sealed positive-fund"
+          "text": "The current experimental credit publishes a freshly blinded amount commitment instead of plaintext amount, and advances the head/nullifier root plus epoch digest without reserve liability changes. Node prepares one aggregate proof covering every ordered opening in an eligible 2–64-credit epoch. GPRU verifies that proof; TCAP owns the transcript and"
         }
       ]
     },
@@ -4585,8 +4842,8 @@
     {
       "path": "tsn-protocol/tsn-docs/developers/payment-intent-lifecycle.mdx",
       "title": "Payment Intent Lifecycle",
-      "sha256": "0a867c255a33356113503638afefe11d2c0d2e8375e8ced446c4db2ea9825d35",
-      "lines": 90,
+      "sha256": "2187b5bfafa8338365d21e4963097be9b6d55765b0fa70ac5e0c87d2ef8c8180",
+      "lines": 93,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
       "evidence": [
@@ -4596,8 +4853,12 @@
       ],
       "statusStatements": [
         {
-          "line": 70,
-          "text": "The sequence describes the experimental source contract. Node creates separate TCAP_EPOCH_ACCOUNTING work for every complete 2–64-credit transcript; Receiver coordinates verification/leases and Cranker submits one proof-verified aggregate reclassification. A singleton carries forward. Matching binaries, explicit credit rekey, separate epoch-verifie"
+          "line": 69,
+          "text": "The sequence describes the experimental source contract. TCAP owns the shared credit-epoch transcript and aggregate accounting, while GPRU verifies its complete proof. Node prepares separate `TCAP_EPOCH_ACCOUNTING` work for 2–63 credits once at least 120 slots have elapsed since the first credit, or immediately at 64 credits. A singleton stays open"
+        },
+        {
+          "line": 91,
+          "text": "The native epoch currently records credits only. A mixed credit/debit/exit transcript is proposed work, and retained TSNP Epoch Treasury/payout/refund APIs have separate contracts. The November 16 credit/accounting result does not establish those distinct execution paths."
         }
       ]
     },
@@ -4618,7 +4879,7 @@
     {
       "path": "tsn-protocol/tsn-docs/developers/replay-and-retries.mdx",
       "title": "Replay Protection and Safe Retries",
-      "sha256": "26113430796accf642d64d9e8d0477362236f776f5f2f0099478ef01faaf2d64",
+      "sha256": "6865a2008867cd05ccf9f73fb8797568409e7cef4f55729d61f86c725ddf3b7d",
       "lines": 19,
       "status": "CURRENT",
       "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
@@ -4630,7 +4891,7 @@
       "statusStatements": [
         {
           "line": 8,
-          "text": "For a balance-changing action, GPRU is intended to prove that the hidden user state is current and that the proposed transition follows from it. TCAP checks the relevant authorization and asset conditions and applies the transition atomically. The hidden-head proof path is not established end to end, so applications must not treat this design descr"
+          "text": "For a balance-changing action, GPRU is intended to prove that the hidden user state is current and that the proposed transition follows from it. TCAP checks the relevant authorization and asset conditions and applies the transition atomically. The [current capability record](/about/current-technology) links bounded Devnet credit/accounting evidence"
         }
       ]
     },
@@ -4658,8 +4919,8 @@
     {
       "path": "tsn-protocol/tsn-docs/glossary/index.mdx",
       "title": "Protocol glossary",
-      "sha256": "6722909fe35c01a13639d4495dfafff0f34c6bcc498742ca49687d6d689a65d2",
-      "lines": 28,
+      "sha256": "7baee1f23cfec8cc254943e9b1a808def51548935876aab44bd3f47b7f751ace",
+      "lines": 30,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
       "evidence": [
@@ -4671,7 +4932,7 @@
       ],
       "statusStatements": [
         {
-          "line": 28,
+          "line": 30,
           "text": "**ZK-PRU.** A retired historical receiving/spending architecture. It must not be used as the current TIN balance or settlement model. See the [internal archive](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs/historical-archive)."
         }
       ]
@@ -4692,7 +4953,7 @@
     {
       "path": "tsn-protocol/tsn-docs/layers/gpru.mdx",
       "title": "GPRU: Guarding Private User State",
-      "sha256": "0d1197ce005628805bb87877284d1162c517618034db9f07afd9f01a05695ddb",
+      "sha256": "88c4cf6a1400c20a6b8055199ba5281e2f986948a81f7dc86f3e2e46919464ad",
       "lines": 24,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
@@ -4714,15 +4975,15 @@
         },
         {
           "line": 18,
-          "text": "Experimental credit uses thirteen public inputs with sealed funding root last, secret-derived nullifier and private-amount commitment binding. A new circuit requires newly matching keys despite retaining the V2 verifier account layout. Separate five-input epoch verification authenticates all 2–64 accepted commitment openings before aggregate accoun"
+          "text": "Experimental credit uses thirteen public inputs with a TCAP-authenticated current or retained funding root last, secret-derived nullifier and private-amount commitment binding. A new circuit requires newly matching keys despite retaining the existing verifier account layout. Separate five-input epoch verification authenticates all 2–64 accepted cre"
         }
       ]
     },
     {
       "path": "tsn-protocol/tsn-docs/layers/tcap.mdx",
       "title": "TCAP: Asset and Settlement Authority",
-      "sha256": "0daf4510fc4ddf63d16e1259b9fefa7377186dcfc029d4f508e1d093d680c723",
-      "lines": 35,
+      "sha256": "79cf80d7cada2d4b5401456852111de823eac543e549a664494b0187142affe4",
+      "lines": 47,
       "status": "CURRENT",
       "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
       "evidence": [
@@ -4737,15 +4998,27 @@
         },
         {
           "line": 31,
-          "text": "The private-credit replacement is experimental. Local real credit/epoch proofs and native verifier tests passed; SBF compilation, activation and complete live accounting remain unverified. Individual amount is committed, while deposits, aggregate totals, token, root progression, points, ciphertext and timing remain observable. [Threat model](/secur"
+          "text": "This is a credit-only transcript. Mixed credit/debit/exit epoch accounting is proposed work that needs its own proof, authorization and conservation contract. Retained TSNP `EpochTreasury`, payout and refund instructions have distinct accounts and do not determine this native TCAP epoch's timing."
+        },
+        {
+          "line": 41,
+          "text": "The private-credit replacement is experimental. Local real credit/epoch proofs and native verifier tests passed. A later isolated TCAP SBF build and synthetic compiled-program regressions verified account decoding and funding-root rejection checks; those tests stopped before proof acceptance. The corrected reference TCAP deployment at slot 52255816"
+        },
+        {
+          "line": 43,
+          "text": "A single genuine confirmed deposit supports credit without creating a pool account or waiting for another depositor. The canonical global funding account authenticates current and up to 128 retained root/count records. New deposits within that window preserve funded membership; a retired root requires fresh unsigned verification. The latest shared "
+        },
+        {
+          "line": 45,
+          "text": "Under the selected experimental first-release v1 contract, classic-token reserve deposits remain public and individual TIN-credit amounts use the private proof/commitment. Confidential funding for eligible Token-2022 assets is a future integration requirement, with no currently wired confidential-funding route."
         }
       ]
     },
     {
       "path": "tsn-protocol/tsn-docs/layers/tin.mdx",
       "title": "TIP and TIN: Transfer Identity",
-      "sha256": "0db62f64301e217315adfbba3e477bc31f73cc772d6dfccb035cc2bb7d30e438",
-      "lines": 19,
+      "sha256": "2610a19ad31bebbaf2a1409f7353bc21f72bf3ebe2ae252ae3762c12778a555c",
+      "lines": 21,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
       "evidence": [
@@ -4760,8 +5033,8 @@
     {
       "path": "tsn-protocol/tsn-docs/layers/tsnp.mdx",
       "title": "TSNP: Transfer Settlement Network Protocol",
-      "sha256": "60767e6868e51878663abf4bf624699556abca2f48343b31f998c95bcbde004f",
-      "lines": 15,
+      "sha256": "59f6d4cda660fca5ae71aaebc40737bb6e36cee4a55b0b681bbc69194b2d0da0",
+      "lines": 17,
       "status": "CURRENT",
       "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
       "evidence": [
@@ -4774,8 +5047,8 @@
     {
       "path": "tsn-protocol/tsn-docs/operators/receiver.mdx",
       "title": "Operate the Receiver",
-      "sha256": "1a5dc28107721cc715ad49f83cc2f8c73a09554d6a158d14df680879c7cdeaa4",
-      "lines": 70,
+      "sha256": "95eef839d0270d2b59ed347f50e6f1bba84c941ab2100bfe91910d79204b6efa",
+      "lines": 74,
       "status": "CURRENT",
       "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
       "evidence": [
@@ -4785,15 +5058,23 @@
       ],
       "statusStatements": [
         {
-          "line": 60,
-          "text": "A FAILED receipt can describe an already finalized transaction. The current Node-service-authenticated receipt validator matches thirteen proof inputs, fourteen TSNP accounts, both signatures, exact instruction/Memo, canonical funded-root account and TCAP transition root. It does not require today's funded-tree root to equal an earlier successful p"
+          "line": 38,
+          "text": "A single genuine confirmed deposit supports credit without creating a pool account or waiting for another depositor. The canonical global funding account authenticates current and up to 128 retained root/count records. New deposits within that window preserve funded membership; a retired root requires fresh unsigned verification. The latest shared "
+        },
+        {
+          "line": 62,
+          "text": "A FAILED receipt can describe an already finalized transaction. The current Node-service-authenticated receipt validator matches thirteen proof inputs, sixteen TSNP accounts, both signatures, exact instruction/Memo, canonical funded-root account and TCAP transition root. It does not require today's funded-tree root to equal an earlier successful pr"
+        },
+        {
+          "line": 72,
+          "text": "Receiver preserves the exact domain 404 `Receiver work was not found`. Missing signing endpoints, transport/interrupted-body failure and HTTP 5xx can use configured fallback; exhaustion returns a sanitized signing-service 503. Exact signing/lifetime/height availability failures may requeue unsigned native work only under active owner/lease/version "
         }
       ]
     },
     {
       "path": "tsn-protocol/tsn-docs/operators/tsn-cranker.mdx",
       "title": "Cranker Role in TSN",
-      "sha256": "39cad6aaaf6c96bf1e615c637c76bdbac1e1b1ca732bf59cbac3802c36fa16ed",
+      "sha256": "dcab81a314122e35864685c94926570bdb060f8cf99332ba9b31f08b87804313",
       "lines": 53,
       "status": "CURRENT",
       "reason": "Current daemon branches and source authorization mismatch reconciled; TIN execution has dated independent evidence, while native credit, V1 cluster support and destination payout remain unverified.",
@@ -4803,13 +5084,22 @@
         "tsn-protocol/services/tsn-receiver/lib/store.ts",
         "docs/laboratory/experiments/EXP-20261102-tin-staged-finalization.md"
       ],
-      "statusStatements": []
+      "statusStatements": [
+        {
+          "line": 27,
+          "text": "A single genuine confirmed deposit supports credit through the common funding account. It does not establish balance authority for debit, transfer or exit. The account authenticates current and up to 128 retained root/count records. New deposits within that window preserve funded membership; a retired root requires fresh unsigned verification. The "
+        },
+        {
+          "line": 51,
+          "text": "Receiver preserves the exact domain 404 `Receiver work was not found`. Missing signing endpoints, transport/interrupted-body failure and HTTP 5xx can use configured fallback; exhaustion returns a sanitized signing-service 503. Exact signing/lifetime/height availability failures may requeue unsigned native work only under active owner/lease/version "
+        }
+      ]
     },
     {
       "path": "tsn-protocol/tsn-docs/operators/tsn-node.mdx",
       "title": "TSN Node Role",
-      "sha256": "8681f34a0ba552f198d22f2130fa4cd263536481799486a7854bb211c77a7ec6",
-      "lines": 43,
+      "sha256": "0833789ac4d9ff16b761ca6fd09b45644a20832ddbb7567f299a23d09417003c",
+      "lines": 51,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
       "evidence": [
@@ -4821,19 +5111,23 @@
       ],
       "statusStatements": [
         {
-          "line": 11,
-          "text": "GPRU guards the integrity and privacy of user state presented to TCAP. TCAP remains responsible for accepted assets, reserves, and atomic settlement. The hidden-head proof path is not yet established end to end."
+          "line": 21,
+          "text": "Funding snapshots contain only public leaves and extend a validated prefix to the selected root/count. Recovery requires successful TCAP append receipts and is bounded to 10,000 leaves/signatures. A single genuine confirmed deposit supports credit without creating a pool account or waiting for another depositor. The canonical global funding account"
         },
         {
-          "line": 21,
-          "text": "Funding snapshots contain only public leaves and extend a validated prefix to the chain-selected root/count. Recovery requires successful TCAP append receipts and is bounded to 10,000 leaves/signatures. Credit selects a released immutable sealed funding pool, so later deposits preserve that membership root. Unsealed pool work must be verified again"
+          "line": 41,
+          "text": "GPRU verifies the complete aggregate proof, and TCAP owns the liability reclassification and reserve-epoch advance. Current epoch records contain credits only; mixed credit/debit/exit accounting is proposed work. Shared account reuse and the separate retained TSNP Epoch Treasury family are described in [the TCAP lifecycle](/layers/tcap#native-credi"
+        },
+        {
+          "line": 47,
+          "text": "Receiver preserves the exact domain 404 `Receiver work was not found`. Missing signing endpoints, transport/interrupted-body failure and HTTP 5xx can use configured fallback; exhaustion returns a sanitized signing-service 503. Exact signing/lifetime/height availability failures may requeue unsigned native work only under active owner/lease/version "
         }
       ]
     },
     {
       "path": "tsn-protocol/tsn-docs/overview/architecture.mdx",
       "title": "TSN Protocol Architecture",
-      "sha256": "757a698b9528de48627050a3fc1c4499682941d407f663888aa640f42a774ec8",
+      "sha256": "874c7ebbc909c0953d04e3cb7ee666706af02638003ac0b3a161552eaabedab3",
       "lines": 41,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
@@ -4846,14 +5140,18 @@
         {
           "line": 29,
           "text": "- **GPRU** guards the user's private state as it is presented to TCAP. Its proof is intended to show that the hidden state is current and that the proposed transition follows from it."
+        },
+        {
+          "line": 41,
+          "text": "The [November 16 Devnet record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261116-private-credit-epoch.md) establishes two confirmed private credits and complete accounting of their shared epoch. Local proof verification, deployment, these transactions and owner-history recovery have distinct evidence"
         }
       ]
     },
     {
       "path": "tsn-protocol/tsn-docs/overview/how-it-works.mdx",
       "title": "How a TSN Transfer Works",
-      "sha256": "c136a69f396aed8254e116ef6c9e08ab6400309c4595489226107bc42af540c1",
-      "lines": 54,
+      "sha256": "48247c48cc53a42df09591703f3b3843dd8cda458ccebab6fd325c92abe63dce",
+      "lines": 55,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
       "evidence": [
@@ -4863,23 +5161,23 @@
       ],
       "statusStatements": [
         {
-          "line": 48,
+          "line": 47,
           "text": "GPRU protects the integrity and privacy of the user's private state presented to TCAP: its proof is intended to show that the hidden state is current and that the proposed change follows from it. TCAP remains responsible for the funds and applies a valid authorized change atomically."
         },
         {
-          "line": 52,
+          "line": 51,
           "text": "An accepted request means the application delivered the intent. Verification means the protocol services accepted it for processing. A submitted transaction is not yet a confirmed transaction. Settlement is confirmed only when the relevant Solana transaction succeeds; for a flow with separate funding and credit transactions, each signature represen"
         },
         {
-          "line": 54,
-          "text": "The experimental sequence separates funding, private credit and aggregate accounting. Credit omits plaintext TIN, private predecessor and amount, using a blinded commitment and secret-derived nullifier; it leaves reserve assets/liabilities unchanged. Node prepares every opening for a complete 2–64-credit epoch, Receiver coordinates work and Cranker"
+          "line": 53,
+          "text": "The experimental sequence separates funding, private credit and aggregate accounting. Credit omits plaintext TIN, private predecessor and amount, using a blinded commitment and secret-derived nullifier; it leaves reserve assets/liabilities unchanged. TCAP owns the complete 2–64-credit epoch accounting and invokes GPRU's proof verifier. Node conside"
         }
       ]
     },
     {
       "path": "tsn-protocol/tsn-docs/overview/introduction.mdx",
       "title": "TSN: Private, Identity-Aware Settlement for Stablecoins on Solana",
-      "sha256": "cbbb8f67dbe208e0f58b06dc9c90e34549f87323aa11b7612bffc7e2ca91814e",
+      "sha256": "cbd48ef2184f123b3bf26b2d22993b79553ab76b37c3558a4b70d289b951adf2",
       "lines": 33,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
@@ -4892,6 +5190,10 @@
       ],
       "statusStatements": [
         {
+          "line": 6,
+          "text": "TrustLink Labs is building foundational infrastructure for the **Internet of Value** through **TSN (Transfer Settlement Network)**, a hybrid settlement network for identity-aware, privacy-preserving value transfer. TSN is designed to make value transfer interoperable across applications and blockchain networks. Its architecture combines off-chain c"
+        },
+        {
           "line": 23,
           "text": "GPRU's proof is designed to establish that the hidden user state is current and that the proposed transition follows from it, without making GPRU a custodian. TCAP remains responsible for the funds and the atomic balance-changing action."
         }
@@ -4900,7 +5202,7 @@
     {
       "path": "tsn-protocol/tsn-docs/overview/separation-of-concerns.mdx",
       "title": "Protocol Responsibilities",
-      "sha256": "f45591f590291b0bd69dd5c0117fbf0ac6ddb7a12cf3b682742fb80757f84545",
+      "sha256": "6f70ad8ee5907d058ec1894f13c9d21366b1855f5073ee51d8c24308cc078b5b",
       "lines": 18,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
@@ -4916,7 +5218,7 @@
         },
         {
           "line": 18,
-          "text": "The experimental native-credit statement uses a secret-derived funded-note nullifier and a freshly blinded amount commitment. It omits the plaintext amount, note opening and private route/predecessor witness; individual credit updates shared head/root and epoch transcript without changing reserve liabilities. Public deposits, epoch totals, assets, "
+          "text": "The experimental native-credit statement uses a secret-derived funded-note nullifier and a freshly blinded amount commitment. It omits the plaintext amount, note opening and private route/predecessor witness; individual credit updates shared head/root and epoch transcript without changing reserve liabilities. TCAP reclassifies the complete epoch ag"
         }
       ]
     },
@@ -5012,7 +5314,7 @@
     {
       "path": "tsn-protocol/tsn-docs/sdk/payment-guide.mdx",
       "title": "Prepare a wallet-authorized TIN credit",
-      "sha256": "cb79c5cb4b0e87147315ca5e7c069e9891d779a8ce410b4d40f6fe2fa5ab74ad",
+      "sha256": "85652d6cf973376521bbe9651b2990dbb84d54ea3dacaf4491356958542a24dc",
       "lines": 38,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
@@ -5028,8 +5330,8 @@
     {
       "path": "tsn-protocol/tsn-docs/sdk/troubleshooting.mdx",
       "title": "Errors, retries and reconciliation",
-      "sha256": "3d85387024745a3a38b78988fe06e222b0b3291c57ecd9eb5642b6208b4eba65",
-      "lines": 65,
+      "sha256": "472e3e9d0e6f2bd20ef849053d03f5eab37572e3ecb822174e0d519ac131d80b",
+      "lines": 71,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
       "evidence": [
@@ -5045,11 +5347,11 @@
           "text": "Amount helpers enforce token precision. Registered mint decimals must match the signed token decimals. The native request requires `tcap_funded_note_v1`, an exact `FundingNoteV1` opening, and the same commitment in the payment message and funded deposit. Retired funding modes and user-supplied recipient transition fields are rejected. The [generate"
         },
         {
-          "line": 36,
+          "line": 42,
           "text": "The exact rejection `TCAP settlement asset is unavailable or its reserve binding is invalid` can also result from the corrected Node asset-offset bug. Operators must load the correction and confirm the actual asset/reserve conditions before using the same guarded retry. Withdrawals being disabled alone does not block native credit. A genuinely inac"
         },
         {
-          "line": 38,
+          "line": 44,
           "text": "The error `GPRU transaction record is missing its twelve public hidden-head inputs` came from an obsolete Node Memo validator rejecting the current thirteen-input funded-note proof before submission. Load the corrected Node and Receiver, then recover the original unsubmitted settlement through the [authenticated retry](/operators/receiver#observe-a"
         }
       ]
@@ -5057,7 +5359,7 @@
     {
       "path": "tsn-protocol/tsn-docs/security/authority-and-keys.mdx",
       "title": "Wallet and Protocol Authority",
-      "sha256": "522c468a48999cce51cc9515e81c6f5bda2ae437f3108cd624903ce69a1d6504",
+      "sha256": "bcce699d8b297280e720e73727e19ae17d6af9f5220caca6ae56c02afe7d0bc6",
       "lines": 18,
       "status": "CURRENT",
       "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
@@ -5071,7 +5373,7 @@
     {
       "path": "tsn-protocol/tsn-docs/security/fail-closed.mdx",
       "title": "When TSN Cannot Complete a Payment",
-      "sha256": "6195c100dc3bc79965270e977d5abc5780ff19e555813ca2fd3b36846b5f0208",
+      "sha256": "9bed11dccb8733bed7f600e53ecee5e11b718d33978eb7b3cb5b2e694507f909",
       "lines": 20,
       "status": "CURRENT",
       "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
@@ -5085,7 +5387,7 @@
     {
       "path": "tsn-protocol/tsn-docs/security/invariants.mdx",
       "title": "TSN Security Principles",
-      "sha256": "2c01b6fa9acaf3c8ea2525e96a462e5379de61f67b0fc50535f9542ce10c52c9",
+      "sha256": "16804a0e44d109d790e541bd63bbb4dc3f69819a84a358d50699905beb116ae4",
       "lines": 20,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
@@ -5101,14 +5403,14 @@
         },
         {
           "line": 18,
-          "text": "Local real-proof and native checks support the experimental private-credit contract; they do not establish SBF execution or a completed live flow. Credit carries a blinded amount commitment and secret-derived nullifier, while complete 2–64-credit epochs publish aggregate totals. Public deposits, known amounts, timing and recipient-registry/head his"
+          "text": "Local real-proof and native checks support the experimental private-credit contract. The [November 16 Devnet record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261116-private-credit-epoch.md) separately establishes two confirmed private credits and their complete epoch accounting. Credit carries a bli"
         }
       ]
     },
     {
       "path": "tsn-protocol/tsn-docs/security/operator-boundaries.mdx",
       "title": "Service and Protocol Boundaries",
-      "sha256": "42b85a4a26424cb0565278fedd5b8887e5454f2dcea649f19908fc9842642690",
+      "sha256": "488c8f9c6d90752fa3ee26ea4cde5e3cf432479a47f48d8c521ce8b987caee27",
       "lines": 11,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
@@ -5120,14 +5422,14 @@
       "statusStatements": [
         {
           "line": 11,
-          "text": "The experimental native-credit statement uses a secret-derived funded-note nullifier and a freshly blinded amount commitment. It omits the plaintext amount, note opening and private route/predecessor witness; individual credit updates shared head/root and epoch transcript without changing reserve liabilities. Public deposits, epoch totals, assets, "
+          "text": "The experimental native-credit statement uses a secret-derived funded-note nullifier and a freshly blinded amount commitment. It omits the plaintext amount, note opening and private route/predecessor witness; individual credit updates shared head/root and epoch transcript without changing reserve liabilities. TCAP owns the separate complete credit-"
         }
       ]
     },
     {
       "path": "tsn-protocol/tsn-docs/security/replay-protection.mdx",
       "title": "Replay Protection",
-      "sha256": "d2812f503501ec3dadbdcf9fbeaea1ed9c8bc2643993fee5abe78c3759bd8956",
+      "sha256": "8d4e70949fb440d92519f873cc9a774c462d8272ca2baae3dc3328e0e3d1a055",
       "lines": 12,
       "status": "CURRENT",
       "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
@@ -5139,15 +5441,15 @@
       "statusStatements": [
         {
           "line": 8,
-          "text": "For a balance-changing action, GPRU is intended to prove that the hidden user state is current and that the proposed change follows from it. TCAP governs the funds and applies valid authorized transitions atomically. The hidden-head proof path is not established end to end, so do not treat this design goal as an active guarantee until the relevant "
+          "text": "For a balance-changing action, GPRU is intended to prove that the hidden user state is current and that the proposed change follows from it. TCAP governs the funds and applies valid authorized transitions atomically. The [current capability record](/about/current-technology) links bounded Devnet credit/accounting evidence; successful credits alone "
         }
       ]
     },
     {
       "path": "tsn-protocol/tsn-docs/security/threat-model.mdx",
       "title": "TSN Privacy and Security Boundaries",
-      "sha256": "815f74c9bc1d7599a1991f0255dabf251282c813088ec51c272ef96a1c1d54a5",
-      "lines": 43,
+      "sha256": "03d25848e5d89c835d1439766e7702036fc9720790891841f0b6df76fabe00bc",
+      "lines": 53,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
       "evidence": [
@@ -5159,20 +5461,20 @@
       ],
       "statusStatements": [
         {
-          "line": 37,
+          "line": 43,
           "text": "The secret-derived nullifier removes the old public deposit-signature calculation, but privacy also depends on the eligible deposit set. In the November 5 reference run, the credit's public funding root exactly reconstructs from its sole index-zero deposit, and the public funding account contains one leaf. An observer can therefore link that deposi"
         },
         {
-          "line": 43,
-          "text": "The experimental private-credit source uses fresh blinded amount commitments and leaves reserve liabilities unchanged on individual credit. Node-created, Receiver-coordinated and Cranker-submitted epoch work proves all 2–64 accepted openings before one aggregate liability reclassification. Actual credit amount is absent from instruction fields and "
+          "line": 49,
+          "text": "The experimental private-credit source uses fresh blinded amount commitments and leaves reserve liabilities unchanged on individual credit. Node-created, Receiver-coordinated and Cranker-submitted epoch work proves all 2–64 accepted credit openings. GPRU verifies the complete proof, and TCAP applies one aggregate liability reclassification. The fir"
         }
       ]
     },
     {
       "path": "tsn-protocol/tsn-docs/testing/verification.mdx",
       "title": "Test an integration and interpret evidence",
-      "sha256": "7f3abf32b9efa21a917d5aa149e10fa9b6d352de9a997b70307834c87bbaac1f",
-      "lines": 38,
+      "sha256": "0fffbf7077cb0687a3a225bc2e355ea7e47325daa60d8772cb6c78a1b11df68c",
+      "lines": 40,
       "status": "CURRENT",
       "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
       "evidence": [
@@ -5180,7 +5482,12 @@
         "docs/laboratory/components.md",
         "docs/laboratory/cryptography.md"
       ],
-      "statusStatements": []
+      "statusStatements": [
+        {
+          "line": 30,
+          "text": "Verify selected binaries, the existing matching credit/epoch verifier keys, active asset/reserve/roots, current recipient scan schema and root-matching snapshots. Existing global funding accounts need the explicit version-2 history migration. Test one genuine confirmed deposit, retained-root acceptance after later deposits, retired/forged/empty-roo"
+        }
+      ]
     }
   ]
 }

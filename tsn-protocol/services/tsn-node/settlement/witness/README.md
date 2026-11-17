@@ -1,0 +1,7 @@
+# Hidden-head witnesses and snapshots
+
+This package validates canonical field/point/portfolio values, builds the existing sparse authenticated maps and prepares private credit witnesses from exact chain-selected TIP, TCAP and funding roots. `SparseTree` and `HiddenHeadWitnessStore` keep their public constructors and methods; their class modules bind explicit method implementations from separate files. `prepare_credit` preserves funding opening/asset/amount membership, spent-nullifier checks, route reconstruction and successor arithmetic. `finish_credit` binds the encrypted Memo before constructing the candidate root.
+
+Snapshots remain untrusted, root-addressed commitment/point records. `_read_snapshot` retains its size/version checks and rejects duplicate keys through `unique_snapshot_pairs`. `save_candidate` retains immutable atomic publication and writes the separate restricted amount opening journal only after its caller verifies the proof. A candidate does not advance chain state or authorize work.
+
+Import the classes from `settlement.witness.sparse_tree` and `settlement.witness.hidden_head_witness_store`; import field, path and snapshot helpers from their named modules. `hidden_head_witness.py` exports the existing interface. Dependencies flow to native cryptography and the funding/amount functions; there is no import of the HTTP server, global runtime loader or service lifecycle.

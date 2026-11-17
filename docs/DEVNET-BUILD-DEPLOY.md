@@ -40,6 +40,7 @@ authorized upgrade wallet:
 
 ```bash
 export ANCHOR_PROVIDER_URL="https://api.devnet.solana.com"
+export TRUSTLINK_DEPLOY_RPC_URL="$ANCHOR_PROVIDER_URL"
 export ANCHOR_WALLET="$HOME/.config/solana/id.json"
 export SOLANA_WALLET="$ANCHOR_WALLET"
 ```
@@ -77,6 +78,27 @@ Each command runs `deploy:lockfiles:stabilize`, `deploy:doctor`,
 `anchor build --no-idl`, `solana program deploy`, and `solana program show`.
 It prints the working directory, safely redacted RPC host, wallet path,
 program ID, artifact path, build mode and deploy result.
+
+The TSNP/TCAP/GPRU wrapper keeps each workspace's `Anchor.toml` cluster first by
+default, then uses `ANCHOR_PROVIDER_URL` or `SOLANA_RPC_URL` if that cluster is
+absent. `TRUSTLINK_DEPLOY_RPC_URL` deliberately overrides that selection for
+this wrapper without editing saved configuration; the example above selects
+public Devnet explicitly. TIP and initialization helpers retain their own RPC
+selection rules.
+
+Before creating a buffer or submitting a transaction, the wrapper verifies
+Devnet's genesis hash and inspects ProgramData capacity. Each read retries
+temporary DNS, connection, timeout, HTTP 429 and server failures three times,
+with two- and four-second waits and a thirty-second limit per command.
+`TRUSTLINK_DEPLOY_RPC_READ_ATTEMPTS` accepts 1–5 attempts. After repeated
+availability failure, it checks `TRUSTLINK_DEPLOY_RPC_FALLBACK_URL`, defaulting
+to public Devnet; set that variable to `none` to disable backup selection.
+Authentication failures, a different genesis hash and account/program errors
+stop the operation. A genuinely missing program permits initial deployment
+only after Devnet verification. The selected endpoint supplies the complete
+capacity inspection, any extension, upload and post-deploy inspection; upload
+errors do not switch providers. Public Devnet can also rate-limit requests, so
+exhausted backup reads still stop before upload.
 
 The expected Devnet program IDs are:
 
@@ -120,21 +142,29 @@ Use [Build and operate your own TSN](RUN-YOUR-OWN-TSN.md) for the complete
 sequence and [the credit ABI](laboratory/credit-abi.md) for account constraints.
 Compilation and deployment remain separate from a live credit.
 
-The deploy helper uses RPC submission, `confirmed` commitment, and 20 signing
-attempts by default because large SBF upgrades can exceed a single blockhash
-window. It only pre-extends an existing ProgramData account when the artifact
-does not fit; an artifact that already fits skips the extension transaction.
-Set `TRUSTLINK_DEPLOY_TRANSPORT=quic` to try QUIC first; the helper automatically
-falls back to RPC and retries both transports up to three rounds when upload or
-blockhash errors occur. `TRUSTLINK_DEPLOY_MAX_SIGN_ATTEMPTS` can override the
-per-upload signing retry count, and `TRUSTLINK_DEPLOY_RECOVERY_ROUNDS` can set
-the transport recovery rounds from 1 to 5.
+The deploy helper uses `confirmed` commitment and 20 signing attempts by
+default because large SBF upgrades can exceed a single blockhash window. It
+only pre-extends an existing ProgramData account when the artifact does not
+fit. The npm aliases select RPC first for TCAP/GPRU and QUIC first for TSNP/all,
+with one recovery round that tries each transport using the same buffer.
+`TRUSTLINK_DEPLOY_MAX_SIGN_ATTEMPTS` overrides the per-upload signing budget.
+To override transport or recovery rounds, invoke the wrapper directly because
+the npm aliases set those two variables themselves:
+
+```bash
+TRUSTLINK_DEPLOY_TRANSPORT=quic TRUSTLINK_DEPLOY_RECOVERY_ROUNDS=2 \
+node scripts/devnet-program-deploy.mjs deploy tcap
+```
+
+The direct wrapper defaults to RPC first and three recovery rounds;
+`TRUSTLINK_DEPLOY_RECOVERY_ROUNDS` accepts 1–5.
 
 Before uploading, the helper creates or reuses a protected persistent buffer
 signer in the system temporary directory. This prevents an interrupted upload
-from losing the buffer recovery keypair. A successful deployment removes an
-automatically created signer; after all recovery attempts fail, the signer is
-left in place and its path is printed so the next invocation can resume it.
+from losing the buffer recovery keypair. A successful upload and post-deploy
+inspection remove an automatically created signer. Exhausted uploads or a
+failed post-deploy inspection retain it and report the incomplete outcome.
+Inspect chain state and deployed bytes before resuming an uncertain upload.
 Set `TRUSTLINK_DEPLOY_BUFFER_SIGNER` to take ownership of a specific signer
 path. Never publish the signer file or its seed phrase.
 

@@ -586,7 +586,12 @@
 
       stage = "requesting the sender's TCAP deposit transaction signature";
       const signedTransaction = await activeWallet.signTransaction(transaction);
-      const senderSignedFundingTransaction = encodeBase64(signedTransaction.serialize());
+      const signedWire = signedTransaction.serialize();
+      stage = "checking the signed deposit against the sender's approval";
+      sdk.assertSignedTcapGpruWalletDepositTransaction(signedWire, {
+        accounts, amountBaseUnits, fundingNoteCommitment: fundingNote.commitment,
+      });
+      const senderSignedFundingTransaction = encodeBase64(signedWire);
       const paymentId = crypto.randomUUID();
       const request = sdk.buildPaymentAuthorizationIntentRequest({
         paymentId,
@@ -631,14 +636,19 @@
         const work = await api(`/api/tsn/sdk/tin-credit-status?operationId=${encodeURIComponent(operationId)}`);
         const fundingStatus = String(work.status ?? "UNKNOWN").toUpperCase();
         const creditStatus = String(work.settlement?.status ?? "WAITING_FOR_FUNDING").toUpperCase();
-        const nodeReason = String(work.nodeDecisionReason ?? "").trim();
-        const progress = `${fundingStatus}/${creditStatus}/${nodeReason}`;
+        const fundingReason = String(work.nodeDecisionReason ?? "").trim();
+        const settlementReason = String(work.settlement?.nodeDecisionReason ?? "").trim();
+        const progress = `${fundingStatus}/${creditStatus}/${fundingReason}/${settlementReason}`;
         if (progress !== lastStatus) {
           lastStatus = progress;
           if (fundingStatus === "REJECTED") {
-            log("TIN CREDIT NODE REJECTED", `TSN Node rejected reserve funding${nodeReason ? `: ${nodeReason}` : "."} Settlement work remains ${creditStatus}.`);
+            log("TIN CREDIT NODE REJECTED", `TSN Node rejected reserve funding${fundingReason ? `: ${fundingReason}` : "."} Settlement work remains ${creditStatus}.`);
           } else if (fundingStatus === "FAILED") {
             log("TIN CREDIT FUNDING FAILED", "Cranker could not complete reserve funding. Check its RPC/submission result and the original transaction signature before retrying. Settlement has not executed.");
+          } else if (creditStatus === "REJECTED") {
+            log("TIN CREDIT SETTLEMENT REJECTED", `TSN Node rejected TIN credit settlement${settlementReason ? `: ${settlementReason}` : "."} Reserve funding is ${fundingStatus}.`);
+          } else if (creditStatus === "FAILED") {
+            log("TIN CREDIT SETTLEMENT FAILED", `Receiver reports TIN credit settlement FAILED${settlementReason ? `: ${settlementReason}` : "."} Reserve funding is ${fundingStatus}. Check the saved submission result before retrying.`);
           } else if (fundingStatus === "NODE_VERIFYING") {
             log("TIN CREDIT NODE VERIFYING", `Receiver accepted the intent; TSN Node verification is in progress. Settlement work is ${creditStatus}.`);
           } else if (creditStatus === "CONFIRMED") {
@@ -655,8 +665,8 @@
           if (output) output.textContent = creditStatus === "CONFIRMED"
             ? `TIN credit ${operationId} confirmed${work.settlement?.result?.signature ? ` on Solana: ${work.settlement.result.signature}` : ""}.`
             : fundingStatus === "REJECTED"
-              ? `TSN Node rejected reserve funding for ${operationId}${nodeReason ? `: ${nodeReason}` : "."} Settlement work is ${creditStatus} and has not executed.`
-              : `TIN credit ${operationId} ended with reserve funding ${fundingStatus} and settlement ${creditStatus}.`;
+              ? `TSN Node rejected reserve funding for ${operationId}${fundingReason ? `: ${fundingReason}` : "."} Settlement work is ${creditStatus} and has not executed.`
+              : `TIN credit ${operationId} ended with reserve funding ${fundingStatus} and settlement ${creditStatus}${settlementReason ? `: ${settlementReason}` : "."}`;
           return;
         }
       } catch (error) {

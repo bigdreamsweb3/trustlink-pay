@@ -132,7 +132,7 @@ liquidity, receipt events, or deployment status; only observed Devnet/Testnet
 outputs may be reported as evidence.
 
 Use the canonical TrustLink Labs terminology from
-`.codex/architecture-terminology.md`: **Decentralized Settlement Protocol
+`.agents/architecture-terminology.md`: **Decentralized Settlement Protocol
 (DESP)** is the architectural category, while **TSN (Transfer Settlement
 Network)** is TrustLink Labs' implementation. Preserve the terms TIN, TCap,
 GPRU, Receiver, TSN Nodes, Crankers, settlement routing, and privacy-aware

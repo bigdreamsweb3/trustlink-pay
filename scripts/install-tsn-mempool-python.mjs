@@ -1,26 +1,10 @@
-import { spawn } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
-
-const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const python = process.platform === "win32" ? "python" : "python3";
-const requirements = resolve(rootDir, "tsn-protocol", "services", "tsn-node", "requirements.txt");
-
-const child = spawn(
-  python,
-  ["-m", "pip", "install", "--upgrade", "-r", requirements],
-  { cwd: rootDir, stdio: "inherit", shell: false },
+// This helper must not run pip against unpinned dependency ranges. Re-enable
+// installation only after a complete, reviewed lock with artifact hashes exists
+// and the installer enforces it. Installed environments remain unchanged.
+console.error(
+  "Automatic Python dependency installation is disabled: no reviewed, fully " +
+  "pinned lock with artifact hashes is available. Preserve the existing " +
+  "environment until a verified lock and enforcing installer are reviewed. " +
+  "Manual pip installs and Docker builds are outside this guard.",
 );
-
-child.on("error", (error) => {
-  console.error(`Failed to start ${python}: ${error.message}`);
-  process.exit(1);
-});
-
-child.on("exit", (code, signal) => {
-  if (signal) {
-    console.error(`Python dependency installation stopped by ${signal}.`);
-    process.exit(1);
-  }
-  process.exit(code ?? 1);
-});
+process.exitCode = 1;

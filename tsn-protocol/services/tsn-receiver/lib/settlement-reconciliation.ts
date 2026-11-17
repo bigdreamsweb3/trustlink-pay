@@ -25,7 +25,7 @@ const integer = (value: unknown, length: number) => {
 function assertEligible(work: ReceiverWork, funding: ReceiverWork | null, expectedVersion: number, reportOwner?: string) {
   const native = work.kind === "SETTLEMENT";
   const expectedKind = native ? "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3" : "TSN_TCAP_COORDINATION_AUTHORIZATION_V1";
-  const expectedStage = {SETTLEMENT:"TCAP_GPRU_MEMO_CREDIT_V2_SIGNED",TCAP_FUNDING_POOL:"TCAP_FUNDING_POOL_V1_SIGNED",TCAP_EPOCH_ACCOUNTING:"TCAP_EPOCH_ACCOUNTING_V1_SIGNED"}[work.kind as "SETTLEMENT"|"TCAP_FUNDING_POOL"|"TCAP_EPOCH_ACCOUNTING"];
+  const expectedStage = {SETTLEMENT:"TCAP_GPRU_MEMO_CREDIT_V2_SIGNED",TCAP_EPOCH_ACCOUNTING:"TCAP_EPOCH_ACCOUNTING_V1_SIGNED"}[work.kind as "SETTLEMENT"|"TCAP_EPOCH_ACCOUNTING"];
   if (!expectedStage) throw new Error("SETTLEMENT_RECONCILIATION_KIND_INVALID");
   if (reportOwner) {
     const auth = work.authorization;
@@ -57,7 +57,7 @@ function assertEligible(work: ReceiverWork, funding: ReceiverWork | null, expect
 /** Match the immutable finalized V1 wire against the entire authorized credit and Memo. */
 export function assertSettlementReceipt(work: ReceiverWork, signature: string, receipt: any, mother: any, root: any, reportOwner?: string) {
   const t = work.authorization?.transition as Record<string, any>;
-  const coordination = work.kind === "TCAP_FUNDING_POOL" || work.kind === "TCAP_EPOCH_ACCOUNTING";
+  const coordination = work.kind === "TCAP_EPOCH_ACCOUNTING";
   if (!t || (!coordination && !t.proof) || receipt?.meta?.err !== null || receipt.version !== 1 || !Number.isSafeInteger(receipt.slot)
       || !Array.isArray(receipt.transaction) || receipt.transaction[1] !== "base64") throw new Error("SETTLEMENT_RECEIPT_NOT_SUCCESSFUL_V1");
   if (work.result?.signature && work.result.signature !== signature) throw new Error("SETTLEMENT_SUBMISSION_SIGNATURE_MISMATCH");
@@ -99,19 +99,6 @@ export function assertSettlementReceipt(work: ReceiverWork, signature: string, r
   const authority = new PublicKey(motherData.subarray(8, 40));
   if (coordination) {
     let expectedKeys: PublicKey[], expected: Buffer, stage: string;
-    if (work.kind === "TCAP_FUNDING_POOL") {
-      const [pool,poolBump] = PublicKey.findProgramAddressSync([Buffer.from("tcap:sealed-funding:v1"),new PublicKey(t.assetEntry).toBuffer(),bytes(t.root,32)],TCAP);
-      expectedKeys = [authority,pda("tsn_mother_escrow",TSNP),new PublicKey(t.tcapConfig),new PublicKey(t.assetEntry),pda("tcap:funding-root:v1",TCAP),pool,PublicKey.default];
-      expected = Buffer.concat([hash("global:seal_private_funding_pool_v1").subarray(0,8),bytes(t.root,32),integer(t.eligibleNoteCount,8),integer(t.sourceWalletCount,2),integer(t.releaseSlot,8)]);
-      const d = Buffer.from(root?.data?.[0] ?? "","base64");
-      if (root?.owner !== TCAP.toBase58() || d.length !== 113 || !d.subarray(0,8).equals(hash("account:TcapSealedFundingPoolV1").subarray(0,8)) || d.readUInt16LE(8)!==1 || d[10]!==poolBump || !d.subarray(11,43).equals(new PublicKey(t.assetEntry).toBuffer())
-          || !d.subarray(47,79).equals(bytes(t.root,32)) || !d.subarray(87,95).equals(integer(t.eligibleNoteCount,8))
-          || !d.subarray(95,97).equals(integer(t.sourceWalletCount,2)) || !d.subarray(105,113).equals(integer(t.releaseSlot,8))
-          || d.readUInt32LE(43)===0 || d.readBigUInt64LE(87)<2n || d.readUInt16LE(95)<2
-          || BigInt(d.readUInt16LE(95))>d.readBigUInt64LE(87) || d.readBigUInt64LE(79)<d.readBigUInt64LE(87)
-          || d.readBigUInt64LE(105)<d.readBigUInt64LE(97)) throw new Error("PRIVATE_POOL_RECEIPT_MISMATCH");
-      stage = "TCAP_FUNDING_POOL_V1_CONFIRMED";
-    } else {
       expectedKeys = [authority,pda("tsn_mother_escrow",TSNP),new PublicKey(t.tcapConfig),new PublicKey(t.assetEntry),new PublicKey(t.reserveState),new PublicKey(t.accountingEpoch),pda("gpru:tcap-epoch-verifier:v1",GPRU),GPRU];
       if (t.proof?.publicInputs?.length !== 5) throw new Error("TCAP_EPOCH_RECEIPT_PROOF_INVALID");
       expected = Buffer.concat([hash("global:account_credit_epoch_v1").subarray(0,8),integer(t.total,8),...t.proof.publicInputs.map((v:unknown)=>bytes(v,32)),bytes(t.proof.proofA,64),bytes(t.proof.proofB,128),bytes(t.proof.proofC,64)]);
@@ -125,9 +112,7 @@ export function assertSettlementReceipt(work: ReceiverWork, signature: string, r
       const [epoch,epochBump]=PublicKey.findProgramAddressSync([Buffer.from("tcap:credit-epoch:v1"),new PublicKey(t.assetEntry).toBuffer(),d.subarray(43,51)],TCAP);
       if(epoch.toBase58()!==t.accountingEpoch || d[10]!==epochBump)throw new Error("TCAP_EPOCH_RECEIPT_MISMATCH");
       stage = "TCAP_EPOCH_ACCOUNTING_V1_CONFIRMED";
-    }
-    assertPermissions(keys, message, authority, expectedKeys, work.kind === "TCAP_FUNDING_POOL"
-      ? [expectedKeys[5]] : [expectedKeys[4], expectedKeys[5]], TCAP);
+    assertPermissions(keys, message, authority, expectedKeys, [expectedKeys[4], expectedKeys[5]], TCAP);
     if (!instructions[0].program.equals(TCAP) || !instructions[0].data.equals(expected) || instructions[0].keys.length !== expectedKeys.length || !instructions[0].keys.every((k,i)=>k.equals(expectedKeys[i]))) throw new Error("PRIVATE_COORDINATION_RECEIPT_AUTHORIZATION_MISMATCH");
     return {signature,stage,slot:receipt.slot,confirmationStatus:"finalized"};
   }
@@ -136,7 +121,7 @@ export function assertSettlementReceipt(work: ReceiverWork, signature: string, r
     PublicKey.findProgramAddressSync([Buffer.from("tsn:tcap-authorization:v1"), bytes(t.authorizationDigest, 32)], TSNP)[0],
     pda("tip:route-merkle-root:v1", TIP), pda("gpru:hidden-head-verifier:v1", GPRU),
     new PublicKey("Sysvar1nstructions1111111111111111111111111"), GPRU,
-    PublicKey.findProgramAddressSync([Buffer.from("tcap:sealed-funding:v1"),new PublicKey(t.assetEntry).toBuffer(),bytes(t.proof.publicInputs[12],32)],TCAP)[0],
+    pda("tcap:funding-root:v1", TCAP),
     new PublicKey(t.accountingEpoch), PublicKey.default];
   if (expectedKeys[6].toBase58() !== t.commitmentRoot || expectedKeys[4].toBase58() !== t.tcapConfig
       || expectedKeys[13].toBase58() !== t.fundingRootAccount) throw new Error("SETTLEMENT_RECEIPT_ACCOUNTS_MISMATCH");
@@ -199,7 +184,7 @@ async function reconcileReceipt(params: { id: string; expectedVersion: number; s
     rpc("getTransaction", [params.signature, { encoding: "base64", commitment: "finalized", maxSupportedTransactionVersion: 1 }]),
     funding ? rpc("getTransaction", [funding.result!.signature, { encoding: "base64", commitment: "finalized", maxSupportedTransactionVersion: 1 }]) : Promise.resolve(null),
     rpc("getAccountInfo", [pda("tsn_mother_escrow", TSNP).toBase58(), { encoding: "base64", commitment: "finalized" }]),
-    rpc("getAccountInfo", [work.kind === "SETTLEMENT" ? t.commitmentRoot : work.kind === "TCAP_EPOCH_ACCOUNTING" ? t.accountingEpoch : PublicKey.findProgramAddressSync([Buffer.from("tcap:sealed-funding:v1"),new PublicKey(t.assetEntry).toBuffer(),bytes(t.root,32)],TCAP)[0].toBase58(), { encoding: "base64", commitment: "finalized" }]),
+    rpc("getAccountInfo", [work.kind === "SETTLEMENT" ? t.commitmentRoot : t.accountingEpoch, { encoding: "base64", commitment: "finalized" }]),
   ]);
   if (funding && deposit.meta?.err !== null) throw new Error("SETTLEMENT_FUNDING_NOT_CONFIRMED");
   const evidence = assertSettlementReceipt(work, params.signature, receipt, mother.value, root.value, reportOwner);
@@ -240,65 +225,4 @@ export async function reconcileSettlementReceipt(params: { id: string; expectedV
 export async function reconcileExpiredCrankerConfirmation(params: { id: string; owner: string; expectedVersion: number; signature: string }) {
   if (!params.owner) throw new Error("SETTLEMENT_LATE_REPORT_NOT_ELIGIBLE");
   return reconcileReceipt({ ...params, execute: true }, params.owner);
-}
-
-/** Explicit recovery of an expired, unexecuted pool capture; never a credit/epoch retry. */
-export async function recoverExpiredFundingPool(params: { id: string; expectedVersion: number; signature: string; execute: boolean }) {
-  const ref = workCollection.doc(params.id);
-  const work = (await ref.get()).data() as ReceiverWork | undefined;
-  if (!work) throw new Error("WORK_NOT_FOUND");
-  if (work.kind !== "TCAP_FUNDING_POOL") throw new Error("POOL_RECOVERY_KIND_INVALID");
-  assertEligible(work, null, params.expectedVersion);
-  const attempt = work.result;
-  const auth = work.authorization!;
-  const value = auth.transition as Record<string, any>;
-  if (!attempt || attempt.signature !== params.signature || attempt.stage !== "TCAP_FUNDING_POOL_V1_SIGNED"
-      || !/^[1-9A-HJ-NP-Za-km-z]{86,88}$/.test(params.signature)
-      || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(String(attempt.blockhash))
-      || !/^\d+$/.test(String(attempt.lastValidBlockHeight))
-      || !/^[a-f0-9]{64}$/.test(String(attempt.wireSha256))
-      || !Number.isSafeInteger(attempt.wireBytes) || Number(attempt.wireBytes) < 1 || Number(attempt.wireBytes) > 4096
-      || !Number.isFinite(Date.parse(String(auth.leaseExpiresAt))) || Date.parse(String(auth.leaseExpiresAt)) > Date.now()
-      || !value || value.assetEntry !== work.payload.assetEntry || value.root !== work.payload.root) {
-    throw new Error("POOL_RECOVERY_ATTEMPT_INVALID");
-  }
-  const pool = PublicKey.findProgramAddressSync([Buffer.from("tcap:sealed-funding:v1"), new PublicKey(value.assetEntry).toBuffer(), bytes(value.root,32)], TCAP)[0].toBase58();
-  // Pin height and account reads to the same finalized bank, even when the
-  // gateway routes independent calls to providers with different progress.
-  const slot = await rpc("getSlot", [{commitment:"finalized"}]);
-  if (!Number.isSafeInteger(slot) || slot <= 0) throw new Error("POOL_RECOVERY_RPC_CONTEXT_INVALID");
-  const block = await rpc("getBlock", [slot,{commitment:"finalized",transactionDetails:"none",rewards:false,maxSupportedTransactionVersion:1}]);
-  const height = block?.blockHeight;
-  if (!Number.isSafeInteger(height) || BigInt(height) <= BigInt(String(attempt.lastValidBlockHeight))) throw new Error("POOL_RECOVERY_LIFETIME_NOT_EXPIRED");
-  const [blockhash, account, receipt, status] = await Promise.all([
-    rpc("isBlockhashValid", [attempt.blockhash,{commitment:"finalized",minContextSlot:slot}]),
-    rpc("getAccountInfo", [pool,{encoding:"base64",commitment:"finalized",minContextSlot:slot}]),
-    rpc("getTransaction", [params.signature,{encoding:"base64",commitment:"finalized",maxSupportedTransactionVersion:1}], true),
-    rpc("getSignatureStatuses", [[params.signature],{searchTransactionHistory:true}]),
-  ]);
-  if (!Number.isSafeInteger(blockhash?.context?.slot) || !Number.isSafeInteger(account?.context?.slot)
-      || blockhash.context.slot < slot || account.context.slot < slot
-      || typeof blockhash.value !== "boolean" || !("value" in account)
-      || !Array.isArray(status?.value) || status.value.length !== 1) throw new Error("POOL_RECOVERY_RPC_CONTEXT_INVALID");
-  if (blockhash.value) throw new Error("POOL_RECOVERY_LIFETIME_NOT_EXPIRED");
-  // An absent receipt alone is insufficient. The current TCAP ABI initializes
-  // this immutable account on successful seal and has no pool-close instruction.
-  if (account.value !== null || receipt !== null || status.value[0] !== null) throw new Error("POOL_RECOVERY_EXECUTION_FOUND");
-  const preview = {id:work.id,status:work.status,stateVersion:work.stateVersion,signature:params.signature,
-    pool,finalizedSlot:slot,finalizedBlockHeight:String(height),executed:false};
-  if (!params.execute) return preview;
-  const result = await db.runTransaction(async (transaction: any) => {
-    const fresh = (await transaction.get(ref)).data() as ReceiverWork | undefined;
-    if (!fresh || payloadCommitment(fresh) !== payloadCommitment(work)) throw new Error("STALE_STATE_VERSION");
-    assertEligible(fresh,null,params.expectedVersion);
-    const recoveredAt = new Date().toISOString();
-    transaction.update(ref,{status:"RECEIVED",stateVersion:fresh.stateVersion+1,updatedAt:recoveredAt,
-      verification:null,authorization:null,result:null,nodeLease:null,crankerLease:null,
-      reconciliationHistory:[...((fresh as any).reconciliationHistory ?? []),{previousStateVersion:fresh.stateVersion,
-        previousResult:fresh.result,authorizationCommitment:payloadCommitment(fresh.authorization!),
-        reason:"EXPIRED_UNEXECUTED_FUNDING_POOL",recoveredAt,signature:params.signature,pool,finalizedSlot:slot,finalizedBlockHeight:String(height)}]});
-    return {...preview,status:"RECEIVED",stateVersion:fresh.stateVersion+1,executed:true};
-  });
-  await wakeTsnNode("EXPIRED_FUNDING_POOL_RECOVERED");
-  return result;
 }

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+printf '%s\n' 'Automatic WSL migration is disabled until dependency pins/artifact hashes and the destructive workspace-copy plan are reviewed. Existing workspaces are unchanged.' >&2
+exit 1
+
 set -euo pipefail
 
 SOURCE="${SOURCE:-/mnt/c/Users/codepara/Desktop/trust-link}"

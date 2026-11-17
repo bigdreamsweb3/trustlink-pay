@@ -13,6 +13,12 @@ Amount helpers enforce token precision. Registered mint decimals must match the 
 
 `TCAP_FUNDING_ROOT_ACCOUNT_MISSING` or `TCAP_FUNDING_ROOT_OWNER_MISMATCH` blocks XP preparation before wallet approval. Verify that the canonical global root is initialized under the selected TCAP program and that the updated verifier is active on that cluster. These are operator prerequisites; retrying the old deposit mode does not provide funded membership. If another deposit changes the funding root before settlement, Node must reconstruct membership and proof using the same note and nullifier.
 
+## Exactly-one-deposit rejection
+
+`Wallet funding transaction must contain exactly one TCAP reserve deposit` was also produced by a Node guard that counted wallet-added ComputeBudget instructions as deposits. The corrected flow accepts exactly one approved `deposit_private_funding_v1` with valid, nonduplicate ComputeBudget settings and rejects additional payment actions or malformed settings. SDK/XP validate the returned owner-signed wire before ingress; Node independently verifies the deposit and later matches the complete confirmed wire. Load the corrected SDK/browser bundle and Node before repeating the flow.
+
+Inspect the original funding work and signature first. A linked settlement staying `RECEIVED` does not mean funds moved; a successful funding receipt must be preserved even if settlement remains pending. Expired or changed funding requires fresh owner approval after reconciliation.
+
 ## HTTP failures and timeouts
 
 `TsnHttpClient` throws `TSN request failed (<status>): <body>` for non-2xx responses. It does not normalize every server error into a typed exception, impose a generic timeout, retry automatically, or emit lifecycle callbacks. Use the endpoint's actual error shape and your transport policy. A 2xx response identifies accepted work, not confirmed settlement.

@@ -1,10 +1,10 @@
 # TSN operator guide and blockhash correction record
 
-**Status: CURRENT bounded source/review record, 2026-11-05.** This checkpoint accompanies [Build and operate your own TSN](../RUN-YOUR-OWN-TSN.md) and the [required agent maintenance rule](../../.codex/tsn-operator-guide-policy.md). It does not certify a clean-machine installation, new independent network, production ceremony or complete owner-workflow recovery. One finalized reference funded-note credit is recorded below with its separate receipt-repair obligation.
+**Status: CURRENT bounded source/review record, 2026-11-05.** This checkpoint accompanies [Build and operate your own TSN](../RUN-YOUR-OWN-TSN.md) and the [required agent maintenance rule](../../.agents/tsn-operator-guide-policy.md). It does not certify a clean-machine installation, new independent network, production ceremony or complete owner-workflow recovery. One finalized reference funded-note credit is recorded below with its separate receipt-repair obligation.
 
 ## Source reconciliation
 
-Reviewed root instructions, `.codex` terminology/change policy/index, documentation maintenance, Laboratory architecture/credit ABI, package scripts, deployment/setup helpers, TIP initializer/route append, Mother CLI inputs, TCAP initialization/asset registration, circuit setup/export, Node native library/prover/witness requirements, Receiver storage/lease contract, Cranker admission/funding submission and SDK/application integration. Existing README lifecycle diagrams retain their actors/accounting gates and now identify the post-amount-approval blockhash refresh.
+Reviewed root instructions, `.agents` terminology/change policy/index, documentation maintenance, Laboratory architecture/credit ABI, package scripts, deployment/setup helpers, TIP initializer/route append, Mother CLI inputs, TCAP initialization/asset registration, circuit setup/export, Node native library/prover/witness requirements, Receiver storage/lease contract, Cranker admission/funding submission and SDK/application integration. Existing README lifecycle diagrams retain their actors/accounting gates and now identify the post-amount-approval blockhash refresh.
 
 The guide explicitly distinguishes fixed reference IDs from the source changes needed for a separate deployment. It records actual environment precedence, Windows DLL versus SBF/Linux builds, one-time funding root/V2 verifier enrollment, persistent artifact pins, canonical empty-state snapshot bootstrap and established-state recovery constraints. It links existing canonical records instead of creating a second ABI/proof specification.
 
@@ -104,3 +104,86 @@ The preview succeeded against the live Receiver and verified finalized slot 5189
 Interface discovery regenerated **16** Node routes, **15** schemas and **23** Receiver handlers; the Rust declaration inventory was unchanged in scope. Documentation inventory covered **274** pages, all **33** explicit claim selectors passed, local link/navigation checks found **zero** issues, and MDX/Mermaid validation compiled **103** pages and parsed **39** diagrams with **zero** failures. Tracked scoped whitespace and trailing-whitespace inspection of **23** affected source/document files passed. Parsing does not establish visual rendering or future live reporting after service reload.
 
 Implementation changes are in Receiver `lib/settlement-reconciliation.ts`, Cranker work PATCH and its reconciliation/retry tests, plus Cranker `src/receiver/confirmed-report.ts`, daemon reporting and the seven report tests. Internal updates cover `RUN-YOUR-OWN-TSN.md`, `DOCUMENTATION_STATUS.md`, Laboratory architecture/credit ABI/transaction/reconciliation records, the funded-note experiment's appended checkpoint and this operator record. Public updates cover the operator entry, Receiver/Cranker guides, service API and hidden-head guide; both affected service READMEs were synchronized. Generated HTTP/interface, page/claim and syntax/link reports were refreshed. Existing root/protocol README actor/program diagrams were reviewed: receipt reconciliation changes coordination after execution, while their funding/authorization/CPI/owner-recovery sequence remains applicable. No SDK export or program ABI change was introduced by this correction.
+
+## TCAP credit account decoding correction, 2026-11-15
+
+The retained original TCAP artifact at `tsn-protocol/programs/tcap-protocol/target/deploy/tcap.so` has SHA-256 `ae578f2b04dd7f80eac99969c9c778cfbf4980e075160420644f0885b35f6c8c`. Its generated `CreditGpruMemoV2::try_accounts` uses a direct stack displacement of 4,392 bytes and a derived address displacement of 4,192, both beyond SBF's 4,096-byte frame. The synthetic [compiled-program regression](../../scripts/tests/test_tcap_credit_sbf.py) reproduces a stack access violation without Receiver data, private notes, keys, real proof material, network access or transaction signing.
+
+Heap-backed config, shared root, asset and reserve accounts reduce the corrected validator's deepest direct displacement to 3,496 bytes and derived address displacement to 3,352. Handler and dispatch remain within 4,096 bytes. The isolated artifact at `protocol-test-runs/tcap-credit-stack-20261115/deploy/tcap.so` has SHA-256 `2c0aae8f332c084f737ef52ceea26686d37e061ab36729a96eea65dfbf2ce557`. Its offline locked `cargo build-sbf` completed with 21 existing Anchor/unused warnings and no stack-offset warning. The original deployment artifact/keypairs were not replaced. Local `evidence.json`, build log and before/after test logs remain in that ignored test directory; they are development evidence rather than required runtime configuration.
+
+From the root in PowerShell, run the corrected compiled-program fixture with:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/tests/test_tcap_credit_sbf.py protocol-test-runs/tcap-credit-stack-20261115/deploy/tcap.so
+```
+
+Four test methods cover 13 synthetic cases. Direct TCAP calls with current/retained full-width funding roots reach a deliberate authorization-commitment mismatch (`6008`) for both absent and existing epochs. Synthetic TSNP calls with a matching Mother account and authorization digest through the existing binary reach TCAP and reject at the deliberately expired slot (`6012`), after funding and authorization binding checks. Zero, unrecorded, noncanonical and malformed-history contexts still reject with `6023`. Independent review repeated the original nine direct cases against both artifacts and verified disassembly; the root run passed all 13 final cases. TSNP's offline locked isolated SBF build against the boxed TCAP dependency also completed successfully, with four existing warnings. It is byte-identical to the original TSNP artifact (SHA-256 `1e8d4d2ffafb1b5a36c173664928bdad509dc86fce6bd42796ea83ca0ab6243b`), so this fix requires only the corrected TCAP deployment. These tests establish account/argument decoding, CPI serialization and funding guards, not real Groth16 proof acceptance, a confirmed private credit or owner recovery.
+
+Other offline commands passed: `npm --prefix tsn-protocol/services/tsn-receiver test` (typecheck and 46 tests); `node --test tsn-protocol/sdks/tsn-sdk/tests/funding-note.test.mjs tsn-protocol/sdks/tsn-sdk/tests/signed-funding-deposit.test.mjs` (11 tests); and, from the Cranker service directory, `node --import tsx --test tests/funding-root.test.ts tests/settlement-transport.test.ts` (7 tests). From the Node service directory, the root virtual environment imported `server` before discovering `test_funding_note.py`, `test_global_funding_credit.py` and `test_hidden_head_transport.py`, passing 27 tests under the existing native-library settings. These are focused checks; the previously recorded unrelated full-suite failures were not reclassified.
+
+The existing Receiver lock retry needs no further code edit: its isolated tests verify up to eight exclusive-open attempts for `EPERM`/`EACCES`, totaling 1,120 ms scheduled delay, without access-error lock deletion. Persistent errors still fail. This scoped check does not establish general crash-safe locking or change the adapter's separate existing age-based stale-lock handling.
+
+The [internal guide](../RUN-YOUR-OWN-TSN.md#12-diagnose-failures-without-repeating-uncertain-payments), [credit ABI](../laboratory/credit-abi.md) and public TCAP capability boundary were synchronized. Root/protocol README diagrams, SDK exports, TSNP serialization and GPRU proof requirements were reviewed; their data flow and ABI need no change for heap storage. No new agent rule or public installation page is needed. Interface discovery regenerated 16 Node routes, 15 schemas, 26 Receiver handlers and the current Rust declarations. Documentation inventory covered 276 pages; all 36 explicit claim selectors passed; local links/navigation reported zero issues; MDX compilation passed 102 pages and Mermaid parsing passed 38 diagrams with zero failures. Scoped whitespace checks passed. These checks do not verify visual rendering or live execution. The current failed holder remains a separate signed attempt; the read-only resolver could not connect to the local Receiver, and no recovery/deployment/service/signing/Git mutation was performed. Verify the corrected deployment before inspecting and explicitly resolving that attempt, then independently verify fresh private credit and owner recovery.
+
+## TCAP deployment DNS checkpoint, 2026-11-15
+
+The operator's later build completed with the existing 21 warnings and produced the 1,617,120-byte standard TCAP artifact. Its SHA-256 matches the isolated tested correction (`2c0aae8f332c084f737ef52ceea26686d37e061ab36729a96eea65dfbf2ce557`); all four SBF test methods/13 cases passed again against that standard artifact. The reported wrapper failure occurred in its pre-upload ProgramData inspection because WSL could not resolve the configured Helius hostname. Source places buffer preparation, capacity extension and upload after that inspection. This log does not establish a deployed upgrade.
+
+Subsequent read-only WSL checks resolved both provider hostnames and successfully queried public Devnet. TCAP remained at deployment slot 521823595, with ProgramData capacity 1,636,352 bytes and authority `78AacdSEWquuus5QyU654C7Gjb6gFb8okLNb8v1hn5MX`. Capacity exceeds the checked artifact size. The wrapper's cluster-first resolution explains why setting `ANCHOR_PROVIDER_URL` alone cannot replace its configured Helius URL; no deployment helper or RPC configuration was changed.
+
+From the repository root in the operator's WSL prompt, this direct CLI command selects public Devnet for the existing artifact and preserves the checked capacity. The wallet must remain the matching existing upgrade authority; do not substitute a new keypair.
+
+```bash
+cd tsn-protocol/programs/tcap-protocol
+solana program deploy target/deploy/tcap.so \
+  --program-id target/deploy/tcap-keypair.json \
+  --keypair "$HOME/.config/solana/id.json" \
+  --upgrade-authority "$HOME/.config/solana/id.json" \
+  --url https://api.devnet.solana.com \
+  --use-rpc --commitment confirmed --max-sign-attempts 20 \
+  --max-len 1636352
+```
+
+`solana program deploy --help` confirmed these options on the current WSL CLI. The assistant did not execute deployment, create a buffer, sign, control services or mutate Receiver work. After the operator runs it, inspect the program and compare deployed bytes before failed-attempt recovery or claiming private credit success. RPC/DNS reachability is time-sensitive; these successful reads do not guarantee a later upload.
+
+## Deployment wrapper RPC recovery correction, 2026-11-15
+
+The operator explicitly requested a repair to `npm run tcap:program:deploy:devnet` after the DNS checkpoint above. The earlier failure happened after a successful build but before buffer preparation or upload; the later direct CLI upload showed expired-blockhash retries, and its final outcome remains unverified. These observations do not establish a compiler failure or a completed upgrade.
+
+The [deployment wrapper](../../scripts/devnet-program-deploy.mjs) now retries read-only genesis/capacity/post-deploy inspection for concrete DNS, connection, timeout, HTTP 429 and server failures. Its default is three attempts with two- and four-second waits and a thirty-second timeout per command; `TRUSTLINK_DEPLOY_RPC_READ_ATTEMPTS` accepts 1–5. Configured `Anchor.toml` cluster priority is preserved, with a new deliberate `TRUSTLINK_DEPLOY_RPC_URL` override above it. A repeatedly unavailable endpoint permits a backup selected by `TRUSTLINK_DEPLOY_RPC_FALLBACK_URL`, defaulting to public Devnet; `none` disables the backup. Each candidate must return Devnet genesis `EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG` before complete capacity inspection and any buffer/transaction operation. Authentication, certificate, wrong-genesis, malformed capacity and other program/account errors stop without fallback. A genuine missing program permits an initial deployment after cluster and keypair identity checks.
+
+The selected endpoint drives capacity, any required extension, upload and post-deploy inspection together. Transport recovery retains the same endpoint and buffer signer. Existing npm aliases still select TCAP/GPRU RPC-first and TSNP/all QUIC-first with one recovery round; direct wrapper invocation accepts explicit transport and 1–5 rounds, defaulting to RPC-first/three. A returned-success upload followed by failed or malformed inspection reports incomplete verification and retains the auto signer. Exhausted uploads no longer claim the existing program was untouched; reconcile chain state before resuming. Program IDs, program/authority keys, saved RPC configuration, capacity headroom and participating protocol/service contracts were preserved. Windows arguments containing drive paths now map to WSL paths, and command/captured-read diagnostics redact provider user information, path tokens and query values without retaining raw spawn arguments.
+
+From the repository root in PowerShell, the offline verification command is:
+
+```powershell
+node --test scripts/tests/devnet-program-deploy.test.mjs scripts/tests/tip-program-deploy.test.mjs
+```
+
+All 43 tests passed: 38 new wrapper regressions and five existing TIP regressions. The wrapper tests intercept every child command and reject network access, using synthetic temporary files rather than checkout wallets, artifacts or configuration. They cover same-provider retries, configured/dedicated RPC selection, verified fallback, initial deployment, capacity extension, same-buffer transport recovery, incomplete post-deploy verification, permanent numeric account/TLS errors, strict retry settings, credential redaction and Windows/WSL quoting. `node --check` and scoped tracked whitespace checks passed. Independent review verified the CLI's `genesis-hash --url` option and tested eleven isolated availability-classifier cases. These checks do not exercise real RPC upload throughput, blockhash expiry on chain, clean-machine installation or deployed-byte agreement.
+
+The same wrapper suite ran in the operator's WSL environment, passing 37 tests with the Windows-only forwarding case skipped. That case passed in the Windows run. Both runs used intercepted CLI calls; neither tested a real deployment.
+
+The [operator guide](../RUN-YOUR-OWN-TSN.md) and [build/deploy guide](../DEVNET-BUILD-DEPLOY.md) now state exact precedence and recovery settings. Both documentation trees and root/protocol README command/diagram references were inspected; no public API, SDK export, account layout or actor-flow change requires updates there, and the internal self-hosting guide remains unpublished. No agent-rule change is required because the existing operator-guide policy covers this method. The assistant performed no deployment, signing, service operation, Receiver recovery, commit or push.
+
+Documentation inventory covers 276 pages and the claim register validates all 36 explicit selectors. Local link/navigation checks found zero issues; syntax validation compiled 102 MDX pages and parsed 38 Mermaid diagrams without failures. Script/test syntax, scoped tracked whitespace and new-test trailing-whitespace checks passed. These checks do not verify remote links, visual rendering or the operator's ongoing direct upload.
+
+## Corrected TCAP deployment verified, 2026-11-15
+
+The operator subsequently completed `npm run tcap:program:deploy:devnet` through the configured Helius endpoint on the first RPC upload attempt. The supplied log reports ProgramData capacity 1,636,352 bytes, no extension, successful post-deploy inspection at deployment slot 522558160, the unchanged program/authority and cleanup of the temporary buffer signer. This completed wrapper run supersedes its earlier pre-upload DNS failure; the outcome of the separate direct CLI attempt is not needed to establish the current binary.
+
+Independent read-only JSON-RPC verification checked Devnet genesis and fetched program plus ProgramData together at finalized context slot 522559996. TCAP `tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF` remains executable under the upgradeable BPF loader and binds ProgramData `GMZKt38kw1TcnqGJiefGjmGx1FVxwYEULSHosnB5nj1M`. Its decoded deployment slot is 522558160 and authority is `78AacdSEWquuus5QyU654C7Gjb6gFb8okLNb8v1hn5MX`. All 1,617,120 artifact bytes exactly match the corrected, previously tested TCAP artifact, SHA-256 `2c0aae8f332c084f737ef52ceea26686d37e061ab36729a96eea65dfbf2ce557`; the remaining 19,232 capacity bytes are zero. The allowlisted local result is retained in `protocol-test-runs/tcap-credit-stack-20261115/deployment-verification-522558160.json`. The assistant performed reads only and did not deploy or sign.
+
+Local Receiver inspection still found `settlement-62e424aa6ebf25982c65e9b498507223` FAILED/version 262 with its saved signature and no nonexecution resolution. Its original funding remains CONFIRMED/version 5. The newer funded settlement `settlement-55d4dc891486b2e12c1f2a34d6412262` remains RECEIVED/version 1, with its own funding CONFIRMED/version 5. The existing read-only resolver preview could not reach `http://127.0.0.1:8010` (`ConnectError`), so current nonexecution evidence and lock release remain unverified. Deployment does not release that signed-attempt lock or repeat either deposit.
+
+With the Receiver that owns this local store running, inspect the failed holder from the repository root in Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/resolve-failed-settlement.py `
+  --receiver-url http://127.0.0.1:8010 `
+  --work-id settlement-62e424aa6ebf25982c65e9b498507223 `
+  --expected-version 262 `
+  --signature 5uiPZpHRaoxJfxnsnvjs3UCGGQMeWFx1zK8iyVBwxaHhigQKf1XHS1LeB3s8jRmKpN2DeRqVgudKVHjzbYNh19C6
+```
+
+Version 262 is the inspected local observation; a changed version requires fresh inspection. No `--execute` was used. Only a successful preview establishes eligibility for the separate user-controlled execution that records nonexecution and wakes eligible dependent work. Fresh private credit, complete epoch accounting and owner recovery remain separate checks. The internal guide/status and public TCAP capability boundary distinguish this verified deployment from those unperformed outcomes.

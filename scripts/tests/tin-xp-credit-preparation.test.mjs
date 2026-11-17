@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import vm from "node:vm";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { ComputeBudgetProgram, Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import nacl from "tweetnacl";
 import ts from "../../tsn-protocol/sdks/tsn-sdk/node_modules/typescript/lib/typescript.js";
 import * as sdk from "../../tsn-protocol/sdks/tsn-sdk/dist/index.js";
@@ -166,6 +166,10 @@ test("XP rejects absent or wrongly owned funding roots before requesting a block
 test("XP restricted ingress rejects invalid and substituted openings before forwarding approved work", async () => {
   const server = harness(); await server.prepare();
   const note = sdk.createFundingNoteV1(), otherNote = sdk.createFundingNoteV1();
+  const accounts = Object.fromEntries(Object.entries(server.session.pendingTinCredit.accounts).map(([name, value]) => [name, new PublicKey(value)]));
+  const transaction = sdk.buildTcapGpruWalletDepositTransaction({ accounts, amountBaseUnits: 1_250_000n, fundingNoteCommitment: note.commitment });
+  transaction.recentBlockhash = PublicKey.default.toBase58();
+  transaction.sign(Keypair.fromSeed(new Uint8Array(32).fill(1)));
   const authorization = sdk.createPaymentAuthorization({ senderWallet: depositor.toBase58(), senderIdentity: depositor.toBase58(),
     receiverIdentity: "tin:1234567890", tokenMintAddress: mint.toBase58(), amount: "1.25", senderFeeAmount: "0",
     totalTokenRequiredUi: "1.25", tokenDecimals: 6, fundingNoteCommitment: note.commitment });
@@ -173,13 +177,23 @@ test("XP restricted ingress rejects invalid and substituted openings before forw
     recipientTin: "1234567890", tokenMintAddress: mint.toBase58(), tokenDecimals: 6, senderWallet: depositor.toBase58(),
     senderAuthorizationMessage: authorization.message, senderAuthorizationSignature: "offline-placeholder",
     senderAuthorizationNonce: authorization.nonce, senderAuthorizationIssuedAt: authorization.issuedAt,
-    senderAuthorizationExpiresAt: authorization.expiresAt, senderSignedFundingTransaction: "offline-placeholder",
+    senderAuthorizationExpiresAt: authorization.expiresAt, senderSignedFundingTransaction: transaction.serialize().toString("base64"),
     senderFundingMode: "tcap_funded_note_v1", fundingNote: note, amount: "1.25" });
   const malformed = await server.submit({ ...request, fundingNote: { ...note, secret: "00".repeat(32) } });
   assert.equal(malformed.status, 422); assert.equal(malformed.body.error, "INVALID_PRIVATE_FUNDING_NOTE");
   const substituted = await server.submit({ ...request, fundingNote: otherNote });
   assert.equal(substituted.status, 409); assert.equal(substituted.body.error, "TIN_CREDIT_REQUEST_DIFFERS_FROM_PREPARATION");
   assert.equal(server.submitted.length, 0);
+  const extraTransfer = sdk.TcapGpruTransaction.from(transaction.serialize());
+  extraTransfer.add(SystemProgram.transfer({ fromPubkey: depositor, toPubkey: mint, lamports: 1 }));
+  extraTransfer.sign(Keypair.fromSeed(new Uint8Array(32).fill(1)));
+  const rejected = await server.submit({ ...request, senderSignedFundingTransaction: extraTransfer.serialize().toString("base64") });
+  assert.equal(rejected.status, 422); assert.equal(rejected.body.error, "SIGNED_FUNDING_TRANSACTION_DIFFERS_FROM_APPROVAL");
+  assert.equal(server.submitted.length, 0);
+  const budgetDeposit = sdk.TcapGpruTransaction.from(transaction.serialize());
+  budgetDeposit.instructions.unshift(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }), ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 10n }));
+  budgetDeposit.sign(Keypair.fromSeed(new Uint8Array(32).fill(1)));
+  request.senderSignedFundingTransaction = budgetDeposit.serialize().toString("base64");
   const accepted = await server.submit(request);
   assert.equal(accepted.status, 200); assert.deepEqual(server.submitted[0].fundingNote, note);
   assert.equal("fundingNote" in accepted.body, false); assert.equal(server.session.pendingTinCredit, null);
@@ -203,7 +217,10 @@ test("XP browser binds one private note into both wallet approvals and sends its
     Buffer, BigInt, Error, crypto: globalThis.crypto,
     window: { TsnRecipientCreditSdk: browserSdk }, $: name => elements[name],
     requireWallet() {}, requireNetwork() {}, resolvedTin: { tin: "1234567890", ownerPubkeyHash: "ab".repeat(32), displayName: "Synthetic owner" },
-    activeWallet: { publicKey: wallet.publicKey, async signTransaction(transaction) { transaction.partialSign(wallet); return transaction; } },
+    activeWallet: { publicKey: wallet.publicKey, async signTransaction(transaction) {
+      transaction.instructions.unshift(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }));
+      transaction.partialSign(wallet); return transaction;
+    } },
     sign: async message => { signatures.push(message); return Buffer.from(nacl.sign.detached(new TextEncoder().encode(message), wallet.secretKey)).toString("base64"); },
     encodeBase64: bytes => Buffer.from(bytes).toString("base64"),
     api: async (path, options) => { calls.push({ path, body: JSON.parse(options.body) }); if (path.endsWith("refresh-tin-credit-blockhash")) {
@@ -223,7 +240,9 @@ test("XP browser binds one private note into both wallet approvals and sends its
   const transaction = sdk.TcapGpruTransaction.from(Buffer.from(request.senderSignedFundingTransaction, "base64"));
   assert.equal(transaction.verifySignatures(), true);
   assert.equal(transaction.recentBlockhash, freshBlockhash);
-  assert.equal(transaction.instructions[0].data.subarray(16).toString("hex"), note.commitment);
+  assert.equal(transaction.instructions.length, 2);
+  const deposit = transaction.instructions.find(instruction => instruction.programId.equals(program));
+  assert.equal(deposit.data.subarray(16).toString("hex"), note.commitment);
   assert.equal(signatures[0].includes(note.secret) || signatures[0].includes(note.blinding), false);
   assert.equal(JSON.stringify(logs).includes(note.secret) || JSON.stringify(logs).includes(note.blinding), false);
 });
@@ -239,7 +258,7 @@ test("XP refresh requires an unexpired prepared credit and does not extend its a
   assert.equal((await server.refresh()).status, 409);
 });
 
-test("XP displays funding FAILED as a funding failure instead of settlement waiting", async () => {
+async function creditWatcherHarness(responses) {
   const file = "../../protocol-tests/ui/public/tsn-dapp.js";
   const source = ts.createSourceFile(file, await readFile(new URL(file, import.meta.url), "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   let watcher;
@@ -249,12 +268,58 @@ test("XP displays funding FAILED as a funding failure instead of settlement wait
   }
   visit(source); assert.ok(watcher);
   const logs = [], output = {};
+  let polls = 0;
   const watch = vm.runInNewContext(watcher + "\nwatchTinCredit", {
     setTimeout: resolve => resolve(), log: (...values) => logs.push(values), $: () => output,
-    api: async () => ({ status: "FAILED", settlement: { status: "RECEIVED" } }),
+    api: async () => responses[Math.min(polls++, responses.length - 1)],
   });
   await watch("synthetic-work");
+  return { logs, output, polls };
+}
+
+test("XP displays funding FAILED as a funding failure instead of settlement waiting", async () => {
+  const { logs, output } = await creditWatcherHarness([{ status: "FAILED", settlement: { status: "RECEIVED" } }]);
   assert.equal(logs[0][0], "TIN CREDIT FUNDING FAILED");
   assert.equal(logs.some(([event]) => event === "TIN CREDIT SETTLEMENT WAITING"), false);
   assert.ok(output.textContent.includes("funding FAILED"));
+});
+
+test("XP displays a nested settlement rejection and preserves its reason separately from funding", async () => {
+  const fundingReason = "Reserve deposit verified";
+  const settlementReason = "Private funding root is locked by an unresolved submission";
+  const { logs, output, polls } = await creditWatcherHarness([{
+    status: "CONFIRMED", nodeDecisionReason: fundingReason,
+    settlement: { status: "REJECTED", nodeDecisionReason: settlementReason },
+  }]);
+  assert.equal(polls, 1, "settlement rejection must stop the watcher");
+  assert.equal(logs[0][0], "TIN CREDIT SETTLEMENT REJECTED");
+  assert.ok(logs[0][1].includes(settlementReason));
+  assert.ok(logs[0][1].includes("Reserve funding is CONFIRMED"));
+  assert.equal(logs[0][1].includes(fundingReason), false);
+  assert.equal(logs.some(([event]) => event === "TIN CREDIT NODE REJECTED" || event === "TIN CREDIT SETTLED"), false);
+  assert.ok(output.textContent.includes(`settlement REJECTED: ${settlementReason}`));
+});
+
+test("XP displays settlement FAILED without assuming reserve funding is confirmed", async () => {
+  const settlementReason = "Submission outcome needs reconciliation";
+  const { logs, output, polls } = await creditWatcherHarness([{
+    status: "SUBMITTED", settlement: { status: "FAILED", nodeDecisionReason: settlementReason },
+  }]);
+  assert.equal(polls, 1);
+  assert.equal(logs[0][0], "TIN CREDIT SETTLEMENT FAILED");
+  assert.ok(logs[0][1].includes(settlementReason));
+  assert.ok(logs[0][1].includes("Reserve funding is SUBMITTED"));
+  assert.equal(logs.some(([event]) => event === "TIN CREDIT FUNDING FAILED" || event === "TIN CREDIT SETTLED"), false);
+  assert.ok(output.textContent.includes(`settlement FAILED: ${settlementReason}`));
+});
+
+test("XP tracks nested settlement reason changes while status stays unchanged", async () => {
+  const { logs, polls } = await creditWatcherHarness([
+    { status: "CONFIRMED", settlement: { status: "NODE_VERIFYING", nodeDecisionReason: "" } },
+    { status: "CONFIRMED", settlement: { status: "NODE_VERIFYING", nodeDecisionReason: "Checking funding root" } },
+    { status: "CONFIRMED", settlement: { status: "REJECTED", nodeDecisionReason: "Funding root unavailable" } },
+  ]);
+  assert.equal(polls, 3);
+  assert.equal(logs.filter(([event]) => event === "TIN CREDIT STATUS").length, 2);
+  assert.equal(logs.at(-1)[0], "TIN CREDIT SETTLEMENT REJECTED");
 });

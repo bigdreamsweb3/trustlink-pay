@@ -168,7 +168,7 @@ pub fn handler(
 
 pub fn derive_authorization_digest_v3(
     args: &RegisterTcapCreditAuthorizationV3Args,
-    commitment_root: &Pubkey, epoch: &Pubkey, funding_pool: &Pubkey,
+    commitment_root: &Pubkey, epoch: &Pubkey, funding_root_account: &Pubkey,
 ) -> [u8; 32] {
     anchor_lang::solana_program::hash::hashv(&[
         AUTHORIZATION_DOMAIN,
@@ -182,7 +182,7 @@ pub fn derive_authorization_digest_v3(
         &args.nullifier,
         &args.proof.public_inputs[12],
         epoch.as_ref(),
-        funding_pool.as_ref(),
+        funding_root_account.as_ref(),
     ]).to_bytes()
 }
 

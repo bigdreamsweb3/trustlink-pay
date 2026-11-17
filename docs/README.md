@@ -16,7 +16,7 @@ separately under `tsn-protocol/tsn-docs/`.
 
 ## Laboratory and engineering record
 
-Use the [documentation maintenance manual](DOCUMENTATION_MAINTENANCE.md) for source-first changes, internal/public placement, status, diagrams and validation. The [Codex reference index](../.codex/README.md) separates current guidance from historical prompts.
+Use the [documentation maintenance manual](DOCUMENTATION_MAINTENANCE.md) for source-first changes, internal/public placement, status, diagrams and validation. The [Agent reference index](../.agents/README.md) separates current guidance from historical prompts.
 
 The [Laboratory record](./laboratory/README.md) connects foundations, the [canonical source-backed architecture](./laboratory/architecture-map.md), component/function references, cryptography, invariants, experiments, ADRs and technology roles. [Documentation status](./DOCUMENTATION_STATUS.md) records reviewed coverage and outstanding claims; the [historical archive](./historical-archive/README.md) preserves superseded designs at their original paths.
 

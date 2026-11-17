@@ -1,0 +1,32 @@
+<article class="tsn-document" itemscope itemtype="https://schema.org/TechArticle">
+  <meta itemprop="author" content="TrustLink Labs Research">
+  <meta itemprop="headline" content="GPRU: Authorization and Routing for Private Payments">
+  <meta itemprop="description" content="How the Generalized Payment Routing Unit authenticates payment intent, protects private commitments, and gives Crankers exact settlement capabilities without exposing private data.">
+  <p class="eyebrow">TSN architecture · GPRU</p>
+  <div class="up-kicker">TSN architecture &middot; GPRU</div>
+  <h1 itemprop="headline">GPRU: Authorization and Routing for Private Payments</h1>
+  <p class="dek" itemprop="description">GPRU is the authorization and routing layer of the Transfer Settlement Network. It tells the network which payment may move, who may submit the next operation, and which public coordinates are valid—without holding funds or revealing a private commitment.</p>
+  <h2>What GPRU does</h2>
+  <p>GPRU turns a user-signed payment intent into a verifiable coordination capability. The device signs the intent, the Receiver accepts authenticated ingress, and the Node checks the canonical fields before creating work. Amount, mint, recipient, destination, fees, expiry, nonce, and commitment are bound together.</p>
+  <ul>
+    <li><strong>Authorization:</strong> verifies that the user approved this exact operation.</li>
+    <li><strong>Routing:</strong> selects the permitted epoch and execution route without exposing private identity data.</li>
+    <li><strong>Replay resistance:</strong> consumes nonces, nullifiers, and one-time work atomically.</li>
+    <li><strong>Operator control:</strong> gives a Cranker only the capability required for its current lease.</li>
+  </ul>
+  <h2>GPRU does not hold money</h2>
+  <p>GPRU never acts as a wallet, vault, or balance ledger. Token accounting belongs to the TSN epoch treasury and the TCAP private balance layer. This separation prevents a routing credential from becoming a custody credential.</p>
+  <h2>From intent to settlement</h2>
+  <ol>
+    <li>The user device signs a payment intent off-chain.</li>
+    <li>The Node verifies the signature, canonical message, nonce, policy, and commitment.</li>
+    <li>Mother creates one-time Settlement DNA for the authorized CrankerVault and lease.</li>
+    <li>The Cranker submits the DNA-bound TSN transaction and pays the network fee.</li>
+    <li>The TSN Program consumes the DNA once and records the opaque claim outcome.</li>
+  </ol>
+  <h2>What the public transaction reveals</h2>
+  <p>The chain receives the authorization commitment, nullifier, expiry, epoch coordination data, and settlement coordinates required for enforcement. Private receiving roots, encrypted balance snapshots, and owner authorization material remain outside public payloads.</p>
+  <h2>Privacy boundary</h2>
+  <p>Crankers receive a SettlementCommitment, public payout coordinates, a permit, and expiry data. They do not receive private commitment plaintext, sender keys, payment-specific escrow accounts, or PrivateEscrowRecord accounts.</p>
+  <p><a href="/p/tcap.html">Read the TCap private balance architecture →</a> · <a href="/p/identity-and-tin.html">Read about TIN identity →</a> · <a href="/p/tsn-flow.html">Read the TSN settlement flow →</a></p>
+</article>

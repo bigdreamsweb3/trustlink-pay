@@ -149,12 +149,10 @@ test("malformed selected and observed block heights fail closed before checkpoin
         };
         await assert.rejects(sendSettlementV1([ix], { payerSigner, additionalSigners: [motherSigner], rpcUrl: "https://offline.invalid",
           onSigned: async () => { checkpoints++; } }), error => {
-          const expected = rawHeight === "NaN" ? field === "lastValidBlockHeight"
-            ? "TCAP_TRANSACTION_BLOCKHASH_LIFETIME_UNAVAILABLE" : "TCAP_TRANSACTION_BLOCKHASH_HEIGHT_UNAVAILABLE"
-            : "TCAP_TRANSACTION_BLOCKHASH_HEIGHT_INVALID";
+          const expected = "TCAP_TRANSACTION_BLOCKHASH_HEIGHT_INVALID";
           assert.ok(error instanceof Error);
           assert.equal(error.message, expected);
-          for (const kind of ["TCAP_FUNDING_POOL", "TCAP_EPOCH_ACCOUNTING", "SETTLEMENT"]) {
+          for (const kind of ["TCAP_EPOCH_ACCOUNTING", "SETTLEMENT"]) {
             assert.equal(nativeWorkRetryReason({ kind, verification: { verificationType: "TSN_TCAP_GPRU_HIDDEN_HEAD_V1" } }, error), null);
           }
           return true;

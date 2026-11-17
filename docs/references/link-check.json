@@ -1,4 +1,13 @@
 {
-  "scope": "Two documentation trees, all tsn-protocol Markdown, .codex Markdown and AGENTS/root README references: local targets, exported-subtree boundary, internal-only operator-guide publication, Mintlify navigation, frontmatter, fence balance. Remote URLs, anchors and Mermaid rendering require separate validation.",
-  "issues": []
+  "scope": "Two documentation trees, all tsn-protocol Markdown, .agents Markdown and AGENTS/root README references: local targets, exported-subtree boundary, internal-only operator-guide publication, Mintlify navigation, frontmatter, fence balance. Remote URLs, anchors and Mermaid rendering require separate validation.",
+  "issues": [
+    {
+      "file": "tsn-protocol/services/tsn-node/AGENTS.md",
+      "kind": "premature operator-guide publication"
+    },
+    {
+      "file": "tsn-protocol/services/tsn-node/docs/verification.md",
+      "kind": "premature operator-guide publication"
+    }
+  ]
 }

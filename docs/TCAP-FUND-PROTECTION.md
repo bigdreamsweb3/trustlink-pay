@@ -13,7 +13,7 @@ flowchart TD
     C --> D[Reserve actual assets increase; funded pending liability increases]
     D --> E[TSNP authorizes a blinded amount commitment]
     E --> F[GPRU verifies the hidden-state transition proof]
-    F --> G{TCAP checks sealed pool, root, sequence, epoch and solvency}
+    F --> G{TCAP checks authenticated funding root, sequence, epoch and solvency}
     G -->|Valid| H[Advance shared root and blinded epoch transcript]
     H --> J[Complete grouped epoch proof prepared by Node]
     J --> K[Receiver leases work; Cranker submits Mother-authorized accounting]
@@ -35,7 +35,7 @@ The TCAP reserve is not a per-TIN balance ledger. The hidden-head design uses tr
 
 GPRU's role is to guard the user's private state as it is presented to TCAP. The intended Groth16 statement binds the current hidden head, the proposed successor, the balance action and amount, the relevant asset, the Memo commitment, and replay protection. A valid proof should establish that the new private state follows from the latest valid predecessor without exposing the TIN or its private history.
 
-TCAP remains the fund regulator. It validates the approved asset, TSNP authorization, current shared-root sequence, funded liability capacity, and reserve solvency. It then updates the shared root and reserve liability counters in one atomic transaction. GPRU does not custody reserve tokens, and TCAP does not treat a prover's output as a substitute for its own authorization or accounting checks.
+TCAP remains the fund regulator. It validates the approved asset, TSNP authorization, current shared-root sequence, funded membership and reserve solvency. Individual accepted credit atomically updates the shared root and blinded epoch transcript while the reserve remains readonly. Separate aggregate proof verification authorizes liability reclassification. GPRU does not custody reserve tokens, and TCAP does not treat a prover's output as a substitute for its own authorization or accounting checks.
 
 Reserve solvency alone cannot prove a recipient balance is correct. Credit proof binds funded note, amount commitment, asset, predecessor and successor arithmetic, while complete epoch proof binds the accounting total to every accepted commitment. Omitting either relation would permit a valid proof for an incomplete statement to pass the wrong obligation boundary. Owner recovery separately validates the encrypted amount opening against that commitment.
 
@@ -47,13 +47,15 @@ A failed transaction cannot also persist a halt flag in the same rolled-back sta
 
 ## Debit and exit gate
 
-The same protections apply before a debit or exit can be enabled: GPRU must prove that the exact amount is affordable from the current hidden balance and that the successor state is valid; owner authorization must be checked where required; TCAP must check reserve solvency and update liabilities atomically with the state transition and payout. The current debit and exit paths remain fail-closed until their complete proof, authorization, accounting, and payout paths are connected and verified. A disabled path cannot be described as protected operationally merely because the circuit contains debit or exit constraints.
+The proof-backed balance-debit and liquidity-exit handlers remain fail-closed until their complete proof, authorization, accounting and payout contracts are connected and verified. The circuit's debit/exit arithmetic does not enable those handlers. Retained `debit_tcap_exit_v1` and `payout_tcap_exit_v1` are separate one-time-TIP/permit entrypoints without that unconditional proof gate; their source includes public liability changes and vault payout. Their live reachability and protection properties require separate review, so the entire TCAP library must not be described as uniformly disabled.
+
+Generalizing the current credit batch to debits or transfers is a [proposed contract](laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md#proposed-mixed-action-accounting). An internal debit/credit pair must conserve total obligations, while withdrawals, fees and refunds require correct category deltas and payout binding. No mixed-action accounting capability follows from the existence of debit instruction names.
 
 ## Current implementation boundary
 
-The experimental replacement checks released sealed pool, asset policy, current root/epoch and reserve solvency, then invokes GPRU before atomically updating shared root/transcript. Individual reserve is readonly. Deposit verifies vault balance/delta and increases assets/pending obligations. Separate epoch accounting invokes its five-input GPRU verifier before aggregate reclassification and replay marking. [Offline evidence](laboratory/experiments/EXP-20261107-private-credit-epoch.md) passed host/proof checks; SBF, activation and full live accounting remain unverified.
+The experimental replacement checks authenticated current/retained funding membership, asset policy, current root/epoch and reserve solvency, then invokes GPRU before atomically updating shared root/transcript. Deposit verifies vault balance/delta and increases assets/pending obligations. Separate epoch accounting invokes its five-input GPRU verifier before aggregate reclassification and replay marking. [The November 16 checkpoint](laboratory/experiments/EXP-20261116-private-credit-epoch.md) verifies two finalized private credits and their completed aggregate accounting; varied-amount multiwallet privacy, complete owner recovery and mixed-action accounting remain unverified.
 
-The source also contains the proof-shaped hidden-head circuit and verifier integration, but a complete Node witness/prover configuration, matching verifier setup, and end-to-end proof-backed settlement must be established before calling this full protection path operational. Debit and exit remain disabled. See [current architecture](./CURRENT-ARCHITECTURE.md), [TCAP balance transitions and GPRU proof boundary](./TCAP-V2-DEBIT-CREDIT-DESIGN.md), and [GPRU prover and key artifacts](./GROTH16-PROVER-AND-KEY-ARTIFACTS.md).
+The confirmed reference flow establishes its required proof acceptance and accounting for that scoped run. It does not establish complete privacy, every retained debit/exit path, or clean independent-network operation. See [current architecture](./CURRENT-ARCHITECTURE.md), [TCAP balance transitions and GPRU proof boundary](./TCAP-V2-DEBIT-CREDIT-DESIGN.md), and [GPRU prover and key artifacts](./GROTH16-PROVER-AND-KEY-ARTIFACTS.md).
 
 ## Source references
 

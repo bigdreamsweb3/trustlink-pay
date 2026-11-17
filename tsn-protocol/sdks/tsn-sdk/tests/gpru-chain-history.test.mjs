@@ -41,9 +41,9 @@ function makeCredit({ sequence, ownerSequence, masterSeed, previousMemo = h(0), 
   const fundingRoot = h(sequence + 700);
   const amountCommitment = deriveCreditAmountCommitmentV2(1,amount,h(sequence+900),nullifier);
   const accountingEpoch = pda(TCAP,"tcap:credit-epoch:v1",assetEntry.toBuffer(),u64(0));
-  const pool = pda(TCAP,"tcap:sealed-funding:v1",assetEntry.toBuffer(),Buffer.from(fundingRoot,"hex"));
+  const globalFundingAccount = pda(TCAP,"tcap:funding-root:v1");
   const auth = hash(Buffer.concat([Buffer.from(privateAmount ? "TSN_GPRU_TCAP_CREDIT_PRIVATE_V2\0" : funded ? "TSN_GPRU_TCAP_CREDIT_FUNDED_NOTE_V1\0" : "TSN_GPRU_TCAP_CREDIT_HIDDEN_HEAD_V1\0"), root.toBuffer(), Buffer.from(oldRoot, "hex"),
-    u64(sequence), u64(1), u64(1000), privateAmount ? Buffer.from(amountCommitment,"hex") : u64(amount), u32(1), Buffer.from(nullifier, "hex"), ...(funded ? [Buffer.from(fundingRoot, "hex")] : []), ...(privateAmount ? [accountingEpoch.toBuffer(),pool.toBuffer()] : [])]));
+    u64(sequence), u64(1), u64(1000), privateAmount ? Buffer.from(amountCommitment,"hex") : u64(amount), u32(1), Buffer.from(nullifier, "hex"), ...(funded ? [Buffer.from(fundingRoot, "hex")] : []), ...(privateAmount ? [accountingEpoch.toBuffer(),globalFundingAccount.toBuffer()] : [])]));
   const publicKey = deriveGpruElgamalPublicKey(masterSeed);
   const scan = deriveGpruBalanceScanKeyV1(masterSeed);
   const delta = encryptBalanceBlindingDeltaV1({ delta: 12n, scanPublicKey: scan.publicKey, ephemeralScalar: 3n });
@@ -60,7 +60,7 @@ function makeCredit({ sequence, ownerSequence, masterSeed, previousMemo = h(0), 
   const inputs = [oldRoot, newRoot, field(hash(Buffer.from(memo))), actionCommitment, nullifier, h(1),
     prefix[0], prefix[1], prefix[2], prefix[4], prefix[5], prefix[6]];
   if (funded) inputs.push(fundingRoot);
-  const fields = { authority: new PublicKey(authority.publicKey), fundingRootAccount:privateAmount ? pool : fundingRootAccount, accountingEpoch, amountCommitment,
+  const fields = { authority: new PublicKey(authority.publicKey), fundingRootAccount:privateAmount ? globalFundingAccount : fundingRootAccount, accountingEpoch, amountCommitment,
     motherEscrow: pda(TSNP, "tsn_mother_escrow"), commitmentRoot: root, assetEntry, reserveState: reserve,
     config: pda(TCAP, "tcap:global-config:v1"), tipRouteRoot: pda(TIP, "tip:route-merkle-root:v1"),
     gpruVerifier: pda(GPRU, "gpru:hidden-head-verifier:v1"), authorizationDigest: auth, validAfterSlot: 1n, expiresAtSlot: 1000n,

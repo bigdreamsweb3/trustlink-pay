@@ -12,8 +12,8 @@ This document is the deliverable for the Solana side. Arc Studio builds the Arc 
 ## 2. Action items (living)
 
 - Confirm the unverified items in section 14 before implementation.
-- Codex to confirm the TCAP credit path can be called in the same transaction as `deposit_asset_v2` (section 10, `settle_intent`).
-- Codex to confirm whether the existing TIN registry lookup lets a payer verify a route-key commitment at resolve time (section 10, step 3 of settlement).
+- Agent to confirm the TCAP credit path can be called in the same transaction as `deposit_asset_v2` (section 10, `settle_intent`).
+- Agent to confirm whether the existing TIN registry lookup lets a payer verify a route-key commitment at resolve time (section 10, step 3 of settlement).
 
 ## 3. Goals and non-goals
 

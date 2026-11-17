@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use crate::{authority::{TCAP_FUNDING_ROOT_SEED,TCAP_GLOBAL_CONFIG_SEED},error::TcapError,
-    private_funding::{funding_zero_hashes,TcapFundingMerkleRootV1,FUNDING_TREE_DEPTH},state::TcapGlobalConfigV1};
+    private_funding::{funding_zero_hashes,TcapFundingMerkleRootV1,FUNDING_TREE_DEPTH,FundingRootHistoryEntryV2,FUNDING_ROOT_HISTORY_CAPACITY},state::TcapGlobalConfigV1};
 
 #[derive(Accounts)]
 pub struct InitializePrivateFundingRootV1<'info> {
@@ -22,5 +22,8 @@ pub fn handler(ctx: Context<InitializePrivateFundingRootV1>) -> Result<()> {
     root.current_root=funding_zero_hashes()?[FUNDING_TREE_DEPTH];
     root.leaf_count=0;
     root.frontier=vec![[0;32];FUNDING_TREE_DEPTH];
+    root.history=vec![FundingRootHistoryEntryV2::default();FUNDING_ROOT_HISTORY_CAPACITY];
+    root.next_history_index=0;
+    root.history_count=0;
     Ok(())
 }

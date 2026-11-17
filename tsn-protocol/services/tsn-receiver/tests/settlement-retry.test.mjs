@@ -14,7 +14,7 @@ test("repaired settlement retry is authenticated, versioned, funded and preserve
   process.env.TSN_RECEIVER_LOCAL_FILE = path.join(directory, "receiver.json");
   process.env.TSN_RECEIVER_NODE_API_KEY = "isolated-test-credential";
   try {
-    for (const name of ["work-contract", "settlement-retry", "native-work-retry", "local-firestore", "store", "auth"]) {
+    for (const name of ["work-contract", "settlement-retry", "native-work-retry", "node-authorizations", "local-firestore", "store", "auth"]) {
       const source = await readFile(new URL(`../lib/${name}.ts`, import.meta.url), "utf8");
       let compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText;
       compiled = compiled.replace(/from "\.\/([^".]+)"/g, 'from "./$1.mjs"')
@@ -28,7 +28,7 @@ test("repaired settlement retry is authenticated, versioned, funded and preserve
     await writeFile(path.join(directory, "settlement-reconciliation.mjs"), "export const reconcileExpiredCrankerConfirmation=async()=>{throw new Error('Unexpected late receipt report')};");
     await writeFile(path.join(directory, "node-wake.mjs"), "export const wakes=[]; export const wakeTsnNode=async reason=>{wakes.push(reason)};");
     await writeFile(path.join(directory, "cranker-wake.mjs"), "export const publishCrankerWake = async ()=>{};");
-    await writeFile(path.join(directory, "next-stub.mjs"), "export class NextResponse { static json(data, options={}) { return {status:options.status??200,data}; } }");
+    await writeFile(path.join(directory, "next-stub.mjs"), "export class NextResponse { constructor(body, options={}) { this.status=options.status??200; this.data=JSON.parse(body); } static json(data, options={}) { return {status:options.status??200,data}; } }");
     await writeFile(path.join(directory, "cranker-auth.mjs"), 'export async function authenticateCrankerRequest(request) { const owner=request.headers.get("x-test-cranker"); if (!owner) throw new Error("CRANKER_SESSION_INVALID"); return owner; } export async function enforceCrankerLeaseRateLimit() {}');
     const routeSource = await readFile(new URL("../app/api/internal/node/work/retry/route.ts", import.meta.url), "utf8");
     let routeCompiled = ts.transpileModule(routeSource, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText;
@@ -209,7 +209,9 @@ test("repaired settlement retry is authenticated, versioned, funded and preserve
     // Authorization-time changes recover before a stale proof reaches Cranker.
     const previousFetch=globalThis.fetch;
     const previousNodeUrl=process.env.TSN_NODE_URL;
+    const previousFallbackUrl=process.env.TSN_NODE_FALLBACK_URL;
     process.env.TSN_NODE_URL="http://mock-node.invalid";
+    delete process.env.TSN_NODE_FALLBACK_URL;
     try {
       await db.runTransaction(async transaction=>{await transaction.get(workCollection.doc(id));transaction.update(workCollection.doc(id),{...leased,status:"VERIFIED",stateVersion:20,crankerLease:null,authorization:null});});
       globalThis.fetch=async()=>new Response(JSON.stringify({detail:FUNDED_ROOT_STALE}),{status:409});
@@ -219,9 +221,53 @@ test("repaired settlement retry is authenticated, versioned, funded and preserve
       assert.deepEqual((await workCollection.doc(funding.id).get()).data(),funding);
       assert.deepEqual((await getWorkForNode(funding.id)).payload.fundingNote,originalNote);
       assert.deepEqual(wakes,["SETTLEMENT_SNAPSHOT_RETRY","SETTLEMENT_SNAPSHOT_RETRY","SETTLEMENT_SNAPSHOT_RETRY","SETTLEMENT_FUNDED_ROOT_RETRY","SETTLEMENT_FUNDED_ROOT_RETRY"]);
+
+      const availabilityReason="TSN_NODE_SIGNING_SERVICE_UNAVAILABLE";
+      const epoch={...createReceivedWork({id:"availability-epoch",kind:"TCAP_EPOCH_ACCOUNTING",payload:{assetEntry:"synthetic-asset",accountingEpoch:"synthetic-epoch"}}),
+        status:"VERIFIED",stateVersion:40,verification:{verificationType:"TSN_TCAP_EPOCH_ACCOUNTING_V1"}};
+      await workCollection.doc(epoch.id).create(epoch);
+      let calls=0;
+      globalThis.fetch=async()=>{calls++;return new Response(JSON.stringify({detail:"private dependency message"}),{status:503});};
+      const outage=await crankerLease(crankerRequest("mock-cranker",{supportedKinds:[epoch.kind]}));
+      assert.deepEqual(outage.data,{work:null,requeued:{id:epoch.id,status:"RECEIVED",stateVersion:42}});
+      assert.equal(calls,1);
+      const retriedEpoch=(await workCollection.doc(epoch.id).get()).data();
+      assert.equal(retriedEpoch.retryHistory.at(-1).reason,availabilityReason);
+      assert.deepEqual(retriedEpoch.payload,epoch.payload);
+      assert.equal(retriedEpoch.payloadCommitment,epoch.payloadCommitment);
+
+      // A domain404 must preserve the leased record for diagnosis, without fallback/requeue.
+      await db.runTransaction(async tx=>tx.update(workCollection.doc(epoch.id),{...epoch}));
+      calls=0;
+      globalThis.fetch=async()=>{calls++;return new Response(JSON.stringify({detail:"Receiver work was not found"}),{status:404});};
+      const absent=await crankerLease(crankerRequest("mock-cranker",{supportedKinds:[epoch.kind]}));
+      assert.equal(absent.status,404);assert.deepEqual(absent.data,{detail:"Receiver work was not found"});assert.equal(calls,1);
+      const absentEpoch=(await workCollection.doc(epoch.id).get()).data();
+      assert.equal(absentEpoch.status,"CRANKER_LEASED");assert.equal(absentEpoch.stateVersion,41);
+      assert.equal(absentEpoch.retryHistory.length,retriedEpoch.retryHistory.length);
+
+      // The signing route's exact503 reason can return an unsigned claim to fresh verification.
+      const signingRetry=await crankerRetry(crankerRequest("mock-cranker",{id:epoch.id,expectedVersion:41,reason:availabilityReason}));
+      assert.equal(signingRetry.status,200);
+      const unsignedEpoch=(await workCollection.doc(epoch.id).get()).data();
+      assert.equal(unsignedEpoch.status,"RECEIVED");assert.equal(unsignedEpoch.retryHistory.at(-1).reason,availabilityReason);
+
+      // Even incomplete execution evidence blocks both authorization-time and explicit retries.
+      for(const result of [{signature:"recorded"},{wireSha256:"uncertain"},{stage:"checkpoint"}]){
+        await db.runTransaction(async tx=>tx.update(workCollection.doc(epoch.id),{...epoch,result}));
+        globalThis.fetch=async()=>new Response("{}",{status:500});
+        const protectedResponse=await crankerLease(crankerRequest("mock-cranker",{supportedKinds:[epoch.kind]}));
+        assert.equal(protectedResponse.status,409);assert.match(protectedResponse.data.error,/EXECUTION_STATE/);
+        const saved=(await workCollection.doc(epoch.id).get()).data();
+        assert.equal(saved.status,"CRANKER_LEASED");assert.deepEqual(saved.result,result);
+        const refused=await crankerRetry(crankerRequest("mock-cranker",{id:epoch.id,expectedVersion:saved.stateVersion,reason:availabilityReason}));
+        assert.equal(refused.status,409);assert.match(refused.data.error,/EXECUTION_STATE/);
+      }
+      assert.deepEqual((await workCollection.doc(funding.id).get()).data(),funding);
     } finally {
       globalThis.fetch=previousFetch;
       if (previousNodeUrl===undefined) delete process.env.TSN_NODE_URL; else process.env.TSN_NODE_URL=previousNodeUrl;
+      if (previousFallbackUrl===undefined) delete process.env.TSN_NODE_FALLBACK_URL; else process.env.TSN_NODE_FALLBACK_URL=previousFallbackUrl;
     }
   } finally {
     if (previousFile===undefined) delete process.env.TSN_RECEIVER_LOCAL_FILE; else process.env.TSN_RECEIVER_LOCAL_FILE=previousFile;

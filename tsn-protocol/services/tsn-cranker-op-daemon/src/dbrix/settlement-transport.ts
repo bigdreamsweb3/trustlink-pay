@@ -54,12 +54,14 @@ function submissionFailure(error: unknown, timedOut: boolean): string {
 export async function sendSettlementV1(instructions: readonly TransactionInstruction[], options: {
   payerSigner: TransactionPartialSigner; additionalSigners: readonly TransactionSigner[];
   rpcUrl: string; onSigned: (submission: SettlementSubmission) => Promise<void>;
+  signedBlockhashContextSlot?: () => bigint;
   confirmationTimeoutMs?: number; pollMs?: number;
 }): Promise<string> {
   if (!instructions.length || !options.rpcUrl) throw new Error("Settlement instructions and RPC are required");
   const rpc = createSolanaRpc(options.rpcUrl);
   const { context, value: lifetime } = await rpc.getLatestBlockhash({ commitment: "confirmed" })
-    .send({ abortSignal: AbortSignal.timeout(15_000) }).catch(() => {
+    .send({ abortSignal: AbortSignal.timeout(15_000) }).catch(error => {
+      if (error instanceof SyntaxError) throw new Error("TCAP_TRANSACTION_BLOCKHASH_HEIGHT_INVALID");
       throw new Error("TCAP_TRANSACTION_BLOCKHASH_LIFETIME_UNAVAILABLE");
     });
   assertValidBlockHeight(lifetime?.lastValidBlockHeight);
@@ -79,25 +81,33 @@ export async function sendSettlementV1(instructions: readonly TransactionInstruc
   );
   const signed = await signTransactionMessageWithSigners(message);
   assertIsTransactionWithBlockhashLifetime(signed);
+  const finalLifetime = signed.lifetimeConstraint;
+  assertValidBlockHeight(finalLifetime.lastValidBlockHeight);
+  const finalContextSlot = options.signedBlockhashContextSlot?.() ?? context.slot;
+  if (typeof finalContextSlot !== "bigint" || finalContextSlot <= 0n || finalContextSlot > 0xffffffffffffffffn
+      || typeof context.slot !== "bigint" || finalContextSlot < context.slot) {
+    throw new Error("TCAP_MOTHER_BLOCKHASH_METADATA_INVALID");
+  }
   assertIsTransactionWithinSizeLimit(signed);
   const wire = getTransactionEncoder().encode(signed);
   if (wire.length > 4096) throw new Error(`Solana v1 transaction is ${wire.length} bytes; maximum is 4096`);
-  // Mother validation may outlive this hash. Keep a forwarding margin before
+  // Mother selects the final hash after validation. Keep a forwarding margin before
   // recording any submission identity; retry requires fresh Node verification.
   let heightBeforeSubmission: bigint;
   try {
-    heightBeforeSubmission = await rpc.getBlockHeight({ commitment: "confirmed", minContextSlot: context.slot })
+    heightBeforeSubmission = await rpc.getBlockHeight({ commitment: "confirmed", minContextSlot: finalContextSlot })
       .send({ abortSignal: AbortSignal.timeout(15_000) });
-  } catch {
+  } catch (error) {
+    if (error instanceof SyntaxError) throw new Error("TCAP_TRANSACTION_BLOCKHASH_HEIGHT_INVALID");
     throw new Error("TCAP_TRANSACTION_BLOCKHASH_HEIGHT_UNAVAILABLE");
   }
   assertValidBlockHeight(heightBeforeSubmission);
-  if (lifetime.lastValidBlockHeight - heightBeforeSubmission < 20n) {
+  if (finalLifetime.lastValidBlockHeight - heightBeforeSubmission < 20n) {
     throw new Error("TCAP_TRANSACTION_BLOCKHASH_TOO_OLD_FOR_SUBMISSION");
   }
   const signature = getSignatureFromTransaction(signed);
-  const submission = { signature, blockhash: lifetime.blockhash,
-    lastValidBlockHeight: String(lifetime.lastValidBlockHeight),
+  const submission = { signature, blockhash: finalLifetime.blockhash,
+    lastValidBlockHeight: String(finalLifetime.lastValidBlockHeight),
     wireSha256: createHash("sha256").update(Buffer.from(wire)).digest("hex"), wireBytes: wire.length };
   // A durable receipt must be acknowledged before the first broadcast. Its
   // presence means execution is possible, even if a response is lost.
@@ -108,8 +118,8 @@ export async function sendSettlementV1(instructions: readonly TransactionInstruc
     const returned = await rpc.sendTransaction(Buffer.from(wire).toString("base64") as never, {
       encoding: "base64", preflightCommitment: "confirmed", skipPreflight: false, maxRetries: 0n,
       // The gateway may select a different bank for SEND. Reject banks below
-      // the slot that supplied this message's unchanged blockhash.
-      minContextSlot: context.slot,
+      // the slot that supplied the final signed message's blockhash.
+      minContextSlot: finalContextSlot,
     }).send({ abortSignal: deadline });
     if (returned !== signature) { failure = "RPC_SIGNATURE_MISMATCH"; throw new Error(failure); }
     phase = "CONFIRM";
@@ -117,8 +127,9 @@ export async function sendSettlementV1(instructions: readonly TransactionInstruc
       const { value: [status] } = await rpc.getSignatureStatuses([signature], { searchTransactionHistory: true }).send({ abortSignal: deadline });
       if (status?.err) { failure = "CHAIN_REJECTED"; throw new Error(failure); }
       if (status?.confirmationStatus === "confirmed" || status?.confirmationStatus === "finalized") return signature;
-      const height = await rpc.getBlockHeight({ commitment: "confirmed", minContextSlot: context.slot }).send({ abortSignal: deadline });
-      if (height > lifetime.lastValidBlockHeight) { failure = "BLOCKHASH_EXPIRED"; throw new Error(failure); }
+      const height = await rpc.getBlockHeight({ commitment: "confirmed", minContextSlot: finalContextSlot }).send({ abortSignal: deadline });
+      assertValidBlockHeight(height);
+      if (height > finalLifetime.lastValidBlockHeight) { failure = "BLOCKHASH_EXPIRED"; throw new Error(failure); }
       await new Promise<void>((resolve, reject) => {
         deadline.throwIfAborted();
         const timer = setTimeout(() => { deadline.removeEventListener("abort", abort); resolve(); }, options.pollMs ?? 1000);

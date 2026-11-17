@@ -12,4 +12,6 @@ TSNP works with distinct protocol layers: TIP manages transfer identity and rout
 
 These roles remain separate. Receiver acceptance or service verification does not itself move funds; a Cranker submits authorized work, and Solana confirms whether the selected transaction executed. A GPRU proof alone cannot authorize payment or move custody.
 
-The hidden-head proof flow is not established end to end, and confidential debit and exit are not available as verified capabilities. For instruction-level contracts, deployment procedures, and runtime operations, see the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).
+Native private credit uses a Mother-authorized TSNP call into TCAP, which verifies the proof through GPRU and updates the shared state and credit transcript. TCAP owns the separate aggregate credit-epoch accounting. Retained TSNP `EpochTreasury`, AcceptedIntent, Settlement DNA, payout and refund APIs form a distinct instruction family; their timing and account requirements do not govern the native TCAP credit epoch.
+
+The [November 16 Devnet record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261116-private-credit-epoch.md) establishes two native private credits and their complete epoch accounting. Confidential debit/exit and mixed-action epoch accounting require separate contract and execution evidence. For instruction-level contracts and runtime records, see the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

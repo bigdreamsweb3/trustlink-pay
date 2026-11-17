@@ -1,4 +1,4 @@
-import { Connection, PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { ComputeBudgetProgram, Connection, PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { sha256 } from "@noble/hashes/sha2";
 import { utf8ToBytes } from "@noble/hashes/utils";
@@ -125,6 +125,53 @@ export function buildTcapGpruWalletDepositTransaction(fields: {
 
 export { Transaction as TcapGpruTransaction };
 
+/** Check the wallet's signed bytes before ingress, without rewriting its approval. */
+export function assertSignedTcapGpruWalletDepositTransaction(
+  wire: Uint8Array,
+  fields: Parameters<typeof buildTcapGpruWalletDepositTransaction>[0],
+): void {
+  if (wire.length === 0 || wire.length > 4096) throw new Error("TCAP_SIGNED_DEPOSIT_WIRE_INVALID");
+  let transaction: Transaction;
+  try { transaction = Transaction.from(wire); }
+  catch { throw new Error("TCAP_SIGNED_DEPOSIT_WIRE_INVALID"); }
+  if (!transaction.feePayer?.equals(fields.accounts.depositor)
+      || transaction.signatures.length !== 1
+      || !transaction.signatures[0]!.publicKey.equals(fields.accounts.depositor)
+      || !transaction.verifySignatures()) {
+    throw new Error("TCAP_SIGNED_DEPOSIT_OWNER_SIGNATURE_INVALID");
+  }
+  if (!Buffer.from(wire).equals(transaction.serialize())) throw new Error("TCAP_SIGNED_DEPOSIT_WIRE_INVALID");
+  const expected = buildTcapGpruWalletDepositTransaction(fields).instructions[0]!;
+  const deposits = transaction.instructions.filter(ix => ix.programId.equals(expected.programId));
+  if (deposits.length !== 1) throw new Error("TCAP_SIGNED_DEPOSIT_COUNT_INVALID");
+  const deposit = deposits[0]!;
+  if (!deposit.data.equals(expected.data) || deposit.keys.length !== expected.keys.length
+      || deposit.keys.some((key, index) => {
+        const required = expected.keys[index]!;
+        return !key.pubkey.equals(required.pubkey) || key.isSigner !== required.isSigner || key.isWritable !== required.isWritable;
+      })) {
+    throw new Error("TCAP_SIGNED_DEPOSIT_DIFFERS_FROM_APPROVAL");
+  }
+  const budgetTags = new Set<number>();
+  for (const instruction of transaction.instructions) {
+    if (instruction === deposit) continue;
+    const tag = instruction.data[0];
+    const size = tag === 3 ? 9 : tag === 1 || tag === 2 || tag === 4 ? 5 : 0;
+    if (!instruction.programId.equals(ComputeBudgetProgram.programId) || instruction.keys.length !== 0
+        || size === 0 || instruction.data.length !== size || budgetTags.has(tag!)) {
+      throw new Error("TCAP_SIGNED_DEPOSIT_EXTRA_INSTRUCTION_INVALID");
+    }
+    budgetTags.add(tag!);
+    if (tag !== 3) {
+      const value = instruction.data.readUInt32LE(1);
+      if ((tag === 1 && (value < 32 * 1024 || value > 256 * 1024 || value % 1024 !== 0))
+          || ((tag === 2 || tag === 4) && value === 0)) {
+        throw new Error("TCAP_SIGNED_DEPOSIT_COMPUTE_BUDGET_INVALID");
+      }
+    }
+  }
+}
+
 /** Mother-authorized memo credit, fenced by TCAP's shared settlement root. */
 export function buildTsnRegisterTcapCreditAuthorizationV3Instruction(fields: {
   authority: PublicKey; motherEscrow: PublicKey; tcapProgramId?: PublicKey; commitmentRoot: PublicKey;
@@ -146,7 +193,7 @@ export function buildTsnRegisterTcapCreditAuthorizationV3Instruction(fields: {
     serializeHiddenHeadProof(fields.proof),
   ]);
   const tcapProgramId = fields.tcapProgramId ?? TCAP_ID;
-  const [fundingRoot] = PublicKey.findProgramAddressSync([Buffer.from("tcap:sealed-funding:v1"),fields.assetEntry.toBuffer(),bytes32(fields.proof.publicInputs[12],"Funding root")], tcapProgramId);
+  const [fundingRoot] = PublicKey.findProgramAddressSync([Buffer.from("tcap:funding-root:v1")], tcapProgramId);
   if (!fundingRoot.equals(fields.fundingRootAccount)) throw new Error("TCAP_FUNDING_ROOT_NOT_CANONICAL");
   canonicalFundingFieldHex(fields.proof.publicInputs[12], "Funding root proof input");
   const [canonicalConfig] = PublicKey.findProgramAddressSync([Buffer.from("tcap:global-config:v1")], tcapProgramId);
@@ -184,17 +231,4 @@ export function buildTcapAccountCreditEpochV1Instruction(f:{authority:PublicKey;
         {pubkey:verifier,isSigner:false,isWritable:false},{pubkey:GPRU_PROGRAM_ID,isSigner:false,isWritable:false}],
         data:Buffer.concat([discriminator("account_credit_epoch_v1"),u64(f.total),...f.proof.publicInputs.map((v,i)=>bytes32(canonicalFundingFieldHex(v,"Epoch input",i===0),"Epoch input")),
             fixedHex(f.proof.proofA,64,"Epoch A"),fixedHex(f.proof.proofB,128,"Epoch B"),fixedHex(f.proof.proofC,64,"Epoch C")])});
-}
-/** Capture a chain-current funded root; later deposits cannot change this pool account. */
-export function buildTcapSealFundingPoolV1Instruction(f:{authority:PublicKey;mother:PublicKey;config:PublicKey;assetEntry:PublicKey;root:string;eligibleNoteCount:bigint;sourceWalletCount:number;releaseSlot:bigint}):TransactionInstruction {
-    if(f.eligibleNoteCount<2n||f.sourceWalletCount<2||!Number.isInteger(f.sourceWalletCount)||f.sourceWalletCount>65535||BigInt(f.sourceWalletCount)>f.eligibleNoteCount)throw new Error("FUNDING_POOL_REQUIRES_REAL_DISTINCT_SOURCES");
-    const [fundingRoot]=PublicKey.findProgramAddressSync([Buffer.from("tcap:funding-root:v1")],TCAP_ID);
-    const rootBytes=bytes32(canonicalFundingFieldHex(f.root,"Funding root"),"Funding root");
-    const [pool]=PublicKey.findProgramAddressSync([Buffer.from("tcap:sealed-funding:v1"),f.assetEntry.toBuffer(),rootBytes],TCAP_ID);
-    const sources=Buffer.alloc(2);sources.writeUInt16LE(f.sourceWalletCount);
-    return new TransactionInstruction({programId:TCAP_ID,keys:[{pubkey:f.authority,isSigner:true,isWritable:true},
-        {pubkey:f.mother,isSigner:false,isWritable:false},{pubkey:f.config,isSigner:false,isWritable:false},
-        {pubkey:f.assetEntry,isSigner:false,isWritable:false},{pubkey:fundingRoot,isSigner:false,isWritable:false},
-        {pubkey:pool,isSigner:false,isWritable:true},{pubkey:SystemProgram.programId,isSigner:false,isWritable:false}],
-        data:Buffer.concat([discriminator("seal_private_funding_pool_v1"),rootBytes,u64(f.eligibleNoteCount),sources,u64(f.releaseSlot)])});
 }

@@ -30,7 +30,7 @@ They should call SDK methods instead of manually building instructions or derivi
 - Do not move TSN transaction-building logic into React components.
 - Do not expose private settlement payloads in logs.
 - Keep browser-safe and server-only APIs clearly separated.
-- Rebuild the SDK after changing source files.
+- Rebuild the SDK after changing source files. Its build clears generated `dist` and uses forced TypeScript compilation so retired exports cannot survive an incremental build.
 
 ## Development
 
@@ -47,9 +47,11 @@ npm --prefix tsn-sdk run build
 
 ## Prepare a funded credit
 
-The current source credit path uses `tcap_funded_note_v1`. Call `createFundingNoteV1()` in the sender's browser before signing, pass its public `commitment` to `createPaymentAuthorization` and `buildTcapGpruWalletDepositTransaction`, and pass the complete `fundingNote` only to the restricted `buildPaymentAuthorizationIntentRequest` ingress. The canonical message signs `Funding Note Commitment`; the wallet signs `deposit_private_funding_v1`, containing amount and that commitment with the canonical `tcap:funding-root:v1` account. Keep the secret and blinding in memory and exclude them from logs, public receipts and application storage.
+The experimental first-release v1 credit path uses `tcap_funded_note_v1`. Call `createFundingNoteV1()` in the sender's browser before signing, pass its public `commitment` to `createPaymentAuthorization` and `buildTcapGpruWalletDepositTransaction`, and pass the complete `fundingNote` only to the restricted `buildPaymentAuthorizationIntentRequest` ingress. The canonical message signs `Funding Note Commitment`; the wallet signs `deposit_private_funding_v1`, containing amount and that commitment with the canonical `tcap:funding-root:v1` account. Keep the secret and blinding in memory and exclude them from logs, public receipts and application storage.
 
-The current serializer uses a 905-byte `buildTsnRegisterTcapCreditAuthorizationV3Instruction` with sixteen TSNP accounts and thirteen proof inputs. Amount is replaced by a blinded commitment, reserve is readonly, and sealed pool/epoch accounts bind the transition. Separate pool and aggregate-accounting builders support leased Node work; historical 825/857-byte receipts remain independently readable. New circuit/key and epoch verifier activation are required; fixture/build tests do not prove live execution. See [ABI](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/credit-abi.md).
+After wallet signing, `assertSignedTcapGpruWalletDepositTransaction` verifies the owner signature and exact approved deposit, allowing only canonical, nonduplicate ComputeBudget settings around it. XP applies this check before forwarding the request; Node independently verifies the approved deposit and later the complete confirmed wire.
+
+The current serializer uses a 905-byte `buildTsnRegisterTcapCreditAuthorizationV3Instruction` with sixteen TSNP accounts and thirteen proof inputs. Amount is represented by a blinded commitment, reserve/global funding accounts are readonly, and the shared-root/epoch accounts bind the transition. A single funded note supports credit; separate aggregate-accounting builders support leased Node work; historical 825/857-byte receipts remain independently readable. New circuit/key and epoch verifier activation are required; fixture/build tests do not prove live execution. See [ABI](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/credit-abi.md).
 
 ## Read a TIN balance
 

@@ -28,9 +28,8 @@ sequenceDiagram
     K->>R: Claim verified funding
     K->>T: Submit unchanged wallet-signed deposit
     K->>R: Report confirmed funding
-    N->>R: Prepare qualified two-source funding-pool work
-    K->>T: Seal current funding root
-    N->>N: Wait for shared release window and prepare private-amount proof
+    N->>T: Read authenticated global funding root and current private state
+    N->>N: Prepare private-amount proof from confirmed funding
     N->>R: Signed verified settlement projection
     K->>P: Submit Mother-authorized call followed by Memo
     P->>T: Invoke governed credit
@@ -39,10 +38,10 @@ sequenceDiagram
     T->>T: Advance shared root and blinded epoch transcript atomically
     K->>R: Report confirmed settlement signature
     A->>R: Reconcile funding and settlement status
-    N->>R: Prepare complete 2–64-credit epoch proof
+    N->>R: Prepare complete proof when credit epoch is eligible
     K->>T: Submit Mother-authorized epoch accounting
     T->>G: Verify ordered commitments and aggregate
-    T->>T: Reclassify aggregate liabilities once
+    T->>T: Reclassify aggregate liabilities once and advance epoch
 ```
 
 GPRU protects the integrity and privacy of the user's private state presented to TCAP: its proof is intended to show that the hidden state is current and that the proposed change follows from it. TCAP remains responsible for the funds and applies a valid authorized change atomically.
@@ -51,4 +50,6 @@ GPRU protects the integrity and privacy of the user's private state presented to
 
 An accepted request means the application delivered the intent. Verification means the protocol services accepted it for processing. A submitted transaction is not yet a confirmed transaction. Settlement is confirmed only when the relevant Solana transaction succeeds; for a flow with separate funding and credit transactions, each signature represents a separate stage.
 
-The experimental sequence separates funding, private credit and aggregate accounting. Credit omits plaintext TIN, private predecessor and amount, using a blinded commitment and secret-derived nullifier; it leaves reserve assets/liabilities unchanged. Node prepares every opening for a complete 2–64-credit epoch, Receiver coordinates work and Cranker submits one proof-verified reclassification. Public deposits/epoch totals, metadata, timing and Node knowledge can still correlate payments. SBF/activation/live accounting and confidential debit/exit remain unverified; see [the security boundary](/security/threat-model).
+The experimental sequence separates funding, private credit and aggregate accounting. Credit omits plaintext TIN, private predecessor and amount, using a blinded commitment and secret-derived nullifier; it leaves reserve assets/liabilities unchanged. TCAP owns the complete 2–64-credit epoch accounting and invokes GPRU's proof verifier. Node considers 2–63 credits eligible after 120 slots from the first credit, or 64 immediately; a singleton stays open, and 64 blocks further credit until accounting succeeds. These are scheduling and capacity rules, not epoch expiry. Receiver coordinates work and Cranker submits the transaction. See [the TCAP lifecycle](/layers/tcap#native-credit-epoch-lifecycle).
+
+The [November 16 Devnet record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261116-private-credit-epoch.md) establishes two confirmed private credits and complete accounting of that epoch. Trusted Node access to verification routes/openings and public wallet funding are accepted boundaries. Public epoch totals, metadata, timing and registry/head history can still correlate TCAP actions. Owner recovery, confidential debit/exit and public-observer unlinkability require separate evidence; see [the security boundary](/security/threat-model).

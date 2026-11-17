@@ -9,8 +9,6 @@ pub mod funding;
 pub mod funding_state;
 pub mod private_funding;
 pub mod private_epoch;
-pub mod private_funding_pool;
-pub use private_funding_pool::*;
 pub use private_epoch::*;
 pub mod instructions;
 pub mod state;
@@ -29,7 +27,6 @@ declare_id!("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
 pub mod tcap {
     use super::*;
 
-    pub fn seal_private_funding_pool_v1(ctx: Context<SealFundingPoolV1>, args: SealFundingPoolArgsV1) -> Result<()> { private_funding_pool::seal(ctx,args) }
 
     pub fn account_credit_epoch_v1(ctx: Context<AccountCreditEpochV1>, args: AccountCreditEpochArgsV1) -> Result<()> { private_epoch::account_epoch(ctx,args) }
 
@@ -291,6 +288,10 @@ pub mod tcap {
     /// Governance-only first initialization; no root replacement or reset is supported.
     pub fn initialize_private_funding_root_v1(ctx: Context<InitializePrivateFundingRootV1>) -> Result<()> {
         instructions::initialize_private_funding_root_v1::handler(ctx)
+    }
+
+    pub fn migrate_private_funding_root_v2(ctx: Context<MigratePrivateFundingRootV2>) -> Result<()> {
+        instructions::migrate_private_funding_root_v2::handler(ctx)
     }
 
     pub fn deposit_asset_v2(ctx: Context<DepositAssetV2>, amount: u64) -> Result<()> {

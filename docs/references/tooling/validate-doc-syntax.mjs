@@ -28,7 +28,7 @@ function* files(directory) {
   }
 }
 const entryFiles = ["AGENTS.md", "README.md", "tsn-protocol/README.md"].map(file => path.join(root, file));
-for (const filename of [...files(path.join(root, "docs")), ...files(path.join(root, "tsn-protocol/tsn-docs")), ...files(path.join(root, ".codex")), ...entryFiles]) {
+for (const filename of [...files(path.join(root, "docs")), ...files(path.join(root, "tsn-protocol/tsn-docs")), ...files(path.join(root, ".agents")), ...entryFiles]) {
   const text = fs.readFileSync(filename, "utf8");
   const file = path.relative(root, filename).replaceAll("\\", "/");
   if (filename.endsWith(".mdx")) {
@@ -45,7 +45,7 @@ for (const filename of [...files(path.join(root, "docs")), ...files(path.join(ro
     catch (error) { failures.push({ file, line, kind: "Mermaid", error: String(error) }); }
   }
 }
-const report = { scope: "Both documentation trees, .codex Markdown and AGENTS/root/protocol README entries: MDX compilation and Mermaid syntax parsing; does not test Mintlify theme/browser rendering, external links or live endpoints.", mdxCompiled: mdxCount, diagramsParsed: diagramCount, failures };
+const report = { scope: "Both documentation trees, .agents Markdown and AGENTS/root/protocol README entries: MDX compilation and Mermaid syntax parsing; does not test Mintlify theme/browser rendering, external links or live endpoints.", mdxCompiled: mdxCount, diagramsParsed: diagramCount, failures };
 dom.window.close();
 fs.writeFileSync(path.join(root, "docs/references/syntax-check.json"), JSON.stringify(report, null, 2) + "\n");
 console.log(JSON.stringify({ mdxCompiled: mdxCount, diagramsParsed: diagramCount, failures: failures.length }));

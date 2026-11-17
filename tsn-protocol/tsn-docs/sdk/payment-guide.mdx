@@ -23,7 +23,7 @@ The complete [wallet-credit example](https://github.com/bigdreamsweb3/trustlink-
 
 Use a recent blockhash from the selected Node/RPC context and record its validity information. The Node exposes `/network/recent-blockhash`; an application calling that endpoint must handle its documented HTTP errors. Serialize the fully signed deposit using Solana's required signature checks and encode the message signature and deposit wire in the format expected by the request builder.
 
-The deposit amount follows the current Node contract's authorized payment amount. Do not invent a fee-transfer instruction or add extra instructions to that signed deposit: Node checks the exact deposit instruction/account shape. Fee policy and any separately supported payment family must be documented from its actual contract.
+The deposit amount follows the current Node contract's authorized payment amount. After wallet signing, `assertSignedTcapGpruWalletDepositTransaction` checks the returned wire against the approved accounts, amount and note commitment, including the owner signature. The transaction must contain exactly one canonical funded-note deposit. Wallet-added ComputeBudget instructions may set heap size, compute limit, priority price or loaded-account-data limit with valid encoding and no duplicate setting; additional transfers, TCAP actions and Memo instructions remain rejected. Fee policy and any separately supported payment family must be documented from its actual contract.
 
 ## Submit approved work
 

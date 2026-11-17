@@ -14,6 +14,8 @@ This archive indexes preserved material at its existing paths. It removes supers
 - [Epoch/opaque-slot architecture](../TSN-FINAL-ARCHITECTURE.md), [Mother-rooted DNA](../tsn-mother-escrow-dna.md) and [epoch explorer notes](../tsn-transaction-explorer.md) describe a distinct retained program family. Historical here means superseded as the current native-credit narrative; its entrypoints still require capability/reachability review.
 - [From ZK-PRU to GPRU/TCAP](../expo/FROM-ZKPRU-TO-GPRU-TCAP.md) and [TIP on-chain view](../expo/TIP-ON-CHAIN-VIEW.md) preserve earlier design/experiment notes. Their labels already establish that they are not current ABI guides.
 
+The [earlier TCAP balance-transition/proof snapshot](../TCAP-V2-DEBIT-CREDIT-DESIGN.md) retains amount-public instruction, signature-nullifier and per-credit liability semantics under an explicit historical boundary. Its filename is an old internal ABI label; the project remains in development for its first release, v1.
+
 ## Independent research and external proposals
 
 The [research repository](../../research/Trustlink-Research/README.md) is an independent Git checkout. Its README still names ZK-PRU as protected receiving/spending and expands TCAP as Token Control and Authorization Protocol, conflicting with current terminology and the TSNP/TCAP native credit CPI. These claims are HISTORICAL or UNVERIFIED for current behavior even when the paper is Published. This reconstruction preserves that repository unchanged and records the discrepancy rather than rewriting publication history.

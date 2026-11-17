@@ -1,0 +1,48 @@
+<article class="tsn-document" itemscope itemtype="https://schema.org/TechArticle">
+  <meta itemprop="author" content="TrustLink Labs Research">
+  <meta itemprop="headline" content="TIN: Identity and Privacy-Receiving Roots for TSN">
+  <meta itemprop="description" content="TIN is the identity layer for TrustLink Pay. It resolves a privacy-receiving root relationship into GPRU authorization, TSN settlement coordination, TCAP (Transfer Confidential Asset Protocol) credit and encrypted private balance snapshots.">
+
+  <div class="up-kicker">TSN architecture &middot; TIN identity</div>
+  <h1 itemprop="headline">TIN: Identity and Privacy-Receiving Roots for TSN</h1>
+  <p class="dek" itemprop="description">A TIN is a portable payment identity. It helps a sender address a recipient without treating an everyday wallet address as the human-facing identifier. The live route is TIN &rarr; privacy-receiving root &rarr; GPRU &rarr; TSN &rarr; TCAP.</p>
+
+  <h2>What a TIN is</h2>
+  <p>A Transfer Identity Number is a payment identity and route-discovery handle. It is not a private key, seed phrase, token account, confidential balance or permission for infrastructure to spend funds.</p>
+  <ul>
+    <li>The owner wallet authorizes the TIN relationship.</li>
+    <li>The privacy-receiving root anchors the private receiving relationship.</li>
+    <li>GPRU supplies scoped authorization and routing only; it never holds funds.</li>
+    <li>TCAP stores the public tip transition while the owner keeps the encrypted balance snapshot.</li>
+  </ul>
+
+  <h2>Live payment path</h2>
+  <ol>
+    <li>The sender resolves the recipient TIN through the permitted identity service.</li>
+    <li>The SDK binds the privacy-receiving root relationship into the signed intent and GPRU scope.</li>
+    <li>The Receiver stores redacted work and the TSN Node verifies signatures, policy, commitments, sequence and expiry.</li>
+    <li>Mother and TSN authorize the ConfidentialSettlement transition for the Epoch Treasury and TCAP.</li>
+    <li>TCAP consumes the authorization receipt and nullifier, advances the tip, and binds the new commitment.</li>
+    <li>The owner device fetches and decrypts the matching encrypted snapshot for a private balance read.</li>
+  </ol>
+
+  <h2>Privacy boundary</h2>
+  <p>Public state carries only the commitments, sequence values, token identifiers, policy references, nullifiers and validity data required for verification. Plaintext roots, master seeds, snapshot keys and private balances remain on the authorized device.</p>
+  <p>Receiver, Node and Cranker services receive redacted coordination data. A Cranker submits the exact authorized transaction and cannot replace the amount, recipient binding, commitment, sequence, policy, token or nullifier.</p>
+
+  <h2>What TIN does not do</h2>
+  <ul>
+    <li>A TIN does not hold tokens or replace Solana accounts in the final transaction.</li>
+    <li>A TIN does not make GPRU custodial.</li>
+    <li>A TIN does not expose a plaintext root or private snapshot.</li>
+    <li>A TIN does not enable confidential debit or exit; those interfaces remain proof-gated.</li>
+  </ul>
+
+  <h2>Architecture history</h2>
+  <p>ZK-PRU was an earlier receiving and spending experiment. It was superseded by the privacy-receiving-root, GPRU and TCAP model. Implementers must target the current route and must not use ZK-PRU as a live receiving, balance or spending architecture. Read the <a href="https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/ZK-PRU-RETIRED.md">ZK-PRU retirement note</a> for the audit history.</p>
+
+  <h2>Developer integration boundary</h2>
+  <p>Resolve the TIN, build the TSN plan, request owner authorization, and submit the immutable signed plan. A resolved identity is not permission to construct an arbitrary transaction.</p>
+
+  <p><a href="/p/gpru.html">Read GPRU authorization and routing &rarr;</a> &middot; <a href="/p/tcap.html">Read the TCAP private balance layer &rarr;</a> &middot; <a href="/p/updates.html">Read TSN updates &rarr;</a></p>
+</article>

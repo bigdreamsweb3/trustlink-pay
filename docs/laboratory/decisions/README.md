@@ -6,6 +6,6 @@ These ADRs reconstruct decisions from current implementation and explicit reposi
 - [ADR-002: shared root and proof-gated accounting](ADR-002-shared-root.md) — historical per-credit accounting, superseded by ADR-005.
 - [ADR-003: one proof-bound owner delta](ADR-003-delta-binding.md).
 - [ADR-004: documentation authority and separation](ADR-004-documentation-authority.md).
-- [ADR-005: private credit amounts and adaptive funding pools](ADR-005-private-amount-and-adaptive-pools.md) — EXPERIMENTAL source replacement; private credit commitments, sealed pools and complete epoch accounting passed bounded offline checks, with SBF/activation/live privacy unverified.
+- [ADR-005: private credit amounts and shared funding roots](ADR-005-private-amount-and-adaptive-pools.md) — EXPERIMENTAL first-release v1 contract; private credit commitments, authenticated shared funding and complete epoch accounting. Sealed-pool trials remain historical; deployment, activation and live privacy need separate evidence.
 
 For a new decision, record context, problem, alternatives with evidence, decision, rationale, consequences, status and implementation/test links. Mark a proposal PROPOSED until adopted; a source-backed reconstructed decision does not certify external governance approval or deployed readiness.

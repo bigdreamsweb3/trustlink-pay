@@ -10,7 +10,7 @@ The workspace already has internal team runbooks, protocol-flow pages, independe
 
 Keep Mintlify and its existing routes. Add the internal laboratory record alongside established team/runbook paths. Use one canonical current architecture map and bounded evidence records, with public explanations linking detailed internal operations. Generate SDK and interface catalogs from checked-out source; record documentation classifications and gaps explicitly. Keep historical files at their existing paths and index them separately.
 
-Authority follows executable source, program contracts, behavioral tests, configured/deployed observations, current decisions, then historical narratives. A Published research label, successful build or HTTP readiness response does not establish current settlement availability. This follows [.codex terminology](../../../.codex/architecture-terminology.md), [change policy](../../../.codex/architecture-change-policy.md) and [documentation sync policy](../../../.codex/documentation-sync-policy.md).
+Authority follows executable source, program contracts, behavioral tests, configured/deployed observations, current decisions, then historical narratives. A Published research label, successful build or HTTP readiness response does not establish current settlement availability. This follows [.agents terminology](../../../.agents/architecture-terminology.md), [change policy](../../../.agents/architecture-change-policy.md) and [documentation sync policy](../../../.agents/documentation-sync-policy.md).
 
 ## Alternatives and consequences
 

@@ -1,0 +1,10 @@
+"""Discovery shell for direct aggregate-prover dependency contracts."""
+import unittest
+
+from cases.epoch_prover_dependencies.authorize_component import test_authorization_uses_injected_prover_and_current_lease
+from cases.epoch_prover_dependencies.verify_component import test_verification_uses_injected_epoch_prover
+
+
+class EpochProverDependencyTests(unittest.IsolatedAsyncioTestCase):
+    test_authorization_uses_injected_prover_and_current_lease = test_authorization_uses_injected_prover_and_current_lease
+    test_verification_uses_injected_epoch_prover = test_verification_uses_injected_epoch_prover

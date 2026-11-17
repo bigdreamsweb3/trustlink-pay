@@ -72,17 +72,54 @@ export function buildFundingRootInitialization(authority) {
   ],data:discriminator("initialize_private_funding_root_v1")});
 }
 
+export function buildFundingRootMigration(authority) {
+  const instruction=buildFundingRootInitialization(authority);
+  instruction.data=discriminator("migrate_private_funding_root_v2");
+  return instruction;
+}
+
 const BN254 = 21888242871839275222246405745257275088548364400416034343698204186575808495617n;
 const canonicalField = bytes => BigInt("0x"+bytes.toString("hex")) < BN254;
 export function decodeFundingRoot(info) {
-  const data=decodeAccount(info,TCAP,"TcapFundingMerkleRootV1",1081);
+  const data=decodeAccount(info,TCAP,"TcapFundingMerkleRootV1",6209);
+  const prefix=decodeFundingPrefix(data,2);
+  const count=data.readUInt16LE(6207),next=data.readUInt16LE(6205),leaves=BigInt(prefix.leafCount);
+  if(data.readUInt32LE(1081)!==128 || count>128 || next>=128 || (count<128 && next!==count)
+    || (leaves===0n ? count!==0 : count===0 || BigInt(count)>leaves)) throw new Error("Invalid funding history layout");
+  const start=count===128 ? next : 0;
+  for(let index=0;index<count;index++) {
+    const offset=1085+40*((start+index)%128),root=data.subarray(offset,offset+32),entryCount=data.readBigUInt64LE(offset+32);
+    if(root.every(byte=>byte===0) || !canonicalField(root) || entryCount!==leaves-BigInt(count)+BigInt(index)+1n
+      || (index===count-1 && root.toString("hex")!==prefix.currentRoot)) throw new Error("Invalid funding history entry");
+  }
+  if(data.subarray(1085+40*count,6205).some(byte=>byte!==0))throw new Error("Invalid inactive funding history entry");
+  return {...prefix,historyCount:count,nextHistoryIndex:next};
+}
+
+function decodeFundingPrefix(data,version) {
   const count=data.readBigUInt64LE(45);
   const bump=PublicKey.findProgramAddressSync([Buffer.from("tcap:funding-root:v1")],TCAP)[1];
-  if(data.readUInt16LE(8)!==1 || data.readUInt16LE(10)!==1 || data[12]!==bump
+  if(data.readUInt16LE(8)!==version || data.readUInt16LE(10)!==1 || data[12]!==bump
     || count > 2n**32n || data.readUInt32LE(53)!==32
     || !canonicalField(data.subarray(13,45)) || data.subarray(13,45).every(byte=>byte===0)) throw new Error("Invalid funding root layout or field");
-  for(let offset=57;offset<data.length;offset+=32) if(!canonicalField(data.subarray(offset,offset+32))) throw new Error("Invalid funding frontier field");
-  return {currentRoot:data.subarray(13,45).toString("hex"),leafCount:count.toString()};
+  for(let offset=57;offset<1081;offset+=32) if(!canonicalField(data.subarray(offset,offset+32))) throw new Error("Invalid funding frontier field");
+  return {version,currentRoot:data.subarray(13,45).toString("hex"),leafCount:count.toString()};
+}
+
+/** Legacy decoding is reserved for explicit one-time migration/status inspection. */
+export function decodeLegacyFundingRootForMigration(info) {
+  return decodeFundingPrefix(decodeAccount(info,TCAP,"TcapFundingMerkleRootV1",1081),1);
+}
+
+export function planFundingRootMigration(info,minimumBalance) {
+  if(!info)throw new Error("Cannot migrate a missing funding root; initialize it explicitly");
+  if(info.data.length===6209) {
+    return {required:false,...decodeFundingRoot(info),targetBytes:6209,reallocBytes:0,rentTopUp:"0"};
+  }
+  const old=decodeLegacyFundingRootForMigration(info);
+  if(!Number.isSafeInteger(minimumBalance) || minimumBalance<0 || !Number.isSafeInteger(info.lamports) || info.lamports<0) throw new Error("Invalid migration rent metadata");
+  return {required:true,...old,targetBytes:6209,reallocBytes:5128,
+    rentTopUp:String(Math.max(0,minimumBalance-info.lamports)),seededHistoryCount:old.leafCount==="0" ? 0 : 1};
 }
 
 export function decodeVerifierVersion(info) {
@@ -115,14 +152,14 @@ export function assertVerifierMatches(info, material, authority) {
   return data[106] !== 0;
 }
 
-function options(argv) {
+export function options(argv) {
   const selected = { command: argv[0] ?? "status", send: false };
   for (let i = 1; i < argv.length; i++) {
     if (argv[i] === "--send") selected.send = true;
     else if (["--rpc", "--wallet", "--args"].includes(argv[i]) && argv[i + 1]) selected[argv[i++].slice(2)] = argv[i];
     else throw new Error(`Unknown or missing option: ${argv[i]}`);
   }
-  if (!["status", "init-verifier", "migrate-verifier", "rekey-verifier", "init-funding-root", "activate-root"].includes(selected.command)) throw new Error("Usage: hidden-head-setup.mjs status|init-verifier|migrate-verifier|rekey-verifier|init-funding-root|activate-root [--rpc URL] [--wallet KEYPAIR] [--args FILE] [--send]");
+  if (!["status", "init-verifier", "migrate-verifier", "rekey-verifier", "init-funding-root", "migrate-funding-root", "activate-root"].includes(selected.command)) throw new Error("Usage: hidden-head-setup.mjs status|init-verifier|migrate-verifier|rekey-verifier|init-funding-root|migrate-funding-root|activate-root [--rpc URL] [--wallet KEYPAIR] [--args FILE] [--send]");
   return selected;
 }
 
@@ -141,18 +178,28 @@ export async function main(argv) {
     if (!config.subarray(208, 240).equals(ADDRESSES.root.toBuffer())) throw new Error("TCAP config does not bind the canonical root");
     const root = decodeRoot(rootInfo);
     const verifierVersion=decodeVerifierVersion(verifierInfo);
-    const fundingRoot=fundingInfo ? decodeFundingRoot(fundingInfo) : null;
+    const migrationInspection=["status","migrate-funding-root"].includes(selected.command);
+    const fundingRoot=fundingInfo ? (migrationInspection && fundingInfo.data.length===1081
+      ? {...decodeLegacyFundingRootForMigration(fundingInfo),migrationRequired:true} : decodeFundingRoot(fundingInfo)) : null;
     const summary = { checkedAt: new Date().toISOString(), slot: read.context.slot, rpc: new URL(rpc).origin, motherAuthority: mother.toBase58(), governanceAuthority: governance.toBase58(), accounts: Object.fromEntries(Object.entries(ADDRESSES).map(([name, key]) => [name, key.toBase58()])), config: { version: config.readUInt16LE(8), paused: config[207] !== 0, proofVerifierProgram: new PublicKey(config.subarray(174, 206)).toBase58(), proofVerifierEnabled: config[206] !== 0 }, root, fundingRoot, verifier: { version:verifierVersion, exists: !!verifierInfo, bytes: verifierInfo?.data.length ?? 0, enabled: verifierInfo ? verifierInfo.data[106] === 1 : false } };
     console.log(JSON.stringify(summary, null, 2));
     if (selected.command === "status") return summary;
     let instructions;
     let requiredAuthority;
     let material;
+    let fundingMigration;
     if (selected.command === "activate-root") {
       if (!root.paused) { console.log("Root is already active; no transaction needed."); return; }
       if (root.sequence !== "0") throw new Error("Refusing first-use activation of a root with existing transitions");
       requiredAuthority = governance;
       instructions = [buildRootActivation(governance)];
+    } else if(selected.command === "migrate-funding-root") {
+      const minimumBalance=await connection.getMinimumBalanceForRentExemption(6209,"confirmed");
+      fundingMigration=planFundingRootMigration(fundingInfo,minimumBalance);
+      console.log(JSON.stringify({fundingRootMigration:fundingMigration}));
+      if(!fundingMigration.required){console.log("Funding root already uses the validated V2 layout; no transaction needed.");return;}
+      requiredAuthority=governance;
+      instructions=[buildFundingRootMigration(governance)];
     } else if(selected.command === "init-funding-root") {
       if(fundingInfo) {console.log("Funding root already initialized; no transaction needed.");return;}
       requiredAuthority=governance;
@@ -183,10 +230,15 @@ export async function main(argv) {
       const signature = await sendAndConfirmTransaction(connection, new Transaction().add(instructions[index]), [signer], { commitment: "confirmed" });
       console.log(JSON.stringify({ transaction: index + 1, signature }));
     }
-    const finalInfo = await connection.getAccountInfo(selected.command === "activate-root" ? ADDRESSES.root : selected.command === "init-funding-root" ? ADDRESSES.fundingRoot : ADDRESSES.verifier, "confirmed");
+    const finalInfo = await connection.getAccountInfo(selected.command === "activate-root" ? ADDRESSES.root : ["init-funding-root","migrate-funding-root"].includes(selected.command) ? ADDRESSES.fundingRoot : ADDRESSES.verifier, "confirmed");
     if (material) {
       if (!assertVerifierMatches(finalInfo, material, requiredAuthority)) throw new Error("Verifier still disabled after setup");
       console.log("CONFIRMED: GPRU verifier enabled with the exact circuit/key commitments and all fourteen IC points.");
+    } else if(selected.command === "migrate-funding-root") {
+      const finalRoot=decodeFundingRoot(finalInfo);
+      if(!finalInfo.data.subarray(10,1081).equals(fundingInfo.data.subarray(10,1081))
+        || finalRoot.historyCount!==fundingMigration.seededHistoryCount)throw new Error("Funding root migration changed existing state or history seed");
+      console.log(JSON.stringify({result:"CONFIRMED: TCAP funding root migrated in place with preserved state",...finalRoot}));
     } else if(selected.command === "init-funding-root") {
       const finalRoot=decodeFundingRoot(finalInfo);
       if(finalRoot.leafCount!=="0")throw new Error("Funding root initialization count is invalid");

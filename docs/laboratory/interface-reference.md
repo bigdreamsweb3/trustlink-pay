@@ -6,7 +6,7 @@
 
 ### POST `/internal/wake`
 
-Handler: `wake_receiver_verification`. [Source: tsn-protocol/services/tsn-node/server.py, line 3475](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `wake_receiver_verification`. [Source: tsn-protocol/services/tsn-node/server.py, line 3404](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 wake_receiver_verification() -> dict[str, Any]
@@ -18,7 +18,7 @@ Declared route options:
 
 ### POST `/internal/settlement-authorizations/settlement`
 
-Handler: `create_settlement_authorization`. [Source: tsn-protocol/services/tsn-node/server.py, line 3585](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `create_settlement_authorization`. [Source: tsn-protocol/services/tsn-node/server.py, line 3486](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 create_settlement_authorization(body: dict[str, Any]) -> dict[str, Any]
@@ -30,7 +30,7 @@ Declared route options:
 
 ### POST `/internal/settlement-authorizations/signature`
 
-Handler: `sign_settlement_transaction`. [Source: tsn-protocol/services/tsn-node/server.py, line 3641](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `sign_settlement_transaction`. [Source: tsn-protocol/services/tsn-node/server.py, line 3572](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 sign_settlement_transaction(body: dict[str, Any]) -> dict[str, Any]
@@ -42,7 +42,7 @@ Declared route options:
 
 ### POST `/`
 
-Handler: `mempool_status`. [Source: tsn-protocol/services/tsn-node/server.py, line 3719](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `mempool_status`. [Source: tsn-protocol/services/tsn-node/server.py, line 3654](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 mempool_status(request: MempoolStatusRequest) -> MempoolStatusResponse
@@ -54,7 +54,7 @@ Declared route options:
 
 ### POST `/threshold-access/nonces/consume`
 
-Handler: `consume_threshold_access_nonce`. [Source: tsn-protocol/services/tsn-node/server.py, line 3728](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `consume_threshold_access_nonce`. [Source: tsn-protocol/services/tsn-node/server.py, line 3663](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 consume_threshold_access_nonce(request: dict[str, Any]) -> dict[str, Any]
@@ -62,7 +62,7 @@ consume_threshold_access_nonce(request: dict[str, Any]) -> dict[str, Any]
 
 ### POST `/intents`
 
-Handler: `post_intent`. [Source: tsn-protocol/services/tsn-node/server.py, line 3785](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `post_intent`. [Source: tsn-protocol/services/tsn-node/server.py, line 3720](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 post_intent(req: CreateIntentRequest) -> PublicMempoolIntent
@@ -74,7 +74,7 @@ Declared route options:
 
 ### GET `/network/recent-blockhash`
 
-Handler: `get_network_recent_blockhash`. [Source: tsn-protocol/services/tsn-node/server.py, line 3828](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `get_network_recent_blockhash`. [Source: tsn-protocol/services/tsn-node/server.py, line 3763](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 get_network_recent_blockhash() -> dict[str, Any]
@@ -82,7 +82,7 @@ get_network_recent_blockhash() -> dict[str, Any]
 
 ### GET `/intents`
 
-Handler: `list_intents`. [Source: tsn-protocol/services/tsn-node/server.py, line 3849](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `list_intents`. [Source: tsn-protocol/services/tsn-node/server.py, line 3784](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 list_intents(status: Optional[str]=Query(None)) -> list[PublicMempoolIntent]
@@ -95,7 +95,7 @@ Declared route options:
 
 ### PATCH `/intents/{intent_id}/status`
 
-Handler: `update_intent_status`. [Source: tsn-protocol/services/tsn-node/server.py, line 3860](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `update_intent_status`. [Source: tsn-protocol/services/tsn-node/server.py, line 3795](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 update_intent_status(intent_id: str=ApiPath(...), body: UpdateStatusRequest=...) -> MempoolIntent
@@ -108,7 +108,7 @@ Declared route options:
 
 ### GET `/intent-work`
 
-Handler: `list_pending_intent_work`. [Source: tsn-protocol/services/tsn-node/server.py, line 3889](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `list_pending_intent_work`. [Source: tsn-protocol/services/tsn-node/server.py, line 3824](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 list_pending_intent_work(limit: int=Query(50, ge=1, le=500)) -> list[IntentWorkItem]
@@ -121,7 +121,7 @@ Declared route options:
 
 ### GET `/metrics`
 
-Handler: `get_metrics`. [Source: tsn-protocol/services/tsn-node/server.py, line 3906](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `get_metrics`. [Source: tsn-protocol/services/tsn-node/server.py, line 3841](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 get_metrics() -> MetricsResponse
@@ -133,7 +133,7 @@ Declared route options:
 
 ### POST `/crankers/heartbeat`
 
-Handler: `post_cranker_heartbeat`. [Source: tsn-protocol/services/tsn-node/server.py, line 3934](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `post_cranker_heartbeat`. [Source: tsn-protocol/services/tsn-node/server.py, line 3869](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 post_cranker_heartbeat(req: CrankerHeartbeatRequest) -> CrankerHeartbeatRecord
@@ -146,7 +146,7 @@ Declared route options:
 
 ### GET `/settlement-networks`
 
-Handler: `get_settlement_networks`. [Source: tsn-protocol/services/tsn-node/server.py, line 3954](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `get_settlement_networks`. [Source: tsn-protocol/services/tsn-node/server.py, line 3889](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 get_settlement_networks() -> list[dict[str, Any]]
@@ -154,7 +154,7 @@ get_settlement_networks() -> list[dict[str, Any]]
 
 ### GET `/network/overview`
 
-Handler: `get_network_overview`. [Source: tsn-protocol/services/tsn-node/server.py, line 3968](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `get_network_overview`. [Source: tsn-protocol/services/tsn-node/server.py, line 3903](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 get_network_overview() -> NetworkOverviewResponse
@@ -166,7 +166,7 @@ Declared route options:
 
 ### GET `/epoch/status`
 
-Handler: `get_epoch_status`. [Source: tsn-protocol/services/tsn-node/server.py, line 4056](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `get_epoch_status`. [Source: tsn-protocol/services/tsn-node/server.py, line 3991](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 get_epoch_status() -> EpochStatus
@@ -178,7 +178,7 @@ Declared route options:
 
 ### POST `/epoch/close`
 
-Handler: `close_epoch`. [Source: tsn-protocol/services/tsn-node/server.py, line 4064](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `close_epoch`. [Source: tsn-protocol/services/tsn-node/server.py, line 3999](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 close_epoch() -> EpochCloseResult
@@ -195,7 +195,7 @@ These are declared Pydantic fields, including defaults where present. Runtime va
 
 ### CreateIntentRequest
 
-[Source: tsn-protocol/services/tsn-node/server.py, line 1431](../../tsn-protocol/services/tsn-node/server.py).
+[Source: tsn-protocol/services/tsn-node/server.py, line 1430](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 paymentId: str = Field(..., description='Unique payment ID')
@@ -224,7 +224,7 @@ source: Optional[str] = Field(None)
 
 ### PublicMempoolIntent
 
-[Source: tsn-protocol/services/tsn-node/server.py, line 1468](../../tsn-protocol/services/tsn-node/server.py).
+[Source: tsn-protocol/services/tsn-node/server.py, line 1467](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 id: str
@@ -247,7 +247,7 @@ updatedAt: str
 
 ### SignedLeasePermitRequest
 
-[Source: tsn-protocol/services/tsn-node/server.py, line 1496](../../tsn-protocol/services/tsn-node/server.py).
+[Source: tsn-protocol/services/tsn-node/server.py, line 1495](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 operatorPubkey: str
@@ -257,7 +257,7 @@ requestSignatureBase64: str
 
 ### IntentWorkItem
 
-[Source: tsn-protocol/services/tsn-node/server.py, line 1501](../../tsn-protocol/services/tsn-node/server.py).
+[Source: tsn-protocol/services/tsn-node/server.py, line 1500](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 intent: MempoolIntent
@@ -265,7 +265,7 @@ intent: MempoolIntent
 
 ### UpdateStatusRequest
 
-[Source: tsn-protocol/services/tsn-node/server.py, line 1504](../../tsn-protocol/services/tsn-node/server.py).
+[Source: tsn-protocol/services/tsn-node/server.py, line 1503](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 status: str = Field(...)
@@ -278,7 +278,7 @@ settlementReason: Optional[str] = Field(None)
 
 ### CrankerHeartbeatRequest
 
-[Source: tsn-protocol/services/tsn-node/server.py, line 1512](../../tsn-protocol/services/tsn-node/server.py).
+[Source: tsn-protocol/services/tsn-node/server.py, line 1511](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 operator_pubkey: str = Field(...)
@@ -289,7 +289,7 @@ source: Optional[str] = Field(None)
 
 ### EpochStatus
 
-[Source: tsn-protocol/services/tsn-node/server.py, line 1523](../../tsn-protocol/services/tsn-node/server.py).
+[Source: tsn-protocol/services/tsn-node/server.py, line 1522](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 epoch_number: int
@@ -301,7 +301,7 @@ settlement_count: int
 
 ### EpochCloseResult
 
-[Source: tsn-protocol/services/tsn-node/server.py, line 1530](../../tsn-protocol/services/tsn-node/server.py).
+[Source: tsn-protocol/services/tsn-node/server.py, line 1529](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 epoch_number: int
@@ -317,7 +317,7 @@ message: str
 
 ### MempoolStatusRequest
 
-[Source: tsn-protocol/services/tsn-node/server.py, line 1541](../../tsn-protocol/services/tsn-node/server.py).
+[Source: tsn-protocol/services/tsn-node/server.py, line 1540](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 action: Optional[str] = Field(default='status')
@@ -325,7 +325,7 @@ action: Optional[str] = Field(default='status')
 
 ### MempoolStatusResponse
 
-[Source: tsn-protocol/services/tsn-node/server.py, line 1544](../../tsn-protocol/services/tsn-node/server.py).
+[Source: tsn-protocol/services/tsn-node/server.py, line 1543](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 status: str = 'ok'
@@ -334,7 +334,7 @@ epoch: EpochStatus
 
 ### IntentToSettlementMetrics
 
-[Source: tsn-protocol/services/tsn-node/server.py, line 1548](../../tsn-protocol/services/tsn-node/server.py).
+[Source: tsn-protocol/services/tsn-node/server.py, line 1547](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 sample_count: int
@@ -347,7 +347,7 @@ updated_at: Optional[str] = None
 
 ### UptimeMetrics
 
-[Source: tsn-protocol/services/tsn-node/server.py, line 1556](../../tsn-protocol/services/tsn-node/server.py).
+[Source: tsn-protocol/services/tsn-node/server.py, line 1555](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 service_started_at: str
@@ -358,7 +358,7 @@ downtime_events: int = 0
 
 ### MetricsResponse
 
-[Source: tsn-protocol/services/tsn-node/server.py, line 1562](../../tsn-protocol/services/tsn-node/server.py).
+[Source: tsn-protocol/services/tsn-node/server.py, line 1561](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 intent_to_settlement: IntentToSettlementMetrics
@@ -368,7 +368,7 @@ active_crankers_last_epoch: int
 
 ### TokenNetworkStatus
 
-[Source: tsn-protocol/services/tsn-node/server.py, line 1567](../../tsn-protocol/services/tsn-node/server.py).
+[Source: tsn-protocol/services/tsn-node/server.py, line 1566](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 token_mint: str
@@ -389,7 +389,7 @@ liquidity_source: str = 'program_scan'
 
 ### NetworkOverviewResponse
 
-[Source: tsn-protocol/services/tsn-node/server.py, line 1583](../../tsn-protocol/services/tsn-node/server.py).
+[Source: tsn-protocol/services/tsn-node/server.py, line 1582](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 online_crankers_last_epoch: int
@@ -413,7 +413,7 @@ Paths below follow the Next.js filesystem router. Application aliases and proxie
 
 ### POST `/api/cranker/settlement-signature`
 
-[Source: tsn-protocol/services/tsn-receiver/app/api/cranker/settlement-signature/route.ts, line 10](../../tsn-protocol/services/tsn-receiver/app/api/cranker/settlement-signature/route.ts).
+[Source: tsn-protocol/services/tsn-receiver/app/api/cranker/settlement-signature/route.ts, line 7](../../tsn-protocol/services/tsn-receiver/app/api/cranker/settlement-signature/route.ts).
 
 ### POST `/api/cranker/wake-token`
 
@@ -425,15 +425,15 @@ Paths below follow the Next.js filesystem router. Application aliases and proxie
 
 ### PUT `/api/cranker/work`
 
-[Source: tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts, line 10](../../tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts).
+[Source: tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts, line 11](../../tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts).
 
 ### POST `/api/cranker/work`
 
-[Source: tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts, line 62](../../tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts).
+[Source: tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts, line 58](../../tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts).
 
 ### PATCH `/api/cranker/work`
 
-[Source: tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts, line 123](../../tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts).
+[Source: tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts, line 103](../../tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts).
 
 ### GET `/api/health`
 
@@ -455,9 +455,9 @@ Paths below follow the Next.js filesystem router. Application aliases and proxie
 
 [Source: tsn-protocol/services/tsn-receiver/app/api/internal/node/work/reconcile/route.ts, line 6](../../tsn-protocol/services/tsn-receiver/app/api/internal/node/work/reconcile/route.ts).
 
-### POST `/api/internal/node/work/recover-pool`
+### POST `/api/internal/node/work/resolve-failed`
 
-[Source: tsn-protocol/services/tsn-receiver/app/api/internal/node/work/recover-pool/route.ts, line 6](../../tsn-protocol/services/tsn-receiver/app/api/internal/node/work/recover-pool/route.ts).
+[Source: tsn-protocol/services/tsn-receiver/app/api/internal/node/work/resolve-failed/route.ts, line 6](../../tsn-protocol/services/tsn-receiver/app/api/internal/node/work/resolve-failed/route.ts).
 
 ### POST `/api/internal/node/work/retry`
 

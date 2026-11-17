@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="auto" viewBox="0 0 1600 1800" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="title desc">
+<title id="title">Debit to exit cross-chain flow</title>
+<desc id="desc">Separated TSN process showing Solana debit, Node authorization, Creditcoin settlement, and an Attestcoin payout message that releases stablecoin liquidity on the selected supported EVM network.</desc>
+<defs>
+  <marker id="greenArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#39a6ff"/></marker>
+  <marker id="goldArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#5b6dff"/></marker>
+  <style>.sans{font-family:Arial,Helvetica,sans-serif}.serif{font-family:Georgia,"Times New Roman",serif}.title{font-size:32px;font-weight:800;letter-spacing:3px}.label{font-size:21px;font-weight:800;letter-spacing:1px}.body{font-size:18px}.tiny{font-size:14px;font-weight:700;letter-spacing:.7px}.muted{fill:#9ca3b8}.ink{fill:#f5f7ff}.white{fill:#ffffff}.pale{fill:#c9d2ff}.green{fill:#39a6ff}.gold{fill:#5b6dff}.port{fill:#0b0b12;stroke:#39a6ff;stroke-width:3}.portGold{fill:#0b0b12;stroke:#5b6dff;stroke-width:3}</style>
+</defs>
+<rect width="1600" height="1800" fill="#050509"/>
+<rect x="0" y="0" width="1600" height="1800" fill="#0b0b12" stroke="#2d2d45" stroke-width="2"/>
+<text x="105" y="120" class="sans title ink">DEBIT → EXIT CROSS-CHAIN FLOW</text>
+<text x="105" y="160" class="serif muted" font-size="23">SVM → EVM, powered by Creditcoin settlement.</text>
+<text x="105" y="190" class="sans tiny gold">DEBIT INTENT → ATTESTCOIN CROSS-CHAIN CHECK → NODE AUTHORIZATION</text>
+
+<g transform="translate(0,145)">
+<!-- 01 / 02 -->
+<rect x="105" y="215" width="650" height="170" fill="#172c58"/>
+<rect x="845" y="215" width="650" height="170" fill="#33206b"/>
+<text x="145" y="260" class="sans label white">01  DEBIT INTENT (SVM)</text>
+<text x="145" y="300" class="sans body white">User/device creates and signs the</text>
+<text x="145" y="332" class="sans body pale">debit intent before any cross-chain check.</text>
+<text x="145" y="360" class="sans body pale">The intent then enters the Attestcoin route.</text>
+<text x="885" y="260" class="sans label white">02  ATTESTCOIN LIQUIDITY CHECK</text>
+<text x="885" y="300" class="sans body white">USC SDK proof flow verifies the selected</text>
+<text x="885" y="332" class="sans body pale">EVM liquidity event; Creditcoin ASC records</text>
+<text x="885" y="360" class="sans body pale">the valid route and unexpired vault observation.</text>
+<path d="M755 300 H835" stroke="#39a6ff" stroke-width="3" marker-end="url(#greenArrow)"/><circle cx="755" cy="300" r="6" class="port"/><circle cx="835" cy="300" r="6" class="port"/><text x="770" y="280" class="sans" font-size="15" font-weight="800" fill="#39a6ff">CHECK</text>
+
+<!-- 03: Node receives the debit only after the Attestcoin route check -->
+<path d="M1165 385 V410 H430 V425" fill="none" stroke="#39a6ff" stroke-width="3" marker-end="url(#greenArrow)"/><circle cx="1165" cy="385" r="6" class="port"/><circle cx="430" cy="425" r="6" class="port"/>
+<rect x="105" y="435" width="650" height="175" fill="#123e5a"/>
+<rect x="845" y="435" width="650" height="175" fill="#174d3b"/>
+<text x="145" y="480" class="sans label white">03  NODE VALIDATION + AUTH</text>
+<text x="145" y="525" class="sans body white">Node receives the checked debit intent.</text>
+<text x="145" y="557" class="sans body pale">It validates policy, amount, destination,</text>
+<text x="145" y="589" class="sans body pale">nonce, and expiry, then authorizes Job 1.</text>
+<text x="885" y="480" class="sans label white">04  CRANKER JOB 1</text>
+<text x="885" y="525" class="sans body white">Submits the exact Node-authorized</text>
+<text x="885" y="557" class="sans body pale">debit intent to Solana. Solana creates</text>
+<text x="885" y="589" class="sans body pale">the debit commitment.</text>
+<path d="M755 522 H835" stroke="#39a6ff" stroke-width="3" marker-end="url(#greenArrow)"/><circle cx="755" cy="522" r="6" class="port"/><circle cx="835" cy="522" r="6" class="port"/>
+
+<!-- 05 follows Job 1: Node confirms the resulting Solana commitment -->
+<path d="M1170 610 V790 H430 V830" fill="none" stroke="#5b6dff" stroke-width="3" stroke-dasharray="7 6" marker-end="url(#goldArrow)"/><circle cx="1170" cy="610" r="6" class="portGold"/><circle cx="430" cy="830" r="6" class="portGold"/>
+
+<!-- 05 / 06 -->
+<rect x="105" y="840" width="650" height="175" fill="#123e5a"/>
+<rect x="845" y="840" width="650" height="175" fill="#174d3b"/>
+<text x="145" y="885" class="sans label white">05  NODE CONFIRMS DEBIT</text>
+<text x="145" y="917" class="sans label white">AUTHORIZES EVM HANDOFF</text>
+<text x="145" y="948" class="sans body white">Reads and validates the Solana</text>
+<text x="145" y="978" class="sans body pale">debit commitment, then creates the</text>
+<text x="145" y="1008" class="sans body pale">exact Creditcoin settlement payload.</text>
+<text x="885" y="885" class="sans label white">06  CRANKER JOB 2</text>
+<text x="885" y="925" class="sans body white">Submits the authorized Creditcoin exit.</text>
+<text x="885" y="957" class="sans body pale">Same generic Cranker switches to its configured</text>
+<text x="885" y="985" class="sans body pale">Creditcoin key and fee balance.</text>
+<path d="M755 925 H835" stroke="#39a6ff" stroke-width="3" marker-end="url(#greenArrow)"/><circle cx="755" cy="925" r="6" class="port"/><circle cx="835" cy="925" r="6" class="port"/>
+
+<!-- 07: Creditcoin consumes the authorized commitment -->
+<path d="M1170 1015 V1050 H800 V1080" fill="none" stroke="#39a6ff" stroke-width="3" marker-end="url(#greenArrow)"/><circle cx="1170" cy="1015" r="7" class="port"/><circle cx="800" cy="1080" r="7" class="port"/>
+<rect x="105" y="1090" width="1390" height="130" fill="#33206b"/>
+<text x="145" y="1135" class="sans label white">07  ATTESTCOIN SETTLEMENT</text>
+<text x="145" y="1175" class="sans body white">Consumes the authorized Solana debit commitment and records the Creditcoin settlement credit.</text>
+<text x="145" y="1202" class="sans body pale">Attestcoin publishes the authenticated payout message for the selected network.</text>
+
+<!-- Attestcoin sends the payout message for every supported EVM destination. -->
+<text x="105" y="1055" class="sans tiny gold">AFTER CREDITCOIN SETTLEMENT: ATTESTCOIN SENDS THE PAYOUT MESSAGE</text>
+<path d="M800 1220 V1260" fill="none" stroke="#5b6dff" stroke-width="3" marker-end="url(#goldArrow)"/><circle cx="800" cy="1220" r="7" class="port"/><circle cx="800" cy="1260" r="7" class="portGold"/>
+<rect x="105" y="1270" width="1390" height="155" fill="#33206b"/>
+<text x="145" y="1315" class="sans label white">ATTESTCOIN PAYOUT MESSAGE — SELECTED SUPPORTED EVM NETWORK</text>
+<text x="145" y="1355" class="sans body pale">Attestcoin delivers the authenticated payout message to the selected network.</text>
+<text x="145" y="1387" class="sans body pale">That network's prefunded stablecoin liquidity releases the recipient payout.</text>
+<text x="105" y="1500" class="sans body muted">No standalone payout Cranker job: the authenticated Attestcoin route invokes the destination execution.</text>
+<text x="105" y="1540" class="sans body muted">The vault supplies stablecoin value; native network tokens pay gas only.</text>
+</g>
+<text x="105" y="1735" class="sans tiny muted">PROCESS COLORS:</text>
+<circle cx="250" cy="1730" r="9" fill="#123e5a"/><text x="270" y="1735" class="sans tiny ink">NODE</text>
+<circle cx="385" cy="1730" r="9" fill="#174d3b"/><text x="405" y="1735" class="sans tiny ink">CRANKER</text>
+<circle cx="565" cy="1730" r="9" fill="#5b6dff"/><text x="585" y="1735" class="sans tiny ink">ATTESTCOIN</text>
+<circle cx="770" cy="1730" r="9" fill="#172c58"/><text x="790" y="1735" class="sans tiny ink">SVM / DEBIT</text>
+</svg>

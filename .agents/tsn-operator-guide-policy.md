@@ -1,0 +1,13 @@
+# Keep the TSN operator guide aligned with implementation
+
+**Status: CURRENT repository rule.** Root `AGENTS.md` requires this file to be read for changes affecting how a team builds or operates TSN. Its location alone does not load it automatically.
+
+1. Before changing installation, dependencies, program deployment/IDs, initialization/migrations, keys, proving artifacts, service startup/configuration, SDK/app integration or error recovery, read [the operator guide](../docs/RUN-YOUR-OWN-TSN.md) and [documentation maintenance](../docs/DOCUMENTATION_MAINTENANCE.md).
+2. Trace the changed method to executable scripts, package commands, program/account ABI and the participating SDK, Receiver, Node and Cranker. Source determines the procedure; a past chat or historical runbook cannot restore an obsolete path.
+3. Update the internal guide and troubleshooting in the same task. Keep run-your-own-TSN installation guidance, its page, navigation and promotion out of community docs and tsn-protocol until the user explicitly authorizes publication. Review affected public service/API behavior, READMEs and examples without introducing a self-hosting guide. Repository-file links from tsn-protocol to files outside that subtree must use https://github.com/bigdreamsweb3/trustlink-pay/blob/main/ URLs; TrustLink Labs receives only that subtree.
+4. Keep fresh independent deployment, the reference deployment and upgrades distinct. Explicitly identify fixed IDs/configuration gaps, required authorities, one-time initialization, migration prerequisites and the shell/host for commands. Preserve existing state, IDs and keys unless the user authorizes changing them.
+5. Commands must use real supported options and exact environment names/load precedence. Mark placeholders and unperformed clean-machine, live-chain, ceremony, privacy and recovery checks. Never publish secrets, private note openings or signed transaction wires.
+6. Validate changed commands/examples at the appropriate offline scope, audit local links/navigation and affected MDX/diagrams, and update [the validation record](../docs/references/TSN-OPERATOR-GUIDE-20261105.md) or a linked later dated record. Source/build/deploy/payment evidence remains separate.
+7. In the final response, state guide/rule updates and exact verification, or explain why the change has no operator-guide impact. Do not claim that checks ran, services reloaded or chain state changed without evidence.
+
+This rule does not authorize service operations, signing, deployments, Git commits or pushes. Follow the user's authorization and repository instructions.

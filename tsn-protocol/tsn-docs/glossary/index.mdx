@@ -19,7 +19,9 @@ description: "Canonical TSN names and the operational distinctions they describe
 
 **Receiver.** Durable ingress, coordination, leases and sanitized status. **Cranker.** A worker submitting verified, leased, authorized transactions. Acceptance, verification and submission are separate events.
 
-**Funding.** A confirmed reserve deposit creating pending liability. **Credit settlement.** The proof-checked root advance and equal pending-to-settled liability shift. **Confirmation.** A successful transaction result at the chosen Solana commitment level; it must be checked against relevant account state.
+**Funding.** A confirmed reserve deposit creating pending liability. **Credit settlement.** A proof-checked shared-root advance and blinded credit-epoch transcript append, without individual liability reclassification. **Credit-epoch accounting.** TCAP's separate proof-verified reclassification of the complete 2–64-credit aggregate from pending to settled liabilities. **Confirmation.** A successful transaction result at the chosen Solana commitment level; it must be checked against relevant account state.
+
+**Native credit epoch.** TCAP's shared transcript account for one asset/accounting epoch. Node considers 2–63 credits mature after 120 slots from the first credit, or a full 64-credit epoch immediately. A singleton remains open; maturity is not account expiry. This is distinct from TSNP's retained `EpochTreasury` family. See [TCAP's lifecycle](/layers/tcap#native-credit-epoch-lifecycle).
 
 **Nullifier.** A one-use value inserted into authenticated replay state. **Commitment.** A cryptographic binding to data/state; its existence does not imply encryption or proof of every associated claim. **Memo.** Public Solana instruction data containing a fixed proof-bound prefix and an owner-encrypted action body.
 

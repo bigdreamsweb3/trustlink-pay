@@ -1,27 +1,15 @@
 import unittest
-
 from fastapi import HTTPException
-
 from server import _assert_recipient_hash_matches_owner
-
+from cases.payment_intent_recipient_binding.functions.f001_test_accepts_the_node_resolved_owner_hash_case_insensitively import test_accepts_the_node_resolved_owner_hash_case_insensitively as _case_f001_test_accepts_the_node_resolved_owner_hash_case_insensitively
+from cases.payment_intent_recipient_binding.functions.f002_test_rejects_plaintext_tin_as_recipient_hash import test_rejects_plaintext_tin_as_recipient_hash as _case_f002_test_rejects_plaintext_tin_as_recipient_hash
+from cases.payment_intent_recipient_binding.functions.f003_test_rejects_an_unrelated_32_byte_hash import test_rejects_an_unrelated_32_byte_hash as _case_f003_test_rejects_an_unrelated_32_byte_hash
+from cases.payment_intent_recipient_binding.functions.f004_test_rejects_invalid_hash_from_the_on_chain_tin_route import test_rejects_invalid_hash_from_the_on_chain_tin_route as _case_f004_test_rejects_invalid_hash_from_the_on_chain_tin_route
 
 class PaymentIntentRecipientBindingTests(unittest.TestCase):
-    def test_accepts_the_node_resolved_owner_hash_case_insensitively(self):
-        owner_hash = "ab" * 32
-        _assert_recipient_hash_matches_owner(owner_hash.upper(), owner_hash)
-
-    def test_rejects_plaintext_tin_as_recipient_hash(self):
-        with self.assertRaisesRegex(HTTPException, "32-byte hexadecimal owner hash"):
-            _assert_recipient_hash_matches_owner("1234567890", "ab" * 32)
-
-    def test_rejects_an_unrelated_32_byte_hash(self):
-        with self.assertRaisesRegex(HTTPException, "does not match the Node-resolved TIN owner hash"):
-            _assert_recipient_hash_matches_owner("cd" * 32, "ab" * 32)
-
-    def test_rejects_invalid_hash_from_the_on_chain_tin_route(self):
-        with self.assertRaisesRegex(HTTPException, "TIP route has an invalid owner hash"):
-            _assert_recipient_hash_matches_owner("ab" * 32, "not-a-hash")
-
-
-if __name__ == "__main__":
+    test_accepts_the_node_resolved_owner_hash_case_insensitively = _case_f001_test_accepts_the_node_resolved_owner_hash_case_insensitively
+    test_rejects_plaintext_tin_as_recipient_hash = _case_f002_test_rejects_plaintext_tin_as_recipient_hash
+    test_rejects_an_unrelated_32_byte_hash = _case_f003_test_rejects_an_unrelated_32_byte_hash
+    test_rejects_invalid_hash_from_the_on_chain_tin_route = _case_f004_test_rejects_invalid_hash_from_the_on_chain_tin_route
+if __name__ == '__main__':
     unittest.main()

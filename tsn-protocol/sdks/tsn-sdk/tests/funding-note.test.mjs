@@ -52,6 +52,7 @@ function accounts() {
 test("wallet signs the exact commitment deposit; secret openings never appear in its public instruction", () => {
   const fields = accounts();
   const transaction = buildTcapGpruWalletDepositTransaction({ accounts: fields, amountBaseUnits: 1000n, fundingNoteCommitment: note.commitment });
+  assert.equal(transaction.instructions.length, 1);
   const ix = transaction.instructions[0];
   assert.equal(ix.data.length, 48); assert.equal(ix.keys.length, 9);
   assert.equal(ix.data.subarray(0, 8).toString("hex"), createHash("sha256").update("global:deposit_private_funding_v1").digest().subarray(0, 8).toString("hex"));
@@ -77,12 +78,12 @@ test("canonical sender approval and restricted ingress bind the same note and re
   assert.throws(() => buildPaymentAuthorizationIntentRequest({ ...fields, senderFundingMode: "tcap_deposit_v2" }), /FUNDED_NOTE_V1_REQUIRED/);
 });
 
-test("runtime credit uses private V3 amounts and only the sealed thirteen-input ABI", () => {
+test("runtime credit uses private amount commitments and the global-root thirteen-input ABI", () => {
   const a = accounts(), pda = seed => PublicKey.findProgramAddressSync([Buffer.from(seed)], GPRU_TCAP_PROGRAM_ID)[0];
-  const pool = PublicKey.findProgramAddressSync([Buffer.from("tcap:sealed-funding:v1"),a.assetEntry.toBuffer(),Buffer.from(h(1),"hex")],GPRU_TCAP_PROGRAM_ID)[0];
+  const fundingRoot = a.fundingRootAccount;
   const fields = { authority:a.depositor,motherEscrow:a.config,commitmentRoot:pda("tcap:commitment-root:v1"),
     assetEntry:a.assetEntry,reserveState:a.reserveState,config:pda("tcap:global-config:v1"),tipRouteRoot:a.mint,
-    gpruVerifier:a.tokenProgram,fundingRootAccount:pool,accountingEpoch:a.vault,
+    gpruVerifier:a.tokenProgram,fundingRootAccount:fundingRoot,accountingEpoch:a.vault,
     authorizationDigest:h(1),validAfterSlot:1n,expiresAtSlot:10n,previousTcapRoot:h(1),tcapRootSequence:1n,
     tokenId:7,amountCommitment:h(3),nullifier:h(2),proof:{publicInputs:Array(13).fill(h(1)),
       proofA:"01".repeat(64),proofB:"01".repeat(128),proofC:"01".repeat(64),actionKind:1,tokenId:7,
@@ -93,10 +94,10 @@ test("runtime credit uses private V3 amounts and only the sealed thirteen-input 
   assert.equal(ix.data.subarray(841,873).toString("hex"),h(3));
   assert.equal(ix.keys[7].isWritable,false);assert.equal(ix.keys[14].isWritable,true);
   assert.equal(ix.keys[12].pubkey.toBase58(),GPRU_PROGRAM_ID.toBase58());
-  assert.equal(ix.keys[13].pubkey.toBase58(),pool.toBase58());
+  assert.equal(ix.keys[13].pubkey.toBase58(),fundingRoot.toBase58());
   assert.throws(()=>buildTsnRegisterTcapCreditAuthorizationV3Instruction({...fields,proof:{...fields.proof,publicInputs:Array(12).fill(h(1))}}),/exactly 13/);
   assert.throws(()=>buildTsnRegisterTcapCreditAuthorizationV3Instruction({...fields,amountCommitment:h(4)}),/PROOF_ACTION_MISMATCH/);
-  assert.throws(()=>buildTsnRegisterTcapCreditAuthorizationV3Instruction({...fields,fundingRootAccount:a.fundingRootAccount}),/FUNDING_ROOT_NOT_CANONICAL/);
+  assert.throws(()=>buildTsnRegisterTcapCreditAuthorizationV3Instruction({...fields,fundingRootAccount:a.mint}),/FUNDING_ROOT_NOT_CANONICAL/);
 });
 
 test("specialized cross-chain intent retains signed destination fields and binds its funded source note", () => {

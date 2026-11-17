@@ -2,6 +2,6 @@
   "name": "tsn-pitch-deck",
   "private": true,
   "scripts": {
-    "push": "git add . && git commit -m \"Update pitch deck\" && git push origin main"
+    "push": "node -e \"console.error('Automatic staging, commits, pushes, and branch changes are disabled. Review changes and use explicit Git commands with your approval.'); process.exit(1)\""
   }
 }

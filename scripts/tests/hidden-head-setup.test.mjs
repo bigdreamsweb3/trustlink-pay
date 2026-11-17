@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { createHash } from "node:crypto";
-import { PublicKey, Transaction, buildVerifierInstructions, validateKeyArgs, buildRootActivation, decodeRoot, decodeFundingRoot, buildFundingRootInitialization, decodeVerifierVersion, assertLegacyVerifierAuthority, assertVerifierMatches, ADDRESSES, GPRU, TCAP } from "../hidden-head-setup.mjs";
+import { PublicKey, Transaction, buildVerifierInstructions, validateKeyArgs, buildRootActivation, decodeRoot, decodeFundingRoot, buildFundingRootInitialization, buildFundingRootMigration, decodeLegacyFundingRootForMigration, planFundingRootMigration, options, decodeVerifierVersion, assertLegacyVerifierAuthority, assertVerifierMatches, ADDRESSES, GPRU, TCAP } from "../hidden-head-setup.mjs";
 
 const source = fs.readFileSync(new URL("../../tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom", import.meta.url));
 const digest = (...parts) => { const h = createHash("sha256"); for (const part of parts) h.update(part); return [...h.digest()]; };
@@ -69,9 +69,53 @@ test("migration uses its explicit handler, remains six bounded packets and refus
 
 test("funding initializer is governance-only and funding root decoder enforces shape, fields and capacity",()=>{
   const ix=buildFundingRootInitialization(authority);assert.equal(ix.keys.length,4);assert.ok(ix.keys[0].isSigner);assert.ok(ix.keys[0].isWritable);assert.equal(ix.keys[2].pubkey.toBase58(),ADDRESSES.fundingRoot.toBase58());
-  const data=Buffer.alloc(1081);Buffer.from(digest(Buffer.from("account:TcapFundingMerkleRootV1"))).subarray(0,8).copy(data);data.writeUInt16LE(1,8);data.writeUInt16LE(1,10);data[12]=PublicKey.findProgramAddressSync([Buffer.from("tcap:funding-root:v1")],TCAP)[1];data[44]=1;data.writeUInt32LE(32,53);
+  const data=fundingFixture();
   assert.equal(decodeFundingRoot({owner:TCAP,data}).leafCount,"0");
   const wrongLength=Buffer.from(data);wrongLength.writeUInt32LE(31,53);assert.throws(()=>decodeFundingRoot({owner:TCAP,data:wrongLength}),/Invalid/);
-  const full=Buffer.from(data);full.writeBigUInt64LE(2n**32n,45);assert.equal(decodeFundingRoot({owner:TCAP,data:full}).leafCount,"4294967296");full.writeBigUInt64LE(2n**32n+1n,45);assert.throws(()=>decodeFundingRoot({owner:TCAP,data:full}),/Invalid/);
+  const full=fundingFixture(2n**32n);assert.equal(decodeFundingRoot({owner:TCAP,data:full}).leafCount,"4294967296");full.writeBigUInt64LE(2n**32n+1n,45);assert.throws(()=>decodeFundingRoot({owner:TCAP,data:full}),/Invalid/);
   assert.throws(()=>decodeFundingRoot({owner:GPRU,data}),/invalid/);
+});
+
+function fundingFixture(leaves=0n) {
+  const data=Buffer.alloc(6209);Buffer.from(digest(Buffer.from("account:TcapFundingMerkleRootV1"))).subarray(0,8).copy(data);
+  data.writeUInt16LE(2,8);data.writeUInt16LE(1,10);data[12]=PublicKey.findProgramAddressSync([Buffer.from("tcap:funding-root:v1")],TCAP)[1];
+  data[44]=1;data.writeBigUInt64LE(leaves,45);data.writeUInt32LE(32,53);data.writeUInt32LE(128,1081);
+  if(leaves>0n){data[1116]=1;data.writeBigUInt64LE(leaves,1117);data.writeUInt16LE(1,6205);data.writeUInt16LE(1,6207);}
+  return data;
+}
+
+test("funding V2 validates chronological wrapped history, inactive zeros and latest-root agreement",()=>{
+  const data=fundingFixture(129n);data.writeUInt16LE(128,6207);data.writeUInt16LE(1,6205);
+  for(let index=0;index<128;index++) {
+    const offset=1085+40*((index+1)%128);data.subarray(offset,offset+32).fill(0);data[offset+31]=index+1;
+    data.writeBigUInt64LE(BigInt(index+2),offset+32);
+  }
+  data[44]=128;assert.equal(decodeFundingRoot({owner:TCAP,data}).historyCount,128);
+  for(const offset of [8,12,53,1081,1117,6205,6207]) {
+    const changed=Buffer.from(data);changed[offset]^=1;assert.throws(()=>decodeFundingRoot({owner:TCAP,data:changed}),/Invalid/);
+  }
+  const partial=fundingFixture(1n);partial[1125]=1;assert.throws(()=>decodeFundingRoot({owner:TCAP,data:partial}),/inactive/);
+  const empty=fundingFixture();empty.writeUInt16LE(1,6207);assert.throws(()=>decodeFundingRoot({owner:TCAP,data:empty}),/history/);
+});
+
+test("explicit funding migration plans one governance packet, rent topup and authoritative seed without runtime legacy fallback",()=>{
+  const instruction=buildFundingRootMigration(authority);
+  assert.deepEqual(instruction.data,Buffer.from(digest(Buffer.from("global:migrate_private_funding_root_v2"))).subarray(0,8));
+  assert.deepEqual(instruction.keys,buildFundingRootInitialization(authority).keys);
+  const packet=new Transaction({feePayer:authority,recentBlockhash:"11111111111111111111111111111111"}).add(instruction).serialize({requireAllSignatures:false,verifySignatures:false});
+  assert.ok(packet.length<=1232);
+  assert.deepEqual(options(["migrate-funding-root","--wallet","/governance.json"]),{command:"migrate-funding-root",send:false,wallet:"/governance.json"});
+  assert.equal(options(["migrate-funding-root","--send"]).send,true);
+  for(const count of [0n,17n]) {
+    const data=fundingFixture(count).subarray(0,1081);data.writeUInt16LE(1,8);const info={owner:TCAP,data,lamports:1000};
+    assert.equal(decodeLegacyFundingRootForMigration(info).leafCount,String(count));
+    assert.throws(()=>decodeFundingRoot(info),/invalid/);
+    const plan=planFundingRootMigration(info,1500);assert.equal(plan.reallocBytes,5128);assert.equal(plan.rentTopUp,"500");assert.equal(plan.seededHistoryCount,count===0n ? 0 : 1);
+    assert.equal(planFundingRootMigration(info,500).rentTopUp,"0");
+    assert.throws(()=>planFundingRootMigration({...info,owner:GPRU},1500),/invalid/);
+    assert.throws(()=>planFundingRootMigration({...info,lamports:-1},1500),/rent/);
+  }
+  assert.equal(planFundingRootMigration({owner:TCAP,data:fundingFixture(17n)},1500).required,false);
+  assert.throws(()=>planFundingRootMigration(null,1500),/missing/);
+  const wrong=fundingFixture().subarray(0,1081);assert.throws(()=>decodeLegacyFundingRootForMigration({owner:TCAP,data:wrong}),/Invalid/);
 });

@@ -1,7 +1,10 @@
 import { createHash, createPublicKey, randomUUID, verify as verifySignature } from "node:crypto";
 
 /** Sender-signed, Node-verified reserve funding and separate settlement work. */
-export type WorkKind = "AUTHORIZED_FUNDING" | "SETTLEMENT" | "TIN_OPERATION" | "TCAP_FUNDING_POOL" | "TCAP_EPOCH_ACCOUNTING";
+export type WorkKind = "AUTHORIZED_FUNDING" | "SETTLEMENT" | "TIN_OPERATION" | "TCAP_EPOCH_ACCOUNTING";
+export function isSupportedWorkKind(kind: unknown): kind is WorkKind {
+  return typeof kind === "string" && ["AUTHORIZED_FUNDING", "SETTLEMENT", "TIN_OPERATION", "TCAP_EPOCH_ACCOUNTING"].includes(kind);
+}
 export type WorkStatus =
   | "RECEIVED"
   | "NODE_VERIFYING"
@@ -28,7 +31,32 @@ export type ReceiverWork = {
   authorization?: Record<string, unknown> | null;
   deferredUntil?: string;
   retryHistory?: Record<string, unknown>[];
+  nonExecutionResolution?: Record<string, unknown>;
+  nonExecutionHistory?: Record<string, unknown>[];
 };
+
+/** Bind a terminal recovery annotation to the original, unchanged failed work. */
+export function nonExecutionContextCommitment(work: ReceiverWork): string {
+  const original = { ...work } as Record<string, unknown>;
+  for (const key of ["stateVersion", "updatedAt", "nonExecutionResolution", "nonExecutionHistory"]) delete original[key];
+  return payloadCommitment(original);
+}
+
+/** Only Receiver's authenticated, exact-context recovery can unblock a signed failure. */
+export function hasResolvedNonExecution(work: ReceiverWork): boolean {
+  const resolution = work.nonExecutionResolution;
+  return work.kind === "SETTLEMENT" && work.status === "FAILED" && !work.nodeLease && !work.crankerLease
+    && resolution?.kind === "EXPIRED_UNCHANGED_ROOT"
+    && Number.isSafeInteger(resolution.previousStateVersion)
+    && resolution.resolvedStateVersion === work.stateVersion
+    && Number(resolution.previousStateVersion) + 1 === work.stateVersion
+    && resolution.signature === work.result?.signature
+    && resolution.contextCommitment === nonExecutionContextCommitment(work)
+    && resolution.checkpointCommitment === payloadCommitment(work.result)
+    && resolution.authorizationCommitment === payloadCommitment(work.authorization)
+    && resolution.verificationCommitment === payloadCommitment(work.verification)
+    && resolution.payloadCommitment === work.payloadCommitment;
+}
 
 export type PayloadDelta = {
   addedFields: Record<string, unknown>;
@@ -52,7 +80,6 @@ const AUTHORIZED_FUNDING_KEYS = new Set([
 ]);
 const INTERNAL_KEYS: Record<WorkKind, Set<string>> = {
   AUTHORIZED_FUNDING: new Set(["paymentId", "recipientHash", "tokenMintAddress", "amount", "nodeEncryptedPayload"]),
-  TCAP_FUNDING_POOL: new Set(["assetEntry", "reserveState", "tcapConfig", "root"]),
   TCAP_EPOCH_ACCOUNTING: new Set(["assetEntry", "reserveState", "tcapConfig", "accountingEpoch"]),
   SETTLEMENT: new Set(["paymentId", "intentId", "recipientHash", "source", "nodeEncryptedPayload"]),
   // Exact private TIN V1 creation payload accepted from the SDK.
@@ -129,6 +156,7 @@ export function assertAuthorizedFundingIngress(payload: Record<string, unknown>)
 }
 
 export function assertDurablePayload(kind: WorkKind, payload: Record<string, unknown>): void {
+  if (!isSupportedWorkKind(kind)) throw new Error("WORK_KIND_UNSUPPORTED");
   assertAllowlisted(payload, INTERNAL_KEYS[kind], kind);
 }
 
@@ -208,7 +236,6 @@ export function verifiedPayloadForWork(work: ReceiverWork): Record<string, unkno
 export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, unknown>): Record<string, unknown> {
   const allowed = kind === "AUTHORIZED_FUNDING"
     ? new Set(["senderSignedFundingTransaction", "senderFundingMode"])
-    : kind === "TCAP_FUNDING_POOL" ? new Set(["tcapFundingPool"])
     : kind === "TCAP_EPOCH_ACCOUNTING" ? new Set(["tcapEpochAccounting"])
     : kind === "SETTLEMENT"
       ? new Set(["tcapCreditTransition"])
@@ -237,11 +264,10 @@ export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, 
     }
     filtered.tcapCreditTransition = publicTransition;
   }
-  for (const [coordinationKind,field] of [["TCAP_FUNDING_POOL","tcapFundingPool"],["TCAP_EPOCH_ACCOUNTING","tcapEpochAccounting"]]) {
+  for (const [coordinationKind,field] of [["TCAP_EPOCH_ACCOUNTING","tcapEpochAccounting"]]) {
     const value=filtered[field];
     if(kind!==coordinationKind || !value || typeof value!=="object" || Array.isArray(value))continue;
-    const allowed=new Set(["assetEntry","reserveState","tcapConfig",...(kind==="TCAP_FUNDING_POOL"
-      ? ["root","eligibleNoteCount","sourceWalletCount","releaseSlot"] : ["accountingEpoch","total","proof"])]);
+    const allowed=new Set(["assetEntry","reserveState","tcapConfig","accountingEpoch","total","proof"]);
     const projection=Object.fromEntries(Object.entries(value).filter(([key])=>allowed.has(key)));
     if(projection.proof && typeof projection.proof==="object" && !Array.isArray(projection.proof)) {
       const fields=new Set(["publicInputs","proofA","proofB","proofC"]);
@@ -254,8 +280,8 @@ export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, 
 
 /** Bind authorization to the verified public transition before storing or returning it. */
 export function crankerAuthorizationForWork(work: ReceiverWork, authorization: Record<string, unknown>): Record<string, unknown> {
-  if (work.kind === "TCAP_FUNDING_POOL" || work.kind === "TCAP_EPOCH_ACCOUNTING") {
-    const field = work.kind === "TCAP_FUNDING_POOL" ? "tcapFundingPool" : "tcapEpochAccounting";
+  if (work.kind === "TCAP_EPOCH_ACCOUNTING") {
+    const field = "tcapEpochAccounting";
     const expected = crankerExecutionPayload(work.kind, verifiedPayloadForWork(work) ?? {})[field];
     const transition = crankerExecutionPayload(work.kind, { [field]: authorization.transition })[field];
     if (authorization.kind !== "TSN_TCAP_COORDINATION_AUTHORIZATION_V1" || !expected || payloadCommitment(expected) !== payloadCommitment(transition)) throw new Error("PRIVATE_COORDINATION_AUTHORIZATION_MISMATCH");

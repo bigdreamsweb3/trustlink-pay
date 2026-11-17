@@ -101,7 +101,7 @@ export function decodeFinalizedGpruCreditV1(
   ];
   if (funded) expectedAccounts.push([13, FUNDING_ROOT]);
   if (privateAmount) {
-    expectedAccounts.push([13, pda(GPRU_TCAP_PROGRAM_ID, seed("tcap:sealed-funding:v1"), new PublicKey(ix.accounts[5]).toBytes(), Buffer.from(inputs[12], "hex"))]);
+    expectedAccounts.push([13, pda(GPRU_TCAP_PROGRAM_ID, seed("tcap:funding-root:v1"))]);
     expectedAccounts.push([15, PublicKey.default]);
   }
   check(expectedAccounts.every(([index, key]) => ix.accounts[index] === key.toBase58()), "noncanonical credit account");

@@ -13,6 +13,6 @@ Each layer has a separate role:
 - **TCAP** governs accepted assets and reserve liquidity, and applies valid authorized changes atomically.
 - **Cranker** submits authorized transactions and pays their network fees. Fee payment does not grant authority to edit the transaction's terms.
 
-The hidden-head proof path is not established end to end. An application should not promise that a proof, key commitment, or service response alone enables a settlement.
+The [current capability record](/about/current-technology) links bounded Devnet credit/accounting evidence. An application should not promise that a proof, key commitment, or service response alone enables a settlement; current authority, successful program execution and resulting state must also be verified.
 
 Credential custody, key rotation, and operator configuration are implementation and operations topics documented in the [repository runbooks](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

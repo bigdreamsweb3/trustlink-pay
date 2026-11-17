@@ -160,7 +160,7 @@
     }
   },
   "scripts": {
-    "build": "npm --prefix ../../programs/tcap-protocol/tcap-sdk run build && tsc -b",
+    "build": "node scripts/clean-dist.mjs && npm --prefix ../../programs/tcap-protocol/tcap-sdk run build && tsc -b --force",
     "watch": "tsc --watch",
     "test": "npm run build && node --test tests/*.test.mjs",
     "simulate": "node --input-type=module -e \"console.log('TCap snapshots are private and are read through the owner-authorized snapshot API')\""

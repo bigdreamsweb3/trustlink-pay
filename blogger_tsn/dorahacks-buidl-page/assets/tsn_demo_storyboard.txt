@@ -1,0 +1,13 @@
+TSN DEMO TEMPLATE - STORYBOARD (edit in CapCut)
+Format: 1920x1080 / 24fps. Replace every 'RECORD HERE' screen with your product footage.
+Colors: TSN forest #1F5A3D + gold #C9A96A (from trust-link-tsn.mintlify.site theme).
+
+0:00-0:03.5  TITLE - Transfer Settlement Network. VO: one network, every settlement rail.
+0:03.5-0:07.5 PROBLEM - Payments are fragmented (3 bullets). VO: crypto moves value, not payments.
+0:07.5-0:12.0 INSIGHT - One portable identity, any rail. VO: identity first, settlement anywhere.
+0:12.0-0:18.0 RECORD HERE (trustlink-pay.vercel.app): open app, connect wallet, enter amount + recipient, pick Creditcoin rail, intent signed on-device. VO: create a payment, pick a rail.
+0:18.0-0:24.0 RECORD HERE (Solana devnet explorer/sim): Node validates intent, Cranker Job 1 submits SVM tx, program creates debit commitment. VO: Solana creates the debit commitment.
+0:24.0-0:30.0 RECORD HERE (CC3 testnet Blockscout / settlement hub): Cranker Job 2 submits authorization; hub checks replay + liquidity; pays recipient + fee. VO: Creditcoin consumes it and pays.
+0:30.0-0:36.0 RECORD HERE (destination rail / payout vault): direct Creditcoin payout or Attestcoin route to EVM Inbox; vault holds stablecoin. VO: value arrives only where real liquidity exists.
+0:36.0-0:40.5 BENEFITS - identity-first, replay protection, verified liquidity. VO: separated, verified, accountable.
+0:40.5-0:44.5 CTA - Built by TrustLink Labs, github link. VO: upvote TSN on DoraHacks.

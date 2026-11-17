@@ -10203,6 +10203,51 @@
       "path": "tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts",
       "symbols": [
         {
+          "name": "assertSignedTcapGpruWalletDepositTransaction",
+          "imports": [
+            "@trustlink/tsn-sdk"
+          ],
+          "docs": "Check the wallet's signed bytes before ingress, without rewriting its approval.",
+          "signatures": [
+            "(wire: Uint8Array, fields: Parameters<typeof buildTcapGpruWalletDepositTransaction>[0]): void"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [
+            "new Error(\"TCAP_SIGNED_DEPOSIT_WIRE_INVALID\")",
+            "new Error(\"TCAP_SIGNED_DEPOSIT_OWNER_SIGNATURE_INVALID\")",
+            "new Error(\"TCAP_SIGNED_DEPOSIT_COUNT_INVALID\")",
+            "new Error(\"TCAP_SIGNED_DEPOSIT_DIFFERS_FROM_APPROVAL\")",
+            "new Error(\"TCAP_SIGNED_DEPOSIT_EXTRA_INSTRUCTION_INVALID\")",
+            "new Error(\"TCAP_SIGNED_DEPOSIT_COMPUTE_BUDGET_INVALID\")"
+          ],
+          "directCalls": [
+            "Transaction.from",
+            "transaction.feePayer?.equals",
+            "transaction.signatures[0]!.publicKey.equals",
+            "transaction.verifySignatures",
+            "Buffer.from(wire).equals",
+            "Buffer.from",
+            "transaction.serialize",
+            "buildTcapGpruWalletDepositTransaction",
+            "transaction.instructions.filter",
+            "ix.programId.equals",
+            "deposit.data.equals",
+            "deposit.keys.some",
+            "key.pubkey.equals",
+            "instruction.programId.equals",
+            "budgetTags.has",
+            "budgetTags.add",
+            "instruction.data.readUInt32LE"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts",
+            "line": 129,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L129"
+          }
+        },
+        {
           "name": "buildTcapAccountCreditEpochV1Instruction",
           "imports": [
             "@trustlink/tsn-sdk"
@@ -10230,8 +10275,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts",
-            "line": 177,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L177"
+            "line": 224,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L224"
           }
         },
         {
@@ -10268,41 +10313,6 @@
           }
         },
         {
-          "name": "buildTcapSealFundingPoolV1Instruction",
-          "imports": [
-            "@trustlink/tsn-sdk"
-          ],
-          "docs": "Capture a chain-current funded root; later deposits cannot change this pool account.",
-          "signatures": [
-            "(f: { authority: PublicKey; mother: PublicKey; config: PublicKey; assetEntry: PublicKey; root: string; eligibleNoteCount: bigint; sourceWalletCount: number; releaseSlot: bigint; }): TransactionInstruction"
-          ],
-          "constructors": [],
-          "methods": [],
-          "declaredType": null,
-          "directThrowExpressions": [
-            "new Error(\"FUNDING_POOL_REQUIRES_REAL_DISTINCT_SOURCES\")"
-          ],
-          "directCalls": [
-            "Number.isInteger",
-            "BigInt",
-            "PublicKey.findProgramAddressSync",
-            "Buffer.from",
-            "bytes32",
-            "canonicalFundingFieldHex",
-            "f.assetEntry.toBuffer",
-            "Buffer.alloc",
-            "sources.writeUInt16LE",
-            "Buffer.concat",
-            "discriminator",
-            "u64"
-          ],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts",
-            "line": 189,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L189"
-          }
-        },
-        {
           "name": "buildTsnRegisterTcapCreditAuthorizationV3Instruction",
           "imports": [
             "@trustlink/tsn-sdk"
@@ -10329,14 +10339,13 @@
             "u32",
             "canonicalFundingFieldHex",
             "serializeHiddenHeadProof",
-            "fields.assetEntry.toBuffer",
             "fundingRoot.equals",
             "canonicalConfig.equals"
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts",
-            "line": 129,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L129"
+            "line": 176,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L176"
           }
         },
         {
@@ -10407,8 +10416,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts",
-            "line": 175,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L175"
+            "line": 222,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts#L222"
           }
         },
         {

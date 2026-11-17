@@ -5,7 +5,7 @@ description: "How an application should handle repeated requests and uncertain t
 
 TSN settlement is designed to bind an authorized action to its funding context and to apply state changes through an atomic predecessor check. When the expected state has already advanced, a duplicate settlement cannot apply as though it were new.
 
-For a balance-changing action, GPRU is intended to prove that the hidden user state is current and that the proposed transition follows from it. TCAP checks the relevant authorization and asset conditions and applies the transition atomically. The hidden-head proof path is not established end to end, so applications must not treat this design description as evidence that the capability is active.
+For a balance-changing action, GPRU is intended to prove that the hidden user state is current and that the proposed transition follows from it. TCAP checks the relevant authorization and asset conditions and applies the transition atomically. The [current capability record](/about/current-technology) links bounded Devnet credit/accounting evidence; an application must still reconcile its own transaction and retry context.
 
 ## Handling an uncertain result
 

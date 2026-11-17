@@ -1,0 +1,499 @@
+<style>
+    .up-shell {
+        font-family: Arial, "Helvetica Neue", sans-serif;
+        max-width: 860px;
+        margin: 0 auto
+    }
+
+    .up-head {
+        padding-bottom: 2rem;
+        border-bottom: 3px double var(--ink);
+        margin-bottom: 2rem
+    }
+
+    .up-kicker {
+        font: 800 .68rem/1.2 Arial, sans-serif;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: var(--red);
+        display: flex;
+        align-items: center;
+        gap: .65rem;
+        margin-bottom: .65rem
+    }
+
+    .up-kicker:before {
+        content: "";
+        width: 2rem;
+        height: 2px;
+        background: var(--red);
+        flex: 0 0 auto
+    }
+
+    .up-head p {
+        font-size: 1rem;
+        line-height: 1.65;
+        color: var(--muted);
+        margin: 0 0 1.5rem;
+        max-width: 600px
+    }
+
+    .up-archive-link {
+        font: 600 .58rem/1.3 Arial, sans-serif;
+        letter-spacing: .02em;
+        opacity: .72;
+        white-space: nowrap
+    }
+
+    .up-archive-link a {
+        color: var(--green)
+    }
+
+    .up-meta {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+        font: 600 .65rem/1.2 Arial, sans-serif;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        color: var(--muted);
+        padding-top: 1rem;
+        border-top: 1px solid var(--rule)
+    }
+
+    .up-meta span b {
+        color: var(--ink)
+    }
+
+    .up-search {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: .5rem;
+        margin-bottom: 1.5rem
+    }
+
+    .up-search input {
+        width: 100%;
+        padding: .7rem 1rem;
+        border: 1px solid var(--rule);
+        background: var(--sheet);
+        color: var(--ink);
+        font: 400 .95rem/1.3 Arial, sans-serif;
+        outline: none
+    }
+
+    .up-search input:focus {
+        border-color: var(--ink)
+    }
+
+    .up-search button {
+        padding: .7rem 1.2rem;
+        border: 1px solid var(--ink);
+        background: var(--ink);
+        color: var(--sheet);
+        font: 800 .68rem/1.2 Arial, sans-serif;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        cursor: pointer;
+        white-space: nowrap
+    }
+
+    .up-search button:hover {
+        background: var(--red);
+        border-color: var(--red)
+    }
+
+    .up-cats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .35rem;
+        margin-bottom: 2rem
+    }
+
+    .up-cat {
+        display: inline-flex;
+        align-items: center;
+        padding: .32rem .8rem;
+        border: 1px solid var(--rule);
+        background: var(--sheet);
+        color: var(--muted);
+        font: 700 .62rem/1.2 Arial, sans-serif;
+        text-transform: uppercase;
+        letter-spacing: .09em;
+        cursor: pointer;
+        transition: all .15s
+    }
+
+    .up-cat:hover {
+        background: var(--ink);
+        color: var(--paper);
+        border-color: var(--ink)
+    }
+
+    .up-cat.active {
+        background: var(--red);
+        color: var(--sheet);
+        border-color: var(--red)
+    }
+
+    .up-status {
+        display: flex;
+        align-items: center;
+        gap: .55rem;
+        font: 600 .7rem/1.4 Arial, sans-serif;
+        color: var(--muted);
+        margin-bottom: 1.2rem;
+        min-height: 1.25rem
+    }
+
+    .up-status-spinner {
+        width: .85rem;
+        height: .85rem;
+        border: 1.5px solid var(--rule);
+        border-top-color: var(--red);
+        border-radius: 50%;
+        animation: up-spin .65s linear infinite;
+        flex: 0 0 auto
+    }
+
+    .up-status-spinner[hidden] {
+        display: none !important
+    }
+
+    @keyframes up-spin {
+        to {
+            transform: rotate(360deg)
+        }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+        .up-status-spinner {
+            animation: none;
+            border-top-color: var(--ink)
+        }
+    }
+
+    .up-list {
+        display: grid;
+        gap: 0;
+        min-height: 20rem
+    }
+
+    .up-item {
+        padding: 1.5rem 0;
+        border-bottom: 1px solid var(--rule);
+        display: grid;
+        grid-template-columns: 1fr 90px;
+        gap: 1rem;
+        align-items: start
+    }
+
+    .up-item:first-child {
+        padding-top: 0
+    }
+
+    .up-item-body {
+        min-width: 0
+    }
+
+    .up-item-cats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .4rem;
+        margin-bottom: .45rem;
+        align-items: center
+    }
+
+    .up-item-cat {
+        font: 700 .58rem/1.2 Arial, sans-serif;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        color: var(--red)
+    }
+
+    .up-item-sep {
+        color: var(--rule);
+        font-size: .7rem;
+        line-height: 1
+    }
+
+    .up-item h2 {
+        margin: 0 0 .45rem;
+        font-size: clamp(1rem, 2.5vw, 1.35rem);
+        line-height: 1.2;
+        letter-spacing: -.02em;
+        font-family: Georgia, "Times New Roman", serif
+    }
+
+    .up-item h2 a {
+        color: var(--ink);
+        text-decoration: none
+    }
+
+    .up-item h2 a:hover {
+        color: var(--red)
+    }
+
+    .up-item-summary {
+        margin: 0;
+        font-size: .85rem;
+        line-height: 1.55;
+        color: var(--muted)
+    }
+
+    .up-item-date {
+        font: 700 .6rem/1.3 Arial, sans-serif;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        color: var(--muted);
+        text-align: right;
+        padding-top: .2rem
+    }
+
+    .up-empty {
+        padding: 2.5rem;
+        text-align: center;
+        border: 1px solid var(--rule);
+        color: var(--muted);
+        font: 500 .88rem/1.5 Arial, sans-serif;
+        display: none
+    }
+
+    .up-empty.visible {
+        display: block
+    }
+
+    .up-more-wrap {
+        display: flex;
+        justify-content: center;
+        padding-top: 1.5rem
+    }
+
+    .up-more {
+        padding: .7rem 1.2rem;
+        border: 1px solid var(--ink);
+        border-radius: 8px;
+        background: var(--ink);
+        color: var(--sheet);
+        font: 800 .68rem/1.2 Arial, sans-serif;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        cursor: pointer
+    }
+
+    .up-more:hover {
+        background: var(--red);
+        border-color: var(--red)
+    }
+
+    .up-more[hidden] {
+        display: none
+    }
+
+    @media(max-width:520px) {
+        .up-item {
+            grid-template-columns: 1fr
+        }
+
+        .up-item-date {
+            text-align: left;
+            order: -1;
+            padding-top: 0
+        }
+
+        .up-search {
+            grid-template-columns: 1fr
+        }
+
+        .up-search button {
+            width: 100%
+        }
+    }
+</style>
+
+<div class="up-shell">
+    <div class="up-head">
+        <div class="up-kicker">TrustLink Labs</div>
+        <p>Explore TSN research and updates on blockchain payments, privacy, security, safety, Solana, stablecoins, and
+            settlement infrastructure. <span class="up-archive-link">(<a href="/search/label/Updates">updates
+                    archive</a>)</span></p>
+        <div class="up-meta">
+            <span><b>Focus</b> Blockchain payments · Solana · Stablecoins</span>
+            <span><b>By</b> TrustLink Labs Research</span>
+        </div>
+    </div>
+
+    <div class="up-search" role="search">
+        <input aria-label="Filter posts on this page" autocomplete="off" id="up-search-input" type="search" />
+        <button id="up-search-btn" type="button">Filter</button>
+    </div>
+
+    <div aria-label="Filter by topic" class="up-cats" id="up-cats" role="group">
+        <button class="up-cat active" data-cat="all" type="button">All</button>
+        <button class="up-cat" data-cat="Protocol" type="button">Protocol</button>
+        <button class="up-cat" data-cat="Payments" type="button">Payments</button>
+        <button class="up-cat" data-cat="Privacy" type="button">Privacy</button>
+        <button class="up-cat" data-cat="Education" type="button">Education</button>
+        <button class="up-cat" data-cat="Research" type="button">Research</button>
+        <button class="up-cat" data-cat="Updates" type="button">Updates</button>
+    </div>
+
+    <div aria-live="polite" class="up-status" id="up-status">
+        <span aria-hidden="true" class="up-status-spinner" id="up-status-spinner"></span>
+        <span id="up-status-text"></span>
+    </div>
+
+    <div class="up-list" id="up-list">
+        <!--Static posts: crawler-visible, replaced by JS when feed loads-->
+        <div id="up-crawl">
+            <article class="up-item">
+                <div class="up-item-body">
+                    <div class="up-item-cats"><span class="up-item-cat">Payments</span></div>
+                    <h2><a href="https://tsn-protocol.blogspot.com/2026/08/blockchain-payments-trust-layer.html">Money
+                            Never Sleeps: The Trust Layer Blockchain Payments Need</a></h2>
+                </div>
+                <time class="up-item-date" datetime="2026-08-18">19 Aug 2026</time>
+            </article>
+            <article class="up-item">
+                <div class="up-item-body">
+                    <div class="up-item-cats"><span class="up-item-cat">Payments</span></div>
+                    <h2><a href="https://tsn-protocol.blogspot.com/2026/08/three-types-of-payments.html">What Are the
+                            Three Types of Payments? Cash, Cards and Digital Explained</a></h2>
+                </div>
+                <time class="up-item-date" datetime="2026-08-17">17 Aug 2026</time>
+            </article>
+            <article class="up-item">
+                <div class="up-item-body">
+                    <div class="up-item-cats"><span class="up-item-cat">Education</span></div>
+                    <h2><a href="https://tsn-protocol.blogspot.com/2026/08/electronic-payment-network-explained.html">A
+                            Simple Guide to How Digital Payments Move</a></h2>
+                </div>
+                <time class="up-item-date" datetime="2026-08-15">15 Aug 2026</time>
+            </article>
+            <article class="up-item">
+                <div class="up-item-body">
+                    <div class="up-item-cats"><span class="up-item-cat">Research</span></div>
+                    <h2><a
+                            href="https://tsn-protocol.blogspot.com/2026/07/stablecoins-replace-wire-transfers-b2b-payments.html">Can
+                            Stablecoins Replace Wire Transfers for B2B Payments?</a></h2>
+                </div>
+                <time class="up-item-date" datetime="2026-07-31">31 Jul 2026</time>
+            </article>
+            <article class="up-item">
+                <div class="up-item-body">
+                    <div class="up-item-cats"><span class="up-item-cat">Protocol</span></div>
+                    <h2><a href="https://tsn-protocol.blogspot.com/2026/07/how-transfers-and-settlements-work.html">How
+                            Transfers and Settlements Work: From Payment Intent to Final Ownership</a></h2>
+                </div>
+                <time class="up-item-date" datetime="2026-07-24">24 Jul 2026</time>
+            </article>
+            <article class="up-item">
+                <div class="up-item-body">
+                    <div class="up-item-cats"><span class="up-item-cat">Protocol</span></div>
+                    <h2><a
+                            href="https://tsn-protocol.blogspot.com/2026/07/beyond-stablecoin-transfers-payment-infrastructure.html">Why
+                            Payment Infrastructure Needs a New Settlement Layer</a></h2>
+                </div>
+                <time class="up-item-date" datetime="2026-07-24">24 Jul 2026</time>
+            </article>
+            <article class="up-item">
+                <div class="up-item-body">
+                    <div class="up-item-cats"><span class="up-item-cat">Privacy</span></div>
+                    <h2><a href="https://tsn-protocol.blogspot.com/2026/07/how-tsn-approaches-privacy-on-solana.html">How
+                            TSN Approaches Privacy on Solana</a></h2>
+                </div>
+                <time class="up-item-date" datetime="2026-07-22">22 Jul 2026</time>
+            </article>
+        </div>
+    </div>
+
+    <div class="up-more-wrap">
+        <button class="up-more" id="up-more" type="button">Load more updates</button>
+    </div>
+
+    <div class="up-empty" id="up-empty">No posts match this filter.</div>
+</div>
+
+<script>
+    (function () {
+        var KNOWN = ['Protocol', 'Payments', 'Privacy', 'Education', 'Research', 'Updates'];
+        var list = document.getElementById('up-list');
+        var crawl = document.getElementById('up-crawl');
+        var empty = document.getElementById('up-empty');
+        var spinner = document.getElementById('up-status-spinner');
+        var statusText = document.getElementById('up-status-text');
+        var input = document.getElementById('up-search-input');
+        var searchBtn = document.getElementById('up-search-btn');
+        var catBtns = document.querySelectorAll('.up-cat');
+        var allPosts = [];
+        var activeCat = 'all';
+        var searchQuery = '';
+        var loaded = false;
+
+        function fmtDate(iso) { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+
+        function knownCats(cats) {
+            var m = cats.filter(function (c) { return KNOWN.some(function (k) { return k.toLowerCase() === c.toLowerCase(); }); });
+            return m.length ? m : ['Updates'];
+        }
+
+        function render() {
+            if (!loaded) { return; }
+            var filtered = allPosts.filter(function (p) {
+                var catMatch = activeCat === 'all' || knownCats(p.cats).some(function (c) { return c.toLowerCase() === activeCat.toLowerCase(); });
+                var q = searchQuery.trim().toLowerCase();
+                return catMatch && (!q || p.title.toLowerCase().indexOf(q) > -1 || p.summary.toLowerCase().indexOf(q) > -1);
+            });
+            if (crawl) { crawl.remove(); }
+            list.innerHTML = '';
+            empty.classList.remove('visible');
+            if (!filtered.length) { empty.classList.add('visible'); statusText.textContent = ''; return; }
+            var q = searchQuery.trim();
+            statusText.textContent = q ? filtered.length + ' result' + (filtered.length !== 1 ? 's' : '') + ' for "' + q + '"' : filtered.length + ' post' + (filtered.length !== 1 ? 's' : '') + (activeCat !== 'all' ? ' in ' + activeCat : '');
+            filtered.forEach(function (p) {
+                var kc = knownCats(p.cats);
+                var catsHtml = kc.map(function (c, i) { return (i > 0 ? '<span class="up-item-sep">|</span>' : '') + '<span class="up-item-cat">' + c + '</span>'; }).join('');
+                var d = new Date(p.date);
+                var iso = d.toISOString().slice(0, 10);
+                var item = document.createElement('article');
+                item.className = 'up-item';
+                item.innerHTML = '<div class="up-item-body">' + (catsHtml ? '<div class="up-item-cats">' + catsHtml + '</div>' : '') + '<h2><a href="' + p.url + '">' + p.title + '</a></h2>' + (p.summary ? '<p class="up-item-summary">' + p.summary + '</p>' : '') + '</div><time class="up-item-date" datetime="' + iso + '">' + fmtDate(p.date) + '</time>';
+                list.appendChild(item);
+            });
+        }
+
+        catBtns.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                activeCat = btn.getAttribute('data-cat');
+                searchQuery = ''; input.value = '';
+                catBtns.forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                render();
+            });
+        });
+
+        function doSearch() { searchQuery = input.value; activeCat = 'all'; catBtns.forEach(function (b) { b.classList.remove('active'); }); catBtns[0].classList.add('active'); render(); }
+        searchBtn.addEventListener('click', doSearch);
+        input.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(); });
+        input.addEventListener('input', function () { if (!input.value.trim()) { searchQuery = ''; render(); } });
+
+        function fetchPosts(start, acc) {
+            start = start || 1; acc = acc || [];
+            fetch('/feeds/posts/default?alt=json&max-results=25&start-index=' + start + '&orderby=published')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var entries = data.feed.entry || [];
+                    entries.forEach(function (e) {
+                        var url = '';
+                        (e.link || []).forEach(function (l) { if (l.rel === 'alternate') url = l.href; });
+                        acc.push({ title: e.title.$t, url: url, date: e.published.$t, cats: (e.category || []).map(function (c) { return c.term; }), summary: e.summary ? e.summary.$t.replace(/<[^>]+>/g, '').slice(0, 180) : '' });
+                    });
+                    var total = parseInt(((data.feed.openSearch$totalResults || {}).$t) || 0);
+                    if (start + 24 < total) { fetchPosts(start + 25, acc); }
+                    else { allPosts = acc; loaded = true; spinner.hidden = true; render(); }
+                })
+                .catch(function () { spinner.hidden = true; statusText.textContent = 'Could not load latest posts.'; });
+        }
+        fetchPosts();
+    })();
+</script>

@@ -1,5 +1,7 @@
 # TCAP balance transitions and GPRU proof boundary
 
+**Status: HISTORICAL amount-public credit snapshot; current-reference boundary added 2026-11-14.** The original body below describes earlier instruction/proof names, a publicly derived nullifier and per-credit liability updates. Those statements do not describe the current experimental first-release v1 contract. Use [current architecture](CURRENT-ARCHITECTURE.md), [credit ABI](laboratory/credit-abi.md) and [cryptography](laboratory/cryptography.md) for the private-amount/shared-funding source; the original snapshot is retained for its design and failure evidence.
+
 This document distinguishes the proof-shaped TSNP/TCAP ABI from a working proof-generation system. GPRU is intended to guard the integrity and privacy of the user's private state presented for a balance-changing action, proving that the hidden state is current and the proposed transition follows from it. TCAP governs accepted assets, authorization, reserves, liquidity, and liabilities, and applies a valid transition atomically. Node fails closed when explicit witness/prover settings or matching chain preconditions are unavailable.
 
 ## Current source behavior

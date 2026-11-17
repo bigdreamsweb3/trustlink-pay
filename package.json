@@ -169,15 +169,18 @@
     "tsn:delete": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/tsn.ps1 delete",
     "tip:id:update": "node tsn-protocol/programs/transfer-identity-protocol/tin-registrar/update-program-id.mjs TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT",
     "// === Git & Deployment ===": "Repository helpers. Review git status before committing or pushing.",
+    "security:check": "node scripts/repo-security.mjs check && node scripts/tests/repo-dependency-policy.test.mjs --strict-locks && node --test scripts/tests/repo-security.test.mjs scripts/tests/repo-git-command-safety.test.mjs scripts/tests/install-tsn-mempool-python.test.mjs",
+    "security:harden": "node scripts/repo-security.mjs harden",
     "git:status": "git status --short",
     "git:hygiene": "node scripts/git-hygiene-check.mjs",
     "git:hygiene:report": "node scripts/git-hygiene-check.mjs --write-report --warn-only",
     "git:hygiene:fix": "node scripts/git-hygiene-check.mjs --fix",
-    "git:pull:all": "git pull --rebase origin main",
-    "git:pull:protocol": "git fetch tsn-protocol main",
-    "git:push:current": "git branch -M main && git push -u origin main",
-    "git:push:tsn-protocol": "npm --prefix tsn-protocol run git:commit:push:all",
-    "git:commit:push:all": "git add -A && git diff --cached --quiet && echo No changes to commit || (git commit -m \"Something just got updated!\" && npm run git:push:current)"
+    "git:pull:all": "node scripts/repo-security.mjs fetch workspace origin main",
+    "git:pull:protocol": "node scripts/repo-security.mjs fetch protocol origin main",
+    "git:push:current": "node scripts/repo-security.mjs push workspace origin main",
+    "git:push:tsn-protocol": "node scripts/repo-security.mjs push protocol origin main",
+    "git:commit:push:staged": "node scripts/repo-security.mjs commit-push workspace origin main",
+    "git:commit:push:all": "node scripts/repo-security.mjs commit-push-all workspace origin main"
   },
   "dependencies": {
     "@solana/web3.js": "^1.98.4",

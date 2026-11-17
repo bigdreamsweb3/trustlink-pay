@@ -8,7 +8,7 @@ resolution, coordination, and verification with on-chain authorization and
 asset settlement. Cross-network interoperability describes the architecture's
 direction; it is not a claim that every route is operational.
 
-This document describes the checked-in program and service contracts. Source code is not evidence that a circuit was compiled, a verifier was initialized, a program build was deployed, or a settlement completed on chain.
+This document describes the checked-in contracts for the experimental first release, **v1**. Source code is not evidence that a circuit was compiled, a verifier was initialized, a program build was deployed, or a settlement completed on chain.
 
 For the full component, function, lifecycle, invariant and source catalog, start with the [Laboratory engineering record](./laboratory/README.md) and [canonical implementation map](./laboratory/architecture-map.md).
 
@@ -23,9 +23,9 @@ GPRU verifies the private route/head and funded-note amount transition; TCAP ret
 
 ## Hidden-head credit ABI in source
 
-TSNP `tsn_register_tcap_credit_authorization_v3` calls TCAP `credit_gpru_memo_v2`, which checks approved asset, Mother-derived signer, slots, released sealed pool, current root/sequence/epoch and reserve solvency before GPRU `verify_hidden_head_transition_v2`. Only accepted proof advances the shared head/nullifier root and blinded epoch transcript. The reserve is readonly; no tokens move or liabilities reclassify on individual credit. The [credit ABI](./laboratory/credit-abi.md) records the 905-byte call and sixteen accounts.
+TSNP `tsn_register_tcap_credit_authorization_v3` calls TCAP `credit_gpru_memo_v2`, which checks approved asset, Mother-derived signer, slots, authenticated selected global funding root, current root/sequence/epoch and reserve solvency before GPRU `verify_hidden_head_transition_v2`. Only accepted proof advances the shared head/nullifier root and blinded epoch transcript. The reserve is readonly; no tokens move or liabilities reclassify on individual credit. The [credit ABI](./laboratory/credit-abi.md) records the 905-byte call and sixteen accounts.
 
-GPRU validates canonical TIP/TCAP roots, released sealed funding root, approved top-level TSNP caller, circuit/key and the following proof-bound Memo. Thirteen public inputs bind old/new roots, Memo/action commitment, nullifier, TIP root, successor portfolio/point, encrypted blinding delta, ephemeral point and sealed funding root. Private witnesses include route/head/sequence, nested token and nullifier paths, funded-note membership/secret, exact positive amount and fresh amount blinding. Pedersen arithmetic and one-time delta ciphertext remain proof-bound; the owner-encrypted V2 action carries its amount opening, which SDK recovery verifies against the public commitment.
+GPRU validates canonical TIP/TCAP roots, authenticated current or retained funding root, approved top-level TSNP caller, circuit/key and the following proof-bound Memo. Thirteen public inputs bind old/new roots, Memo/action commitment, nullifier, TIP root, successor portfolio/point, encrypted blinding delta, ephemeral point and authenticated funding root. Private witnesses include route/head/sequence, nested token and nullifier paths, funded-note membership/secret, exact positive amount and fresh amount blinding. Pedersen arithmetic and one-time delta ciphertext remain proof-bound; the owner-encrypted action record carries its amount opening, which SDK recovery verifies against the public commitment.
 
 The [November 7 experiment](./laboratory/experiments/EXP-20261107-private-credit-epoch.md) records matching isolated development artifacts, real credit/epoch proofs, serialized native verification and cross-layer tests. SBF could not start because WSL VM startup failed; matching deployment, explicit credit rekey, separate epoch enrollment and live accounting remain unverified. The [November 2 readiness record](./laboratory/experiments/EXP-20261102-hidden-head.md) preserves its earlier circuit/proof/SBF observations as historical evidence. Missing prover settings or matching snapshots still fail preparation.
 
@@ -35,7 +35,7 @@ TCAP uses a shared authenticated head/nullifier root and asset-specific blinded 
 
 ## Privacy and public-data limits
 
-Every credit writes the shared TCAP root, exposing protocol participation and global ordering. Its public fields include token, blinded amount commitment, nullifier, roots, points and ciphertext; note commitment/opening and plaintext TIN/predecessor are absent. Sealed-pool capture requires two positive unspent notes and two wallet sources, which do not prove independent people. Common adaptive release windows preserve that floor, but credits still follow serialized queue order. Larger pools do not by themselves establish unlinkability against known amounts, prior spends or timing.
+Every credit writes the shared TCAP root, exposing protocol participation and global ordering. Its public fields include token, blinded amount commitment, nullifier, roots, points and ciphertext; note commitment/opening and plaintext TIN/predecessor are absent. Single-deposit credit has no source-anonymity threshold. The global funding history authenticates membership without replacing current spending state. Known amounts, prior spends, timing and recipient/head history can still support correlation.
 
 ## Debit, exit, and settlement boundary
 

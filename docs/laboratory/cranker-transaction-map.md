@@ -27,10 +27,8 @@ flowchart TB
     C --> F
     C --> I
     C --> H
-    P["TCAP_FUNDING_POOL<br/>Seal qualified immutable funding root"]
     Q["TCAP_EPOCH_ACCOUNTING<br/>Verify complete aggregate and reclassify once"]
     C --> E
-    C --> P
     C --> Q
   end
   subgraph S4["4 Â· Chain execution"]
@@ -70,7 +68,7 @@ The settlement arrows describe the implemented submitter branches and their requ
 
 ## Dispatcher coverage
 
-`main()` requests `AUTHORIZED_FUNDING`, `TIN_OPERATION`, `SETTLEMENT`, `TCAP_FUNDING_POOL` and `TCAP_EPOCH_ACCOUNTING`, verifies the Node attestation and dispatches the permitted branch. Transaction counts exclude setup/deployment and retries.
+`main()` requests `AUTHORIZED_FUNDING`, `TIN_OPERATION`, `SETTLEMENT` and `TCAP_EPOCH_ACCOUNTING`, verifies the Node attestation and dispatches the permitted branch. Transaction counts exclude setup/deployment and retries.
 
 | Receiver work / branch | Normal chain transactions | Transaction signer and fee payer | Submission path | Result evidence |
 | --- | --- | --- | --- | --- |
@@ -78,7 +76,6 @@ The settlement arrows describe the implemented submitter branches and their requ
 | `TIN_OPERATION`, direct | One creation transaction | Cranker signs and pays; owner approval is an Ed25519 instruction | Web3 legacy transaction, complete size at most 1,232 bytes | `TIN_V1_REGISTRY_CREATED` and final signature |
 | `TIN_OPERATION`, staged | Initializer + bounded uploads + finalizer | Cranker signs and pays each transaction; owner approval is checked at finalization | Separate Web3 legacy transactions, each at most 1,232 bytes | Final signature, stage address and all staging signatures |
 | `SETTLEMENT`, native | One TSNP credit call followed by its Memo | Cranker is fee payer; Mother authority also signs the exact message | Application-owned Kit V1 builder with HTTP confirmation | `TCAP_GPRU_MEMO_CREDIT_V1_CONFIRMED`, signature and root sequence |
-| `TCAP_FUNDING_POOL` | One TCAP pool-capture call | Cranker pays; Mother co-signs exact authorized message | Native wire and HTTP confirmation | `TCAP_FUNDING_POOL_V1_CONFIRMED` and signature |
 | `TCAP_EPOCH_ACCOUNTING` | One complete epoch-accounting call | Cranker pays; Mother co-signs exact authorized message | Native wire and HTTP confirmation | `TCAP_EPOCH_ACCOUNTING_V1_CONFIRMED` and signature |
 | `SETTLEMENT`, Creditcoin | One EVM hub call | Configured Creditcoin executor wallet signs and pays gas | Ethers `executeSettlement()` | `CREDITCOIN_SETTLEMENT_SUBMITTED`, transaction hash and message ID |
 
@@ -136,17 +133,17 @@ Source: [TIP staging handler](../../tsn-protocol/programs/transfer-identity-prot
 
 ## 4. Native hidden-head credit settlement
 
-`processSettlement()` requires `TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3`, an exact transition and current unexpired lease. It authenticates Mother Escrow, the thirteen-input proof and immutable released sealed pool, then builds the 905-byte TSNP V3 instruction with sixteen accounts followed by the canonical bound Memo. Private openings stay outside Cranker execution. See [the ABI](credit-abi.md) for exact root/epoch/key requirements.
+`processSettlement()` requires `TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3`, an exact transition and current unexpired lease. It authenticates Mother Escrow, the thirteen-input proof and authenticated current or retained global funding root, then builds the 905-byte TSNP authorization instruction with sixteen accounts followed by the canonical bound Memo. Private openings stay outside Cranker execution. See [the ABI](credit-abi.md) for exact root/epoch/key requirements.
 
-Before signing, Cranker reads the TCAP commitment-root account and checks its owner, discriminator, 124-byte layout, previous-root value and next sequence. `sendMotherNodeCoSignedInstruction()` makes Cranker the payer and requests a remote signature for the exact message through Receiver `/api/cranker/settlement-signature`. Node's Mother signer verifies the leased statement; the returned authority must match Mother Escrow and the signature must be correctly encoded. The Mother private key is not provided to Cranker.
+Before signing, Cranker checks the TCAP commitment-root owner/layout/value/sequence. `sendMotherNodeCoSignedInstruction()` requests Mother authorization through Receiver. The [modifying signer](../../tsn-protocol/services/tsn-cranker-op-daemon/src/dbrix/mother-node-signer.ts) accepts only a canonical Mother-signed V1 response with identical bytes outside [8:40], matching authority/hash and positive u64 lifetime/context. Node selects that hash after independent lease/statement validation; Cranker then signs as payer. The Mother private key stays in Node, and existing results/checkpoints reject replacement.
 
-Current experimental credit calls TSNP V3 → TCAP `credit_gpru_memo_v2` → GPRU `verify_hidden_head_transition_v2`, followed by its proof-bound Memo. The 905-byte instruction has sixteen outer accounts, readonly reserve/sealed pool and writable root/epoch. After verification TCAP updates the shared head/nullifier root and blinded epoch digest without tokens moving or liabilities changing. Dedicated pool capture and complete epoch accounting are separate Cranker submissions; the latter authenticates all 2–64 accepted commitments before one aggregate reclassification. [ABI](credit-abi.md) records exact layouts; dated receipts below retain older semantics.
+Current experimental credit calls TSNP `tsn_register_tcap_credit_authorization_v3` → TCAP `credit_gpru_memo_v2` → GPRU `verify_hidden_head_transition_v2`, followed by its proof-bound Memo. The 905-byte instruction has sixteen outer accounts, readonly reserve/global funding account and writable root/epoch. After verification TCAP updates the shared head/nullifier root and blinded epoch digest without tokens moving or liabilities changing. Complete epoch accounting is a separate Cranker submission that authenticates all 2–64 accepted commitments before one aggregate reclassification. [ABI](credit-abi.md) records exact layouts; dated receipts below retain older semantics.
 
 After the transport confirms, Cranker reads the root again and requires the expected old-root predecessor, new root and sequence before reporting `TCAP_GPRU_MEMO_CREDIT_V1_CONFIRMED`. Failure of this credit transaction cannot undo the earlier reserve deposit. Owner Memo scanning/decryption and balance reconciliation remain separate completion checks.
 
 ### Native V1 transport and confirmation
 
-The [application-owned settlement transport](../../tsn-protocol/services/tsn-cranker-op-daemon/src/dbrix/settlement-transport.ts) preserves the installed DBrix 0.2 message contract using pinned Kit 8.5.0: actual `version: 1`, a confirmed blockhash, payer/Mother signers, 1,400,000 compute units, a 64 MiB loaded-account limit and the 4,096-byte limit. It broadcasts once through the configured HTTP RPC and polls `getSignatureStatuses` through HTTP, with a 40-second confirmation deadline. Funding/TIN retain their distinct legacy 1,232-byte transport.
+The [application-owned settlement transport](../../tsn-protocol/services/tsn-cranker-op-daemon/src/dbrix/settlement-transport.ts) retains native V1, pinned Kit 8.5.0, 1,400,000 compute units, 64 MiB loaded-account limit and the 4,096-byte wire limit. It uses Mother's final lifetime and issuing context for the 20-block pre-checkpoint guard, confirmed preflight and height polling, then broadcasts once and polls HTTP status within 40 seconds. Exact pre-checkpoint RPC unavailability can requeue unsigned work under current-lease guards; malformed metadata cannot. Funding/TIN retain distinct legacy 1,232-byte transport.
 
 Before broadcasting, Cranker authenticates `PUT /api/cranker/work` to save signature, blockhash, last-valid block height, wire hash/size and signed-attempt stage. Receiver checks the native authorization, current work version and active operator lease, preserves the lease generation and rejects a different replacement attempt. An unacknowledged checkpoint prevents broadcast. Later errors retain this signature in the FAILED result. Lease expiry with a recorded attempt also becomes FAILED rather than automatically rebuilding; that signature requires reconciliation. This signed checkpoint does not claim chain submission or confirmation.
 

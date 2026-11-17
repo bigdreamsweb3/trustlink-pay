@@ -3,6 +3,7 @@ import { authenticateCrankerRequest, enforceCrankerLeaseRateLimit } from "../../
 import { attachCrankerAuthorization, leaseForCranker, recordSettlementSubmission, retryLeasedSettlementFundingRoot, transition } from "../../../../lib/store";
 import { reconcileExpiredCrankerConfirmation } from "../../../../lib/settlement-reconciliation";
 import { NATIVE_REVERIFY_REASONS } from "../../../../lib/settlement-retry";
+import { requestNodeAuthorization } from "../../../../lib/node-authorizations";
 import { crankerAuthorizationForWork, crankerExecutionPayload, verifiedPayloadForWork } from "../../../../lib/work-contract";
 export const runtime = "nodejs";
 
@@ -22,10 +23,6 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-function cleanUrl(value: string) {
-  return value.trim().replace(/^['"]|['"]$/g, "").replace(/\/$/, "");
-}
-
 function errorStatus(error: unknown) {
   const message = error instanceof Error ? error.message : "ERROR";
   if (message === "UNAUTHORIZED_SERVICE") return 401;
@@ -33,7 +30,6 @@ function errorStatus(error: unknown) {
   if (message.includes("RATE_LIMITED")) return 429;
   if (/fetch failed|ECONNRESET|network|timeout|temporarily unavailable/i.test(message)) return 503;
   if (message.includes("authorization service is unavailable")) return 503;
-  if (message.includes("TSN Node authorization failed")) return 502;
   return 409;
 }
 
@@ -66,37 +62,21 @@ export async function POST(request: NextRequest) {
     await enforceCrankerLeaseRateLimit(operator);
     const body = JSON.parse(bodyText) as { supportedKinds?: Parameters<typeof leaseForCranker>[1] };
     let work = await leaseForCranker(operator, body.supportedKinds);
-    if (work && ["SETTLEMENT", "TCAP_FUNDING_POOL", "TCAP_EPOCH_ACCOUNTING"].includes(work.kind)) {
-      const nodeUrls = [process.env.TSN_NODE_URL, process.env.TSN_NODE_FALLBACK_URL]
-        .filter((value): value is string => Boolean(value?.trim()))
-        .map(cleanUrl);
-      const nodeKey = process.env.TSN_RECEIVER_NODE_API_KEY;
-      if (!nodeKey || nodeUrls.length === 0) throw new Error("TSN Node authorization service is not configured");
-      let response: Response | undefined;
-      let lastNodeError = "";
-      for (const nodeUrl of [...new Set(nodeUrls)]) {
-        try {
-          response = await fetch(`${nodeUrl}/internal/settlement-authorizations/settlement`, {
-            method: "POST",
-            headers: { "content-type": "application/json", "x-api-key": nodeKey },
-            body: JSON.stringify({ workId: work.id, crankerPubkey: operator }),
-          });
-          if (response.ok) break;
-          // A 404 means this process is not serving the current Node API. It
-          // is an availability failure for this route, so try an explicitly
-          // configured fallback. Other 4xx responses are protocol failures
-          // and must be returned without trying another Node.
-          if (response.status !== 404 && response.status < 500) break;
-          lastNodeError = `${nodeUrl} returned ${response.status}`;
-          response = undefined;
-        } catch (error) {
-          // A dead primary Node must not strand a leased settlement when a
-          // configured fallback is available. Continue to the next URL.
-          lastNodeError = `${nodeUrl}: ${error instanceof Error ? error.message : "fetch failed"}`;
-          response = undefined;
-        }
+    if (work && ["SETTLEMENT", "TCAP_EPOCH_ACCOUNTING"].includes(work.kind)) {
+      const { configured, response } = await requestNodeAuthorization(
+        "/internal/settlement-authorizations/settlement", { workId: work.id, crankerPubkey: operator },
+      );
+      if (!configured) throw new Error("TSN Node authorization service is not configured");
+      if (!response) {
+        const native = work.kind !== "SETTLEMENT"
+          || work.verification?.verificationType === "TSN_TCAP_GPRU_HIDDEN_HEAD_V1";
+        if (!native) throw new Error("TSN Node authorization service is unavailable");
+        const requeued = await retryLeasedSettlementFundingRoot({
+          id: work.id, expectedVersion: work.stateVersion, owner: operator,
+          reason: "TSN_NODE_SIGNING_SERVICE_UNAVAILABLE", requestedBy: "authenticated-node-authorization",
+        });
+        return NextResponse.json({ work: null, requeued });
       }
-      if (!response) throw new Error(`TSN Node authorization service is unavailable (${lastNodeError || "fetch failed"})`);
       if (!response.ok) {
         const detail = (await response.text()).slice(0, 500);
         let rejection: { detail?: unknown } = {};
@@ -107,7 +87,7 @@ export async function POST(request: NextRequest) {
           });
           return NextResponse.json({ work: null, requeued });
         }
-        throw new Error(`TSN Node authorization failed (${response.status}): ${detail}`);
+        return new NextResponse(detail, { status: response.status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
       }
       const authorization = crankerAuthorizationForWork(work, await response.json() as Record<string, unknown>);
       work = await attachCrankerAuthorization({ id: work.id, owner: operator, expectedVersion: work.stateVersion, authorization });

@@ -1,0 +1,59 @@
+<article class="tsn-research-post" itemscope="" itemtype="https://schema.org/ScholarlyArticle">
+  <meta content="TrustLink Labs Research" itemprop="author">
+  </meta>
+  <meta content="2026-08-22" itemprop="datePublished">
+  </meta>
+  <meta content="GPRU and TCAP: The Authorization and Private Balance Architecture of TSN" itemprop="headline">
+  </meta>
+  <meta
+    content="A technical research paper explaining how GPRU authorization, Mother Settlement DNA, epoch treasury coordination, and TCAP encrypted balance snapshots form a production payment architecture."
+    itemprop="description">
+  </meta>
+
+  <div class="up-kicker">Research · Private payment infrastructure</div>
+  <h2 style="margin: 0.8rem 0px 1.3rem; text-align: left;">Transfer Confidential Asset Protocol: The Authorization and
+    Private Balance Architecture of TSN</h2>
+  <div class="separator" style="clear: both; text-align: center;"><a
+      href="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgn6PM0E5QqG_tK682wcawr_Ani2HOXRvGA8p92fZObShYJ_MOnLTqmdGdbiKlmoZ0MzT-YY7VnVLp9_55zBJ0Xb09r6i_0Qr-XTZ37dp4FWkA3F5_yajdHQ08c1sRa-PfhFT2vKcxoVV1-1hiqQCHEs4Nh1OgQpa4-UVMB_A_msRzwuKtgPxIsgaF4_L4/s1168/gpru-tcap-tsn-research-cover.jpg"
+      style="margin-left: 1em; margin-right: 1em;"><img
+        alt="TrustLink Labs research cover illustrating GPRU authorization and TCAP private balance architecture for TSN"
+        border="0" data-original-height="784" data-original-width="1168" height="215"
+        src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgn6PM0E5QqG_tK682wcawr_Ani2HOXRvGA8p92fZObShYJ_MOnLTqmdGdbiKlmoZ0MzT-YY7VnVLp9_55zBJ0Xb09r6i_0Qr-XTZ37dp4FWkA3F5_yajdHQ08c1sRa-PfhFT2vKcxoVV1-1hiqQCHEs4Nh1OgQpa4-UVMB_A_msRzwuKtgPxIsgaF4_L4/w320-h215/gpru-tcap-tsn-research-cover.jpg"
+        title="GPRU and TCAP private balance architecture for TSN" width="320" /></a></div><br />
+  <div><br /></div>
+  <p class="dek" itemprop="description">Modern payment networks need two protections at once: a verifiable authorization
+    path and a private balance path. TrustLink Labs separates those responsibilities across GPRU, TSN, and TCAP.</p>
+  <h2>Abstract</h2>
+  <p>GPRU provides authorization and routing without custody. TCAP provides policy-bound private balance state through
+    commitment-linked encrypted snapshots. The TSN Program coordinates epoch treasury obligations and consumes
+    Mother-rooted Settlement DNA exactly once. Together, these layers create a payment system in which the operator can
+    submit an authorized transaction without receiving the sender’s keys, private commitment, or payment-specific
+    account history.</p>
+  <h2>1. The authorization problem</h2>
+  <p>A payment authorization is stronger than a destination address. It must bind the amount, mint, recipient, fees,
+    route, expiry, nonce, and settlement commitment. GPRU canonicalizes those fields and lets the Node reject any
+    mutation before a Cranker receives work.</p>
+  <h2>2. Mother-rooted Settlement DNA</h2>
+  <p>Mother creates a one-time DNA voucher for a specific authorized CrankerVault and lease. The permit carries the
+    opaque commitment, public settlement coordinates, nullifier, and expiry. On success the TSN Program consumes the DNA
+    permanently. A second Cranker cannot reuse or redirect it.</p>
+  <h2>3. The private balance path</h2>
+  <p>TCAP stores a public tip commitment and sequence, not a plaintext balance. After a valid credit, the owner stores
+    an encrypted snapshot keyed by the new commitment. A private read fetches the tip, loads the matching ciphertext,
+    verifies its hash and sequence, and decrypts locally. The protocol never needs to publish the balance to coordinate
+    the transition.</p>
+  <h2>4. Epoch treasury coordination</h2>
+  <p>Funding enters an epoch treasury rather than a payment-specific escrow object. The epoch ledger tracks aggregate
+    obligations and opaque claim state. Settlement and refund are mutually exclusive: the first valid operation writes
+    the claim outcome, and finalization requires that pending liability reaches zero.</p>
+  <h2>5. Operator and privacy boundaries</h2>
+  <p>Crankers pay fees and submit transactions, but they do not receive sender keys, TIN master material, private
+    commitment plaintext, escrow accounts, or PrivateEscrowRecord PDAs. The Node and Mother retain encrypted private
+    context; the chain enforces the one-time authorization capability.</p>
+  <h2>Conclusion</h2>
+  <p>GPRU makes authorization portable, TCAP makes private balance state usable, and TSN makes settlement accountable.
+    The result is a protocol architecture for identity-aware, privacy-preserving payment infrastructure rather than a
+    thin transfer wrapper.</p>
+  <p><a href="/p/identity-and-tin.html">TIN identity</a> · <a href="/p/gpru.html">GPRU documentation</a> · <a
+      href="/p/tcap.html">TCAP documentation</a> · <a href="/p/tsn-flow.html">TSN settlement flow</a></p>
+</article>

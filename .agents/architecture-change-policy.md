@@ -1,0 +1,14 @@
+# Architecture change policy
+
+Use this workflow for TSNP, TIP, GPRU, TCAP, and DIP protocol changes within the TSN infrastructure:
+
+1. Read the active program instruction/account constraints and state layouts, then follow the same data through the SDK, Receiver, Node, Cranker, and test UI. Use docs as supporting context, not as proof that code still implements a design.
+2. Confirm the intended architecture against the program ABI and the user's stated design before writing code. Identify required accounts, derivations, signatures, authorization checks, state transitions, and failure behavior.
+3. Implement one canonical runtime path. Delete an existing instruction or implementation only after confirming a replacement exists and covers its purpose. Do not remove a useful capability merely because its account names or version differ.
+4. Keep distinct supported capabilities, including wallet-to-wallet funding commitments, even when they are not the current XP test path. Remove only code that has been superseded and has no unique behavior left to preserve. Keep genuinely required one-time migrations separate from runtime, with their state obligation documented. Do not introduce an old runtime fallback or compatibility layer without the user's migration requirement.
+5. Search the whole repository for removed symbols, old account names, discriminators, scripts, and callers. Update or remove stale references so they cannot direct future work back to the old design.
+6. Verify the affected package/build contracts without starting services or submitting transactions. State clearly what was and was not compiled, tested, or confirmed on chain.
+
+All current work belongs to the experimental first release, v1. Do not assign v2/v3 product releases to proof, funding or account changes; use descriptive experiment names and quote exact existing ABI identifiers where required. Do not invent protocol semantics or add compatibility layers to make a stale path compile. Preserve unrelated local changes and user-controlled keys, IDs, deployment settings, and processes.
+
+Start with [current architecture](../docs/laboratory/architecture-map.md), [terminology](architecture-terminology.md) and the affected ABI record, then verify their claims against code. Native hidden-head credit follows TSNP → TCAP → GPRU validation and atomic shared-root/epoch-transcript mutation, with proof-verified aggregate liability accounting in separate native epoch work; epoch/DNA payout and retained debit/exit are distinct capabilities. A configured prover and source entrypoint do not establish deployment or a successful payment. Use the [documentation maintenance manual](../docs/DOCUMENTATION_MAINTENANCE.md) to update internal/public contracts and affected diagrams when a replacement materially changes behavior.

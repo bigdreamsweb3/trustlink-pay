@@ -34,7 +34,7 @@ def documents():
             rel = path.relative_to(ROOT).as_posix()
             if path.suffix not in {".md", ".mdx"}:
                 continue
-            if rel.startswith(("docs/", "tsn-protocol/", "research/", ".codex/")) or rel in {"README.md", "terminal-dev.md", "AGENTS.md"}:
+            if rel.startswith(("docs/", "tsn-protocol/", "research/", ".agents/")) or rel in {"README.md", "terminal-dev.md", "AGENTS.md"}:
                 yield path
 
 
@@ -89,7 +89,7 @@ def check():
     for path in documents():
         exported = path.is_relative_to(protocol_root)
         if not (any(path.is_relative_to(p) for p in DOC_ROOTS)
-                or exported or path.is_relative_to(ROOT / ".codex") or path in ENTRY_FILES):
+                or exported or path.is_relative_to(ROOT / ".agents") or path in ENTRY_FILES):
             continue
         content = path.read_text(encoding="utf-8-sig")
         if content.count("```") % 2:
@@ -103,7 +103,7 @@ def check():
         links = re.findall(r"\]\(([^)]+)\)|\b(?:href|src)=[\"']([^\"']+)[\"']|^\s*\[[^\]]+\]:\s*(\S+)", prose, re.M)
         for match in links:
             target = next(s for s in match if s).strip().strip("<>")
-            if target.startswith(("http:", "https:", "mailto:", "#", "data:", "codex:")):
+            if target.startswith("#") or re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target):
                 continue
             target = unquote(target.split("#")[0].split("?")[0])
             if not target:
@@ -116,7 +116,7 @@ def check():
             if not any(p.exists() for p in candidates):
                 issues.append({"file": path.relative_to(ROOT).as_posix(), "target": target, "kind": "local link"})
     output = ROOT / "docs/references/link-check.json"
-    output.write_text(json.dumps({"scope": "Two documentation trees, all tsn-protocol Markdown, .codex Markdown and AGENTS/root README references: local targets, exported-subtree boundary, internal-only operator-guide publication, Mintlify navigation, frontmatter, fence balance. Remote URLs, anchors and Mermaid rendering require separate validation.", "issues": issues}, indent=2) + "\n", encoding="utf-8")
+    output.write_text(json.dumps({"scope": "Two documentation trees, all tsn-protocol Markdown, .agents Markdown and AGENTS/root README references: local targets, exported-subtree boundary, internal-only operator-guide publication, Mintlify navigation, frontmatter, fence balance. Remote URLs, anchors and Mermaid rendering require separate validation.", "issues": issues}, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"issues": len(issues), "report": output.relative_to(ROOT).as_posix()}))
     return bool(issues)
 

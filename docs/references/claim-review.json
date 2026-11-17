@@ -180,7 +180,7 @@
       "reason": "Explicitly retired architecture is preserved, not deleted.",
       "evidence": [
         "docs/ZK-PRU-RETIRED.md",
-        ".codex/architecture-terminology.md"
+        ".agents/architecture-terminology.md"
       ]
     },
     {
@@ -191,7 +191,7 @@
       "reason": "Research publication naming conflicts with current source; papers preserved unchanged.",
       "evidence": [
         "research/Trustlink-Research/README.md",
-        ".codex/architecture-terminology.md"
+        ".agents/architecture-terminology.md"
       ]
     },
     {
@@ -274,12 +274,14 @@
     {
       "id": "C-026",
       "path": "docs/laboratory/cranker-transaction-map.md",
-      "contains": "preserves the installed DBrix 0.2 message contract",
+      "contains": "uses Mother's final lifetime and issuing context",
       "status": "CURRENT",
-      "reason": "Application-owned Kit 8.5.0 V1 builder preserves the DBrix message contract in offline comparison; one exact 2909-byte Devnet credit separately finalized at slot 517916537.",
+      "reason": "The application-owned Kit 8.5.0 V1 path validates Mother's blockhash-only replacement before payer signing and carries its final lifetime/context into checkpoint and HTTP submission; fresh-hash sequencing is offline tested, while the historical 2909-byte finalized credit establishes only its original run.",
       "evidence": [
         "tsn-protocol/services/tsn-cranker-op-daemon/src/dbrix/settlement-transport.ts",
         "tsn-protocol/services/tsn-cranker-op-daemon/tests/settlement-transport.test.ts",
+        "tsn-protocol/services/tsn-cranker-op-daemon/src/dbrix/mother-node-signer.ts",
+        "tsn-protocol/services/tsn-cranker-op-daemon/tests/mother-node-signer.test.ts",
         "protocol-test-runs/native-credit-receipt-20261102/evidence.json"
       ]
     },

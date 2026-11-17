@@ -5,7 +5,8 @@ RPC gateway, Cranker operators and the public documentation handbook. TSN is
 the complete infrastructure; TSNP is its on-chain settlement authorization
 program. TIP, GPRU, TCAP and DIP have distinct roles, while Circle CCTP is an
 external integration. Solana provides execution, ordering, consensus and
-finality.
+finality. The project is still developing its experimental first release,
+**v1**, with a mobile money experience as its goal.
 
 Native wallet-to-TIN credit separates an exact sender-signed reserve deposit
 from a later independently verified hidden-head state transition. Receiver
@@ -51,7 +52,7 @@ flowchart TB
 
     subgraph PROVING["5. TSN Node — independent settlement verification"]
         direction TB
-        L["Lease linked settlement and recheck funding<br/>Read TIP, TCAP state/funding roots and V2 verifier"]
+        L["Lease linked settlement and recheck funding<br/>Read TIP, TCAP state/funding roots and matching verifier"]
         M["Synchronize membership and select matching state<br/>Prove funding, asset/amount and secret-derived nullifier; bind Memo"]
         N["Return signed VERIFIED settlement<br/>Thirteen public inputs and bound Memo"]
         L --> M --> N
@@ -60,7 +61,7 @@ flowchart TB
     subgraph SUBMISSION["6. Cranker and Mother authority — settlement submission"]
         direction TB
         O["Cranker checks attestation and leases settlement<br/>Obtain authorization bound to current lease"]
-        P["Build exact TSNP call followed by Memo<br/>Mother authority co-signs inspected message"]
+        P["Build exact TSNP call followed by Memo<br/>Mother validates then signs final fresh blockhash"]
         Q["Cranker signs and submits second transaction<br/>Mother authorization is distinct from Node decision signing"]
         O --> P --> Q
     end
@@ -92,9 +93,9 @@ flowchart TB
     N --> O
     Q --> R
     U --> V
-    U --> AA["Grouped accepted-credit openings<br/>Node proves complete 2–64-credit epoch"]
+    U --> AA["Eligible accepted-credit epoch<br/>Node proves every ordered opening"]
     AA --> AB["Receiver verifies and leases accounting work<br/>Cranker obtains Mother signature and submits"]
-    AB --> AC["TCAP and separate GPRU epoch verifier<br/>One authenticated liability reclassification"]
+    AB --> AC["GPRU verifies the complete epoch proof<br/>TCAP reclassifies aggregate liabilities once"]
     G -->|"Invalid authorization or deposit"| X["Reject funding work<br/>No verified Cranker execution"]
     M -->|"Missing snapshots, artifacts or account prerequisites"| Y["Fail closed; resolve prerequisites<br/>Reverify before settlement submission"]
     T -->|"Invalid proof or binding"| Z["Credit transaction fails atomically<br/>Earlier confirmed funding remains separate"]
@@ -125,7 +126,9 @@ Cranker can submit that unchanged wire. Receiver pre-creates the linked
 settlement reference at ingress, and confirmed funding gates Node's settlement
 verification lease.
 
-Settlement preparation rechecks confirmed funding, TIP/current private state and a released immutable sealed funding pool. Node binds an encrypted owner record and freshly blinded amount commitment, proves locally and returns the attested public execution. Cranker obtains lease-bound Mother signing and submits `tsn_register_tcap_credit_authorization_v3` followed by Memo. TSNP → TCAP → GPRU advances root/epoch transcript, with readonly reserve and no individual liability reclassification. Separate complete epoch work authenticates the 2–64-credit total and accounts once. See [ABI](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/credit-abi.md).
+Settlement preparation rechecks confirmed funding, TIP/current private state and a current or retained authenticated funding root in the canonical global TCAP account. Node binds an encrypted owner record and freshly blinded amount commitment, proves locally and returns the attested public execution. Cranker obtains lease-bound Mother signing and submits `tsn_register_tcap_credit_authorization_v3` followed by Memo. TSNP → TCAP → GPRU advances root/epoch transcript, with readonly reserve and no individual liability reclassification. TCAP owns the separate aggregate accounting; GPRU verifies its complete 2–64-credit proof. No pool capture or two-depositor wait remains. See [ABI](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/credit-abi.md).
+
+The first credit for an asset/accounting epoch can create a shared 136-byte TCAP epoch account. Further credits in that epoch reuse it. Node considers accounting when 2–63 credits are at least 120 slots old from the first credit, or immediately at 64 credits; the 120-slot threshold is scheduling maturity, not account expiry or an on-chain deadline. A singleton remains open. At 64, further credits wait for accounting, which advances the reserve epoch; the next epoch's first credit can create another account. Accounted epoch accounts remain on chain. This transcript currently records credits only; adding mixed credit/debit/exit actions requires a separate replacement contract.
 
 The credit call takes shared roots and verifier accounts, without a public
 recipient TIN registry, per-TIN latest tip or recipient token account. It does
@@ -136,9 +139,9 @@ compatibility review rather than an assumed migration.
 
 ## Privacy, readiness and recovery
 
-Deposits expose wallets, token/amount and signature. Individual credit exposes a blinded amount commitment, token, roots, nullifier, successor points and ciphertext; its reserve does not change. Sealed pool capture requires two positive unspent members and two source wallets, and common release windows adapt to traffic. Epoch accounting exposes a complete 2–64-credit total. Known amounts/spends, timing, recipient-registry history and Node knowledge can still support inference. [Cryptography](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/cryptography.md) records these limits; historical public disclosures remain on chain.
+The primary privacy target is to hide TIN participation from public observers and prevent linking TCAP actions, including intended TIN-to-TIN transfers. Trusted Node access to verification routes/openings and public wallet funding are accepted boundaries. Deposits expose wallets, token/amount and signature. Individual credit exposes a blinded amount commitment, token, roots, nullifier, successor points and ciphertext; its reserve does not change. One genuine confirmed deposit suffices for credit, and singleton funding history may be source-linkable. Epoch accounting exposes a complete 2–64-credit total. Known amounts/spends, timing and public registry/head history can still support inference. [Cryptography](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/cryptography.md) records these limits; historical public disclosures remain on chain.
 
-The experimental replacement has pinned witness/prover adapters, isolated real credit/epoch proof tests and native verification. [November 7 evidence](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md) separates those checks from unverified SBF build, operator activation and complete live credit/accounting. November 2–5 receipts belong to older amount-public ABIs. Retained payout/exit and provider rewards require separate implementation or execution review.
+The experimental replacement has pinned witness/prover adapters, isolated real credit/epoch proof tests and native verification. [November 7 evidence](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md) preserves the earlier offline checks and activation gaps. [November 16 Devnet evidence](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261116-private-credit-epoch.md) records two confirmed private credits in one epoch and its successful aggregate accounting. That scoped result does not establish public-observer action unlinkability, owner-history completeness, debit/exit or provider rewards. November 2–5 receipts belong to older amount-public ABIs.
 
 An expired wallet-signed funding wire requires a rebuilt transaction and fresh
 wallet signature. A stale root/proof or lease requires current-state
@@ -160,12 +163,14 @@ boundaries. ZK-PRU is retired historical context, not an integration target.
 
 ## Start here
 
+The [repository security record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/REPOSITORY-SECURITY.md) describes disabled automatic Git imports/writes, dependency install-script defaults and verification limits. Review source and lock changes before executing dependency or project code.
+
 - [Laboratory architecture and source map](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/architecture-map.md)
 - [Identity and TIN](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/identity-and-tin.md)
 - [Native credit accounts and proof ABI](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/credit-abi.md)
 - [Invariants and recovery](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/invariants.md)
 - [Public protocol and SDK handbook](tsn-docs/README.md)
-- [Architecture terminology](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/.codex/architecture-terminology.md)
+- [Architecture terminology](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/.agents/architecture-terminology.md)
 - [Documentation maintenance manual](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/DOCUMENTATION_MAINTENANCE.md)
 
 These links target the actual workspace documentation tree. Consult applicable

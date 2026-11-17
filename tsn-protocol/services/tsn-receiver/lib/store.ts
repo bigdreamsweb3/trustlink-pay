@@ -1,7 +1,7 @@
 import { createHash, randomInt } from "node:crypto";
 import { FieldPath, Timestamp } from "firebase-admin/firestore";
 import { workCollection, db } from "./firebase";
-import { assertExternalWorkKind, assertAuthorizedFundingIngress, compactAuthorizedFundingVerification, compactVerificationPayload, createReceivedWork, payloadCommitment, verifiedPayloadForWork, type ReceiverWork, type WorkKind, type WorkStatus } from "./work-contract";
+import { isSupportedWorkKind, hasResolvedNonExecution, assertExternalWorkKind, assertAuthorizedFundingIngress, compactAuthorizedFundingVerification, compactVerificationPayload, createReceivedWork, payloadCommitment, verifiedPayloadForWork, type ReceiverWork, type WorkKind, type WorkStatus } from "./work-contract";
 import { decryptPayloadForNode, encryptPayloadForNode } from "./node-envelope";
 import { assertNodeVerificationAttestation } from "./node-verification";
 import { wakeTsnNode } from "./node-wake";
@@ -227,19 +227,21 @@ async function lease(
   const stale = await workWithStatus(next);
   for (const candidate of stale.docs) {
     const data = candidate.data() as ReceiverWork;
+    if (!isSupportedWorkKind(data.kind)) continue;
     const leaseValue = next === "NODE_VERIFYING" ? data.nodeLease : data.crankerLease;
     if (!leaseValue || Date.parse(leaseValue.expiresAt) > Date.now()) continue;
     await db.runTransaction(async (transaction: any) => {
       const snapshot = await transaction.get(candidate.ref);
       if (!snapshot.exists || snapshot.get("status") !== next) return;
       const current = snapshot.data() as ReceiverWork;
+      if (!isSupportedWorkKind(current.kind)) return;
       const currentLease = next === "NODE_VERIFYING" ? current.nodeLease : current.crankerLease;
       if (currentLease && Date.parse(currentLease.expiresAt) > Date.now()) return;
       transaction.update(candidate.ref, {
         // Once a signed attempt is durable, never rebuild on lease expiry.
         // Its signature must be reconciled even if broadcast was interrupted.
         status: next === "NODE_VERIFYING" ? "RECEIVED"
-          : current.result?.signature ? "FAILED" : ["SETTLEMENT","TCAP_FUNDING_POOL","TCAP_EPOCH_ACCOUNTING"].includes(current.kind) ? "RECEIVED" : "VERIFIED",
+          : current.result?.signature ? "FAILED" : ["SETTLEMENT","TCAP_EPOCH_ACCOUNTING"].includes(current.kind) ? "RECEIVED" : "VERIFIED",
         stateVersion: current.stateVersion + 1,
         updatedAt: now(),
         nodeLease: null,
@@ -255,9 +257,10 @@ async function lease(
     const j = randomInt(i + 1);
     [candidates.docs[i], candidates.docs[j]] = [candidates.docs[j], candidates.docs[i]];
   }
-  // Pool capture/accounting frees dependent credits before selecting them.
-  candidates.docs.sort((a: any, b: any) => Number(b.get("kind") === "TCAP_EPOCH_ACCOUNTING" || b.get("kind") === "TCAP_FUNDING_POOL") - Number(a.get("kind") === "TCAP_EPOCH_ACCOUNTING" || a.get("kind") === "TCAP_FUNDING_POOL"));
+  // Accounting frees dependent credits before selecting them.
+  candidates.docs.sort((a: any, b: any) => Number(b.get("kind") === "TCAP_EPOCH_ACCOUNTING") - Number(a.get("kind") === "TCAP_EPOCH_ACCOUNTING"));
   for (const candidate of candidates.docs) {
+    if (!isSupportedWorkKind(candidate.get("kind"))) continue;
     if (supportedKinds?.length && !supportedKinds.includes(candidate.get("kind") as WorkKind)) continue;
     if (Date.parse(String(candidate.get("deferredUntil") ?? "")) > Date.now()) continue;
     if (next === "CRANKER_LEASED") {
@@ -278,6 +281,7 @@ async function lease(
       const snapshot = await transaction.get(candidate.ref);
       if (!snapshot.exists || snapshot.get("status") !== status) return null;
       const current = snapshot.data() as ReceiverWork;
+      if (!isSupportedWorkKind(current.kind)) return null;
       const serial = current.kind === "SETTLEMENT" || current.kind === "TCAP_EPOCH_ACCOUNTING";
       const lockRef = db.collection("tsn_private_credit_locks").doc("global-root");
       if (serial && next === "NODE_VERIFYING") {
@@ -287,16 +291,15 @@ async function lease(
         if (holder?.exists) {
           const h = holder.data() as ReceiverWork;
           const active = h.status === "VERIFIED" || h.status === "CRANKER_LEASED" || h.status === "SUBMITTED"
-            || (h.status === "FAILED" && Boolean(h.result?.signature))
+            || (h.status === "FAILED" && Boolean(h.result?.signature) && !hasResolvedNonExecution(h))
             || (h.status === "NODE_VERIFYING" && Date.parse(h.nodeLease?.expiresAt ?? "") > Date.now());
-          if (active) return null;
+          if (isSupportedWorkKind(h.kind) && active) return null;
         }
         transaction.set(lockRef, { workId: current.id });
       }
       // Native execution includes two full Node authorization passes before
       // signing, then bounded broadcast/confirmation. Recovery stays finite.
-      const nativeCranker = next === "CRANKER_LEASED" && (current.kind === "TCAP_FUNDING_POOL"
-        || current.kind === "TCAP_EPOCH_ACCOUNTING"
+      const nativeCranker = next === "CRANKER_LEASED" && (current.kind === "TCAP_EPOCH_ACCOUNTING"
         || (current.kind === "SETTLEMENT" && current.verification?.verificationType === "TSN_TCAP_GPRU_HIDDEN_HEAD_V1"));
       const expiresAt = new Date(Date.now() + (nativeCranker ? 180_000 : 60_000)).toISOString();
       const patch = {
@@ -362,13 +365,13 @@ export async function recordSettlementSubmission(params: {
       || !/^\d+$/.test(String(evidence.lastValidBlockHeight ?? ""))
       || !/^[a-f0-9]{64}$/.test(String(evidence.wireSha256 ?? ""))
       || !Number.isSafeInteger(evidence.wireBytes) || Number(evidence.wireBytes) < 1 || Number(evidence.wireBytes) > 4096
-      || !["TCAP_GPRU_MEMO_CREDIT_V2_SIGNED", "TCAP_FUNDING_POOL_V1_SIGNED", "TCAP_EPOCH_ACCOUNTING_V1_SIGNED"].includes(String(evidence.stage))) throw new Error("SETTLEMENT_SUBMISSION_INVALID");
+      || !["TCAP_GPRU_MEMO_CREDIT_V2_SIGNED", "TCAP_EPOCH_ACCOUNTING_V1_SIGNED"].includes(String(evidence.stage))) throw new Error("SETTLEMENT_SUBMISSION_INVALID");
   const ref = workCollection.doc(params.id);
   return db.runTransaction(async (transaction: any) => {
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists) throw new Error("WORK_NOT_FOUND");
     const current = snapshot.data() as ReceiverWork;
-    const stage = { SETTLEMENT:"TCAP_GPRU_MEMO_CREDIT_V2_SIGNED", TCAP_FUNDING_POOL:"TCAP_FUNDING_POOL_V1_SIGNED", TCAP_EPOCH_ACCOUNTING:"TCAP_EPOCH_ACCOUNTING_V1_SIGNED" } as Record<string,string>;
+    const stage = { SETTLEMENT:"TCAP_GPRU_MEMO_CREDIT_V2_SIGNED", TCAP_EPOCH_ACCOUNTING:"TCAP_EPOCH_ACCOUNTING_V1_SIGNED" } as Record<string,string>;
     if (!stage[current.kind] || evidence.stage !== stage[current.kind] || current.status !== "CRANKER_LEASED"
         || current.authorization?.kind !== (current.kind === "SETTLEMENT" ? "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3" : "TSN_TCAP_COORDINATION_AUTHORIZATION_V1")) throw new Error("SETTLEMENT_SUBMISSION_NOT_LEASED");
     if (current.stateVersion !== params.expectedVersion) throw new Error("STALE_STATE_VERSION");
@@ -475,7 +478,7 @@ export async function transition(params: {
   if (params.actor === "node" && params.status === "VERIFIED") {
     await publishCrankerWake("VERIFIED");
   }
-  if (result.fundingConfirmed || (params.actor === "cranker" && params.status === "CONFIRMED" && ["SETTLEMENT", "TCAP_FUNDING_POOL", "TCAP_EPOCH_ACCOUNTING"].includes(result.work.kind))) {
+  if (result.fundingConfirmed || (params.actor === "cranker" && params.status === "CONFIRMED" && ["SETTLEMENT", "TCAP_EPOCH_ACCOUNTING"].includes(result.work.kind))) {
     // Funding confirmation is a trigger only. The Node independently checks
     // the chain transaction before it verifies the pre-created settlement.
     await wakeTsnNode("AUTHORIZED_FUNDING");

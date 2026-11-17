@@ -1,6 +1,6 @@
 # EXP-20261101: binding the owner delta to the proved transition
 
-**Known period: source fix recorded 2026-11-01. Outcome: source relation revised; the original finding's date and full experiment log are not established.** This record reconstructs the question from [.codex/GPRU_MEMO_DELTA_PROOF_FINDING.md](../../../.codex/GPRU_MEMO_DELTA_PROOF_FINDING.md) and current source. It does not invent the time of initial discovery or claim the original document is up to date about later test results.
+**Known period: source fix recorded 2026-11-01. Outcome: source relation revised; the original finding's date and full experiment log are not established.** This record reconstructs the question from [.agents/GPRU_MEMO_DELTA_PROOF_FINDING.md](../../../.agents/GPRU_MEMO_DELTA_PROOF_FINDING.md) and current source. It does not invent the time of initial discovery or claim the original document is up to date about later test results.
 
 ## Problem and hypothesis
 

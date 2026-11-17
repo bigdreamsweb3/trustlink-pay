@@ -1,0 +1,1996 @@
+{
+  "purpose": "One-function test components preserving existing discovered suites and fixture exports",
+  "originalTests": {
+    "test_atomic_nonce_store.py": "de2a3584617352f3170797b5723f35642eef67804435838f38a4cc5383c7c918",
+    "test_cross_chain_routes.py": "ed1852c605be6f27a7724d435c0e897f4d0e98db37473137912050e1ee696ef0",
+    "test_deposit_rpc.py": "d55d775e2ac20b6a1c790104ec515f022b22e21cb5f08b17d18abb7e49bef641",
+    "test_funding_ingress_privacy.py": "622149df7d47410b35780a3b9b6f7a2bbbd2225c56f177b6cf59c1a576c549cd",
+    "test_funding_note.py": "9438a20879bdd8150b7b532992c78beb47033246e804fe59ea95cf5044c8edcc",
+    "test_global_funding_credit.py": "39537c75ac3ad1fdf9e09cb125ce70793259521a0ae171ec2767c9c21c5f300d",
+    "test_hidden_head_attestation.py": "9cb74c0eb92f492bf7f83dd9c6de2e439be01a8718f9a921f6fedeb0d08a278e",
+    "test_hidden_head_authorization.py": "9a0a50bd50376f0f3e011475e2a97091aa21d58ee723e6c4e791266224e8f968",
+    "test_hidden_head_preconditions.py": "815d118471348921f5bed66aff2b76bf0f00ff4abdca04213137ae709f9586d0",
+    "test_hidden_head_prover.py": "c9bea6f27ab477ed844b6f607cf50abf7f64679cd3deb8480a5a971f64f0d007",
+    "test_hidden_head_transport.py": "df2ea4151254464d57a71632d95cdf1c5f05761b366c9f95ee320cb31adda6d3",
+    "test_hidden_head_witness.py": "f42632a7349cb2c7d79b5f74d1038274815a1380a7c1d7a49e62be3b7c0f4a2c",
+    "test_payment_intent_recipient_binding.py": "d2893a5cedfaa2f4da34e2a0a5a8a525d2d2d1f3086414873f92d2687e8f83f8",
+    "test_private_credit_coordination.py": "ecc2cd101cf8ac667012424d64e88af3720620c3ca7bf751cb63fe5e82e67648",
+    "test_receiver_lease_renewal.py": "0cfc5a795d9ad05f3f0448e71b2f3a6b66e15ea459137579e9c1dff539e95973",
+    "test_route_attestation.py": "bdff535cf53a00ab4c91d8085a2636383a591eabaf638e3fc0d747bd3cc67199",
+    "test_solana_pubkey.py": "29313ccb4d610d9eaf3c24d1473df13f96ea7d7458dc2361b135bbfc256bcd23",
+    "test_tcap_snapshot_and_credit_handoff.py": "a03f8d3ab82333de5f82ac0629575019f3df41de45f3e8c7019bfe89d300c0ac",
+    "test_threshold_access.py": "a4aff0a37009fb6a9d39df58362f73fa15fe06e2fb8c0371e9c5082737a395d5",
+    "test_tip_snapshot_auto_sync.py": "1efcd35130db6607423113438c1727bce11e00b7aa53906e9ee5199ed3a4fc54",
+    "test_tip_snapshot_sync.py": "91ecd8d8f8bbc13a275ad12a08d4e04b4e5a00ad1c562a265e12c6ab1c12ccc6",
+    "test_wallet_funding_transaction.py": "59e3e5c6ba00e76061971b6c8e63338272c1f87c61d4098e26c570157830259b"
+  },
+  "components": [
+    {
+      "source": "test_atomic_nonce_store.py",
+      "line": 18,
+      "name": "test_concurrent_consume_once_has_one_winner",
+      "component": "cases/atomic_nonce_store/functions/f001_test_concurrent_consume_once_has_one_winner.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_cross_chain_routes.py",
+      "line": 15,
+      "name": "test_registry_is_authority_when_mirror_omits_executor_and_token",
+      "component": "cases/cross_chain_routes/functions/f001_test_registry_is_authority_when_mirror_omits_executor_and_token.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_cross_chain_routes.py",
+      "line": 30,
+      "name": "test_route_config_requires_exact_executor_and_token_fields",
+      "component": "cases/cross_chain_routes/functions/f002_test_route_config_requires_exact_executor_and_token_fields.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_cross_chain_routes.py",
+      "line": 48,
+      "name": "test_registry_words_decode_route_addresses",
+      "component": "cases/cross_chain_routes/functions/f003_test_registry_words_decode_route_addresses.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_deposit_rpc.py",
+      "line": 14,
+      "name": "handle",
+      "component": "cases/deposit_rpc/functions/f002_handle.py",
+      "captures": [
+        "outcomes",
+        "seen"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_deposit_rpc.py",
+      "line": 22,
+      "name": "client",
+      "component": "cases/deposit_rpc/functions/f003_client.py",
+      "captures": [
+        "handle",
+        "real_client"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_deposit_rpc.py",
+      "line": 12,
+      "name": "simulate",
+      "component": "cases/deposit_rpc/functions/f001_simulate.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_deposit_rpc.py",
+      "line": 33,
+      "name": "test_lagging_bank_can_fall_through_to_valid_simulation",
+      "component": "cases/deposit_rpc/functions/f004_test_lagging_bank_can_fall_through_to_valid_simulation.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_deposit_rpc.py",
+      "line": 38,
+      "name": "test_all_banks_explicitly_reject_hash_requires_new_signature",
+      "component": "cases/deposit_rpc/functions/f005_test_all_banks_explicitly_reject_hash_requires_new_signature.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_deposit_rpc.py",
+      "line": 42,
+      "name": "test_mixed_invalid_and_unknown_is_retryable_in_either_order",
+      "component": "cases/deposit_rpc/functions/f006_test_mixed_invalid_and_unknown_is_retryable_in_either_order.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_deposit_rpc.py",
+      "line": 51,
+      "name": "test_program_rejection_remains_terminal",
+      "component": "cases/deposit_rpc/functions/f007_test_program_rejection_remains_terminal.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_ingress_privacy.py",
+      "line": 13,
+      "name": "test_worker_validation_reason_omits_input_before_logging_or_attestation",
+      "component": "cases/funding_ingress_privacy/functions/f001_test_worker_validation_reason_omits_input_before_logging_or_attestation.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_ingress_privacy.py",
+      "line": 19,
+      "name": "test_missing_public_field_cannot_echo_private_funding_opening",
+      "component": "cases/funding_ingress_privacy/functions/f002_test_missing_public_field_cannot_echo_private_funding_opening.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_ingress_privacy.py",
+      "line": 30,
+      "name": "test_stale_funding_root_returns_retryable_marker_but_bad_layout_does_not",
+      "component": "cases/funding_ingress_privacy/functions/f003_test_stale_funding_root_returns_retryable_marker_but_bad_layout_does_not.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 19,
+      "name": "note",
+      "component": "cases/funding_note/functions/f001_note.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 24,
+      "name": "root_account",
+      "component": "cases/funding_note/functions/f002_root_account.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 43,
+      "name": "append_event",
+      "component": "cases/funding_note/functions/f003_append_event.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 57,
+      "name": "test_shared_sdk_rust_poseidon_vectors",
+      "component": "cases/funding_note/functions/f004_test_shared_sdk_rust_poseidon_vectors.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 63,
+      "name": "test_opening_is_canonical_nonzero_and_bound_to_commitment",
+      "component": "cases/funding_note/functions/f005_test_opening_is_canonical_nonzero_and_bound_to_commitment.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 72,
+      "name": "test_one_note_has_one_nullifier_independent_of_amount_recipient_or_retry",
+      "component": "cases/funding_note/functions/f006_test_one_note_has_one_nullifier_independent_of_amount_recipient_or_retry.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 80,
+      "name": "test_amount_asset_and_opening_are_required_by_funded_membership",
+      "component": "cases/funding_note/functions/f007_test_amount_asset_and_opening_are_required_by_funded_membership.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 91,
+      "name": "test_unallocated_wrong_owner_or_malformed_root_fails",
+      "component": "cases/funding_note/functions/f008_test_unallocated_wrong_owner_or_malformed_root_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 102,
+      "name": "test_events_require_success_and_tcap_invocation_and_recompute_actual_leaf",
+      "component": "cases/funding_note/functions/f009_test_events_require_success_and_tcap_invocation_and_recompute_actual_leaf.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 122,
+      "name": "test_public_snapshot_has_no_openings_and_is_immutable",
+      "component": "cases/funding_note/functions/f010_test_public_snapshot_has_no_openings_and_is_immutable.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 146,
+      "name": "rpc",
+      "component": "cases/funding_note/functions/f012_rpc.py",
+      "captures": [
+        "fetched",
+        "leaves",
+        "receipt"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 139,
+      "name": "test_cached_prefix_extends_only_when_final_chain_root_matches",
+      "component": "cases/funding_note/functions/f011_test_cached_prefix_extends_only_when_final_chain_root_matches.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 174,
+      "name": "rpc",
+      "component": "cases/funding_note/functions/f014_rpc.py",
+      "captures": [
+        "leaves",
+        "receipt"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 185,
+      "name": "changed_rpc",
+      "component": "cases/funding_note/functions/f015_changed_rpc.py",
+      "captures": [
+        "leaves",
+        "rpc"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 193,
+      "name": "retired_rpc",
+      "component": "cases/funding_note/functions/f016_retired_rpc.py",
+      "captures": [
+        "leaves",
+        "rpc"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 168,
+      "name": "test_cold_reconstruction_accepts_later_deposits_but_retired_root_stops_publication",
+      "component": "cases/funding_note/functions/f013_test_cold_reconstruction_accepts_later_deposits_but_retired_root_stops_publication.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 207,
+      "name": "test_singleton_and_current_or_retained_root_counts_are_authenticated",
+      "component": "cases/funding_note/functions/f017_test_singleton_and_current_or_retained_root_counts_are_authenticated.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 217,
+      "name": "test_runtime_rejects_legacy_and_malformed_history_without_a_fallback",
+      "component": "cases/funding_note/functions/f018_test_runtime_rejects_legacy_and_malformed_history_without_a_fallback.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 234,
+      "name": "test_wrapped_full_history_is_chronological_and_retires_its_oldest_root",
+      "component": "cases/funding_note/functions/f019_test_wrapped_full_history_is_chronological_and_retires_its_oldest_root.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 255,
+      "name": "test_empty_tree_has_no_active_history",
+      "component": "cases/funding_note/functions/f020_test_empty_tree_has_no_active_history.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 265,
+      "name": "rpc",
+      "component": "cases/funding_note/functions/f022_rpc.py",
+      "captures": [
+        "leaves"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_funding_note.py",
+      "line": 261,
+      "name": "test_wrong_global_pda_and_retired_cached_snapshot_are_rejected",
+      "component": "cases/funding_note/functions/f021_test_wrong_global_pda_and_retired_cached_snapshot_are_rejected.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_global_funding_credit.py",
+      "line": 21,
+      "name": "lambda",
+      "component": "cases/global_funding_credit/functions/f002_callback.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_global_funding_credit.py",
+      "line": 29,
+      "name": "rpc",
+      "component": "cases/global_funding_credit/functions/f003_rpc.py",
+      "captures": [
+        "leaves",
+        "methods",
+        "receipt",
+        "self"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_global_funding_credit.py",
+      "line": 17,
+      "name": "test_single_deposit_reaches_witness_preparation_without_pool_work",
+      "component": "cases/global_funding_credit/functions/f001_test_single_deposit_reaches_witness_preparation_without_pool_work.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_attestation.py",
+      "line": 12,
+      "name": "setUp",
+      "component": "cases/hidden_head_attestation/functions/f001_setUp.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_attestation.py",
+      "line": 23,
+      "name": "test_original_transition_passes",
+      "component": "cases/hidden_head_attestation/functions/f002_test_original_transition_passes.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_attestation.py",
+      "line": 26,
+      "name": "test_valid_proof_substitution_would_break_execution_attestation",
+      "component": "cases/hidden_head_attestation/functions/f003_test_valid_proof_substitution_would_break_execution_attestation.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_attestation.py",
+      "line": 32,
+      "name": "test_memo_body_substitution_breaks_attestation",
+      "component": "cases/hidden_head_attestation/functions/f004_test_memo_body_substitution_breaks_attestation.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_attestation.py",
+      "line": 36,
+      "name": "test_signature_substitution_fails",
+      "component": "cases/hidden_head_attestation/functions/f005_test_signature_substitution_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_attestation.py",
+      "line": 41,
+      "name": "test_minimum_memo_fits_canonical_v1_transport",
+      "component": "cases/hidden_head_attestation/functions/f006_test_minimum_memo_fits_canonical_v1_transport.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_attestation.py",
+      "line": 47,
+      "name": "test_v1_capacity_includes_accounts_config_headers_and_signatures",
+      "component": "cases/hidden_head_attestation/functions/f007_test_v1_capacity_includes_accounts_config_headers_and_signatures.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_attestation.py",
+      "line": 54,
+      "name": "test_funding_root_substitution_breaks_execution_attestation",
+      "component": "cases/hidden_head_attestation/functions/f008_test_funding_root_substitution_breaks_execution_attestation.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_attestation.py",
+      "line": 58,
+      "name": "test_public_projection_removes_funding_opening_and_nested_witness",
+      "component": "cases/hidden_head_attestation/functions/f009_test_public_projection_removes_funding_opening_and_nested_witness.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_attestation.py",
+      "line": 70,
+      "name": "test_nested_private_openings_never_enter_execution_projection",
+      "component": "cases/hidden_head_attestation/functions/f010_test_nested_private_openings_never_enter_execution_projection.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_authorization.py",
+      "line": 27,
+      "name": "lambda",
+      "component": "cases/hidden_head_authorization/functions/f002_callback.py",
+      "captures": [
+        "self"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_authorization.py",
+      "line": 32,
+      "name": "lambda",
+      "component": "cases/hidden_head_authorization/functions/f003_callback.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_authorization.py",
+      "line": 33,
+      "name": "lambda",
+      "component": "cases/hidden_head_authorization/functions/f004_callback.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_authorization.py",
+      "line": 35,
+      "name": "lambda",
+      "component": "cases/hidden_head_authorization/functions/f005_callback.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_authorization.py",
+      "line": 36,
+      "name": "lambda",
+      "component": "cases/hidden_head_authorization/functions/f006_callback.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_authorization.py",
+      "line": 11,
+      "name": "setUp",
+      "component": "cases/hidden_head_authorization/functions/f001_setUp.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_authorization.py",
+      "line": 46,
+      "name": "authorize",
+      "component": "cases/hidden_head_authorization/functions/f007_authorize.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_authorization.py",
+      "line": 49,
+      "name": "test_authorization_matches_receiver_and_cranker_lease_contract",
+      "component": "cases/hidden_head_authorization/functions/f008_test_authorization_matches_receiver_and_cranker_lease_contract.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_authorization.py",
+      "line": 62,
+      "name": "test_lease_rotation_during_verification_is_rejected",
+      "component": "cases/hidden_head_authorization/functions/f009_test_lease_rotation_during_verification_is_rejected.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_authorization.py",
+      "line": 70,
+      "name": "test_expired_lease_or_unrelated_operator_is_rejected",
+      "component": "cases/hidden_head_authorization/functions/f010_test_expired_lease_or_unrelated_operator_is_rejected.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 14,
+      "name": "asset_entry",
+      "component": "cases/hidden_head_preconditions/functions/f001_asset_entry.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 66,
+      "name": "lambda",
+      "component": "cases/hidden_head_preconditions/functions/f003_callback.py",
+      "captures": [
+        "self"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 35,
+      "name": "setUp",
+      "component": "cases/hidden_head_preconditions/functions/f002_setUp.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 70,
+      "name": "check",
+      "component": "cases/hidden_head_preconditions/functions/f004_check.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 75,
+      "name": "test_canonical_funded_reserve_passes",
+      "component": "cases/hidden_head_preconditions/functions/f005_test_canonical_funded_reserve_passes.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 78,
+      "name": "test_credit_does_not_require_withdrawals_or_zero_policy_flags",
+      "component": "cases/hidden_head_preconditions/functions/f006_test_credit_does_not_require_withdrawals_or_zero_policy_flags.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 85,
+      "name": "test_pending_reclassification_does_not_gate_an_individual_credit",
+      "component": "cases/hidden_head_preconditions/functions/f007_test_pending_reclassification_does_not_gate_an_individual_credit.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 89,
+      "name": "test_insolvency_fails",
+      "component": "cases/hidden_head_preconditions/functions/f008_test_insolvency_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 94,
+      "name": "test_transfer_liabilities_are_included",
+      "component": "cases/hidden_head_preconditions/functions/f009_test_transfer_liabilities_are_included.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 99,
+      "name": "test_inactive_unapproved_paused_or_deprecated_asset_fails",
+      "component": "cases/hidden_head_preconditions/functions/f010_test_inactive_unapproved_paused_or_deprecated_asset_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 108,
+      "name": "test_wrong_reserve_binding_fails",
+      "component": "cases/hidden_head_preconditions/functions/f011_test_wrong_reserve_binding_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 113,
+      "name": "test_root_change_fails",
+      "component": "cases/hidden_head_preconditions/functions/f012_test_root_change_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 118,
+      "name": "test_funding_root_change_or_empty_tree_fails",
+      "component": "cases/hidden_head_preconditions/functions/f013_test_funding_root_change_or_empty_tree_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 128,
+      "name": "test_singleton_funded_note_is_eligible_without_another_wallet",
+      "component": "cases/hidden_head_preconditions/functions/f014_test_singleton_funded_note_is_eligible_without_another_wallet.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 132,
+      "name": "test_new_deposit_preserves_credit_against_authenticated_prior_root",
+      "component": "cases/hidden_head_preconditions/functions/f015_test_new_deposit_preserves_credit_against_authenticated_prior_root.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 141,
+      "name": "test_expired_slot_window_fails",
+      "component": "cases/hidden_head_preconditions/functions/f016_test_expired_slot_window_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_preconditions.py",
+      "line": 146,
+      "name": "test_cranker_lease_must_be_current_and_owned",
+      "component": "cases/hidden_head_preconditions/functions/f017_test_cranker_lease_must_be_current_and_owned.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_prover.py",
+      "line": 12,
+      "name": "setUp",
+      "component": "cases/hidden_head_prover/functions/f001_setUp.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_prover.py",
+      "line": 27,
+      "name": "test_bound_output_keeps_only_proof_and_public_action",
+      "component": "cases/hidden_head_prover/functions/f002_test_bound_output_keeps_only_proof_and_public_action.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_prover.py",
+      "line": 33,
+      "name": "test_every_altered_public_input_fails",
+      "component": "cases/hidden_head_prover/functions/f003_test_every_altered_public_input_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_prover.py",
+      "line": 40,
+      "name": "test_disabled_wrong_version_wrong_key_or_circuit_fails",
+      "component": "cases/hidden_head_prover/functions/f004_test_disabled_wrong_version_wrong_key_or_circuit_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_prover.py",
+      "line": 47,
+      "name": "test_prover_cannot_return_private_witness_fields",
+      "component": "cases/hidden_head_prover/functions/f005_test_prover_cannot_return_private_witness_fields.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 21,
+      "name": "field",
+      "component": "cases/hidden_head_transport/functions/f002_field.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 25,
+      "name": "account",
+      "component": "cases/hidden_head_transport/functions/f003_account.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 20,
+      "name": "setUpClass",
+      "component": "cases/hidden_head_transport/functions/f001_setUpClass.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 107,
+      "name": "verify",
+      "component": "cases/hidden_head_transport/functions/f004_verify.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 114,
+      "name": "test_full_encrypted_record_fits_actual_v1_wire_and_matches_node_size",
+      "component": "cases/hidden_head_transport/functions/f005_test_full_encrypted_record_fits_actual_v1_wire_and_matches_node_size.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 126,
+      "name": "test_current_funded_note_memo_passes_full_credit_digest_validation",
+      "component": "cases/hidden_head_transport/functions/f006_test_current_funded_note_memo_passes_full_credit_digest_validation.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 129,
+      "name": "test_obsolete_or_extra_public_inputs_cannot_enter_credit_runtime",
+      "component": "cases/hidden_head_transport/functions/f007_test_obsolete_or_extra_public_inputs_cannot_enter_credit_runtime.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 137,
+      "name": "test_full_credit_validation_rejects_memo_field_substitution",
+      "component": "cases/hidden_head_transport/functions/f008_test_full_credit_validation_rejects_memo_field_substitution.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 143,
+      "name": "test_full_credit_validation_binds_funding_root_to_authorization_digest",
+      "component": "cases/hidden_head_transport/functions/f009_test_full_credit_validation_binds_funding_root_to_authorization_digest.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 149,
+      "name": "test_real_package_message_passes_mother_verifier",
+      "component": "cases/hidden_head_transport/functions/f010_test_real_package_message_passes_mother_verifier.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 152,
+      "name": "test_memo_substitution_fails",
+      "component": "cases/hidden_head_transport/functions/f011_test_memo_substitution_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 158,
+      "name": "test_proof_substitution_fails",
+      "component": "cases/hidden_head_transport/functions/f012_test_proof_substitution_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 164,
+      "name": "test_funding_root_input_substitution_fails",
+      "component": "cases/hidden_head_transport/functions/f013_test_funding_root_input_substitution_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 170,
+      "name": "test_extra_writable_account_fails",
+      "component": "cases/hidden_head_transport/functions/f014_test_extra_writable_account_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 176,
+      "name": "test_legacy_or_v0_message_fails",
+      "component": "cases/hidden_head_transport/functions/f015_test_legacy_or_v0_message_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_transport.py",
+      "line": 182,
+      "name": "test_oversized_actual_message_fails_before_mother_signing",
+      "component": "cases/hidden_head_transport/functions/f016_test_oversized_actual_message_fails_before_mother_signing.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 19,
+      "name": "setUp",
+      "component": "cases/hidden_head_witness/functions/f001_setUp.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 40,
+      "name": "prepare",
+      "component": "cases/hidden_head_witness/functions/f002_prepare.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 53,
+      "name": "test_poseidon_matches_circom_reference_vector",
+      "component": "cases/hidden_head_witness/functions/f003_test_poseidon_matches_circom_reference_vector.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 56,
+      "name": "test_candidate_is_selected_only_by_its_chain_root_and_replay_fails",
+      "component": "cases/hidden_head_witness/functions/f004_test_candidate_is_selected_only_by_its_chain_root_and_replay_fails.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 77,
+      "name": "test_missing_root_cannot_fall_back_to_an_old_snapshot",
+      "component": "cases/hidden_head_witness/functions/f005_test_missing_root_cannot_fall_back_to_an_old_snapshot.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 81,
+      "name": "test_route_substitution_fails_before_proving",
+      "component": "cases/hidden_head_witness/functions/f006_test_route_substitution_fails_before_proving.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 86,
+      "name": "test_tampered_tip_path_does_not_match_chain",
+      "component": "cases/hidden_head_witness/functions/f007_test_tampered_tip_path_does_not_match_chain.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 93,
+      "name": "test_tampered_nullifier_map_does_not_match_chain",
+      "component": "cases/hidden_head_witness/functions/f008_test_tampered_nullifier_map_does_not_match_chain.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 98,
+      "name": "test_owner_openings_are_rejected_and_not_persisted",
+      "component": "cases/hidden_head_witness/functions/f009_test_owner_openings_are_rejected_and_not_persisted.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 103,
+      "name": "test_snapshot_duplicate_keys_fail",
+      "component": "cases/hidden_head_witness/functions/f010_test_snapshot_duplicate_keys_fail.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 114,
+      "name": "calculate",
+      "component": "cases/hidden_head_witness/functions/f012_calculate.py",
+      "captures": [
+        "build",
+        "circuit",
+        "self"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 109,
+      "name": "test_real_circuit_accepts_honest_witness_and_rejects_forged_state",
+      "component": "cases/hidden_head_witness/functions/f011_test_real_circuit_accepts_honest_witness_and_rejects_forged_state.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 168,
+      "name": "scalar",
+      "component": "cases/hidden_head_witness/functions/f014_scalar.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 170,
+      "name": "g1",
+      "component": "cases/hidden_head_witness/functions/f015_g1.py",
+      "captures": [
+        "scalar"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 172,
+      "name": "g2",
+      "component": "cases/hidden_head_witness/functions/f016_g2.py",
+      "captures": [
+        "scalar"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 188,
+      "name": "run",
+      "component": "cases/hidden_head_witness/functions/f017_run.py",
+      "captures": [
+        "fixture_verifier",
+        "points",
+        "prepared",
+        "prove_hidden_head_credit",
+        "self"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_hidden_head_witness.py",
+      "line": 152,
+      "name": "test_real_local_proof_and_serialized_reverification",
+      "component": "cases/hidden_head_witness/functions/f013_test_real_local_proof_and_serialized_reverification.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_payment_intent_recipient_binding.py",
+      "line": 9,
+      "name": "test_accepts_the_node_resolved_owner_hash_case_insensitively",
+      "component": "cases/payment_intent_recipient_binding/functions/f001_test_accepts_the_node_resolved_owner_hash_case_insensitively.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_payment_intent_recipient_binding.py",
+      "line": 13,
+      "name": "test_rejects_plaintext_tin_as_recipient_hash",
+      "component": "cases/payment_intent_recipient_binding/functions/f002_test_rejects_plaintext_tin_as_recipient_hash.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_payment_intent_recipient_binding.py",
+      "line": 17,
+      "name": "test_rejects_an_unrelated_32_byte_hash",
+      "component": "cases/payment_intent_recipient_binding/functions/f003_test_rejects_an_unrelated_32_byte_hash.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_payment_intent_recipient_binding.py",
+      "line": 21,
+      "name": "test_rejects_invalid_hash_from_the_on_chain_tin_route",
+      "component": "cases/payment_intent_recipient_binding/functions/f004_test_rejects_invalid_hash_from_the_on_chain_tin_route.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 12,
+      "name": "test_amount_commitment_binds_every_opening_and_repeated_amount_is_blinded",
+      "component": "cases/private_credit_coordination/functions/f001_test_amount_commitment_binds_every_opening_and_repeated_amount_is_blinded.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 19,
+      "name": "fixture",
+      "component": "cases/private_credit_coordination/functions/f002_fixture.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 31,
+      "name": "test_complete_epoch_requires_exact_order_and_all_openings",
+      "component": "cases/private_credit_coordination/functions/f003_test_complete_epoch_requires_exact_order_and_all_openings.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 48,
+      "name": "calculate",
+      "component": "cases/private_credit_coordination/functions/f005_calculate.py",
+      "captures": [
+        "build",
+        "directory",
+        "self"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 43,
+      "name": "test_epoch_circuit_rejects_changed_total_count_opening_and_order",
+      "component": "cases/private_credit_coordination/functions/f004_test_epoch_circuit_rejects_changed_total_count_opening_and_order.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 67,
+      "name": "lambda",
+      "component": "cases/private_credit_coordination/functions/f007_callback.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 63,
+      "name": "signing_fixture",
+      "component": "cases/private_credit_coordination/functions/f006_signing_fixture.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 93,
+      "name": "sign_fixture",
+      "component": "cases/private_credit_coordination/functions/f008_sign_fixture.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 106,
+      "name": "rpc",
+      "component": "cases/private_credit_coordination/functions/f010_rpc.py",
+      "captures": [
+        "fresh",
+        "latest",
+        "self",
+        "validity",
+        "validity_context"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 104,
+      "name": "signing_rpc",
+      "component": "cases/private_credit_coordination/functions/f009_signing_rpc.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 122,
+      "name": "authorize",
+      "component": "cases/private_credit_coordination/functions/f012_authorize.py",
+      "captures": [
+        "clock",
+        "completed",
+        "elapsed",
+        "value",
+        "work"
+      ],
+      "mutableCaptures": [
+        "completed"
+      ]
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 126,
+      "name": "rpc",
+      "component": "cases/private_credit_coordination/functions/f013_rpc.py",
+      "captures": [
+        "completed",
+        "fresh",
+        "original",
+        "reads",
+        "self"
+      ],
+      "mutableCaptures": [
+        "completed"
+      ]
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 135,
+      "name": "lambda",
+      "component": "cases/private_credit_coordination/functions/f014_callback.py",
+      "captures": [
+        "clock"
+      ],
+      "mutableCaptures": [
+        "completed"
+      ]
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 114,
+      "name": "test_expired_input_hash_is_replaced_after_full_authorization_without_changing_instructions",
+      "component": "cases/private_credit_coordination/functions/f011_test_expired_input_hash_is_replaced_after_full_authorization_without_changing_instructions.py",
+      "captures": [],
+      "mutableCaptures": [
+        "completed"
+      ]
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 161,
+      "name": "rpc",
+      "component": "cases/private_credit_coordination/functions/f016_rpc.py",
+      "captures": [
+        "response",
+        "self"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 147,
+      "name": "test_latest_hash_response_requires_canonical_hash_and_positive_u64_metadata",
+      "component": "cases/private_credit_coordination/functions/f015_test_latest_hash_response_requires_canonical_hash_and_positive_u64_metadata.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 168,
+      "name": "test_refreshed_hash_expiring_during_final_rpc_is_never_signed",
+      "component": "cases/private_credit_coordination/functions/f017_test_refreshed_hash_expiring_during_final_rpc_is_never_signed.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 177,
+      "name": "test_final_validity_context_is_positive_and_nondecreasing",
+      "component": "cases/private_credit_coordination/functions/f018_test_final_validity_context_is_positive_and_nondecreasing.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 192,
+      "name": "rpc",
+      "component": "cases/private_credit_coordination/functions/f020_rpc.py",
+      "captures": [
+        "fixture",
+        "self"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 199,
+      "name": "lambda",
+      "component": "cases/private_credit_coordination/functions/f021_callback.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 200,
+      "name": "lambda",
+      "component": "cases/private_credit_coordination/functions/f022_callback.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 187,
+      "name": "test_native_credit_and_epoch_receive_same_fresh_message_contract",
+      "component": "cases/private_credit_coordination/functions/f019_test_native_credit_and_epoch_receive_same_fresh_message_contract.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 206,
+      "name": "test_existing_execution_result_at_any_receiver_read_blocks_replacement_signing",
+      "component": "cases/private_credit_coordination/functions/f023_test_existing_execution_result_at_any_receiver_read_blocks_replacement_signing.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 222,
+      "name": "test_lease_or_kind_change_after_authorization_blocks_new_hash",
+      "component": "cases/private_credit_coordination/functions/f024_test_lease_or_kind_change_after_authorization_blocks_new_hash.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 235,
+      "name": "rpc",
+      "component": "cases/private_credit_coordination/functions/f026_rpc.py",
+      "captures": [
+        "base",
+        "work"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 231,
+      "name": "test_live_lease_expiry_during_final_hash_check_prevents_signature",
+      "component": "cases/private_credit_coordination/functions/f025_test_live_lease_expiry_during_final_hash_check_prevents_signature.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 243,
+      "name": "test_altered_native_instruction_is_never_refreshed_or_signed",
+      "component": "cases/private_credit_coordination/functions/f027_test_altered_native_instruction_is_never_refreshed_or_signed.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 266,
+      "name": "rpc",
+      "component": "cases/private_credit_coordination/functions/f029_rpc.py",
+      "captures": [
+        "GPRU",
+        "address",
+        "data",
+        "self"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 274,
+      "name": "run",
+      "component": "cases/private_credit_coordination/functions/f030_run.py",
+      "captures": [
+        "points",
+        "prove_epoch",
+        "rpc",
+        "self",
+        "witness"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 256,
+      "name": "test_real_epoch_proof_serialized_reverification_and_mutations",
+      "component": "cases/private_credit_coordination/functions/f028_test_real_epoch_proof_serialized_reverification_and_mutations.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 296,
+      "name": "raise_for_status",
+      "component": "cases/private_credit_coordination/functions/f032_raise_for_status.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_private_credit_coordination.py",
+      "line": 291,
+      "name": "test_stale_roots_defer_instead_of_permanently_rejecting_funding",
+      "component": "cases/private_credit_coordination/functions/f031_test_stale_roots_defer_instead_of_permanently_rejecting_funding.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 28,
+      "name": "lambda",
+      "component": "cases/receiver_lease_renewal/functions/f002_callback.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 14,
+      "name": "setUp",
+      "component": "cases/receiver_lease_renewal/functions/f001_setUp.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 33,
+      "name": "response",
+      "component": "cases/receiver_lease_renewal/functions/f003_response.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 36,
+      "name": "request",
+      "component": "cases/receiver_lease_renewal/functions/f004_request.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 46,
+      "name": "never_finishes",
+      "component": "cases/receiver_lease_renewal/functions/f005_never_finishes.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 52,
+      "name": "process",
+      "component": "cases/receiver_lease_renewal/functions/f006_process.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 58,
+      "name": "verify",
+      "component": "cases/receiver_lease_renewal/functions/f008_verify.py",
+      "captures": [
+        "self"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 57,
+      "name": "test_long_verification_renews_same_generation_and_reports_once",
+      "component": "cases/receiver_lease_renewal/functions/f007_test_long_verification_renews_same_generation_and_reports_once.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 77,
+      "name": "request",
+      "component": "cases/receiver_lease_renewal/functions/f010_request.py",
+      "captures": [
+        "self"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 76,
+      "name": "test_lease_loss_cancels_verification_without_rejection_or_report",
+      "component": "cases/receiver_lease_renewal/functions/f009_test_lease_loss_cancels_verification_without_rejection_or_report.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 90,
+      "name": "request",
+      "component": "cases/receiver_lease_renewal/functions/f012_request.py",
+      "captures": [
+        "mutation",
+        "self"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 85,
+      "name": "test_rotated_claim_or_expired_renewal_cancels_verification",
+      "component": "cases/receiver_lease_renewal/functions/f011_test_rotated_claim_or_expired_renewal_cancels_verification.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 102,
+      "name": "test_unavailable_renewal_endpoint_prevents_proving",
+      "component": "cases/receiver_lease_renewal/functions/f013_test_unavailable_renewal_endpoint_prevents_proving.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 111,
+      "name": "verify",
+      "component": "cases/receiver_lease_renewal/functions/f015_verify.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 110,
+      "name": "test_verification_failure_is_reported_under_the_active_lease",
+      "component": "cases/receiver_lease_renewal/functions/f014_test_verification_failure_is_reported_under_the_active_lease.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 120,
+      "name": "verify",
+      "component": "cases/receiver_lease_renewal/functions/f017_verify.py",
+      "captures": [
+        "attempts"
+      ],
+      "mutableCaptures": [
+        "attempts"
+      ]
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 118,
+      "name": "test_rpc_outage_retries_same_work_without_terminal_rejection",
+      "component": "cases/receiver_lease_renewal/functions/f016_test_rpc_outage_retries_same_work_without_terminal_rejection.py",
+      "captures": [],
+      "mutableCaptures": [
+        "attempts"
+      ]
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 133,
+      "name": "test_processing_timeout_cancels_verification_and_renewal",
+      "component": "cases/receiver_lease_renewal/functions/f018_test_processing_timeout_cancels_verification_and_renewal.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 144,
+      "name": "verify",
+      "component": "cases/receiver_lease_renewal/functions/f020_verify.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 146,
+      "name": "request",
+      "component": "cases/receiver_lease_renewal/functions/f021_request.py",
+      "captures": [
+        "self"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_receiver_lease_renewal.py",
+      "line": 143,
+      "name": "test_receiver_conflict_logs_only_the_error_code",
+      "component": "cases/receiver_lease_renewal/functions/f019_test_receiver_conflict_logs_only_the_error_code.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_route_attestation.py",
+      "line": 13,
+      "name": "test_amount_uses_json_compatible_spelling",
+      "component": "cases/route_attestation/functions/f001_test_amount_uses_json_compatible_spelling.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_route_attestation.py",
+      "line": 19,
+      "name": "test_attestation_exposes_no_recipient_or_route_map",
+      "component": "cases/route_attestation/functions/f002_test_attestation_exposes_no_recipient_or_route_map.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_route_attestation.py",
+      "line": 31,
+      "name": "test_tampering_is_rejected",
+      "component": "cases/route_attestation/functions/f003_test_tampering_is_rejected.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_solana_pubkey.py",
+      "line": 4,
+      "name": "test_system_program_round_trip_preserves_exact_zero_encoding",
+      "component": "cases/solana_pubkey/functions/f001_test_system_program_round_trip_preserves_exact_zero_encoding.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tcap_snapshot_and_credit_handoff.py",
+      "line": 9,
+      "name": "run",
+      "component": "cases/tcap_snapshot_and_credit_handoff/functions/f002_run.py",
+      "captures": [
+        "tmp_path"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tcap_snapshot_and_credit_handoff.py",
+      "line": 8,
+      "name": "test_snapshot_store_round_trip_is_opaque",
+      "component": "cases/tcap_snapshot_and_credit_handoff/functions/f001_test_snapshot_store_round_trip_is_opaque.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tcap_snapshot_and_credit_handoff.py",
+      "line": 32,
+      "name": "test_credit_handoff_contains_exact_credit_fields",
+      "component": "cases/tcap_snapshot_and_credit_handoff/functions/f003_test_credit_handoff_contains_exact_credit_fields.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_threshold_access.py",
+      "line": 26,
+      "name": "b64url",
+      "component": "cases/threshold_access/functions/f001_b64url.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_threshold_access.py",
+      "line": 30,
+      "name": "canonical",
+      "component": "cases/threshold_access/functions/f002_canonical.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_threshold_access.py",
+      "line": 34,
+      "name": "sha256_hex",
+      "component": "cases/threshold_access/functions/f003_sha256_hex.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_threshold_access.py",
+      "line": 40,
+      "name": "fixture",
+      "component": "cases/threshold_access/functions/f004_fixture.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_threshold_access.py",
+      "line": 151,
+      "name": "test_exact_wallet_and_device_proof_consumes_once",
+      "component": "cases/threshold_access/functions/f005_test_exact_wallet_and_device_proof_consumes_once.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_threshold_access.py",
+      "line": 171,
+      "name": "test_request_commitment_rejects_an_altered_retry",
+      "component": "cases/threshold_access/functions/f006_test_request_commitment_rejects_an_altered_retry.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_threshold_access.py",
+      "line": 178,
+      "name": "test_tampered_resource_and_device_signature_are_rejected",
+      "component": "cases/threshold_access/functions/f007_test_tampered_resource_and_device_signature_are_rejected.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_threshold_access.py",
+      "line": 190,
+      "name": "test_expired_proof_is_rejected",
+      "component": "cases/threshold_access/functions/f008_test_expired_proof_is_rejected.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 24,
+      "name": "lambda",
+      "component": "cases/tip_snapshot_auto_sync/functions/f002_callback.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 17,
+      "name": "registry_fixture",
+      "component": "cases/tip_snapshot_auto_sync/functions/f001_registry_fixture.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 36,
+      "name": "receipt",
+      "component": "cases/tip_snapshot_auto_sync/functions/f003_receipt.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 50,
+      "name": "setUp",
+      "component": "cases/tip_snapshot_auto_sync/functions/f004_setUp.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 64,
+      "name": "seed",
+      "component": "cases/tip_snapshot_auto_sync/functions/f005_seed.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 69,
+      "name": "rpc",
+      "component": "cases/tip_snapshot_auto_sync/functions/f006_rpc.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 92,
+      "name": "sync",
+      "component": "cases/tip_snapshot_auto_sync/functions/f007_sync.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 95,
+      "name": "assert_current_snapshot",
+      "component": "cases/tip_snapshot_auto_sync/functions/f008_assert_current_snapshot.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 99,
+      "name": "test_new_tin_auto_extends_snapshot_preserves_old_state_and_reuses_matching_cache",
+      "component": "cases/tip_snapshot_auto_sync/functions/f009_test_new_tin_auto_extends_snapshot_preserves_old_state_and_reuses_matching_cache.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 110,
+      "name": "test_cold_node_rebuilds_direct_and_staged_creations_in_append_order",
+      "component": "cases/tip_snapshot_auto_sync/functions/f010_test_cold_node_rebuilds_direct_and_staged_creations_in_append_order.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 119,
+      "name": "paginated",
+      "component": "cases/tip_snapshot_auto_sync/functions/f012_paginated.py",
+      "captures": [
+        "first",
+        "original",
+        "remaining"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 114,
+      "name": "test_multiple_new_tins_and_paginated_history",
+      "component": "cases/tip_snapshot_auto_sync/functions/f011_test_multiple_new_tins_and_paginated_history.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 126,
+      "name": "test_missing_receipt_or_append_history_never_publishes",
+      "component": "cases/tip_snapshot_auto_sync/functions/f013_test_missing_receipt_or_append_history_never_publishes.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 137,
+      "name": "test_failed_creation_is_skipped_and_duplicate_indices_are_rejected",
+      "component": "cases/tip_snapshot_auto_sync/functions/f014_test_failed_creation_is_skipped_and_duplicate_indices_are_rejected.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 153,
+      "name": "test_verified_base_does_not_require_pruned_older_receipts",
+      "component": "cases/tip_snapshot_auto_sync/functions/f015_test_verified_base_does_not_require_pruned_older_receipts.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 160,
+      "name": "test_wrong_registry_or_root_change_cannot_publish",
+      "component": "cases/tip_snapshot_auto_sync/functions/f016_test_wrong_registry_or_root_change_cannot_publish.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 173,
+      "name": "test_corrupt_current_snapshot_is_rejected_without_using_old_state",
+      "component": "cases/tip_snapshot_auto_sync/functions/f017_test_corrupt_current_snapshot_is_rejected_without_using_old_state.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 181,
+      "name": "test_read_only_preview_verifies_real_pipeline_without_publishing",
+      "component": "cases/tip_snapshot_auto_sync/functions/f018_test_read_only_preview_verifies_real_pipeline_without_publishing.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 189,
+      "name": "node_rpc",
+      "component": "cases/tip_snapshot_auto_sync/functions/f020_node_rpc.py",
+      "captures": [
+        "self"
+      ],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 186,
+      "name": "test_node_settlement_synchronizes_before_proving_and_blocks_on_missing_history",
+      "component": "cases/tip_snapshot_auto_sync/functions/f019_test_node_settlement_synchronizes_before_proving_and_blocks_on_missing_history.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_auto_sync.py",
+      "line": 214,
+      "name": "test_spoofed_or_truncated_logs_and_wrong_instruction_binding_are_rejected",
+      "component": "cases/tip_snapshot_auto_sync/functions/f021_test_spoofed_or_truncated_logs_and_wrong_instruction_binding_are_rejected.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_sync.py",
+      "line": 17,
+      "name": "setUp",
+      "component": "cases/tip_snapshot_sync/functions/f001_setUp.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_sync.py",
+      "line": 23,
+      "name": "test_append_matches_exact_chain_root_and_keeps_prior_snapshot",
+      "component": "cases/tip_snapshot_sync/functions/f002_test_append_matches_exact_chain_root_and_keeps_prior_snapshot.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_sync.py",
+      "line": 29,
+      "name": "test_wrong_append_order_count_or_base_is_rejected",
+      "component": "cases/tip_snapshot_sync/functions/f003_test_wrong_append_order_count_or_base_is_rejected.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_tip_snapshot_sync.py",
+      "line": 37,
+      "name": "test_conflicting_existing_snapshot_cannot_be_overwritten",
+      "component": "cases/tip_snapshot_sync/functions/f004_test_conflicting_existing_snapshot_cannot_be_overwritten.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 20,
+      "name": "compact",
+      "component": "cases/wallet_funding_transaction/functions/f001_compact.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 29,
+      "name": "compute",
+      "component": "cases/wallet_funding_transaction/functions/f002_compute.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 33,
+      "name": "signed_wire",
+      "component": "cases/wallet_funding_transaction/functions/f003_signed_wire.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 55,
+      "name": "fixture",
+      "component": "cases/wallet_funding_transaction/functions/f004_fixture.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 72,
+      "name": "setUp",
+      "component": "cases/wallet_funding_transaction/functions/f005_setUp.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 76,
+      "name": "verify",
+      "component": "cases/wallet_funding_transaction/functions/f006_verify.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 81,
+      "name": "test_accepts_exact_deposit_and_wallet_compute_settings_in_either_order",
+      "component": "cases/wallet_funding_transaction/functions/f007_test_accepts_exact_deposit_and_wallet_compute_settings_in_either_order.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 89,
+      "name": "test_rejects_missing_duplicate_or_wrong_program_deposits",
+      "component": "cases/wallet_funding_transaction/functions/f008_test_rejects_missing_duplicate_or_wrong_program_deposits.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 95,
+      "name": "test_rejects_extra_token_system_memo_and_other_tcap_actions",
+      "component": "cases/wallet_funding_transaction/functions/f009_test_rejects_extra_token_system_memo_and_other_tcap_actions.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 101,
+      "name": "test_rejects_malformed_duplicate_or_unsupported_compute_settings",
+      "component": "cases/wallet_funding_transaction/functions/f010_test_rejects_malformed_duplicate_or_unsupported_compute_settings.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 115,
+      "name": "test_compute_settings_cannot_change_amount_note_or_deposit_accounts",
+      "component": "cases/wallet_funding_transaction/functions/f011_test_compute_settings_cannot_change_amount_note_or_deposit_accounts.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 126,
+      "name": "test_current_funding_parser_rejects_versioned_and_truncated_wires",
+      "component": "cases/wallet_funding_transaction/functions/f012_test_current_funding_parser_rejects_versioned_and_truncated_wires.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 138,
+      "name": "setUp",
+      "component": "cases/wallet_funding_transaction/functions/f013_setUp.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 153,
+      "name": "confirm",
+      "component": "cases/wallet_funding_transaction/functions/f014_confirm.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 162,
+      "name": "test_node_verifies_deposit_before_simulating_unchanged_wallet_wire",
+      "component": "cases/wallet_funding_transaction/functions/f015_test_node_verifies_deposit_before_simulating_unchanged_wallet_wire.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 172,
+      "name": "test_extra_action_is_rejected_before_simulation",
+      "component": "cases/wallet_funding_transaction/functions/f016_test_extra_action_is_rejected_before_simulation.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 183,
+      "name": "test_confirmed_receipt_requires_exact_wallet_wire_and_signature",
+      "component": "cases/wallet_funding_transaction/functions/f017_test_confirmed_receipt_requires_exact_wallet_wire_and_signature.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 191,
+      "name": "test_confirmed_wire_changes_and_failed_or_parsed_receipts_are_rejected",
+      "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_wire_changes_and_failed_or_parsed_receipts_are_rejected.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 200,
+      "name": "test_settlement_context_selects_actual_deposit_with_budget_prefix_and_suffix",
+      "component": "cases/wallet_funding_transaction/functions/f019_test_settlement_context_selects_actual_deposit_with_budget_prefix_and_suffix.py",
+      "captures": [],
+      "mutableCaptures": []
+    },
+    {
+      "source": "test_wallet_funding_transaction.py",
+      "line": 215,
+      "name": "test_epoch_coordinator_uses_deposit_accounts_after_budget_prefix",
+      "component": "cases/wallet_funding_transaction/functions/f020_test_epoch_coordinator_uses_deposit_accounts_after_budget_prefix.py",
+      "captures": [],
+      "mutableCaptures": []
+    }
+  ]
+}

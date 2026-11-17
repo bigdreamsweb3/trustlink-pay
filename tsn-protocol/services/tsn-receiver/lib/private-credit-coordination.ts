@@ -8,7 +8,7 @@ export async function coordinationInventory(after = "") {
   let query = workCollection.orderBy("id");
   if (after) query = query.where("id", ">", after);
   const rows = await query.limit(200).get();
-  const kinds: WorkKind[] = ["AUTHORIZED_FUNDING", "SETTLEMENT", "TCAP_FUNDING_POOL", "TCAP_EPOCH_ACCOUNTING"];
+  const kinds: WorkKind[] = ["AUTHORIZED_FUNDING", "SETTLEMENT", "TCAP_EPOCH_ACCOUNTING"];
   const result: ReceiverWork[] = [];
   for (const row of rows.docs) {
     const stored = row.data() as ReceiverWork;
@@ -19,10 +19,10 @@ export async function coordinationInventory(after = "") {
   return { work: result, nextCursor: rows.docs.length === 200 ? rows.docs[199].id : null };
 }
 
-/** Enqueue only the two dedicated native coordination kinds, idempotently. */
+/** Enqueue native epoch accounting, idempotently. */
 export async function enqueueCoordination(input: { id: string; kind: WorkKind; payload: Record<string, unknown> }) {
-  if (!["TCAP_FUNDING_POOL", "TCAP_EPOCH_ACCOUNTING"].includes(input.kind)
-      || !/^tcap-(pool|epoch)-[a-f0-9]{64}$/.test(input.id)) throw new Error("PRIVATE_COORDINATION_KIND_INVALID");
+  if (!["TCAP_EPOCH_ACCOUNTING"].includes(input.kind)
+      || !/^tcap-epoch-[a-f0-9]{64}$/.test(input.id)) throw new Error("PRIVATE_COORDINATION_KIND_INVALID");
   const work = createReceivedWork(input);
   const ref = workCollection.doc(work.id);
   return db.runTransaction(async (tx: any) => {
@@ -45,7 +45,7 @@ export async function deferPrivateCredit(input: { id: string; owner: string; exp
     const row = await tx.get(ref);
     if (!row.exists) throw new Error("WORK_NOT_FOUND");
     const work = row.data() as ReceiverWork;
-    if (!["SETTLEMENT", "TCAP_FUNDING_POOL", "TCAP_EPOCH_ACCOUNTING"].includes(work.kind)
+    if (!["SETTLEMENT", "TCAP_EPOCH_ACCOUNTING"].includes(work.kind)
         || work.status !== "NODE_VERIFYING" || work.stateVersion !== input.expectedVersion
         || work.nodeLease?.owner !== input.owner || Date.parse(work.nodeLease.expiresAt) <= Date.now()) throw new Error("LEASE_INVALID");
     const patch = { status: "RECEIVED", stateVersion: work.stateVersion + 1, nodeLease: null,

@@ -15,6 +15,6 @@ The expected behavior is to stop when a required authorization, identity, proof,
 3. Do not retry with altered sender-approved terms.
 4. If an owner-signed transaction has expired, prepare a new one and request the owner's signature again.
 
-GPRU is intended to guard the private state presented to TCAP; TCAP governs funds and applies authorized transitions atomically. The hidden-head proof path is not established end to end, so an application must not promise that proof-gated settlement is available.
+GPRU is intended to guard the private state presented to TCAP; TCAP governs funds and applies authorized transitions atomically. The [current capability record](/about/current-technology) links bounded Devnet credit/accounting evidence. An application must check the prerequisites, result and resulting state for its own payment before displaying settlement success.
 
 Internal rejection reasons and operator recovery procedures are maintained in the [repository runbooks](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

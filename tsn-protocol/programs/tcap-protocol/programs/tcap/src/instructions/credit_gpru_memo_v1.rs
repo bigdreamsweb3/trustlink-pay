@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::authority::{derive_tsn_authorization_signer, TCAP_COMMITMENT_ROOT_SEED};
 use crate::error::TcapError;
-use crate::private_funding_pool::{TcapSealedFundingPoolV1,POOL_SEED};
+use crate::private_funding::TcapFundingMerkleRootV1;
 use crate::private_epoch::{TcapCreditEpochV1,EPOCH_SEED,epoch_seed};
 use crate::events::TcapGpruMemoCreditedV1;
 use crate::state::{TcapAssetEntryV1, TcapAssetStatusV1, TcapCommitmentRootStateV1, TcapGlobalConfigV1, TcapReserveStateV1, TcapRiskStateV1};
@@ -41,7 +41,9 @@ pub struct CreditGpruMemoV2<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     #[account(seeds = [crate::authority::TCAP_GLOBAL_CONFIG_SEED], bump = config.bump, constraint = !config.paused @ TcapError::ProtocolPaused)]
-    pub config: Account<'info, TcapGlobalConfigV1>,
+    // Keep decoded state off Anchor's generated SBF account-validation stack.
+    // The unboxed combination exceeds its 4 KiB frame and corrupts arguments.
+    pub config: Box<Account<'info, TcapGlobalConfigV1>>,
     #[account(
         mut,
         seeds = [TCAP_COMMITMENT_ROOT_SEED],
@@ -49,14 +51,14 @@ pub struct CreditGpruMemoV2<'info> {
         constraint = config.commitment_root_state == commitment_root.key() @ TcapError::InvalidPda,
         constraint = !commitment_root.paused @ TcapError::ProtocolPaused
     )]
-    pub commitment_root: Account<'info, TcapCommitmentRootStateV1>,
+    pub commitment_root: Box<Account<'info, TcapCommitmentRootStateV1>>,
     #[account(
         seeds = [crate::authority::TCAP_ASSET_ENTRY_SEED, asset_entry.registry.as_ref(), asset_entry.asset.token_program.as_ref(), asset_entry.asset.mint.as_ref()],
         bump = asset_entry.bump,
     )]
-    pub asset_entry: Account<'info, TcapAssetEntryV1>,
+    pub asset_entry: Box<Account<'info, TcapAssetEntryV1>>,
     #[account(address = asset_entry.reserve_state @ TcapError::InvalidReserve, constraint = reserve_state.asset_entry == asset_entry.key() @ TcapError::InvalidReserve, constraint = !reserve_state.paused @ TcapError::AssetUnavailable)]
-    pub reserve_state: Account<'info, TcapReserveStateV1>,
+    pub reserve_state: Box<Account<'info, TcapReserveStateV1>>,
     /// CHECK: authenticated by TCAP config.
     #[account(executable, address = config.approved_tsn_program @ TcapError::InvalidTsnProgram)]
     pub tsn_program: UncheckedAccount<'info>,
@@ -72,16 +74,15 @@ pub struct CreditGpruMemoV2<'info> {
     /// CHECK: canonical deployed GPRU program.
     #[account(executable, address = GPRU_PROGRAM_ID)]
     pub gpru_program: UncheckedAccount<'info>,
-    #[account(seeds=[POOL_SEED,asset_entry.key().as_ref(),args.proof.public_inputs[12].as_ref()],bump=funding_root.bump)]
-    pub funding_root: Box<Account<'info,TcapSealedFundingPoolV1>>,
+    #[account(seeds=[crate::authority::TCAP_FUNDING_ROOT_SEED],bump=funding_root.bump)]
+    pub funding_root: Box<Account<'info,TcapFundingMerkleRootV1>>,
     #[account(init_if_needed,payer=payer,space=TcapCreditEpochV1::SPACE,seeds=[EPOCH_SEED,asset_entry.key().as_ref(),&reserve_state.accounting_epoch.to_le_bytes()],bump)]
     pub epoch: Account<'info,TcapCreditEpochV1>,
     pub system_program: Program<'info,System>,
 }
 
 pub fn handler(ctx: Context<CreditGpruMemoV2>, args: CreditGpruMemoV2Args) -> Result<()> {
-    ctx.accounts.funding_root.validate(ctx.accounts.asset_entry.key(),args.token_id,Clock::get()?.slot)?;
-    require!(args.proof.public_inputs[12] == ctx.accounts.funding_root.root,TcapError::InvalidFundingRoot);
+    ctx.accounts.funding_root.accepts_root(&args.proof.public_inputs[12])?;
     require!(args.authorization_digest != [0; 32], TcapError::EmptyCommitment);
     require!(args.nullifier != [0; 32], TcapError::EmptyCommitment);
     require!(args.amount_commitment != [0;32] && args.amount_commitment < crate::private_funding::BN254_MODULUS, TcapError::EmptyCommitment);

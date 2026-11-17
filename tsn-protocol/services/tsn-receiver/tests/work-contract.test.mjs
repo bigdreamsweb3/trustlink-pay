@@ -190,8 +190,7 @@ test("settlement authorization retains only the matching verified public transit
 });
 
 test("coordination execution and authorization exclude private source lists and openings",()=>{
-  for(const [kind,field,publicValue] of [["TCAP_FUNDING_POOL","tcapFundingPool",{assetEntry:"asset",reserveState:"reserve",tcapConfig:"config",root:"root",eligibleNoteCount:"2",sourceWalletCount:2,releaseSlot:"90"}],
-    ["TCAP_EPOCH_ACCOUNTING","tcapEpochAccounting",{assetEntry:"asset",reserveState:"reserve",tcapConfig:"config",accountingEpoch:"epoch",total:"100",proof:{publicInputs:["1"],proofA:"a",proofB:"b",proofC:"c"}}]]) {
+  for(const [kind,field,publicValue] of [["TCAP_EPOCH_ACCOUNTING","tcapEpochAccounting",{assetEntry:"asset",reserveState:"reserve",tcapConfig:"config",accountingEpoch:"epoch",total:"100",proof:{publicInputs:["1"],proofA:"a",proofB:"b",proofC:"c"}}]]) {
     const privateValue={...publicValue,amounts:[50,50],blindings:["secret"],sourceWallets:["private"]};
     if(privateValue.proof)privateValue.proof={...privateValue.proof,openings:["secret"]};
     assert.deepEqual(crankerExecutionPayload(kind,{[field]:privateValue}),{[field]:publicValue});

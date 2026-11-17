@@ -5,7 +5,7 @@ import path from "node:path";
 import {pathToFileURL} from "node:url";
 import test from "node:test";
 import ts from "typescript";
-test("sealed pools and epochs paginate, defer and serialize across concurrent Nodes",async()=>{
+test("epochs paginate, defer and serialize across concurrent Nodes",async()=>{
   const directory=await mkdtemp(path.join(os.tmpdir(),"tsn-private-coordination-"));
   const previous=process.env.TSN_RECEIVER_LOCAL_FILE;
   process.env.TSN_RECEIVER_LOCAL_FILE=path.join(directory,"store.json");
@@ -27,15 +27,16 @@ test("sealed pools and epochs paginate, defer and serialize across concurrent No
     const load=n=>import(pathToFileURL(path.join(directory,n+".mjs")).href);
     const {workCollection,db}=await load("firebase"),{createReceivedWork}=await load("work-contract");
     const {coordinationInventory,deferPrivateCredit,enqueueCoordination}=await load("private-credit-coordination");
-    const {leaseForNode}=await load("store"),{nativeWorkRetryPatch}=await load("native-work-retry");
-    const poolId="tcap-pool-"+"a".repeat(64),epochId="tcap-epoch-"+"b".repeat(64);
-    const pool={id:poolId,kind:"TCAP_FUNDING_POOL",payload:{assetEntry:"synthetic-asset",root:"a".repeat(64)}};
-    await enqueueCoordination(pool);await enqueueCoordination(pool);
-    await assert.rejects(enqueueCoordination({...pool,payload:{...pool.payload,root:"b".repeat(64)}}),/IDEMPOTENCY/);
+    const {leaseForNode,leaseForCranker}=await load("store"),{nativeWorkRetryPatch}=await load("native-work-retry");
+    const enqueuedId="tcap-epoch-"+"a".repeat(64),epochId="tcap-epoch-"+"b".repeat(64);
+    const enqueued={id:enqueuedId,kind:"TCAP_EPOCH_ACCOUNTING",payload:{assetEntry:"synthetic-asset",accountingEpoch:"a".repeat(64)}};
+    await enqueueCoordination(enqueued);await enqueueCoordination(enqueued);
+    await db.runTransaction(async tx=>tx.update(workCollection.doc(enqueuedId),{deferredUntil:new Date(Date.now()+60000).toISOString()}));
+    await assert.rejects(enqueueCoordination({...enqueued,payload:{...enqueued.payload,accountingEpoch:"b".repeat(64)}}),/IDEMPOTENCY/);
     // More than a full inventory page and fifty deferred works cannot starve fresh work.
     await db.runTransaction(async tx=>{
       for(let i=0;i<210;i++){
-        const work=createReceivedWork({id:"a"+String(i).padStart(4,"0"),kind:"TCAP_FUNDING_POOL",payload:{}});
+        const work=createReceivedWork({id:"a"+String(i).padStart(4,"0"),kind:"TCAP_EPOCH_ACCOUNTING",payload:{}});
         tx.create(workCollection.doc(work.id),{...work,deferredUntil:new Date(Date.now()+60000).toISOString()});
       }
       const epoch=createReceivedWork({id:epochId,kind:"TCAP_EPOCH_ACCOUNTING",payload:{}});
@@ -43,6 +44,18 @@ test("sealed pools and epochs paginate, defer and serialize across concurrent No
     });
     const first=await coordinationInventory(),second=await coordinationInventory(first.nextCursor);
     assert.equal(first.work.length,200);assert.equal(second.work.length,12);assert.equal(second.nextCursor,null);
+    const retired=[];
+    for(const status of ["RECEIVED","VERIFIED","NODE_VERIFYING","CRANKER_LEASED"]){
+      const old={...createReceivedWork({id:"retired-"+status,kind:"TCAP_EPOCH_ACCOUNTING",payload:{}}),kind:"TCAP_FUNDING_POOL",status,
+        nodeLease:status==="NODE_VERIFYING"?{owner:"old-node",expiresAt:new Date(0).toISOString()}:null,
+        crankerLease:status==="CRANKER_LEASED"?{owner:"old-cranker",expiresAt:new Date(0).toISOString()}:null};
+      await workCollection.doc(old.id).create(old);retired.push(old);
+    }
+    assert.equal(await leaseForNode("retired-request",["TCAP_FUNDING_POOL"]),null);
+    assert.equal(await leaseForCranker("retired-request",["TCAP_FUNDING_POOL"]),null);
+    for(const old of retired)assert.deepEqual((await workCollection.doc(old.id).get()).data(),old,"obsolete records remain unleased and unchanged");
+    assert.throws(()=>createReceivedWork({kind:"TCAP_FUNDING_POOL",payload:{}}),/WORK_KIND_UNSUPPORTED/);
+    await assert.rejects(enqueueCoordination({id:"tcap-pool-"+"c".repeat(64),kind:"TCAP_FUNDING_POOL",payload:{}}),/KIND_INVALID/);
     const claims=await Promise.all([leaseForNode("A",["TCAP_EPOCH_ACCOUNTING"]),leaseForNode("B",["TCAP_EPOCH_ACCOUNTING"])]);
     const epoch=claims.find(Boolean);assert.equal(claims.filter(Boolean).length,1);
     await deferPrivateCredit({id:epoch.id,owner:epoch.nodeLease.owner,expectedVersion:epoch.stateVersion,seconds:1});
@@ -54,16 +67,18 @@ test("sealed pools and epochs paginate, defer and serialize across concurrent No
     assert.equal(nativeWorkRetryPatch(leased,null,leased.stateVersion,"payer","test","TCAP_EPOCH_ALREADY_ACCOUNTED").status,"RECEIVED");
     assert.throws(()=>nativeWorkRetryPatch({...leased,result:{signature:"uncertain"}},null,leased.stateVersion,"payer","test","TCAP_EPOCH_ALREADY_ACCOUNTED"),/EXECUTION_STATE/);
     const lifetimeReason="TCAP_TRANSACTION_BLOCKHASH_TOO_OLD_FOR_SUBMISSION";
-    for(const kind of ["TCAP_FUNDING_POOL","TCAP_EPOCH_ACCOUNTING"]){
+    for(const reason of [lifetimeReason,"TSN_NODE_SIGNING_SERVICE_UNAVAILABLE"]){
+    for(const kind of ["TCAP_EPOCH_ACCOUNTING"]){
       const native={...leased,kind};
-      const patch=nativeWorkRetryPatch(native,null,native.stateVersion,"payer","test",lifetimeReason);
-      assert.equal(patch.status,"RECEIVED");assert.equal(patch.stateVersion,native.stateVersion+1);
+      const patch=nativeWorkRetryPatch(native,null,native.stateVersion,"payer","test",reason);
+      assert.equal(patch.status,"RECEIVED");assert.equal(patch.retryHistory.at(-1).reason,reason);assert.equal(patch.stateVersion,native.stateVersion+1);
       for(const field of ["verification","authorization","nodeLease","crankerLease","result"])assert.equal(patch[field],null);
-      assert.throws(()=>nativeWorkRetryPatch({...native,result:{signature:"recorded-attempt"}},null,native.stateVersion,"payer","test",lifetimeReason),/EXECUTION_STATE/);
-      assert.throws(()=>nativeWorkRetryPatch(native,null,native.stateVersion-1,"payer","test",lifetimeReason),/STALE_STATE_VERSION/);
-      assert.throws(()=>nativeWorkRetryPatch(native,null,native.stateVersion,"other-payer","test",lifetimeReason),/LEASE_INVALID/);
-      assert.throws(()=>nativeWorkRetryPatch({...native,crankerLease:{...native.crankerLease,expiresAt:new Date(0).toISOString()}},null,native.stateVersion,"payer","test",lifetimeReason),/LEASE_INVALID/);
-      assert.throws(()=>nativeWorkRetryPatch(native,null,native.stateVersion,"payer","test",lifetimeReason+": unrelated"),/REASON_NOT_ALLOWED/);
+      assert.throws(()=>nativeWorkRetryPatch({...native,result:{signature:"recorded-attempt"}},null,native.stateVersion,"payer","test",reason),/EXECUTION_STATE/);
+      assert.throws(()=>nativeWorkRetryPatch(native,null,native.stateVersion-1,"payer","test",reason),/STALE_STATE_VERSION/);
+      assert.throws(()=>nativeWorkRetryPatch(native,null,native.stateVersion,"other-payer","test",reason),/LEASE_INVALID/);
+      assert.throws(()=>nativeWorkRetryPatch({...native,crankerLease:{...native.crankerLease,expiresAt:new Date(0).toISOString()}},null,native.stateVersion,"payer","test",reason),/LEASE_INVALID/);
+      assert.throws(()=>nativeWorkRetryPatch(native,null,native.stateVersion,"payer","test",reason+": unrelated"),/REASON_NOT_ALLOWED/);
+    }
     }
     const funding={...createReceivedWork({id:"funding",kind:"AUTHORIZED_FUNDING",payload:{}}),status:"CONFIRMED"};
     const credit=createReceivedWork({id:"credit",kind:"SETTLEMENT",payload:{intentId:"funding"}});

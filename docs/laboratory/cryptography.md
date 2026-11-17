@@ -1,6 +1,6 @@
 # Cryptographic mechanisms and privacy boundaries
 
-**Status: EXPERIMENTAL private-credit/epoch source, reviewed 2026-11-07.** [Isolated real proofs and native verification](experiments/EXP-20261107-private-credit-epoch.md) provide bounded local evidence. SBF compilation, live activation, complete payment/accounting and independent cryptographic review remain unverified.
+**Status: EXPERIMENTAL private-credit/epoch source, reviewed 2026-11-16.** [Isolated real proofs and native verification](experiments/EXP-20261107-private-credit-epoch.md) provide bounded local evidence. The [November 16 checkpoint](experiments/EXP-20261116-private-credit-epoch.md) verifies two finalized private credits and their complete aggregate accounting. General unlinkability, complete owner recovery, mixed-action execution and independent cryptographic review remain unverified.
 
 ## Identity confidentiality and signatures
 
@@ -38,17 +38,17 @@ The funded-note circuit publishes these thirteen fields in order:
 10. Encrypted blinding delta.
 11. Delta ephemeral point X.
 12. Delta ephemeral point Y.
-13. Immutable sealed TCAP funding root.
+13. Authenticated current or retained TCAP funding root.
 
 The Memo prefix carries the portfolio root, balance point, action commitment, ciphertext and ephemeral point; its body carries the owner-encrypted action record. GPRU hashes the complete Memo and binds the seven prefix fields to the proof. Its current instruction ordering requires the canonical Memo immediately after the top-level authorized TSNP call. Memo data remains visible as transaction bytes even when the body is confidential.
 
 ## Groth16, keys and what verification establishes
 
-Circom compiles the arithmetic circuit to R1CS and witness WASM. `snarkjs` generates and verifies Groth16 proofs using a circuit-specific development proving key and verification key. GPRU uses `groth16-solana` to verify encoded proof points and thirteen inputs against its V2 verifier account. Fourteen IC points are required; the new circuit requires a matching circuit-specific key.
+Circom compiles the arithmetic circuit to R1CS and witness WASM. `snarkjs` generates and verifies Groth16 proofs using a circuit-specific development proving key and verification key. GPRU uses `groth16-solana` to verify encoded proof points and thirteen inputs against its `GpruHiddenHeadVerifierV2` account. Fourteen IC points are required; the new circuit requires a matching circuit-specific key.
 
 November 2–5 proof/receipt results belong to earlier amount-public circuits. The November 7 replacement compiled 174,421 nonlinear credit constraints and 42,614 epoch constraints and passed real Groth16 proof/serialized reverification against isolated matching development keys. These single-machine keys do not establish a production ceremony or independent soundness review; exact hashes and check scope are recorded in [the experiment](experiments/EXP-20261107-private-credit-epoch.md).
 
-Key metadata, source hash, verification-key conversion and on-chain verifier bytes must agree. The older eight/twelve-input setups are incompatible with the thirteen-input runtime. Verifier migration is a separate Mother-authorized operation at the same PDA; it creates a disabled V2 header before bounded IC uploads and commitment-checked enabling. Existing TCAP state is not reset.
+Key metadata, source hash, verification-key conversion and on-chain verifier bytes must agree. The older eight/twelve-input setups are incompatible with the thirteen-input runtime. Verifier migration is a separate Mother-authorized operation at the same PDA; it creates a disabled verifier header before bounded IC uploads and commitment-checked enabling. Existing TCAP state is not reset.
 
 ## Proof-enforced funded notes
 
@@ -56,9 +56,9 @@ The SDK samples a private nonzero BN254 secret and blinding field and computes `
 
 After verifying the actual vault transfer delta, TCAP appends `leaf = Poseidon4(FUNDED_LEAF_DOMAIN, note, registered_token_id, actual_amount)` to its governed depth-32 funding tree atomically with the deposit accounting. The sender therefore cannot manufacture a higher amount inside its own commitment. For credit, the circuit privately reconstructs the note and funded leaf, proves membership under the chain-selected funding root, binds the leaf's asset/amount to the authorized action, and enforces `nullifier = Poseidon2(NULLIFIER_DOMAIN, secret)`. It then consumes that value in the existing hidden nullifier map. Changing a work ID, Node, recipient or retry root cannot create a new nullifier for the same secret.
 
-Credit publishes a sealed funding root and secret-derived nullifier while excluding the note commitment, leaf/index and opening. Its amount commitment is `Poseidon5(TSN_CREDIT_VALUE_V2, tokenId, amount, privateBlinding, nullifier)` with fresh nonzero canonical blinding; action commitment and TSNP digest bind that commitment. This removes the old signature-nullifier and unblinded amount-guessing formulas in source. Deposit amounts and aggregate totals remain public; timing, recipient-registry/head correlations and authorized Node knowledge remain separate limits.
+Credit publishes an authenticated funding root and secret-derived nullifier while excluding the note commitment, leaf/index and opening. Its amount commitment is `Poseidon5(TSN_CREDIT_VALUE_V2, tokenId, amount, privateBlinding, nullifier)` with fresh nonzero canonical blinding; action commitment and TSNP digest bind that commitment. This removes the old signature-nullifier and unblinded amount-guessing formulas in source. Deposit amounts and aggregate totals remain public; timing, recipient-registry/head correlations and authorized Node knowledge remain separate limits.
 
-Node reconstructs public funded snapshots from successful invocation-bound TCAP append history and verifies their root/count. Bounds remain 10,000 leaves/signatures. Mother-authorized pool capture pins the chain-current root after validating two positive unspent member notes and two wallet sources; later appends cannot alter it. Missing history or a nonmember opening stops proving. Old signature-only deposits require separate handling.
+Node reconstructs public funded snapshots from successful invocation-bound TCAP append history and verifies their root/count. Bounds remain 10,000 leaves/signatures. The existing global account authenticates a selected current or retained root/count and is rechecked before publication/authorization. A single confirmed positive deposit is sufficient; there is no source-wallet census, capture account or release window. Missing history, retired roots or a nonmember opening stop proving. Old signature-only deposits require separate handling. Amount hiding does not establish funding-source anonymity for singleton or otherwise distinguishable histories.
 
 ## Funding-root anonymity-set boundary
 
@@ -70,13 +70,23 @@ The superseded Node `_settlement_funding_context` derived the public nullifier a
 
 The same finalized transaction carries `100000` in its TSNP amount argument, proof structure and TCAP CPI, representing 0.1 Devnet USDC. Its authorization digest and action commitment also recomputed from public fields. An encrypted owner record and circuit-private signal cannot hide a separately public instruction argument. The [93-field map and comparison protocol](experiments/EXP-20261102-native-credit-baseline.md) retain the exact disclosures and distinguish funding-wallet linkage from recipient identification; a second-credit trial and owner recovery remain unverified.
 
+## Funding and account privacy contract
+
+The selected experimental first-release v1 contract keeps classic-token reserve deposits public and commits the individual TIN-credit amount privately. A November 14 read-only Devnet check found reference mint `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU` owned by classic SPL Token (`TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`), with 82 bytes at finalized slot 522183103. Memo encryption and the private credit proof do not hide that mint's wallet-to-vault transfer amount. Confidential funding for eligible Token-2022 assets is a proposed integration requirement; no such funding route is wired into the current SDK/Node/TCAP flow.
+
+Pool removal does not establish that every credit transaction creates no account. The current credit instruction may initialize a shared 136-byte `TcapCreditEpochV1` PDA for its asset/accounting epoch through `init_if_needed`. It creates no per-note pool account; the [credit ABI](credit-abi.md) documents the existing global roots and separate epoch obligation.
+
 ## Visibility and trust
+
+The privacy target is confidential TIN-to-TIN activity and public-observer unlinkability between TCAP actions. Public wallet deposits in the mobile-money experience are an accepted ingress boundary. Node is intentionally trusted to resolve identities and prepare private witnesses; secrecy against that authorized Node is not a requirement of this target. The current credit receipts establish a narrower implemented milestone, while private transfer and exit require their own verified contracts.
 
 The [November 3 linkage investigation](experiments/EXP-20261103-native-credit-linkability.md) reproduced the first finalized credit's successor global root from a public TIP registry key, public statement fields and verified empty initial maps. This links that credit to a persistent recipient registry without recovering its plaintext TIN. Fourteen offline structural controls also reproduced later same-registry and cross-asset portfolio correlations under known-history/known-portfolio assumptions. Keeping a route key outside proof public inputs does not hide it when the same key is enumerable in public registry state and its head commitment has no unknown opening. Accepted proof verification does not establish recipient unlinkability.
 
-Solana exposes signatures, accounts, instructions, amounts selected by the ABI, root progression, nullifiers, proof points and encrypted Memo bytes. A shared root hides a direct per-TIN latest-head account in this credit ABI, but reveals global ordering and participation. Funding wallets and wallet output boundaries remain visible. Public data, time, application logs or authorized Node knowledge can still support correlation.
+The [November 16 refresh](experiments/EXP-20261116-private-credit-epoch.md#privacy-scope-and-current-source-controls) repeated those 14 synthetic structural assertions against the current witness builder without matching the latest real credits. Current TIP also publicly binds each registry to its registration owner wallet: `owner_commitment` is an unsalted hash of that public key, owner recovery stores the key at a key-derived PDA, and creation/owner approval publishes it. A registry correlation can therefore compose into a registration-wallet association under the stated history assumptions. This does not reveal a plaintext TIN, legal identity or all wallets used by that owner.
 
-Node resolves identities and prepares sensitive witness material. Receiver handles ingress and encrypts durable funding bodies for Node. Cranker receives only the signed execution projection required for submission. The owner needs complete enough transaction history to recover balances; a valid individual proof cannot establish scanner completeness. Confidential debit, exit and general cross-chain conservation remain separate unverified execution paths.
+Solana exposes signatures, accounts, instructions, amounts selected by the ABI, root progression, nullifiers, proof points and encrypted Memo bytes. A shared root hides a direct per-TIN latest-head account in this credit ABI, but reveals global ordering and participation. The retained exit builder publicly encodes its destination owner and token account; unlinkability between a future private action and that output is not established. Public data, time and application disclosures can support correlation even without Node access.
+
+Receiver handles ingress and encrypts durable funding bodies for Node. Cranker receives only the signed execution projection required for submission. The owner needs complete enough transaction history to recover balances; a valid individual proof cannot establish scanner completeness. Confidential debit, exit and general cross-chain conservation remain separate unverified execution paths. The [fund-protection record](../TCAP-FUND-PROTECTION.md) distinguishes disabled proof-gated balance/liquidity methods from retained permit-based exit handlers.
 
 ## Source reference
 

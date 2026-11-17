@@ -2,11 +2,14 @@
 path = tsn-protocol/services/tsn-node
 url = https://github.com/bigdreamsweb3/tsn-mempool-backend.git
 branch = main
+update = none
 [submodule "tsn-mempool-ui"]
 path = tsn-protocol/services/tsn-mempool-ui
 url = https://github.com/bigdreamsweb3/tsn-mempool-frontend.git
 branch = main
+update = none
 [submodule "tsn-epoch-records"]
 path = tsn-epoch-records
 url = https://github.com/bigdreamsweb3/tsn-epoch-records.git
 branch = main
+update = none

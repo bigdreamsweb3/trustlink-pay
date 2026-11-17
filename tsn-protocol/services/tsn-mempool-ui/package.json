@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start -p 3002",
     "typecheck": "tsc --noEmit",
-    "git:quick:push": "git diff-index --quiet HEAD || (git add . && git commit -m \"Something just got updated!\" --allow-empty && git push origin main)",
-    "git:force:push": "git add . && git commit -m \"Something just got updated!\" --no-verify --allow-empty && git push origin main --force",
+    "git:quick:push": "node ../../scripts/repo-security.mjs push protocol origin main",
+    "git:force:push": "node ../../scripts/repo-security.mjs push protocol origin main",
     "dev:turbo": "next dev --turbo -p 3002"
   },
   "dependencies": {

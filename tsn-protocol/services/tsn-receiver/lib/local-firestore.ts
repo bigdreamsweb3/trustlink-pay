@@ -17,12 +17,22 @@ async function readRaw(): Promise<Record<string, Record<string, Row>>> {
 }
 async function withFileLock<T>(operation: () => Promise<T>): Promise<T> {
   const startedAt = Date.now();
+  let transientOpenFailures = 0;
   let handle;
   while (!handle) {
     try {
       handle = await fs.open(lockFile, "wx");
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "EPERM" || code === "EACCES") {
+        // Windows can briefly deny an exclusive open while a prior lock is
+        // being removed. Retry the open only; access errors do not prove staleness.
+        if (transientOpenFailures === 7 || Date.now() - startedAt > 10_000) throw error;
+        transientOpenFailures += 1;
+        await new Promise((resolve) => setTimeout(resolve, 40 * transientOpenFailures));
+        continue;
+      }
+      if (code !== "EEXIST") throw error;
       const stat = await fs.stat(lockFile).catch(() => null);
       if (stat && Date.now() - stat.mtimeMs > 30_000) {
         await fs.unlink(lockFile).catch(() => undefined);
@@ -112,7 +122,10 @@ class Query {
   limit(value: number) { return new Query(this.collection, this.filters, this.order, value, this.after); }
   startAfter(snapshot: Snap) { return new Query(this.collection, this.filters, this.order, this.max, snapshot.id); }
   async get() {
-    const db = await read();
+    return this.evaluateSnapshot(await read());
+  }
+  evaluateSnapshot(db: Record<string, Record<string, Row>>) {
+    // Transaction queries already hold the file lock and must use that data.
     let rows = Object.entries(db[this.collection] ?? {}).filter(([, row]) => this.filters.every(([field, operator, value]) => {
       const actual = row[field];
       const expected = value as any;
@@ -137,7 +150,7 @@ class Query {
     return new QuerySnap(rows.map(([id, row]) => new Snap(id, row, new Ref(this.collection, id))));
   }
 }
-class Tx { constructor(private db: Record<string, Record<string, Row>>) {} async get(ref: Ref | Query) { return ref instanceof Ref ? new Snap(ref.id, this.db[ref.collectionPath]?.[ref.id] ?? null) : ref.get(); } create(ref: Ref, value: Row) { const c = this.db[ref.collectionPath] ??= {}; if (c[ref.id]) throw new Error("ALREADY_EXISTS"); c[ref.id] = value; } set(ref: Ref, value: Row, options?: { merge?: boolean }) { const c = this.db[ref.collectionPath] ??= {}; c[ref.id] = options?.merge ? { ...(c[ref.id] ?? {}), ...value } : value; } update(ref: Ref, patch: Row) { const c = this.db[ref.collectionPath] ??= {}; c[ref.id] = { ...(c[ref.id] ?? {}), ...patch }; } }
+class Tx { constructor(private db: Record<string, Record<string, Row>>) {} async get(ref: Ref | Query) { return ref instanceof Ref ? new Snap(ref.id, this.db[ref.collectionPath]?.[ref.id] ?? null) : ref.evaluateSnapshot(this.db); } create(ref: Ref, value: Row) { const c = this.db[ref.collectionPath] ??= {}; if (c[ref.id]) throw new Error("ALREADY_EXISTS"); c[ref.id] = value; } set(ref: Ref, value: Row, options?: { merge?: boolean }) { const c = this.db[ref.collectionPath] ??= {}; c[ref.id] = options?.merge ? { ...(c[ref.id] ?? {}), ...value } : value; } update(ref: Ref, patch: Row) { const c = this.db[ref.collectionPath] ??= {}; c[ref.id] = { ...(c[ref.id] ?? {}), ...patch }; } }
 type BatchWrite =
   | { operation: "set"; reference: Ref; value: Row; merge?: boolean }
   | { operation: "delete"; reference: Ref };

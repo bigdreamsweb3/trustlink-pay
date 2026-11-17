@@ -1,0 +1,29 @@
+<article class="tsn-document" itemscope itemtype="https://schema.org/TechArticle">
+  <meta itemprop="author" content="TrustLink Labs Research">
+  <meta itemprop="headline" content="TCAP (Transfer Confidential Asset Protocol): Private Balance for TSN">
+  <meta itemprop="description" content="TCAP (Transfer Confidential Asset Protocol) provides policy-bound private balance tips, one-time credit authorization, and encrypted balance snapshots for the Transfer Settlement Network.">
+  <p class="eyebrow">TSN architecture · TCap</p>
+  <div class="up-kicker">TSN architecture &middot; TCAP</div>
+  <h1 itemprop="headline">TCAP (Transfer Confidential Asset Protocol): Private Balance for TSN</h1>
+  <p class="dek" itemprop="description">TCAP is the private balance and asset-accounting layer of TSN. It keeps balance details in encrypted owner-authorized snapshots while placing only commitments, sequence state, policy references, and replay protection at the protocol boundary.</p>
+  <h2>What TCAP owns</h2>
+  <ul>
+    <li>Token identity, registry policy, and governed asset acceptance.</li>
+    <li>TCAP TIN tips with monotonic sequence and commitment transitions.</li>
+    <li>One-time nullifiers and TSN settlement authorization receipts.</li>
+    <li>Encrypted balance snapshots that the owner decrypts locally.</li>
+  </ul>
+  <h2>How a private balance is read</h2>
+  <ol>
+    <li>The client fetches the public TCAP tip and its current commitment.</li>
+    <li>The owner loads one encrypted snapshot by opaque commitment locator.</li>
+    <li>The SDK verifies the snapshot hash and sequence against the tip.</li>
+    <li>The owner decrypts the snapshot locally and reads token balances.</li>
+  </ol>
+  <p>Observers see coordination commitments and state transitions, not plaintext balances, TIN secrets, wallet roots, or encrypted snapshot contents.</p>
+  <h2>TCAP and TSN separation</h2>
+  <p>TSN coordinates payment intents, epoch treasury obligations, Mother DNA, and settlement work. TCAP coordinates private balance credits and policy-bound token state. GPRU routes and authorizes; it never holds funds.</p>
+  <h2>Production security model</h2>
+  <p>Every credit binds the previous tip, new commitment, sequence, token policy, GPRU scope, nullifier, TSN settlement commitment, and expiry. A replayed or altered credit fails before state movement, preserving a deterministic private balance history.</p>
+  <p><a href="/p/gpru.html">Read the GPRU authorization and routing layer →</a> · <a href="/p/identity-and-tin.html">Read about TIN identity →</a> · <a href="/p/tsn-flow.html">Read the TSN settlement flow →</a></p>
+</article>

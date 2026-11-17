@@ -293,16 +293,46 @@ mod verifier_setup_tests {
     }
     #[test]
     fn funding_root_requires_exact_supported_shape_nonempty_count_and_canonical_fields() {
-        let mut data=vec![0;113];data[..8].copy_from_slice(&hashv(&[b"account:TcapSealedFundingPoolV1"]).to_bytes()[..8]);
-        data[8..10].copy_from_slice(&1u16.to_le_bytes());data[10]=5;
-        data[43..47].copy_from_slice(&1u32.to_le_bytes());data[78]=1;
-        data[79..87].copy_from_slice(&2u64.to_le_bytes());data[87..95].copy_from_slice(&2u64.to_le_bytes());
-        data[95..97].copy_from_slice(&2u16.to_le_bytes());
-        validate_funding_root_bytes(&data,5).unwrap();
-        assert!(validate_funding_root_bytes(&data,4).is_err());
-        data[95..97].copy_from_slice(&1u16.to_le_bytes());assert!(validate_funding_root_bytes(&data,5).is_err());
-        data[95..97].copy_from_slice(&2u16.to_le_bytes());data[47..79].copy_from_slice(&BN254_SCALAR_MODULUS_BE);
-        assert!(validate_funding_root_bytes(&data,5).is_err());
+        let mut data=funding_root_fixture();let selected:[u8;32]=data[13..45].try_into().unwrap();
+        validate_funding_root_bytes(&data,5,&selected).unwrap();
+        assert!(validate_funding_root_bytes(&data,4,&selected).is_err());
+        assert!(validate_funding_root_bytes(&data[..1081],5,&selected).is_err());
+        assert!(validate_funding_root_bytes(&vec![0;113],5,&selected).is_err());
+        data[13..45].copy_from_slice(&BN254_SCALAR_MODULUS_BE);
+        assert!(validate_funding_root_bytes(&data,5,&selected).is_err());
+    }
+    fn funding_root_fixture() -> Vec<u8> {
+        let mut data=vec![0;6209];data[..8].copy_from_slice(&hashv(&[b"account:TcapFundingMerkleRootV1"]).to_bytes()[..8]);
+        data[8..10].copy_from_slice(&2u16.to_le_bytes());data[10..12].copy_from_slice(&1u16.to_le_bytes());data[12]=5;
+        data[44]=1;data[45..53].copy_from_slice(&1u64.to_le_bytes());data[53..57].copy_from_slice(&32u32.to_le_bytes());
+        data[1081..1085].copy_from_slice(&128u32.to_le_bytes());data[1116]=1;data[1117..1125].copy_from_slice(&1u64.to_le_bytes());
+        data[6205..6207].copy_from_slice(&1u16.to_le_bytes());data[6207..6209].copy_from_slice(&1u16.to_le_bytes());data
+    }
+    #[test]
+    fn retained_roots_and_malformed_history_are_bound_to_authoritative_account() {
+        let mut data=funding_root_fixture();let first:[u8;32]=data[13..45].try_into().unwrap();
+        data[44]=2;data[45..53].copy_from_slice(&2u64.to_le_bytes());data[1156]=2;
+        data[1157..1165].copy_from_slice(&2u64.to_le_bytes());data[6205..6207].copy_from_slice(&2u16.to_le_bytes());data[6207..6209].copy_from_slice(&2u16.to_le_bytes());
+        validate_funding_root_bytes(&data,5,&first).unwrap();
+        assert!(validate_funding_root_bytes(&data,5,&[3;32]).is_err());
+        for offset in [8,53,1081,1117,1165,6205,6207] {
+            let mut changed=data.clone();changed[offset]^=1;assert!(validate_funding_root_bytes(&changed,5,&first).is_err());
+        }
+        let mut empty=funding_root_fixture();empty[45..53].fill(0);empty[1085..6209].fill(0);
+        assert!(validate_funding_root_bytes(&empty,5,&first).is_err());
+    }
+    #[test]
+    fn full_funding_history_validates_wrap_order_and_rejects_evicted_root() {
+        let mut data=funding_root_fixture();data[45..53].copy_from_slice(&129u64.to_le_bytes());
+        data[6205..6207].copy_from_slice(&1u16.to_le_bytes());data[6207..6209].copy_from_slice(&128u16.to_le_bytes());
+        for index in 0..128 {
+            let offset=1085+40*((index+1)%128);data[offset..offset+32].fill(0);data[offset+31]=(index+2) as u8;
+            data[offset+32..offset+40].copy_from_slice(&((index+2) as u64).to_le_bytes());
+        }
+        data[44]=129;let mut retained=[0;32];retained[31]=2;
+        validate_funding_root_bytes(&data,5,&retained).unwrap();
+        let mut evicted=[0;32];evicted[31]=1;assert!(validate_funding_root_bytes(&data,5,&evicted).is_err());
+        data[6205..6207].copy_from_slice(&2u16.to_le_bytes());assert!(validate_funding_root_bytes(&data,5,&retained).is_err());
     }
 
     #[test]
@@ -389,8 +419,7 @@ pub fn verify_transition(
     );
 
     let current_tcap_root = validate_tcap_root(&ctx.accounts.tcap_commitment_root)?;
-    let funding_root = validate_funding_root(&ctx.accounts.funding_root)?;
-    require!(args.public_inputs[12] == funding_root,HiddenHeadError::InvalidPublicInputs);
+    validate_funding_root(&ctx.accounts.funding_root,&args.public_inputs[12])?;
     let tip_route_root = validate_tip_route_root(&ctx.accounts.tip_route_root)?;
     require!(args.public_inputs[0] == current_tcap_root, HiddenHeadError::InvalidPublicInputs);
     require!(args.public_inputs[5] == tip_route_root, HiddenHeadError::InvalidPublicInputs);
@@ -441,32 +470,36 @@ fn validate_tcap_root(account: &UncheckedAccount) -> Result<[u8; 32]> {
     Ok(data[12..44].try_into().unwrap())
 }
 
-fn validate_funding_root(account:&UncheckedAccount)->Result<[u8;32]> {
+fn validate_funding_root(account:&UncheckedAccount,selected:&[u8;32])->Result<[u8;32]> {
     require_keys_eq!(*account.owner,TCAP_PROGRAM_ID,HiddenHeadError::InvalidFundingRoot);
     let data=account.try_borrow_data()?;
-    require!(data.len()==113,HiddenHeadError::InvalidFundingRoot);
-    let asset=Pubkey::new_from_array(data[11..43].try_into().unwrap());
-    let root:[u8;32]=data[47..79].try_into().unwrap();
-    let(expected,bump)=Pubkey::find_program_address(&[b"tcap:sealed-funding:v1",asset.as_ref(),&root],&TCAP_PROGRAM_ID);
+    let(expected,bump)=Pubkey::find_program_address(&[b"tcap:funding-root:v1"],&TCAP_PROGRAM_ID);
     require_keys_eq!(expected,account.key(),HiddenHeadError::InvalidFundingRoot);
-    let root=validate_funding_root_bytes(&data,bump)?;
-    require!(Clock::get()?.slot>=u64::from_le_bytes(data[105..113].try_into().unwrap()),HiddenHeadError::InvalidFundingRoot);
-    Ok(root)
+    validate_funding_root_bytes(&data,bump,selected)
 }
-fn validate_funding_root_bytes(data:&[u8],bump:u8)->Result<[u8;32]> {
-    let disc=hashv(&[b"account:TcapSealedFundingPoolV1"]).to_bytes();
-    require!(data.len()==113 && data[..8]==disc[..8] && data[8..10]==1u16.to_le_bytes()
-        && data[10]==bump,HiddenHeadError::InvalidFundingRoot);
-    let count=u64::from_le_bytes(data[79..87].try_into().unwrap());
-    let eligible=u64::from_le_bytes(data[87..95].try_into().unwrap());
-    let sources=u16::from_le_bytes(data[95..97].try_into().unwrap());
-    let root:[u8;32]=data[47..79].try_into().unwrap();
-    require!(root!=[0;32] && is_canonical_bn254_scalar(&root) && count<=1u64<<32
-        && eligible>=2 && eligible<=count && sources>=2 && sources as u64<=eligible
-        && u32::from_le_bytes(data[43..47].try_into().unwrap())>0,HiddenHeadError::InvalidFundingRoot);
-    let captured=u64::from_le_bytes(data[97..105].try_into().unwrap());
-    let release=u64::from_le_bytes(data[105..113].try_into().unwrap());
-    require!(release>=captured,HiddenHeadError::InvalidFundingRoot);Ok(root)
+fn validate_funding_root_bytes(data:&[u8],bump:u8,selected:&[u8;32])->Result<[u8;32]> {
+    let disc=hashv(&[b"account:TcapFundingMerkleRootV1"]).to_bytes();
+    require!(data.len()==6209 && data[..8]==disc[..8] && data[8..10]==2u16.to_le_bytes()
+        && data[10..12]==1u16.to_le_bytes() && data[12]==bump
+        && data[53..57]==32u32.to_le_bytes() && data[1081..1085]==128u32.to_le_bytes(),HiddenHeadError::InvalidFundingRoot);
+    let leaf_count=u64::from_le_bytes(data[45..53].try_into().unwrap());
+    let root:[u8;32]=data[13..45].try_into().unwrap();
+    let count=usize::from(u16::from_le_bytes(data[6207..6209].try_into().unwrap()));
+    let next=usize::from(u16::from_le_bytes(data[6205..6207].try_into().unwrap()));
+    require!(leaf_count>0 && leaf_count<=1u64<<32 && root!=[0;32] && is_canonical_bn254_scalar(&root)
+        && count>0 && count<=128 && count as u64<=leaf_count && next<128 && (count==128 || next==count)
+        && *selected!=[0;32] && is_canonical_bn254_scalar(selected),HiddenHeadError::InvalidFundingRoot);
+    for node in data[57..1081].chunks_exact(32) {require!(is_canonical_bn254_scalar(node.try_into().unwrap()),HiddenHeadError::InvalidFundingRoot);}
+    let start=if count==128 {next} else {0};let mut found=*selected==root;
+    for index in 0..count {
+        let offset=1085+40*((start+index)%128);let entry:[u8;32]=data[offset..offset+32].try_into().unwrap();
+        let entry_count=u64::from_le_bytes(data[offset+32..offset+40].try_into().unwrap());
+        require!(entry!=[0;32] && is_canonical_bn254_scalar(&entry) && entry_count==leaf_count-count as u64+index as u64+1,HiddenHeadError::InvalidFundingRoot);
+        if index==count-1 {require!(entry==root,HiddenHeadError::InvalidFundingRoot);}
+        found|=entry==*selected;
+    }
+    require!(data[1085+40*count..6205].iter().all(|byte|*byte==0) && found,HiddenHeadError::InvalidFundingRoot);
+    Ok(*selected)
 }
 
 fn validate_tip_route_root(account: &UncheckedAccount) -> Result<[u8; 32]> {

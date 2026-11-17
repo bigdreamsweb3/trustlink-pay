@@ -1,0 +1,9 @@
+{
+  "task.autoDetect": "off",
+  "npm.autoDetect": "off",
+  "git.autofetch": false,
+  "git.enableSmartCommit": false,
+  "git.suggestSmartCommit": false,
+  "git.confirmSync": true,
+  "git.confirmForcePush": true
+}

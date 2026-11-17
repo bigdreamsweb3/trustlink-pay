@@ -13,7 +13,7 @@ This directory contains source-derived catalogs, bounded review records and vali
 
 ## Validation reports
 
-Agent instruction discovery, pre-edit conflicts and the current-reference hierarchy are documented in the [knowledge inventory](CODEX_KNOWLEDGE_INVENTORY.md) and [alignment report](CODEX_KNOWLEDGE_ALIGNMENT.md). The [maintenance manual](../DOCUMENTATION_MAINTENANCE.md) is the repeatable workflow; these dated reports are evidence of this alignment, not extra automatically loaded rules.
+Agent instruction discovery, pre-edit conflicts and the current-reference hierarchy are documented in the [knowledge inventory](agent-knowledge-inventory.md) and [alignment report](agent-knowledge-alignment.md). The [maintenance manual](../DOCUMENTATION_MAINTENANCE.md) is the repeatable workflow; these dated reports are evidence of this alignment, not extra automatically loaded rules.
 
 [Link checks](link-check.json) cover local targets, Mintlify navigation, frontmatter and code-fence balance. [Syntax checks](syntax-check.json) cover MDX compilation and Mermaid parsing. Neither validates all remote URLs, anchor fragments, browser layout or deployed endpoints. [Source preservation](source-preservation.json) compares the task's inspected-source baseline and excludes generated build artifacts; independently made user changes are not attributed automatically.
 
@@ -42,6 +42,6 @@ node docs/references/tooling/validate-doc-syntax.mjs $taskDocsSyntax
 
 The parser uses a temporary JSDOM window because Mermaid imports DOMPurify. It parses diagrams without serving a site. The reconstruction installed these dependencies only in that temporary prefix; production dependency manifests and lockfiles were preserved. Retaining the validator/package versions makes a later repeat meaningful.
 
-The link/syntax validators also cover root `AGENTS.md`, `.codex` Markdown, root `README.md` and `tsn-protocol/README.md`. This explicit scope prevents entry instructions and architecture diagrams from escaping the checks. Historical bodies remain preserved with their boundary labels; parsing them does not turn their old commands into active tasks.
+The link/syntax validators also cover root `AGENTS.md`, `.agents` Markdown, root `README.md` and `tsn-protocol/README.md`. This explicit scope prevents entry instructions and architecture diagrams from escaping the checks. Historical bodies remain preserved with their boundary labels; parsing them does not turn their old commands into active tasks.
 
 `verify-source-preservation.py` additionally requires the original ignored local baseline at `protocol-test-runs/docs-reconstruction-20261102/source-hashes.json`. It refuses to reconstruct a missing baseline from current files, since that would destroy its evidentiary meaning. The one-time `finish-public-reconciliation.py` records this run's prose corrections; routine regeneration uses the commands above instead.

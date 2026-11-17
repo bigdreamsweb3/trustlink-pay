@@ -5,7 +5,6 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   createKeyPairTransactionSigner,
-  createRemoteTransactionSigner,
 } from "@dbrix/solana";
 import {
   Connection,
@@ -25,16 +24,17 @@ import {
 } from "../../../sdks/tsn-sdk/src/blockchain/solana-tsn.js";
 import {
   buildTsnRegisterTcapCreditAuthorizationV3Instruction,
-  buildTcapAccountCreditEpochV1Instruction, buildTcapSealFundingPoolV1Instruction,
+  buildTcapAccountCreditEpochV1Instruction,
   GPRU_PROGRAM_ID,
   GPRU_TCAP_PROGRAM_ID as TCAP_PROGRAM_ID,
 } from "../../../sdks/tsn-sdk/src/tcap-gpru-credit.js";
 import { resolveSolanaRpcUrls } from "../../../sdks/tsn-sdk/src/rpc.js";
 import { createDbrixSettlementMemoInstruction } from "../src/dbrix/settlement-memo.js";
 import { sendSettlementV1 } from "../src/dbrix/settlement-transport.js";
+import { createMotherNodeTransactionSigner } from "../src/dbrix/mother-node-signer.js";
 import { ConfirmedReceiptReportPending, RetryableConfirmedReportError, confirmedReportAvailabilityError, sendConfirmedWorkReport } from "../src/receiver/confirmed-report.js";
-import { nativeConflictReason, nativeWorkRetryReason } from "../src/receiver/native-retry.js";
-import { assertSealedFundingPool } from "../src/dbrix/funding-root.js";
+import { nativeConflictReason, nativeSigningAvailabilityReason, nativeWorkRetryReason } from "../src/receiver/native-retry.js";
+import { assertFundingRoot } from "../src/dbrix/funding-root.js";
 import {
   getTinsGlobalStatePda,
   getTipRouteMerkleRootV1Pda,
@@ -53,7 +53,7 @@ dotenv.config({ path: resolve(process.cwd(), ".env") });
 
 type Work = {
   id: string;
-  kind: "AUTHORIZED_FUNDING" | "SETTLEMENT" | "TIN_OPERATION" | "TCAP_FUNDING_POOL" | "TCAP_EPOCH_ACCOUNTING";
+  kind: "AUTHORIZED_FUNDING" | "SETTLEMENT" | "TIN_OPERATION" | "TCAP_EPOCH_ACCOUNTING";
   stateVersion: number;
   status: string;
   payloadCommitment: string;
@@ -133,7 +133,7 @@ function verifyNodeAttestation(work: Work) {
       "senderAuthorizationMessage", "senderAuthorizationSignature", "senderAuthorizationNonce",
     ],
     SETTLEMENT: ["tcapCreditTransition"],
-    TCAP_FUNDING_POOL: ["tcapFundingPool"], TCAP_EPOCH_ACCOUNTING: ["tcapEpochAccounting"],
+    TCAP_EPOCH_ACCOUNTING: ["tcapEpochAccounting"],
     TIN_OPERATION: [
       "intentId", "intentType", "ownerPubkey", "ownerSignature", "ownerIntentHash",
       "ownerIntentMessage", "ownerSignatureMessageFormat", "expiry", "nonce", "lookupCommitment",
@@ -467,7 +467,8 @@ async function receiverRequest<T>(
     if (!response.ok) {
       let rejection: { detail?: unknown; error?: unknown } = {};
       try { rejection = JSON.parse(responseText) as { detail?: unknown; error?: unknown }; } catch { /* Keep unstructured failures descriptive. */ }
-      const nativeReason = nativeConflictReason(response.status, rejection);
+      const nativeReason = nativeConflictReason(response.status, rejection)
+        ?? nativeSigningAvailabilityReason(path, response.status, rejection);
       if (nativeReason) throw new Error(nativeReason);
       if (signal && confirmedReportAvailabilityError(response.status, rejection.error)) throw new RetryableConfirmedReportError("Receiver receipt verification temporarily unavailable");
       throw new Error(`Receiver request failed (${response.status}): ${responseText.slice(0, 300)}`);
@@ -481,7 +482,7 @@ async function lease(signer: Keypair): Promise<Work | null> {
   const response = await receiverRequest<{ work: Work | null }>(
     signer,
     "POST",
-    { supportedKinds: ["AUTHORIZED_FUNDING", "SETTLEMENT", "TIN_OPERATION", "TCAP_FUNDING_POOL", "TCAP_EPOCH_ACCOUNTING"] },
+    { supportedKinds: ["AUTHORIZED_FUNDING", "SETTLEMENT", "TIN_OPERATION", "TCAP_EPOCH_ACCOUNTING"] },
   );
   return response.work;
 }
@@ -559,6 +560,7 @@ async function processAuthorizedFunding(
 }
 
 async function processPrivateCoordination(signer: Keypair, work: Work, rpcUrl: string) {
+  if (work.kind !== "TCAP_EPOCH_ACCOUNTING") throw new Error("WORK_KIND_UNSUPPORTED");
   const auth = work.authorization;
   const value = auth?.transition as Record<string, any> | undefined;
   if (auth?.kind !== "TSN_TCAP_COORDINATION_AUTHORIZATION_V1" || !value
@@ -566,16 +568,14 @@ async function processPrivateCoordination(signer: Keypair, work: Work, rpcUrl: s
       || Number(auth.leaseVersion) !== Number(work.crankerLease?.version ?? work.stateVersion)
       || String(auth.leaseExpiresAt) !== work.crankerLease?.expiresAt
       || Number(auth.expiresAtTs) <= Math.floor(Date.now()/1000)) throw new Error("PRIVATE_COORDINATION_AUTHORIZATION_INVALID");
-  const field = work.kind === "TCAP_FUNDING_POOL" ? "tcapFundingPool" : "tcapEpochAccounting";
+  const field = "tcapEpochAccounting";
   if (stableJson(value) !== stableJson(work.verification?.verifiedPayload?.[field])) throw new Error("PRIVATE_COORDINATION_ATTESTATION_MISMATCH");
   const mother = await tsnFetchMotherEscrowOnChain(rpcUrl);
   if (!mother?.valid || !mother.authority) throw new Error("Mother authority unavailable");
   const authority = new PublicKey(mother.authority);
   const common = { authority, mother:new PublicKey(mother.address), config:new PublicKey(String(value.tcapConfig)), assetEntry:new PublicKey(String(value.assetEntry)) };
-  const instruction = work.kind === "TCAP_FUNDING_POOL"
-    ? buildTcapSealFundingPoolV1Instruction({ ...common, root:String(value.root), eligibleNoteCount:BigInt(value.eligibleNoteCount), sourceWalletCount:Number(value.sourceWalletCount), releaseSlot:BigInt(value.releaseSlot) })
-    : buildTcapAccountCreditEpochV1Instruction({ ...common, reserveState:new PublicKey(String(value.reserveState)), epoch:new PublicKey(String(value.accountingEpoch)), total:BigInt(value.total), proof:value.proof });
-  const label = work.kind === "TCAP_FUNDING_POOL" ? "TCAP_FUNDING_POOL_V1" : "TCAP_EPOCH_ACCOUNTING_V1";
+  const instruction = buildTcapAccountCreditEpochV1Instruction({ ...common, reserveState:new PublicKey(String(value.reserveState)), epoch:new PublicKey(String(value.accountingEpoch)), total:BigInt(value.total), proof:value.proof });
+  const label = "TCAP_EPOCH_ACCOUNTING_V1";
   const signature = await sendMotherNodeCoSignedInstruction(rpcUrl,signer,authority,work,instruction,label);
   await report(signer,work,"CONFIRMED",{signature,stage:label+"_CONFIRMED"});
 }
@@ -610,7 +610,7 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
   if (!auth || auth.kind !== "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3")
     throw new Error("Settlement has no verified TCAP GPRU credit authorization");
   const transition = auth.transition as Record<string, unknown> | undefined;
-  if (!transition) throw new Error("Node TCAP V2 credit transition is missing");
+  if (!transition) throw new Error("Node TCAP private credit transition is missing");
   if (String(auth.leaseId ?? "") !== (work.crankerLease?.leaseId ?? work.id)
       || Number(auth.leaseVersion) !== Number(work.crankerLease?.version ?? work.stateVersion)
       || String(auth.leaseExpiresAt ?? "") !== String(work.crankerLease?.expiresAt ?? "")) {
@@ -627,7 +627,7 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
   const tcapConfig = new PublicKey(String(transition.tcapConfig ?? ""));
   const reserveState = new PublicKey(String(transition.reserveState ?? ""));
   const fundingRootAccount = new PublicKey(String(transition.fundingRootAccount ?? ""));
-  const [canonicalFundingRoot] = PublicKey.findProgramAddressSync([Buffer.from("tcap:sealed-funding:v1"), assetEntry.toBuffer(), Buffer.from(String((transition.proof as Record<string, unknown>).publicInputs && ((transition.proof as Record<string, unknown>).publicInputs as string[])[12]), "hex")], TCAP_PROGRAM_ID);
+  const [canonicalFundingRoot] = PublicKey.findProgramAddressSync([Buffer.from("tcap:funding-root:v1")], TCAP_PROGRAM_ID);
   if (!fundingRootAccount.equals(canonicalFundingRoot)) throw new Error("TCAP_FUNDING_ROOT_NOT_CANONICAL");
   const tipProgramId = new PublicKey("TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT");
   const [tipRouteRoot] = PublicKey.findProgramAddressSync([Buffer.from("tip:route-merkle-root:v1")], tipProgramId);
@@ -700,7 +700,7 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
   }
   const expectedNextRoot = Buffer.from(hex32(publicInputs[1]!, "proof.publicInputs[1]"));
   const fundingRootBefore = await connection.getAccountInfo(fundingRootAccount, "confirmed");
-  assertSealedFundingPool(fundingRootBefore, fundingRootAccount, assetEntry, Number(transition.tokenId), publicInputs[12]!);
+  assertFundingRoot(fundingRootBefore, fundingRootAccount, publicInputs[12]!);
   settlementInstructions.push(memoInstruction);
   const signature = await sendMotherNodeCoSignedInstruction(
     rpcUrl,
@@ -808,35 +808,27 @@ async function sendMotherNodeCoSignedInstruction(
   label: string,
 ) {
   const payerSigner = await createKeyPairTransactionSigner(signer.secretKey);
-  const motherSigner = createRemoteTransactionSigner(motherAuthority.toBase58(), async (messageBytes) => {
-    const messageBase64 = Buffer.from(messageBytes).toString("base64");
-    const motherSigning = await receiverRequest<{ authority: string; signatureBase64: string }>(
+  if (work.result && Object.keys(work.result).length) throw new Error("TCAP_SETTLEMENT_EXECUTION_CHECKPOINT_PRESENT");
+  const mother = createMotherNodeTransactionSigner(motherAuthority, async (messageBase64) => {
+    return receiverRequest<unknown>(
       signer,
       "POST",
       { workId: work.id, messageBase64 },
       "/api/cranker/settlement-signature",
     );
-    if (motherSigning.authority !== motherAuthority.toBase58()) {
-      throw new Error("Mother Node signing key does not match the on-chain Mother authority");
-    }
-    const encoded = String(motherSigning.signatureBase64 ?? "");
-    const signature = Buffer.from(encoded, "base64");
-    if (signature.length !== 64 || signature.toString("base64") !== encoded) {
-      throw new Error("Mother Node transaction signature is malformed");
-    }
-    return Uint8Array.from(signature);
   });
   crankerLog(`tx submit step=${label} format=v1 signer=Mother-Node`);
   const signature = await sendSettlementV1(
     Array.isArray(instructions) ? instructions : [instructions],
-    { payerSigner, additionalSigners: [motherSigner], rpcUrl, onSigned: async submission => {
-      // Retain identity in memory even if Receiver's acknowledgement is lost.
-      work.result = { ...submission, stage: `${label}_SIGNED` };
-      await receiverRequest(signer, "PUT", {
-        id: work.id, expectedVersion: work.stateVersion, evidence: work.result,
-      });
-      crankerLog(`tx signed and recorded step=${label} signature=${submission.signature} bytes=${submission.wireBytes}/4096 transport=HTTP`);
-    } },
+    { payerSigner, additionalSigners: [mother.signer], rpcUrl, signedBlockhashContextSlot: mother.getBlockhashContextSlot,
+      onSigned: async submission => {
+        // Retain identity in memory even if Receiver's acknowledgement is lost.
+        work.result = { ...submission, stage: `${label}_SIGNED` };
+        await receiverRequest(signer, "PUT", {
+          id: work.id, expectedVersion: work.stateVersion, evidence: work.result,
+        });
+        crankerLog(`tx signed and recorded step=${label} signature=${submission.signature} bytes=${submission.wireBytes}/4096 transport=HTTP`);
+      } },
   );
   crankerLog(`tx sent and confirmed step=${label} signature=${signature}`);
   return signature;
@@ -1160,8 +1152,9 @@ async function main() {
           await processAuthorizedFunding(signer, work, rpcUrl);
         else if (work.kind === "TIN_OPERATION")
           await processTinOperation(signer, work, rpcUrl);
-        else if (work.kind === "TCAP_FUNDING_POOL" || work.kind === "TCAP_EPOCH_ACCOUNTING") await processPrivateCoordination(signer, work, rpcUrl);
-        else await processSettlement(signer, work, rpcUrl);
+        else if (work.kind === "TCAP_EPOCH_ACCOUNTING") await processPrivateCoordination(signer, work, rpcUrl);
+        else if (work.kind === "SETTLEMENT") await processSettlement(signer, work, rpcUrl);
+        else throw new Error("WORK_KIND_UNSUPPORTED");
       } catch (error) {
         if (error instanceof ConfirmedReceiptReportPending) {
           crankerLog(error.message);

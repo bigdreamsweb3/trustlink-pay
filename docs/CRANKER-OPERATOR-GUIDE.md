@@ -298,9 +298,11 @@ sequenceDiagram
     N-->>R: Current-root proof and signed VERIFIED transition
     C->>R: Lease settlement and request Mother co-signature
     R->>N: Check lease and exact settlement message
-    N-->>C: Lease-bound Mother signature through Receiver
+    N->>N: Validate, select final fresh hash and Mother-sign
+    N-->>C: Signed message and final lifetime/context through Receiver
+    C->>C: Validate, payer-sign and checkpoint before one broadcast
     C->>S: TSNP -> TCAP -> GPRU credit and Memo
-    S-->>C: Confirmed atomic state/liability transition
+    S-->>C: Confirmed atomic root/epoch-transcript transition
     C->>R: Report settlement confirmation
 ```
 

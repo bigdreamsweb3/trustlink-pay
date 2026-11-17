@@ -6,7 +6,7 @@ Start with [architecture](overview/architecture.mdx), [payment lifecycle](develo
 
 ## Development and validation
 
-Contributors and future Codex sessions follow the [documentation maintenance manual](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/DOCUMENTATION_MAINTENANCE.md) and applicable [repository instructions](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/AGENTS.md). The manual covers both documentation destinations, implementation evidence, examples/diagrams, history and completion reports.
+Contributors and agents in any environment follow the [documentation maintenance manual](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/DOCUMENTATION_MAINTENANCE.md) and applicable [repository instructions](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/AGENTS.md). The manual covers both documentation destinations, implementation evidence, examples/diagrams, history and completion reports.
 
 Use the repository's existing Mintlify tooling (`mintlify dev` from this directory when installed) for local preview. No new site/framework or service is created by documentation reconstruction. The SDK is a private workspace package; build it before using compiled examples.
 

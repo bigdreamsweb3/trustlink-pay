@@ -21,6 +21,25 @@ export function gitEnvironment(source = process.env) {
   return { ...Object.fromEntries(Object.entries(source).filter(([key]) => !/^(?:GIT|GCM)_/.test(key.toUpperCase()))), GIT_TERMINAL_PROMPT: "0" };
 }
 
+export function gitFailureMessage(result, operation) {
+  // Match diagnostics privately and return only fixed categories, never their values.
+  const diagnostics = `${result.stderr ?? ""}\n${result.stdout ?? ""}`;
+  const code = result.error?.code;
+  const reason = code === "ETIMEDOUT" ? "Git timed out; another task or a slow filesystem may be delaying it."
+    : code === "ENOBUFS" ? "Git output exceeded the capture buffer."
+    : code === "ENOENT" ? "The configured Git executable is unavailable."
+    : /(?:index|config|packed-refs|HEAD|refs[^\n]*)\.lock[^\n]*(?:File exists|already exists)|another git process/i.test(diagnostics) ? "Another Git operation holds a repository lock; let it finish before retrying."
+    : code === "ENOSPC" || /no space left|disk full|not enough space/i.test(diagnostics) ? "Git could not write because the disk is full."
+    : code === "EACCES" || code === "EPERM" || /permission denied|access is denied/i.test(diagnostics) ? "Git could not access a required file; check filesystem permissions."
+    : /does not have a commit checked out/i.test(diagnostics) ? "An embedded repository has no checked-out commit and cannot be staged."
+    : /filename too long|invalid path/i.test(diagnostics) ? "A workspace path is unsupported by this Git installation."
+    : /non-fast-forward|fetch first|\[rejected\]/i.test(diagnostics) ? "Remote branch requires reconciliation; force push is disabled."
+    : /authentication|credential|logon|could not read Username|\b403\b|\b401\b/i.test(diagnostics) ? "GitHub authentication or repository permission is unavailable."
+    : /could not resolve host|failed to connect|unable to access|connection timed out/i.test(diagnostics) ? "Git could not connect to the approved destination."
+    : "Git returned an unclassified failure.";
+  return `${operation} failed. ${reason} Potentially sensitive Git diagnostics were withheld.`;
+}
+
 function git(gitDir, args) {
   // Retained submodule metadata can point to an old, missing worktree. Config-only
   // operations use an existing directory without changing its core.worktree setting.
@@ -29,7 +48,7 @@ function git(gitDir, args) {
   });
   if (result.error || (result.status !== 0 && result.status !== 1)) {
     // Git diagnostics can contain credential-bearing values.
-    throw new Error("Git operation failed; configuration values were not logged.");
+    throw new Error(gitFailureMessage(result, `Git ${args[0]}`));
   }
   return result;
 }
@@ -210,7 +229,7 @@ export function commitStagedSnapshot(repo, branch, snapshot) {
   const result = spawnSync(gitExecutable, ["--git-dir", repo.gitDir, "--work-tree", resolve(repo.gitDir, ".."),
     "-c", `core.hooksPath=${join(repo.gitDir, "trustlink-disabled-hooks")}`, "-c", "core.fsmonitor=false", "-c", "commit.gpgSign=false",
     "commit-tree", snapshot.tree, "-p", snapshot.parent, "-m", snapshot.message], { env: gitEnvironment(), encoding: "utf8", windowsHide: true, timeout: 30000 });
-  if (result.error || result.status !== 0) throw new Error("Captured commit failed; nothing was pushed and Git diagnostics were withheld.");
+  if (result.error || result.status !== 0) throw new Error(gitFailureMessage(result, "Captured commit"));
   const head = result.stdout.trim();
   requireReviewedHash(head, head);
   requireReviewedHash(snapshot.parent, currentHead(repo, branch));
@@ -238,7 +257,7 @@ export function stageAllChanges(repo, branch) {
   const result = spawnSync(gitExecutable, ["--git-dir", repo.gitDir, "--work-tree", root,
     "-c", `core.hooksPath=${join(repo.gitDir, "trustlink-disabled-hooks")}`, "-c", "core.fsmonitor=false",
     "add", "--all", "--", "."], { cwd: root, env: gitEnvironment(), encoding: "utf8", windowsHide: true, timeout: 120000 });
-  if (result.error || result.status !== 0) throw new Error("Workspace staging failed; nothing was committed or pushed and Git diagnostics were withheld.");
+  if (result.error || result.status !== 0) throw new Error(gitFailureMessage(result, "Workspace staging"));
   checkPrivateTracking(repo.gitDir);
 }
 
@@ -281,6 +300,15 @@ function currentHead(repo, branch) {
   return head.stdout.trim();
 }
 
+export function pushCurrent(repo, url, branch, push = pushReviewed) {
+  const head = currentHead(repo, branch);
+  requireReviewedHash(head, head);
+  checkPrivateTracking(repo.gitDir, head);
+  console.log(`Captured current ${repo.name} commit ${head}; staged and unstaged changes are excluded.`);
+  push(repo, url, branch, head);
+  return head;
+}
+
 function pushReviewed(repo, url, branch, expectedHead) {
   requireReviewedHash(expectedHead, currentHead(repo, branch));
   checkPrivateTracking(repo.gitDir, expectedHead);
@@ -288,10 +316,7 @@ function pushReviewed(repo, url, branch, expectedHead) {
     env: { ...gitEnvironment(), GCM_INTERACTIVE: "Never", GCM_CREDENTIAL_STORE: "wincredman", GCM_TRACE: "false", GCM_TRACE_SECRETS: "false" }, encoding: "utf8", windowsHide: true, timeout: 120000,
   });
   if (result.error || result.status !== 0) {
-    const reason = /non-fast-forward|fetch first|\[rejected\]/i.test(result.stderr + result.stdout) ? "Remote branch requires reconciliation; force push is disabled."
-      : /authentication|credential|logon|could not read Username|403|401/i.test(result.stderr) ? "GitHub authentication or repository permission is unavailable."
-      : "The approved GitHub destination could not accept the push.";
-    throw new Error(`${reason} Potentially sensitive Git diagnostics were withheld.`);
+    throw new Error(gitFailureMessage(result, "Approved push"));
   }
   console.log(`Pushed reviewed ${repo.name} commit ${expectedHead} to the approved ${branch} branch.`);
 }
@@ -320,7 +345,7 @@ export function main(args) {
   if (command === "fetch" && args.length === 4) {
     const { repo, url } = approvedRepository(repoName, remoteName, branch);
     const result = spawnSync(gitExecutable, fetchArguments(repo.gitDir, url, remoteName, branch), { env: gitEnvironment(), encoding: "utf8", windowsHide: true, timeout: 120000 });
-    if (result.error || result.status !== 0) throw new Error("Approved fetch failed; potentially sensitive Git diagnostics were withheld.");
+    if (result.error || result.status !== 0) throw new Error(gitFailureMessage(result, "Approved fetch"));
     console.log(`Fetched approved ${repoName}/${remoteName} branch into its remote-tracking ref. Review the diff before any checkout or merge.`);
     return;
   }
@@ -331,6 +356,12 @@ export function main(args) {
     pushReviewed(repo, url, branch, args[4]);
     return;
   }
+  if (command === "push-current") {
+    if (args.length !== 4) throw new Error("Current push requires only an explicit repository, remote and branch.");
+    const { repo, url } = approvedRepository(repoName, remoteName, branch);
+    pushCurrent(repo, url, branch);
+    return;
+  }
   if (command === "commit-push" || command === "commit-push-all") {
     if (args.length < 4) throw new Error("Commit/push requires an explicit repository, remote and branch.");
     const options = commitPushOptions(args.slice(4));
@@ -339,7 +370,7 @@ export function main(args) {
     else commitPushStaged(repo, url, branch, options);
     return;
   }
-  throw new Error("Usage: node scripts/repo-security.mjs check | harden | fetch <repo> <remote> <branch> | push <repo> <remote> <branch> <reviewed-commit> | commit-push[-all] <repo> <remote> <branch> [reviewed-staged-tree] [message]");
+  throw new Error("Usage: node scripts/repo-security.mjs check | harden | fetch <repo> <remote> <branch> | push <repo> <remote> <branch> <reviewed-commit> | push-current <repo> <remote> <branch> | commit-push[-all] <repo> <remote> <branch> [reviewed-staged-tree] [message]");
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -177,8 +177,8 @@
     "git:hygiene:fix": "node scripts/git-hygiene-check.mjs --fix",
     "git:pull:all": "node scripts/repo-security.mjs fetch workspace origin main",
     "git:pull:protocol": "node scripts/repo-security.mjs fetch protocol origin main",
-    "git:push:current": "node scripts/repo-security.mjs push workspace origin main",
-    "git:push:tsn-protocol": "node scripts/repo-security.mjs push protocol origin main",
+    "git:push:current": "node scripts/repo-security.mjs push-current workspace origin main",
+    "git:push:tsn-protocol": "node scripts/repo-security.mjs push-current protocol origin main",
     "git:commit:push:staged": "node scripts/repo-security.mjs commit-push workspace origin main",
     "git:commit:push:all": "node scripts/repo-security.mjs commit-push-all workspace origin main"
   },

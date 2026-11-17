@@ -266,7 +266,7 @@ export function commitPushAll(repo, url, branch, options = commitPushOptions(), 
   const snapshot = stagedCommitSnapshot(repo, branch, options);
   const created = commitStagedSnapshot(repo, branch, snapshot);
   const head = created ?? snapshot.parent;
-  console.log(created ? `Created captured ${repo.name} workspace commit ${head}.`
+  console.log(created ? `Created captured ${repo.name} commit ${head}.`
     : `No new workspace changes; retrying the existing ${repo.name} commit ${head}.`);
   push(repo, url, branch, head);
   return head;

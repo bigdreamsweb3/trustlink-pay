@@ -17,7 +17,9 @@
     "git:hygiene:report": "node scripts/git-hygiene-check.mjs --write-report --warn-only",
     "git:hygiene:fix": "node scripts/git-hygiene-check.mjs --fix",
     "git:pull:all": "node scripts/repo-security.mjs fetch protocol origin main",
-    "git:push:all": "node scripts/repo-security.mjs push protocol origin main",
-    "git:commit:push:all": "node scripts/repo-security.mjs commit-push protocol origin main"
+    "git:push:current": "node scripts/repo-security.mjs push-current protocol origin main",
+    "git:push:all": "node scripts/repo-security.mjs commit-push-all protocol origin main",
+    "git:commit:push:staged": "node scripts/repo-security.mjs commit-push protocol origin main",
+    "git:commit:push:all": "node scripts/repo-security.mjs commit-push-all protocol origin main"
   }
 }

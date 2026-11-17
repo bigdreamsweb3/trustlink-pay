@@ -37,12 +37,14 @@ node scripts/repo-security.mjs fetch protocol origin main
 
 The helper validates exact destinations, rejects URL rewrites and unsafe scoped HTTP settings, strips ambient `GIT_*` overrides and disables redirects/hooks/submodule recursion/automatic maintenance. Fetch clears credential helpers/prompts and updates only the selected remote-tracking ref; both approved fetches were exercised successfully after the user authorized publication. The legacy `git:pull:*` names perform this fetch without merging or checking out files. Review diffs before applying or executing fetched code.
 
-For an explicitly approved push from the root, review the intended HEAD first and pass its full hash:
+For an explicitly approved push from the root, inspect the intended HEAD and run the current-commit task:
 
 ```powershell
 git rev-parse HEAD
-npm run git:push:current -- <reviewed-commit-hash>
+npm run git:push:current
 ```
+
+This task captures the selected repository's current HEAD and pushes that exact commit after destination, branch and private-tree checks. It does not stage or commit pending edits. The protocol package's `git:push:current` does the same for its independent repository. To require an independently recorded full hash instead, use `node scripts/repo-security.mjs push workspace origin main <reviewed-commit-hash>`; the standalone `push` command retains its explicit hash gate.
 
 For a deliberately requested whole-workspace publication, review `git status` and the pending source before running the root command from any directory:
 
@@ -50,7 +52,18 @@ For a deliberately requested whole-workspace publication, review `git status` an
 npm --prefix "C:\Users\codepara\Desktop\trust-link" run git:commit:push:all
 ```
 
-The root all command stages tracked edits/deletions and untracked files that Git does not ignore, including root `package.json`, application directories, docs and the protocol subtree. Private filename checks run before and after staging and again on the captured tree. It does not force-add ignored keys/state/cache files. A run with no new changes still pushes the existing exact HEAD, allowing a failed push to be retried without creating a duplicate commit. This command deliberately publishes the reviewed workspace; do not launch it from an automatic task or hook.
+The root all command stages tracked edits/deletions and untracked files that Git does not ignore, including root `package.json`, application directories, docs and the protocol subtree. Private filename checks run before and after staging and again on the captured tree. It does not force-add ignored keys/state/cache files. A run with no new changes still pushes the existing exact HEAD, allowing a failed push to be retried without creating a duplicate commit. This command deliberately publishes the reviewed workspace; do not launch it from an automatic task or hook. Root publication does not advance the independent protocol repository's HEAD; publish that repository separately after capturing its intended changes.
+
+To publish all reviewed protocol changes to Trustlink Labs, run either of these equivalent commands:
+
+```powershell
+npm --prefix "C:\Users\codepara\Desktop\trust-link" run git:push:tsn-protocol
+npm --prefix "C:\Users\codepara\Desktop\trust-link\tsn-protocol" run git:commit:push:all
+```
+
+Both stage and commit the full nonignored protocol checkout before pushing its exact commit to `https://github.com/Trustlink-Labs/TSN-Protocol.git` on `main`. Protocol `git:push:all` and the Node/Receiver/gateway `git:commit:push:all` aliases use the same whole-protocol scope, regardless of the launching directory. Root-only files are excluded from the Labs repository. For selective protocol publication, stage reviewed paths and run its `git:commit:push:staged`; for an existing commit only, use its `git:push:current`.
+
+Run one publication task at a time for each repository. Failed staging, commit, fetch and push operations report fixed categories for timeout, lock, permissions, disk space, capture-buffer overflow, unsupported paths, embedded repositories without a commit, authentication, connection or remote reconciliation. Raw diagnostics and configuration values remain withheld. A timeout alone does not prove a lock or permission problem; let an active task finish and retry rather than deleting locks or terminating unrelated processes.
 
 For selective publication, stage only reviewed paths, inspect `git diff --cached`, then run `npm run git:commit:push:staged` from the root. This command commits only staged changes; empty staging remains a successful no-op. To use a chosen message and an independently recorded tree, obtain `git write-tree` and supply both arguments:
 

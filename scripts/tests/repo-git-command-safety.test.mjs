@@ -12,26 +12,28 @@ const routes = new Map([
     "git:pull:all": "node scripts/repo-security.mjs fetch workspace origin main",
     "git:pull:protocol": "node scripts/repo-security.mjs fetch protocol origin main",
     "git:push:current": "node scripts/repo-security.mjs push-current workspace origin main",
-    "git:push:tsn-protocol": "node scripts/repo-security.mjs push-current protocol origin main",
+    "git:push:tsn-protocol": "node scripts/repo-security.mjs commit-push-all protocol origin main",
     "git:commit:push:staged": "node scripts/repo-security.mjs commit-push workspace origin main",
     "git:commit:push:all": "node scripts/repo-security.mjs commit-push-all workspace origin main",
   }],
   ["tsn-protocol/package.json", {
     "git:pull:all": "node scripts/repo-security.mjs fetch protocol origin main",
-    "git:push:all": "node scripts/repo-security.mjs push protocol origin main",
-    "git:commit:push:all": "node scripts/repo-security.mjs commit-push protocol origin main",
+    "git:push:current": "node scripts/repo-security.mjs push-current protocol origin main",
+    "git:push:all": "node scripts/repo-security.mjs commit-push-all protocol origin main",
+    "git:commit:push:staged": "node scripts/repo-security.mjs commit-push protocol origin main",
+    "git:commit:push:all": "node scripts/repo-security.mjs commit-push-all protocol origin main",
   }],
   ["tsn-protocol/services/tsn-rpc-gateway/package.json", {
     "git:pull:all": "node ../../scripts/repo-security.mjs fetch protocol origin main",
-    "git:commit:push:all": "node ../../scripts/repo-security.mjs commit-push protocol origin main",
+    "git:commit:push:all": "node ../../scripts/repo-security.mjs commit-push-all protocol origin main",
   }],
   ["tsn-protocol/services/tsn-receiver/package.json", {
     "git:pull:all": "node ../../scripts/repo-security.mjs fetch protocol origin main",
-    "git:commit:push:all": "node ../../scripts/repo-security.mjs commit-push protocol origin main",
+    "git:commit:push:all": "node ../../scripts/repo-security.mjs commit-push-all protocol origin main",
   }],
   ["tsn-protocol/services/tsn-node/package.json", {
     "git:pull:all": "node ../../scripts/repo-security.mjs fetch protocol origin main",
-    "git:commit:push:all": "node ../../scripts/repo-security.mjs commit-push protocol origin main",
+    "git:commit:push:all": "node ../../scripts/repo-security.mjs commit-push-all protocol origin main",
   }],
   ["tsn-protocol/services/tsn-mempool-ui/package.json", {
     "git:quick:push": "node ../../scripts/repo-security.mjs push protocol origin main",
@@ -88,7 +90,7 @@ for (const [relativePath, commands] of routes) {
       assert.equal(manifest.scripts[name], command);
       noAutomaticHooks(manifest, name, `${relativePath} ${name}`);
       const tokens = command.split(" ");
-      assert.equal(tokens.length, 6, "Routes supply the repository, remote and branch; push requires a commit hash and commit-push captures deliberate staging by default");
+      assert.equal(tokens.length, 6, "Routes supply repository, remote and branch; push-current captures HEAD, push requires a hash, and commit routes capture their selected scope");
       assert.equal(tokens[0], "node");
       assert.ok(["fetch", "push", "push-current", "commit-push", "commit-push-all"].includes(tokens[2]));
       assert.ok(["workspace", "protocol"].includes(tokens[3]));

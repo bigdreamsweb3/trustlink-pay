@@ -119,7 +119,7 @@ Checks performed on November 17, 2026:
 - Gateway: `npm run check` passed six syntax checks; behavior testing remains missing.
 - Cross-chain: `node node_modules/typescript/bin/tsc -p tsconfig.json --noEmit --pretty false --incremental false` passed its configured `src`/`scripts` scope; workers and Solidity remain outside it.
 - UI: service-local non-emitting typecheck was blocked by a missing TypeScript installation; this is an unavailable check, not a diagnosed source type error.
-- Node reference: the current inventory's production source files were checked for existence, Python syntax and multiple function implementations. The final source-preservation comparison and documentation link/format checks accompany this assessment; no Node suite or startup was rerun.
+- Node reference: all 560 inventoried production files were present and parsed successfully; their 387 authored function bodies included no multiple-function implementation file. All 1,111 baseline service source/test/configuration/documentation hashes remained unchanged, and the three assessment documents passed local-link, fence and whitespace checks. No Node suite or startup was rerun.
 
 Evidence logs and metadata are retained locally in `C:\Users\codepara\AppData\Local\Temp\trustlink-mces-assessment-20261117-m7v5_da0`. The source baseline fingerprints 1,111 pre-existing authored source, test, configuration and documentation files within services, excluding generated/private material. These local artifacts are unavailable to another clone; commands and bounded results above make their scope explicit. Source preservation does not establish service availability, transaction acceptance, consensus, cryptographic privacy or hosted-storage equivalence.
 

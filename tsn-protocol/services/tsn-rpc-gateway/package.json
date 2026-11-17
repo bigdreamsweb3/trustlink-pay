@@ -25,7 +25,7 @@
     "// === Git & Deployment ===": "Repository helpers. Review git status before committing or pushing.",
     "git:status": "git status --short",
     "git:pull:all": "node ../../scripts/repo-security.mjs fetch protocol origin main",
-    "git:commit:push:all": "node ../../scripts/repo-security.mjs commit-push protocol origin main"
+    "git:commit:push:all": "node ../../scripts/repo-security.mjs commit-push-all protocol origin main"
   },
   "dependencies": {
     "@solana/web3.js": "^1.98.4",

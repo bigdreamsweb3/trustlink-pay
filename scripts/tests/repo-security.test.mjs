@@ -4,7 +4,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync,
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
-import { checkPrivateTracking, checkRepository, commitPushAll, commitPushOptions, commitPushStaged, commitStagedSnapshot, configuration, defaultCommitMessage, fetchArguments, gitEnvironment, gitExecutable, hardenRepository, main, normalizeKey, pushArguments, requireReviewedHash, stagedCommitSnapshot, trustedRemotes, validateRemote, workspace } from "../repo-security.mjs";
+import { checkPrivateTracking, checkRepository, commitPushAll, commitPushOptions, commitPushStaged, commitStagedSnapshot, configuration, defaultCommitMessage, fetchArguments, gitEnvironment, gitExecutable, gitFailureMessage, hardenRepository, main, normalizeKey, pushArguments, pushCurrent, requireReviewedHash, stageAllChanges, stagedCommitSnapshot, trustedRemotes, validateRemote, workspace } from "../repo-security.mjs";
 
 function fixture() {
   const directory = mkdtempSync(join(tmpdir(), "trustlink-git-policy-test-"));
@@ -166,6 +166,84 @@ test("commit/push defaults and optional overrides are validated before repositor
     assert.throws(() => main(["commit-push", "workspace", "origin", "main", ...overrides]));
   }
   assert.throws(() => main(["commit-push", "workspace", "origin"]), /explicit repository, remote and branch/);
+});
+
+test("failure classification reveals actionable categories without echoing sensitive diagnostics", () => {
+  const secret = "https://synthetic-user:synthetic-secret@fixture.invalid/private";
+  const cases = [
+    [{ error: { code: "ETIMEDOUT", message: secret } }, /timed out/],
+    [{ error: { code: "ENOBUFS", message: secret } }, /capture buffer/],
+    [{ error: { code: "ENOENT", message: secret } }, /executable is unavailable/],
+    [{ stderr: `Unable to create '${secret}/index.lock': File exists.` }, /repository lock/],
+    [{ stderr: `fatal: ${secret}: Permission denied` }, /filesystem permissions/],
+    [{ stderr: `fatal: ${secret}: No space left on device` }, /disk is full/],
+    [{ stderr: `error: '${secret}' does not have a commit checked out` }, /embedded repository/],
+    [{ stderr: `error: ${secret}: Filename too long` }, /path is unsupported/],
+    [{ stdout: `! ${secret} [rejected] (non-fast-forward)` }, /reconciliation; force push is disabled/],
+    [{ stderr: `Authentication failed for '${secret}'` }, /authentication or repository permission/],
+    [{ stderr: `Could not resolve host: ${secret}` }, /could not connect/],
+    [{ stderr: secret, status: 128 }, /unclassified failure/],
+  ];
+  for (const [result, expected] of cases) {
+    const message = gitFailureMessage(result, "Workspace staging");
+    assert.match(message, expected);
+    assert.doesNotMatch(message, /synthetic-user|synthetic-secret|fixture\.invalid/);
+    assert.match(message, /diagnostics were withheld/);
+  }
+});
+
+test("whole-workspace staging reports a real index lock and preserves both index and HEAD", () => {
+  const f = fixture();
+  try {
+    const parent = f.initialCommit();
+    const tree = f.git(["write-tree"]);
+    const repo = { name: "synthetic", gitDir: f.gitDir };
+    writeFileSync(join(f.directory, "repo", "reviewed.txt"), "pending update\n");
+    const lock = join(f.gitDir, "index.lock");
+    writeFileSync(lock, "Synthetic active Git lock\n");
+    assert.throws(() => stageAllChanges(repo, "main"), /Workspace staging failed.*repository lock/);
+    assert.equal(readFileSync(lock, "utf8"), "Synthetic active Git lock\n");
+    rmSync(lock);
+    assert.equal(f.git(["rev-parse", "HEAD"]), parent);
+    assert.equal(f.git(["write-tree"]), tree);
+    assert.equal(readFileSync(join(f.directory, "repo", "reviewed.txt"), "utf8"), "pending update\n");
+  } finally { f.dispose(); }
+});
+
+test("current push captures HEAD without staging or committing pending workspace changes", () => {
+  const f = fixture();
+  try {
+    const head = f.initialCommit();
+    const repo = { name: "synthetic", gitDir: f.gitDir };
+    writeFileSync(join(f.directory, "repo", "reviewed.txt"), "staged update\n");
+    f.git(["add", "--", "reviewed.txt"]);
+    const tree = f.git(["write-tree"]);
+    writeFileSync(join(f.directory, "repo", "untracked.txt"), "pending addition\n");
+    let pushed;
+    assert.equal(pushCurrent(repo, trustedRemotes.workspace.origin, "main", (...args) => { pushed = args; }), head);
+    assert.deepEqual(pushed, [repo, trustedRemotes.workspace.origin, "main", head]);
+    assert.equal(f.git(["write-tree"]), tree);
+    assert.equal(f.git(["rev-parse", "HEAD"]), head);
+    assert.equal(f.git(["rev-list", "--count", "HEAD"]), "1");
+    assert.throws(() => pushCurrent(repo, trustedRemotes.workspace.origin, "other", () => assert.fail("must not push")), /checked-out branch/);
+  } finally { f.dispose(); }
+  for (const args of [["push-current"], ["push-current", "workspace", "origin"], ["push-current", "workspace", "origin", "main", "--force"]]) {
+    assert.throws(() => main(args), /explicit repository, remote and branch/);
+  }
+});
+
+test("current push rejects private filenames in HEAD even when the current index removes them", () => {
+  const f = fixture();
+  try {
+    f.initialCommit();
+    writeFileSync(join(f.directory, "repo", ".receiver-store.json"), "{}\n");
+    f.git(["add", "--", ".receiver-store.json"]);
+    f.git(["commit", "--no-gpg-sign", "-m", "Synthetic forbidden snapshot"]);
+    f.git(["rm", "--cached", "--", ".receiver-store.json"]);
+    const tree = f.git(["write-tree"]);
+    assert.throws(() => pushCurrent({ name: "synthetic", gitDir: f.gitDir }, trustedRemotes.workspace.origin, "main", () => assert.fail("must not push")), /private configuration\/state filename/);
+    assert.equal(f.git(["write-tree"]), tree);
+  } finally { f.dispose(); }
 });
 
 test("default commit/push captures deliberate staging and never adds unstaged or untracked files", () => {

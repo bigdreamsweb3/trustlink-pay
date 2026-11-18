@@ -29,6 +29,10 @@ Source-derived SDK regeneration records 58 modules, 400 exports and 285 public m
 
 The scoped validator in `%TEMP%\tsn-staged-funding-final-20261118\validate-documents.mjs` passed 42 files: 39 Markdown/fence checks, fifteen MDX compilations, eight Mermaid parses, 562 local links, 102 Mintlify routes, 124 repository GitHub targets and 107 anchor checks. Both root/protocol CRLF-aware changed-line whitespace checks passed, with no files changing during validation. Separate Node inventory whitespace checks also passed using `core.whitespace=cr-at-eol`, preserving existing CRLF bytes. These checks do not establish browser rendering, remote link availability or live protocol behavior.
 
+## Later signed-funding deadline follow-up
+
+The [November 18 deadline investigation](FUNDING-DEADLINE-20261118.md) establishes timing for three later attempts and records the subsequent bounded issuance/queue correction. The results above remain the earlier staged-source checkpoint; they do not verify that later correction or successful live funding.
+
 ## Operator impact and outstanding checks
 
 No program account/instruction layout, program ID, key, dependency, deployment helper, environment or service configuration changed for staging. The matching SDK/browser bundle and Receiver/Node/Cranker code must be loaded together. The user manages existing process terminals; no service was started or stopped during this task. From the repository root, use the existing terminal commands after stopping each prior process yourself:

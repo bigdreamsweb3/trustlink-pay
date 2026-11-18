@@ -4,6 +4,10 @@ Drain Receiver work after a wake, renew the same claim generation, cancel verifi
 
 Inputs, outputs, dependency types and raised exceptions are recorded per component in [the contract map](../component_contracts.json). Functions retaining no runtime dependencies are directly reusable. A stateful function accepts its narrow `Dependencies` port; production binds that port through `NodeRuntime`.
 
+The worker claims at most one completed `SIGNED_DEPOSIT` funding item before epoch coordination, then performs coordination and the ordinary claim. The ordinary path retains accounting priority and all supported kinds. This fair, nonpreemptive schedule avoids unrelated accounting ahead of an available signed deposit without starving ordinary work; an active operation can still delay arrivals. Empty normal claims after priority progress keep draining, while a fully empty cycle returns to the event wait.
+
+[claim_receiver_work](claim_receiver_work.py) accepts the explicit Receiver/request/verification ports, client and headers, plus `signed_funding_only`; it returns whether work was processed. The priority request restricts supported kinds to `AUTHORIZED_FUNDING` and phase to `SIGNED_DEPOSIT`. HTTP/lease/verification errors propagate to the bounded worker retry. Existing renewal, cancellation, version/payload checks and signed decisions apply unchanged. Gated lease logs add claim duration and filter identity. `tests/test_funding_queue.py` covers fairness, message-only/empty queues, idle wakes, failures and cancellation.
+
 ## Public components
 
 - [_renew_receiver_node_lease](renew_receiver_node_lease.py): Renew receiver node lease. See the named validation/return operations in its dedicated implementation.

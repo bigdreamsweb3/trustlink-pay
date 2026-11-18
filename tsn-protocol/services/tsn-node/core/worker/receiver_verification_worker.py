@@ -6,6 +6,7 @@ explicit structural ports; raised errors retain the original contract.
 from __future__ import annotations
 import asyncio
 import httpx
+from .claim_receiver_work import claim_receiver_work
 from typing import Any, Callable, Protocol
 
 class Dependencies(Protocol):
@@ -40,31 +41,16 @@ async def receiver_verification_worker(node: Dependencies) -> None:
             consecutive_failures = 0
             while True:
                 try:
+                    # Wallet approvals have a short bank-height lifetime. Process
+                    # one signed deposit before unrelated accounting RPCs, then
+                    # give accounting and the normal queue their existing turn.
+                    priority_processed = await claim_receiver_work(node, client, headers, signed_funding_only=True)
                     await node._coordinate_private_credit_work(client, headers)
-                    leased_work = await node.receiver_request(client, "POST", "/api/internal/node/work", headers=headers, json={
-                        "nodeId": node.TSN_NODE_ID,
-                        "supportedKinds": ["AUTHORIZED_FUNDING", "TIN_OPERATION", "SETTLEMENT", "TCAP_EPOCH_ACCOUNTING"],
-                    })
-                    leased_work.raise_for_status()
-                    work = leased_work.json().get("work")
-                    if not work:
+                    normal_processed = await claim_receiver_work(node, client, headers)
+                    if not priority_processed and not normal_processed:
                         # Queue drained. Return to the event wait; no polling.
                         node.logger.info("TSN Receiver verifier drained queue; sleeping")
                         break
-                    lease_context = {
-                        "source": "tsn-receiver",
-                        "workId": str(work.get("id") or ""),
-                        "kind": str(work.get("kind") or ""),
-                        "stateVersion": work.get("stateVersion"),
-                        "payloadCommitment": str(work.get("payloadCommitment") or ""),
-                    }
-                    if node.TSN_LOCAL_FLOW_LOGS:
-                        node.logger.info(
-                            "TSN Receiver lease acquired: work_id=%s kind=%s state_version=%s payload_commitment=%s",
-                            lease_context["workId"], lease_context["kind"],
-                            lease_context["stateVersion"], lease_context["payloadCommitment"],
-                        )
-                    await node._process_receiver_work_with_lease(client, headers, work)
                     retry_delay = 2.0
                     consecutive_failures = 0
                 except asyncio.CancelledError:

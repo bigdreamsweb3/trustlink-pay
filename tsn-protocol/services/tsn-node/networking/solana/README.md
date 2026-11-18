@@ -8,6 +8,13 @@ Inputs, outputs, dependency types and raised exceptions are recorded per compone
 
 - [get_token_account_balance_ui](get_token_account_balance_ui.py): Get token account balance ui. See the named validation/return operations in its dedicated implementation.
 - [solana_rpc](solana_rpc.py): Solana rpc. See the named validation/return operations in its dedicated implementation.
+- [funding_blockhash_candidate](funding_blockhash_candidate.py): Validate the exact canonical safe-integer issuer tuple and compute a decoded-byte fingerprint; malformed or regressing context raises `ValueError`.
+- [funding_blockhash_validity](funding_blockhash_validity.py): Require an exact boolean and confirmed safe-integer bank slot at or above the issuer context.
+- [funding_blockhash_height](funding_blockhash_height.py): Validate the confirmed nonnegative safe-integer height used only for unsigned preparation headroom.
+
+The [issuance policy](funding_blockhash_issuance.py) permits three candidates, uses four-second per-endpoint RPC reads and requires 100 remaining blocks before returning a funding tuple. Each candidate needs `getLatestBlockhash`, `isBlockhashValid` and `getBlockHeight`, so the normal response adds two confirmed reads; retrying can perform up to nine RPC operations, each with the existing configured-endpoint failover. This is separate from Cranker's 20-block submission margin. No funds are reserved, signed wires are never rewritten, and neither the lifetime hint nor a height observation proves a previous transaction did not execute.
+
+The current RPC port selects providers independently for each read. Nondecreasing `minContextSlot` prevents using a bank below observed context, but does not pin one upstream bank or establish fork agreement. Issuance fails closed with HTTP 503 when visibility, types, context or signing headroom cannot be established. `tests/test_deposit_rpc.py` verifies fresh/stale/unknown/malformed results, exact tuples, the 100-block boundary, bounded attempts and context progression using synthetic ports.
 
 ## Verification and replacement
 

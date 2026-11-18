@@ -7,30 +7,30 @@
     "verification": "docs/verification.md"
   },
   "coverage": {
-    "productionFiles": 579,
-    "productionFunctions": 400,
+    "productionFiles": 584,
+    "productionFunctions": 404,
     "verificationToolsFiles": 7,
     "verificationToolsFunctions": 5,
-    "testsFiles": 347,
-    "testsFunctions": 250
+    "testsFiles": 369,
+    "testsFunctions": 269
   },
   "productionCoverage": {
-    "files": 579,
-    "functionFreeFiles": 179,
-    "singleFunctionFiles": 400,
+    "files": 584,
+    "functionFreeFiles": 180,
+    "singleFunctionFiles": 404,
     "multipleFunctionFiles": [],
     "originalServerContractEntries": 147,
     "missingServerContractFiles": [],
     "testComponentEntries": 231,
-    "newComponentTestFunctions": 19,
+    "newComponentTestFunctions": 38,
     "contractVerificationStatuses": {
-      "DIRECT_TEST_CALL_SOURCE_REFERENCES": 32,
-      "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED": 102,
+      "DIRECT_TEST_CALL_SOURCE_REFERENCES": 33,
+      "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED": 101,
       "TEST_SOURCE_REFERENCES_WITHOUT_DIRECT_CALL": 13
     },
     "productionFunctionVerificationStatuses": {
-      "DIRECT_TEST_CALL_SOURCE_REFERENCES": 78,
-      "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED": 305,
+      "DIRECT_TEST_CALL_SOURCE_REFERENCES": 79,
+      "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED": 308,
       "TEST_SOURCE_REFERENCES_WITHOUT_DIRECT_CALL": 17
     }
   },
@@ -2109,7 +2109,7 @@
       "functions": [
         {
           "name": "get_network_recent_blockhash",
-          "line": 17,
+          "line": 24,
           "async": true,
           "verification": {
             "status": "DIRECT_TEST_CALL_SOURCE_REFERENCES",
@@ -2133,16 +2133,24 @@
           "relativeImport": false
         },
         {
-          "module": "fastapi",
-          "symbol": "HTTPException",
+          "module": "datetime",
+          "symbol": "datetime",
           "alias": null,
           "localFile": null,
           "localImport": false,
           "relativeImport": false
         },
         {
-          "module": "typing",
-          "symbol": "Any",
+          "module": "datetime",
+          "symbol": "timezone",
+          "alias": null,
+          "localFile": null,
+          "localImport": false,
+          "relativeImport": false
+        },
+        {
+          "module": "fastapi",
+          "symbol": "HTTPException",
           "alias": null,
           "localFile": null,
           "localImport": false,
@@ -2173,18 +2181,50 @@
           "relativeImport": false
         },
         {
-          "module": "core.schemas.sender_funding_blockhash_context",
-          "symbol": "SenderFundingBlockhashContext",
+          "module": "networking.solana.funding_blockhash_candidate",
+          "symbol": "funding_blockhash_candidate",
           "alias": null,
-          "localFile": "core/schemas/sender_funding_blockhash_context.py",
+          "localFile": "networking/solana/funding_blockhash_candidate.py",
           "localImport": true,
           "relativeImport": false
         },
         {
-          "module": "app.solana_pubkey",
-          "symbol": "Pubkey",
+          "module": "networking.solana.funding_blockhash_height",
+          "symbol": "funding_blockhash_height",
           "alias": null,
-          "localFile": "app/solana_pubkey.py",
+          "localFile": "networking/solana/funding_blockhash_height.py",
+          "localImport": true,
+          "relativeImport": false
+        },
+        {
+          "module": "networking.solana.funding_blockhash_validity",
+          "symbol": "funding_blockhash_validity",
+          "alias": null,
+          "localFile": "networking/solana/funding_blockhash_validity.py",
+          "localImport": true,
+          "relativeImport": false
+        },
+        {
+          "module": "networking.solana.funding_blockhash_issuance",
+          "symbol": "FUNDING_BLOCKHASH_ISSUE_ATTEMPTS",
+          "alias": null,
+          "localFile": "networking/solana/funding_blockhash_issuance.py",
+          "localImport": true,
+          "relativeImport": false
+        },
+        {
+          "module": "networking.solana.funding_blockhash_issuance",
+          "symbol": "FUNDING_BLOCKHASH_MIN_REMAINING_BLOCKS",
+          "alias": null,
+          "localFile": "networking/solana/funding_blockhash_issuance.py",
+          "localImport": true,
+          "relativeImport": false
+        },
+        {
+          "module": "networking.solana.funding_blockhash_issuance",
+          "symbol": "FUNDING_BLOCKHASH_READ_TIMEOUT_SECONDS",
+          "alias": null,
+          "localFile": "networking/solana/funding_blockhash_issuance.py",
           "localImport": true,
           "relativeImport": false
         }
@@ -10521,6 +10561,26 @@
           },
           {
             "source": "tests/cases/deposit_rpc/functions/f008_setUp.py",
+            "line": 1,
+            "kind": "symbol-import",
+            "expression": "app.solana_pubkey.Pubkey",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f008_setUp.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f008_setUp.py",
+            "line": 9,
+            "kind": "direct-call",
+            "expression": "Pubkey",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f008_setUp.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f008_setUp.py",
             "line": 9,
             "kind": "direct-call",
             "expression": "Pubkey",
@@ -10541,11 +10601,51 @@
           },
           {
             "source": "tests/cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
+            "line": 3,
+            "kind": "symbol-import",
+            "expression": "app.solana_pubkey.Pubkey",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
             "line": 7,
             "kind": "direct-call",
             "expression": "Pubkey",
             "newComponentTest": {
               "component": "cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
+            "line": 7,
+            "kind": "direct-call",
+            "expression": "Pubkey",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f016_test_stale_issuance_retries_new_tuple_before_signing.py",
+            "line": 2,
+            "kind": "symbol-import",
+            "expression": "app.solana_pubkey.Pubkey",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f016_test_stale_issuance_retries_new_tuple_before_signing.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f016_test_stale_issuance_retries_new_tuple_before_signing.py",
+            "line": 7,
+            "kind": "direct-call",
+            "expression": "Pubkey",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f016_test_stale_issuance_retries_new_tuple_before_signing.py",
               "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
             }
           },
@@ -11045,7 +11145,37 @@
           },
           {
             "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
+            "line": 5,
+            "kind": "symbol-import",
+            "expression": "app.solana_pubkey.Pubkey",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
             "line": 14,
+            "kind": "symbol-reference",
+            "expression": "Pubkey",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
+            "line": 14,
+            "kind": "symbol-reference",
+            "expression": "Pubkey",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
+            "line": 15,
             "kind": "symbol-reference",
             "expression": "Pubkey",
             "newComponentTest": {
@@ -11075,7 +11205,37 @@
           },
           {
             "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
+            "line": 16,
+            "kind": "symbol-reference",
+            "expression": "Pubkey",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
             "line": 17,
+            "kind": "symbol-reference",
+            "expression": "Pubkey",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
+            "line": 17,
+            "kind": "symbol-reference",
+            "expression": "Pubkey",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
+            "line": 24,
             "kind": "symbol-reference",
             "expression": "Pubkey",
             "newComponentTest": {
@@ -11105,7 +11265,37 @@
           },
           {
             "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
+            "line": 25,
+            "kind": "symbol-reference",
+            "expression": "Pubkey",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
             "line": 29,
+            "kind": "symbol-reference",
+            "expression": "Pubkey",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
+            "line": 29,
+            "kind": "symbol-reference",
+            "expression": "Pubkey",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
+            "line": 33,
             "kind": "symbol-reference",
             "expression": "Pubkey",
             "newComponentTest": {
@@ -11329,6 +11519,26 @@
             "line": 2,
             "kind": "symbol-import",
             "expression": "app.solana_pubkey.Pubkey",
+            "newComponentTest": {
+              "component": "cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+            "line": 2,
+            "kind": "symbol-import",
+            "expression": "app.solana_pubkey.Pubkey",
+            "newComponentTest": {
+              "component": "cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+            "line": 7,
+            "kind": "direct-call",
+            "expression": "Pubkey",
             "newComponentTest": {
               "component": "cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
               "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
@@ -13923,7 +14133,6 @@
       ],
       "importedBy": [
         "amounts/units/resolve_tcap_registered_asset.py",
-        "api/handlers/get_network_recent_blockhash.py",
         "app/networking/solana/find_tsn_pda.py",
         "app/networking/solana/get_associated_token_address.py",
         "app/networking/solana/get_cranker_pda.py",
@@ -13938,6 +14147,7 @@
         "core/configuration.py",
         "core/runtime.py",
         "funding_snapshot_sync.py",
+        "networking/solana/funding_blockhash_candidate.py",
         "private_credit_coordination.py",
         "server.py",
         "settlement/accounting/read_epoch.py",
@@ -17047,6 +17257,26 @@
             "line": 6,
             "kind": "symbol-import",
             "expression": "app.store.FileStore",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_nonce_binding.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_nonce_binding.py",
+            "line": 6,
+            "kind": "symbol-import",
+            "expression": "app.store.FileStore",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_nonce_binding.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_nonce_binding.py",
+            "line": 13,
+            "kind": "direct-call",
+            "expression": "FileStore",
             "newComponentTest": {
               "component": "cases/staged_funding/functions/test_nonce_binding.py",
               "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
@@ -24173,40 +24403,7 @@
           },
           {
             "source": "tests/cases/deposit_rpc/functions/f001_simulate.py",
-            "line": 4,
-            "kind": "symbol-import",
-            "expression": "server.runtime",
-            "originalTest": {
-              "source": "tests/test_deposit_rpc.py",
-              "line": 12,
-              "name": "simulate"
-            }
-          },
-          {
-            "source": "tests/cases/deposit_rpc/functions/f001_simulate.py",
             "line": 14,
-            "kind": "symbol-reference",
-            "expression": "server",
-            "originalTest": {
-              "source": "tests/test_deposit_rpc.py",
-              "line": 12,
-              "name": "simulate"
-            }
-          },
-          {
-            "source": "tests/cases/deposit_rpc/functions/f001_simulate.py",
-            "line": 14,
-            "kind": "symbol-reference",
-            "expression": "server",
-            "originalTest": {
-              "source": "tests/test_deposit_rpc.py",
-              "line": 12,
-              "name": "simulate"
-            }
-          },
-          {
-            "source": "tests/cases/deposit_rpc/functions/f001_simulate.py",
-            "line": 15,
             "kind": "symbol-reference",
             "expression": "server",
             "originalTest": {
@@ -24238,7 +24435,37 @@
           },
           {
             "source": "tests/cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
+            "line": 2,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
             "line": 12,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
+            "line": 12,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
+            "line": 15,
             "kind": "symbol-reference",
             "expression": "server",
             "newComponentTest": {
@@ -24268,6 +24495,16 @@
           },
           {
             "source": "tests/cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+            "line": 3,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
             "line": 8,
             "kind": "symbol-reference",
             "expression": "server",
@@ -24278,7 +24515,7 @@
           },
           {
             "source": "tests/cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
-            "line": 9,
+            "line": 8,
             "kind": "symbol-reference",
             "expression": "server",
             "newComponentTest": {
@@ -24288,7 +24525,37 @@
           },
           {
             "source": "tests/cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
-            "line": 20,
+            "line": 10,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+            "line": 10,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+            "line": 26,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+            "line": 26,
             "kind": "symbol-reference",
             "expression": "server",
             "newComponentTest": {
@@ -24301,6 +24568,26 @@
             "line": 4,
             "kind": "symbol-import",
             "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f013_test_malformed_common_rpc_falls_through_without_raw_diagnostics.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f013_test_malformed_common_rpc_falls_through_without_raw_diagnostics.py",
+            "line": 4,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f013_test_malformed_common_rpc_falls_through_without_raw_diagnostics.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f013_test_malformed_common_rpc_falls_through_without_raw_diagnostics.py",
+            "line": 14,
+            "kind": "symbol-reference",
+            "expression": "server",
             "newComponentTest": {
               "component": "cases/deposit_rpc/functions/f013_test_malformed_common_rpc_falls_through_without_raw_diagnostics.py",
               "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
@@ -24328,11 +24615,271 @@
           },
           {
             "source": "tests/cases/deposit_rpc/functions/f013_test_malformed_common_rpc_falls_through_without_raw_diagnostics.py",
+            "line": 15,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f013_test_malformed_common_rpc_falls_through_without_raw_diagnostics.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f013_test_malformed_common_rpc_falls_through_without_raw_diagnostics.py",
             "line": 16,
             "kind": "symbol-reference",
             "expression": "server",
             "newComponentTest": {
               "component": "cases/deposit_rpc/functions/f013_test_malformed_common_rpc_falls_through_without_raw_diagnostics.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f013_test_malformed_common_rpc_falls_through_without_raw_diagnostics.py",
+            "line": 16,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f013_test_malformed_common_rpc_falls_through_without_raw_diagnostics.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f015_test_fresh_issuance_preserves_tuple_and_confirmed_margin.py",
+            "line": 2,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f015_test_fresh_issuance_preserves_tuple_and_confirmed_margin.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f015_test_fresh_issuance_preserves_tuple_and_confirmed_margin.py",
+            "line": 8,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f015_test_fresh_issuance_preserves_tuple_and_confirmed_margin.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f015_test_fresh_issuance_preserves_tuple_and_confirmed_margin.py",
+            "line": 10,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f015_test_fresh_issuance_preserves_tuple_and_confirmed_margin.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f015_test_fresh_issuance_preserves_tuple_and_confirmed_margin.py",
+            "line": 11,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f015_test_fresh_issuance_preserves_tuple_and_confirmed_margin.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f016_test_stale_issuance_retries_new_tuple_before_signing.py",
+            "line": 3,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f016_test_stale_issuance_retries_new_tuple_before_signing.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f016_test_stale_issuance_retries_new_tuple_before_signing.py",
+            "line": 13,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f016_test_stale_issuance_retries_new_tuple_before_signing.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f016_test_stale_issuance_retries_new_tuple_before_signing.py",
+            "line": 14,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f016_test_stale_issuance_retries_new_tuple_before_signing.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f017_test_low_signing_margin_exhausts_bounded_issuance.py",
+            "line": 3,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f017_test_low_signing_margin_exhausts_bounded_issuance.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f017_test_low_signing_margin_exhausts_bounded_issuance.py",
+            "line": 12,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f017_test_low_signing_margin_exhausts_bounded_issuance.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f017_test_low_signing_margin_exhausts_bounded_issuance.py",
+            "line": 14,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f017_test_low_signing_margin_exhausts_bounded_issuance.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f018_test_unknown_height_never_issues_or_echoes_rpc_error.py",
+            "line": 3,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f018_test_unknown_height_never_issues_or_echoes_rpc_error.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f018_test_unknown_height_never_issues_or_echoes_rpc_error.py",
+            "line": 14,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f018_test_unknown_height_never_issues_or_echoes_rpc_error.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f018_test_unknown_height_never_issues_or_echoes_rpc_error.py",
+            "line": 15,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f018_test_unknown_height_never_issues_or_echoes_rpc_error.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f018_test_unknown_height_never_issues_or_echoes_rpc_error.py",
+            "line": 17,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f018_test_unknown_height_never_issues_or_echoes_rpc_error.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f019_test_issuance_rejects_unknown_and_noncanonical_checks.py",
+            "line": 3,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f019_test_issuance_rejects_unknown_and_noncanonical_checks.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f019_test_issuance_rejects_unknown_and_noncanonical_checks.py",
+            "line": 23,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f019_test_issuance_rejects_unknown_and_noncanonical_checks.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f019_test_issuance_rejects_unknown_and_noncanonical_checks.py",
+            "line": 25,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f019_test_issuance_rejects_unknown_and_noncanonical_checks.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f020_test_issuance_retries_never_regress_verified_bank_context.py",
+            "line": 2,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f020_test_issuance_retries_never_regress_verified_bank_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f020_test_issuance_retries_never_regress_verified_bank_context.py",
+            "line": 13,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f020_test_issuance_retries_never_regress_verified_bank_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f020_test_issuance_retries_never_regress_verified_bank_context.py",
+            "line": 14,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f020_test_issuance_retries_never_regress_verified_bank_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f021_test_issuance_logs_only_gated_sanitized_context.py",
+            "line": 3,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f021_test_issuance_logs_only_gated_sanitized_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f021_test_issuance_logs_only_gated_sanitized_context.py",
+            "line": 11,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f021_test_issuance_logs_only_gated_sanitized_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f021_test_issuance_logs_only_gated_sanitized_context.py",
+            "line": 12,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f021_test_issuance_logs_only_gated_sanitized_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/deposit_rpc/functions/f021_test_issuance_logs_only_gated_sanitized_context.py",
+            "line": 13,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/deposit_rpc/functions/f021_test_issuance_logs_only_gated_sanitized_context.py",
               "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
             }
           },
@@ -25723,6 +26270,26 @@
           },
           {
             "source": "tests/cases/staged_funding/functions/test_authorization_readiness.py",
+            "line": 2,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_authorization_readiness.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_authorization_readiness.py",
+            "line": 9,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_authorization_readiness.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_authorization_readiness.py",
             "line": 9,
             "kind": "symbol-reference",
             "expression": "node",
@@ -25734,6 +26301,26 @@
           {
             "source": "tests/cases/staged_funding/functions/test_authorization_readiness.py",
             "line": 11,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_authorization_readiness.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_authorization_readiness.py",
+            "line": 11,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_authorization_readiness.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_authorization_readiness.py",
+            "line": 12,
             "kind": "symbol-reference",
             "expression": "node",
             "newComponentTest": {
@@ -25763,7 +26350,37 @@
           },
           {
             "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
+            "line": 3,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
             "line": 15,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
+            "line": 15,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
+            "line": 16,
             "kind": "symbol-reference",
             "expression": "node",
             "newComponentTest": {
@@ -25793,7 +26410,37 @@
           },
           {
             "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
+            "line": 17,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
             "line": 21,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
+            "line": 21,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
+            "line": 23,
             "kind": "symbol-reference",
             "expression": "node",
             "newComponentTest": {
@@ -25823,6 +26470,26 @@
           },
           {
             "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
+            "line": 24,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
+            "line": 26,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
             "line": 26,
             "kind": "symbol-reference",
             "expression": "node",
@@ -25843,7 +26510,37 @@
           },
           {
             "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
+            "line": 7,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
             "line": 39,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
+            "line": 39,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
+            "line": 43,
             "kind": "symbol-reference",
             "expression": "node",
             "newComponentTest": {
@@ -25873,11 +26570,41 @@
           },
           {
             "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
+            "line": 47,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
             "line": 49,
             "kind": "symbol-reference",
             "expression": "node",
             "newComponentTest": {
               "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
+            "line": 49,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_owner_readiness.py",
+            "line": 2,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_owner_readiness.py",
               "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
             }
           },
@@ -25903,7 +26630,37 @@
           },
           {
             "source": "tests/cases/staged_funding/functions/test_owner_readiness.py",
+            "line": 11,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_owner_readiness.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_owner_readiness.py",
             "line": 12,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_owner_readiness.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_owner_readiness.py",
+            "line": 12,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_owner_readiness.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_owner_readiness.py",
+            "line": 16,
             "kind": "symbol-reference",
             "expression": "node",
             "newComponentTest": {
@@ -25933,6 +26690,26 @@
           },
           {
             "source": "tests/cases/staged_funding/functions/test_readiness_integrity.py",
+            "line": 3,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_readiness_integrity.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_readiness_integrity.py",
+            "line": 8,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_readiness_integrity.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_readiness_integrity.py",
             "line": 8,
             "kind": "symbol-reference",
             "expression": "node",
@@ -25953,7 +26730,37 @@
           },
           {
             "source": "tests/cases/staged_funding/functions/test_readiness_integrity.py",
+            "line": 9,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_readiness_integrity.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_readiness_integrity.py",
             "line": 14,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_readiness_integrity.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_readiness_integrity.py",
+            "line": 14,
+            "kind": "symbol-reference",
+            "expression": "node",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_readiness_integrity.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_readiness_integrity.py",
+            "line": 18,
             "kind": "symbol-reference",
             "expression": "node",
             "newComponentTest": {
@@ -26244,28 +27051,6 @@
           },
           {
             "source": "tests/cases/wallet_funding_transaction/functions/f015_test_node_verifies_deposit_before_simulating_unchanged_wallet_wire.py",
-            "line": 3,
-            "kind": "symbol-import",
-            "expression": "server.runtime",
-            "originalTest": {
-              "source": "tests/test_wallet_funding_transaction.py",
-              "line": 162,
-              "name": "test_node_verifies_deposit_before_simulating_unchanged_wallet_wire"
-            }
-          },
-          {
-            "source": "tests/cases/wallet_funding_transaction/functions/f015_test_node_verifies_deposit_before_simulating_unchanged_wallet_wire.py",
-            "line": 9,
-            "kind": "symbol-reference",
-            "expression": "server",
-            "originalTest": {
-              "source": "tests/test_wallet_funding_transaction.py",
-              "line": 162,
-              "name": "test_node_verifies_deposit_before_simulating_unchanged_wallet_wire"
-            }
-          },
-          {
-            "source": "tests/cases/wallet_funding_transaction/functions/f015_test_node_verifies_deposit_before_simulating_unchanged_wallet_wire.py",
             "line": 9,
             "kind": "symbol-reference",
             "expression": "server",
@@ -26287,28 +27072,6 @@
             }
           },
           {
-            "source": "tests/cases/wallet_funding_transaction/functions/f015_test_node_verifies_deposit_before_simulating_unchanged_wallet_wire.py",
-            "line": 10,
-            "kind": "symbol-reference",
-            "expression": "server",
-            "originalTest": {
-              "source": "tests/test_wallet_funding_transaction.py",
-              "line": 162,
-              "name": "test_node_verifies_deposit_before_simulating_unchanged_wallet_wire"
-            }
-          },
-          {
-            "source": "tests/cases/wallet_funding_transaction/functions/f016_test_extra_action_is_rejected_before_simulation.py",
-            "line": 3,
-            "kind": "symbol-import",
-            "expression": "server.runtime",
-            "originalTest": {
-              "source": "tests/test_wallet_funding_transaction.py",
-              "line": 172,
-              "name": "test_extra_action_is_rejected_before_simulation"
-            }
-          },
-          {
             "source": "tests/cases/wallet_funding_transaction/functions/f016_test_extra_action_is_rejected_before_simulation.py",
             "line": 3,
             "kind": "symbol-import",
@@ -26322,28 +27085,6 @@
           {
             "source": "tests/cases/wallet_funding_transaction/functions/f016_test_extra_action_is_rejected_before_simulation.py",
             "line": 11,
-            "kind": "symbol-reference",
-            "expression": "server",
-            "originalTest": {
-              "source": "tests/test_wallet_funding_transaction.py",
-              "line": 172,
-              "name": "test_extra_action_is_rejected_before_simulation"
-            }
-          },
-          {
-            "source": "tests/cases/wallet_funding_transaction/functions/f016_test_extra_action_is_rejected_before_simulation.py",
-            "line": 11,
-            "kind": "symbol-reference",
-            "expression": "server",
-            "originalTest": {
-              "source": "tests/test_wallet_funding_transaction.py",
-              "line": 172,
-              "name": "test_extra_action_is_rejected_before_simulation"
-            }
-          },
-          {
-            "source": "tests/cases/wallet_funding_transaction/functions/f016_test_extra_action_is_rejected_before_simulation.py",
-            "line": 13,
             "kind": "symbol-reference",
             "expression": "server",
             "originalTest": {
@@ -26375,7 +27116,37 @@
           },
           {
             "source": "tests/cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+            "line": 3,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
             "line": 8,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+            "line": 8,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+            "line": 10,
             "kind": "symbol-reference",
             "expression": "server",
             "newComponentTest": {
@@ -26405,7 +27176,37 @@
           },
           {
             "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "line": 4,
+            "kind": "symbol-import",
+            "expression": "server.runtime",
+            "newComponentTest": {
+              "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
             "line": 17,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "line": 17,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "line": 18,
             "kind": "symbol-reference",
             "expression": "server",
             "newComponentTest": {
@@ -26435,7 +27236,37 @@
           },
           {
             "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "line": 19,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
             "line": 20,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "line": 20,
+            "kind": "symbol-reference",
+            "expression": "server",
+            "newComponentTest": {
+              "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "line": 26,
             "kind": "symbol-reference",
             "expression": "server",
             "newComponentTest": {
@@ -26593,6 +27424,26 @@
             "line": 4,
             "kind": "symbol-import",
             "expression": "core.schemas.complete_funding_request.CompleteFundingRequest",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
+            "line": 4,
+            "kind": "symbol-import",
+            "expression": "core.schemas.complete_funding_request.CompleteFundingRequest",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
+            "line": 11,
+            "kind": "direct-call",
+            "expression": "CompleteFundingRequest",
             "newComponentTest": {
               "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
               "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
@@ -26805,7 +27656,37 @@
           },
           {
             "source": "tests/cases/staged_funding/functions/test_initial_schema.py",
+            "line": 1,
+            "kind": "symbol-import",
+            "expression": "core.schemas.create_intent_request.CreateIntentRequest",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_initial_schema.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_initial_schema.py",
             "line": 6,
+            "kind": "direct-call",
+            "expression": "CreateIntentRequest",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_initial_schema.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_initial_schema.py",
+            "line": 6,
+            "kind": "direct-call",
+            "expression": "CreateIntentRequest",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_initial_schema.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_initial_schema.py",
+            "line": 8,
             "kind": "direct-call",
             "expression": "CreateIntentRequest",
             "newComponentTest": {
@@ -26828,6 +27709,26 @@
             "line": 2,
             "kind": "symbol-import",
             "expression": "core.schemas.create_intent_request.CreateIntentRequest",
+            "newComponentTest": {
+              "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "line": 2,
+            "kind": "symbol-import",
+            "expression": "core.schemas.create_intent_request.CreateIntentRequest",
+            "newComponentTest": {
+              "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "line": 10,
+            "kind": "direct-call",
+            "expression": "CreateIntentRequest",
             "newComponentTest": {
               "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
               "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
@@ -26969,6 +27870,26 @@
             "line": 3,
             "kind": "symbol-import",
             "expression": "core.schemas.funding_readiness_request.FundingReadinessRequest",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_owner_readiness.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_owner_readiness.py",
+            "line": 3,
+            "kind": "symbol-import",
+            "expression": "core.schemas.funding_readiness_request.FundingReadinessRequest",
+            "newComponentTest": {
+              "component": "cases/staged_funding/functions/test_owner_readiness.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/staged_funding/functions/test_owner_readiness.py",
+            "line": 10,
+            "kind": "direct-call",
+            "expression": "FundingReadinessRequest",
             "newComponentTest": {
               "component": "cases/staged_funding/functions/test_owner_readiness.py",
               "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
@@ -27130,6 +28051,26 @@
             "line": 3,
             "kind": "symbol-import",
             "expression": "core.schemas.mempool_intent.MempoolIntent",
+            "newComponentTest": {
+              "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "line": 3,
+            "kind": "symbol-import",
+            "expression": "core.schemas.mempool_intent.MempoolIntent",
+            "newComponentTest": {
+              "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "line": 11,
+            "kind": "direct-call",
+            "expression": "MempoolIntent",
             "newComponentTest": {
               "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
               "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
@@ -27501,9 +28442,9 @@
         }
       ],
       "importedBy": [
-        "api/handlers/get_network_recent_blockhash.py",
         "core/schemas/complete_funding_request.py",
         "core/schemas/signed_funding_request.py",
+        "networking/solana/funding_blockhash_candidate.py",
         "transactions/native/funding/funding_blockhash_context.py"
       ],
       "verification": {
@@ -27779,6 +28720,14 @@
           "localFile": "core/worker/receiver_verified_payload.py",
           "localImport": true,
           "relativeImport": true
+        },
+        {
+          "module": "core.worker.claim_receiver_work",
+          "symbol": "claim_receiver_work",
+          "alias": null,
+          "localFile": "core/worker/claim_receiver_work.py",
+          "localImport": true,
+          "relativeImport": true
         }
       ],
       "explicitExports": [
@@ -27787,10 +28736,89 @@
         "_process_receiver_work_with_lease",
         "receiver_verification_worker",
         "_receiver_work_by_id",
-        "_receiver_verified_payload"
+        "_receiver_verified_payload",
+        "claim_receiver_work"
       ],
       "importedBy": [
         "core/runtime.py"
+      ],
+      "verification": {
+        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "core/worker/claim_receiver_work.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "claim_receiver_work",
+          "line": 21,
+          "async": true,
+          "verification": {
+            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [
+        "Dependencies"
+      ],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbol": "annotations",
+          "alias": null,
+          "localFile": null,
+          "localImport": false,
+          "relativeImport": false
+        },
+        {
+          "module": "asyncio",
+          "symbol": "module",
+          "alias": null,
+          "localFile": null,
+          "localImport": false,
+          "relativeImport": false
+        },
+        {
+          "module": "typing",
+          "symbol": "Any",
+          "alias": null,
+          "localFile": null,
+          "localImport": false,
+          "relativeImport": false
+        },
+        {
+          "module": "typing",
+          "symbol": "Callable",
+          "alias": null,
+          "localFile": null,
+          "localImport": false,
+          "relativeImport": false
+        },
+        {
+          "module": "typing",
+          "symbol": "Protocol",
+          "alias": null,
+          "localFile": null,
+          "localImport": false,
+          "relativeImport": false
+        },
+        {
+          "module": "httpx",
+          "symbol": "module",
+          "alias": null,
+          "localFile": null,
+          "localImport": false,
+          "relativeImport": false
+        }
+      ],
+      "importedBy": [
+        "core/worker/__init__.py",
+        "core/worker/receiver_verification_worker.py"
       ],
       "verification": {
         "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
@@ -27986,10 +29014,10 @@
       "functions": [
         {
           "name": "receiver_verification_worker",
-          "line": 23,
+          "line": 24,
           "async": true,
           "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
+            "status": "DIRECT_TEST_CALL_SOURCE_REFERENCES",
             "contractVerification": {
               "file": "core/component_contracts.json",
               "name": "receiver_verification_worker"
@@ -28024,6 +29052,14 @@
           "localFile": null,
           "localImport": false,
           "relativeImport": false
+        },
+        {
+          "module": "core.worker.claim_receiver_work",
+          "symbol": "claim_receiver_work",
+          "alias": null,
+          "localFile": "core/worker/claim_receiver_work.py",
+          "localImport": true,
+          "relativeImport": true
         },
         {
           "module": "typing",
@@ -31668,13 +32704,230 @@
           "localFile": "networking/solana/solana_rpc.py",
           "localImport": true,
           "relativeImport": true
+        },
+        {
+          "module": "networking.solana.funding_blockhash_candidate",
+          "symbol": "funding_blockhash_candidate",
+          "alias": null,
+          "localFile": "networking/solana/funding_blockhash_candidate.py",
+          "localImport": true,
+          "relativeImport": true
+        },
+        {
+          "module": "networking.solana.funding_blockhash_validity",
+          "symbol": "funding_blockhash_validity",
+          "alias": null,
+          "localFile": "networking/solana/funding_blockhash_validity.py",
+          "localImport": true,
+          "relativeImport": true
+        },
+        {
+          "module": "networking.solana.funding_blockhash_height",
+          "symbol": "funding_blockhash_height",
+          "alias": null,
+          "localFile": "networking/solana/funding_blockhash_height.py",
+          "localImport": true,
+          "relativeImport": true
         }
       ],
       "explicitExports": [
         "get_token_account_balance_ui",
-        "solana_rpc"
+        "solana_rpc",
+        "funding_blockhash_candidate",
+        "funding_blockhash_validity",
+        "funding_blockhash_height"
       ],
       "importedBy": [],
+      "verification": {
+        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "networking/solana/funding_blockhash_candidate.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "funding_blockhash_candidate",
+          "line": 9,
+          "async": false,
+          "verification": {
+            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbol": "annotations",
+          "alias": null,
+          "localFile": null,
+          "localImport": false,
+          "relativeImport": false
+        },
+        {
+          "module": "hashlib",
+          "symbol": "module",
+          "alias": null,
+          "localFile": null,
+          "localImport": false,
+          "relativeImport": false
+        },
+        {
+          "module": "typing",
+          "symbol": "Any",
+          "alias": null,
+          "localFile": null,
+          "localImport": false,
+          "relativeImport": false
+        },
+        {
+          "module": "app.solana_pubkey",
+          "symbol": "Pubkey",
+          "alias": null,
+          "localFile": "app/solana_pubkey.py",
+          "localImport": true,
+          "relativeImport": false
+        },
+        {
+          "module": "core.schemas.sender_funding_blockhash_context",
+          "symbol": "SenderFundingBlockhashContext",
+          "alias": null,
+          "localFile": "core/schemas/sender_funding_blockhash_context.py",
+          "localImport": true,
+          "relativeImport": false
+        }
+      ],
+      "importedBy": [
+        "api/handlers/get_network_recent_blockhash.py",
+        "networking/solana/__init__.py"
+      ],
+      "verification": {
+        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "networking/solana/funding_blockhash_height.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "funding_blockhash_height",
+          "line": 7,
+          "async": false,
+          "verification": {
+            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbol": "annotations",
+          "alias": null,
+          "localFile": null,
+          "localImport": false,
+          "relativeImport": false
+        },
+        {
+          "module": "typing",
+          "symbol": "Any",
+          "alias": null,
+          "localFile": null,
+          "localImport": false,
+          "relativeImport": false
+        },
+        {
+          "module": "networking.solana.funding_blockhash_issuance",
+          "symbol": "MAX_SAFE_RPC_INTEGER",
+          "alias": null,
+          "localFile": "networking/solana/funding_blockhash_issuance.py",
+          "localImport": true,
+          "relativeImport": true
+        }
+      ],
+      "importedBy": [
+        "api/handlers/get_network_recent_blockhash.py",
+        "networking/solana/__init__.py"
+      ],
+      "verification": {
+        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "networking/solana/funding_blockhash_issuance.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "importedBy": [
+        "api/handlers/get_network_recent_blockhash.py",
+        "networking/solana/funding_blockhash_height.py",
+        "networking/solana/funding_blockhash_validity.py"
+      ],
+      "verification": {
+        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "networking/solana/funding_blockhash_validity.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "funding_blockhash_validity",
+          "line": 7,
+          "async": false,
+          "verification": {
+            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbol": "annotations",
+          "alias": null,
+          "localFile": null,
+          "localImport": false,
+          "relativeImport": false
+        },
+        {
+          "module": "typing",
+          "symbol": "Any",
+          "alias": null,
+          "localFile": null,
+          "localImport": false,
+          "relativeImport": false
+        },
+        {
+          "module": "networking.solana.funding_blockhash_issuance",
+          "symbol": "MAX_SAFE_RPC_INTEGER",
+          "alias": null,
+          "localFile": "networking/solana/funding_blockhash_issuance.py",
+          "localImport": true,
+          "relativeImport": true
+        }
+      ],
+      "importedBy": [
+        "api/handlers/get_network_recent_blockhash.py",
+        "networking/solana/__init__.py"
+      ],
       "verification": {
         "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
         "testReferences": []
@@ -34602,7 +35855,27 @@
             "line": 8,
             "kind": "symbol-import",
             "expression": "private_credit_coordination.PrivateCreditWait",
+            "newComponentTest": {
+              "component": "cases/epoch_prover_dependencies/verify_component.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
+          },
+          {
+            "source": "tests/cases/epoch_prover_dependencies/verify_component.py",
+            "line": 8,
+            "kind": "symbol-import",
+            "expression": "private_credit_coordination.PrivateCreditWait",
             "testIdentity": "New component test; not an extracted original test function"
+          },
+          {
+            "source": "tests/cases/epoch_prover_dependencies/verify_component.py",
+            "line": 35,
+            "kind": "symbol-reference",
+            "expression": "PrivateCreditWait",
+            "newComponentTest": {
+              "component": "cases/epoch_prover_dependencies/verify_component.py",
+              "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+            }
           },
           {
             "source": "tests/cases/epoch_prover_dependencies/verify_component.py",

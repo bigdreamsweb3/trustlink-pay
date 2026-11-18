@@ -86,7 +86,7 @@ Declared route options:
 
 ### GET `/network/recent-blockhash`
 
-Handler: `get_network_recent_blockhash`. [Source: tsn-protocol/services/tsn-node/api/handlers/get_network_recent_blockhash.py, line 17](../../tsn-protocol/services/tsn-node/api/handlers/get_network_recent_blockhash.py). Registration: [Source: tsn-protocol/services/tsn-node/server.py, line 338](../../tsn-protocol/services/tsn-node/server.py).
+Handler: `get_network_recent_blockhash`. [Source: tsn-protocol/services/tsn-node/api/handlers/get_network_recent_blockhash.py, line 24](../../tsn-protocol/services/tsn-node/api/handlers/get_network_recent_blockhash.py). Registration: [Source: tsn-protocol/services/tsn-node/server.py, line 338](../../tsn-protocol/services/tsn-node/server.py).
 
 ```python
 get_network_recent_blockhash() -> dict[str, Any]
@@ -775,7 +775,7 @@ Handler authorization/ingress control references: `requireService` ([Source: tsn
 
 [Source: tsn-protocol/services/tsn-receiver/app/api/internal/node/work/route.ts, line 5](../../tsn-protocol/services/tsn-receiver/app/api/internal/node/work/route.ts).
 
-Component: `POST`. [Source: tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/work/POST.ts, line 8](../../tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/work/POST.ts).
+Component: `POST`. [Source: tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/work/POST.ts, line 9](../../tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/work/POST.ts).
 
 Handler authorization/ingress control references: `requireService` ([Source: tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts, line 6](../../tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts)).
 

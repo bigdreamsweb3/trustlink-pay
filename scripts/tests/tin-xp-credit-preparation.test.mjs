@@ -23,34 +23,50 @@ const accounts = { depositor, config: pda(Buffer.from("tcap:global-config:v1")),
 const plain = value => JSON.parse(JSON.stringify(value));
 const context = { blockhash: key(9).toBase58(), lastValidBlockHeight: 200, contextSlot: 100 };
 
-function harness({ initialFailures = 0, completeFailures = 0, malformedHash = false } = {}) {
+function deferred() {
+  let resolve;
+  const promise = new Promise(accept => { resolve = accept; });
+  return { promise, resolve };
+}
+
+function harness(options = {}) {
+  let { initialFailures = 0, completeFailures = 0, malformedHash = false } = options;
   const data = Buffer.alloc(287);
   createHash("sha256").update("account:TcapAssetEntryV1").digest().copy(data, 0, 0, 8);
   registry.toBuffer().copy(data, 12); data.writeUInt32LE(1, 44); tokenProgram.toBuffer().copy(data, 48); mint.toBuffer().copy(data, 80);
   reserve.toBuffer().copy(data, 148); vault.toBuffer().copy(data, 180); key(5).toBuffer().copy(data, 212);
   data[244] = 6; data[245] = data[283] = data[284] = 1;
-  const reads = { metadata: 0, funds: 0, hashes: 0 }, submitted = [], completed = [], readinessRequests = [];
+  const reads = { metadata: 0, funds: 0, hashes: 0 }, submitted = [], completed = [], readinessRequests = [], recoveryRequests = [];
+  const statusOverrides = new Map(), workIds = new Map(), outcomeGate = options.delayOutcome ? deferred() : null;
+  let recoveryOutcome = options.recoveryOutcome ?? { status: "OUTCOME_UNKNOWN", reason: "Synthetic RPC did not establish the original outcome." };
   const connection = { async getAccountInfo(address) { reads.metadata++; return { owner: address.equals(mint) ? tokenProgram : program,
     data: address.equals(mint) ? Buffer.alloc(82) : data }; },
     async getMultipleAccountsInfo() { reads.funds++; throw new Error("Source/reserve checks belong to Node authorization"); },
     async getTokenAccountsByOwner() { reads.funds++; throw new Error("Balance checks belong to Node authorization"); } };
   const session = { wallet: depositor.toBase58(), csrfToken: "synthetic-csrf", resolvedTin: { tin: "1234567890", ownerPubkeyHash: "ab".repeat(32), expiresAt: Date.now() + 60000 } };
-  const ready = () => ({ workId: "synthetic-work", stateVersion: 3, authorizationPayloadCommitment: "ac".repeat(32),
+  const ready = () => ({ workId: session.pendingTinCreditOperationId ?? "synthetic-work", stateVersion: 3, authorizationPayloadCommitment: "ac".repeat(32),
     expiresAt: session.pendingTinCredit.request.senderAuthorizationExpiresAt, amountBaseUnits: "1250000",
     depositAccounts: Object.fromEntries(Object.entries(accounts).map(([name, value]) => [name, value.toBase58()])) });
-  const status = () => ({ operationId: "synthetic-work", status: "FUNDING_READY", stateVersion: 3, fundingPhase: "AUTHORIZATION", fundingReady: true,
+  const status = (operationId = session.pendingTinCreditOperationId ?? "synthetic-work") => plain(statusOverrides.get(operationId) ?? {
+    operationId, kind: "AUTHORIZED_FUNDING", status: "FUNDING_READY", stateVersion: 3, fundingPhase: "AUTHORIZATION", fundingReady: true,
     fundingReadiness: { expiresAt: ready().expiresAt, authorizationPayloadCommitment: ready().authorizationPayloadCommitment } });
   const handler = vm.runInNewContext(`${handlerSource}\nhandleApi`, {
     Buffer, PublicKey, createHash, AbortSignal, process: { env: {} }, tsnSdk: sdk, mode: "local",
     getSession: () => session, readJson: async req => req.body, json: (res, status, body) => Object.assign(res, { status, body }),
     resolveRpcUrl: async () => "http://127.0.0.1:1", createRpcReadSession: () => ({ read: operation => operation(connection) }),
+    inspectTinFundingOutcome: async args => {
+      recoveryRequests.push(args); if (outcomeGate) await outcomeGate.promise;
+      await options.onRecoveryInspect?.({ session, statusOverrides }); return plain(recoveryOutcome);
+    },
     configuredNodeUrl: () => "http://127.0.0.1:1", fetch: async (url, options) => {
       if (String(url).endsWith("/intents")) { submitted.push(JSON.parse(options.body)); if (initialFailures-- > 0) throw new Error("lost ingress response");
-        return { ok: true, json: async () => ({ id: "synthetic-work", stateVersion: 1, status: "RECEIVED" }) }; }
+        const paymentId = submitted.at(-1).paymentId;
+        if (!workIds.has(paymentId)) workIds.set(paymentId, workIds.size ? `synthetic-work-${workIds.size + 1}` : "synthetic-work");
+        return { ok: true, json: async () => ({ id: workIds.get(paymentId), stateVersion: 1, status: "RECEIVED" }) }; }
       if (String(url).endsWith("/network/funding/readiness")) { readinessRequests.push(JSON.parse(options.body)); return { ok: true, json: async () => ready() }; }
       if (String(url).endsWith("/network/funding/complete")) { completed.push(JSON.parse(options.body)); if (completeFailures-- > 0) throw new Error("lost completion response");
         return { ok: true, json: async () => ({ id: "synthetic-work", stateVersion: 4, fundingPhase: "SIGNED_DEPOSIT", status: "RECEIVED" }) }; }
-      if (String(url).includes("/api/work-status/")) return { ok: true, json: async () => status() };
+      if (String(url).includes("/api/work-status/")) return { ok: true, json: async () => status(decodeURIComponent(String(url).split("/api/work-status/")[1])) };
       reads.hashes++; return { ok: true, json: async () => ({ recentBlockhash: context.blockhash, lastValidBlockHeight: 200, ...(malformedHash ? {} : { contextSlot: 100 }) }) };
     },
   });
@@ -58,7 +74,11 @@ function harness({ initialFailures = 0, completeFailures = 0, malformedHash = fa
     const res = {}; await handler({ method, headers: { "x-trustlink-csrf": session.csrfToken }, body }, res,
       { pathname, searchParams: new URLSearchParams(operationId ? { operationId } : {}) }); return res;
   };
-  return { session, reads, submitted, completed, readinessRequests, ready, status, call,
+  return { session, reads, submitted, completed, readinessRequests, recoveryRequests, ready, status, call,
+    setStatus: (work, operationId = session.pendingTinCreditOperationId ?? "synthetic-work") => statusOverrides.set(operationId, {
+      operationId, kind: "AUTHORIZED_FUNDING", stateVersion: 5, fundingPhase: "SIGNED_DEPOSIT", ...plain(work) }),
+    setOutcome: outcome => { recoveryOutcome = outcome; }, releaseOutcome: () => outcomeGate?.resolve(),
+    recover: (operationId = "synthetic-work") => call("/api/tsn/sdk/recover-tin-credit", { operationId }),
     prepare: (amount = "1.25") => call("/api/tsn/sdk/prepare-tin-credit", { recipientTin: "1234567890", tokenMintAddress: mint.toBase58(), amount }),
     authorize: request => call("/api/tsn/sdk/submit-tin-credit", { request }),
     prepareFunding: () => call("/api/tsn/sdk/prepare-tin-credit-funding", { operationId: "synthetic-work" }),
@@ -179,8 +199,14 @@ function browserClock() {
 async function browserCreditHarness(options = {}) {
   const browserFile = "../../protocol-tests/ui/public/tsn-dapp.js";
   const browserSource = ts.createSourceFile(browserFile, await readFile(new URL(browserFile, import.meta.url), "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
-  const names = new Set(["clearTinFundingReadinessTimer", "hasCurrentTinFundingReadiness", "renderTinFundingControls", "invalidateTinFundingApproval", "handleWalletDisconnect", "cancelTinFundingApproval", "requireCurrentTinFunding", "payTin", "watchTinFundingAuthorization", "approveTinFunding"]), declarations = [];
-  function visit(node) { if (ts.isFunctionDeclaration(node) && names.has(node.name?.text)) declarations.push(node.getText(browserSource)); ts.forEachChild(node, visit); }
+  const names = new Set(["clearTinFundingReadinessTimer", "hasCurrentTinFundingReadiness", "renderTinFundingControls", "invalidateTinFundingApproval", "handleWalletDisconnect", "cancelTinFundingApproval", "requireCurrentTinFunding", "payTin", "watchTinFundingAuthorization", "approveTinFunding", "recoverTinCredit", "watchTinCredit"]), declarations = [];
+  function visit(node) {
+    if (ts.isFunctionDeclaration(node) && names.has(node.name?.text)) {
+      const text = node.getText(browserSource);
+      declarations.push(node.name.text === "watchTinCredit" ? text.replace("function watchTinCredit", "function actualWatchTinCredit") : text);
+    }
+    ts.forEachChild(node, visit);
+  }
   visit(browserSource); assert.equal(declarations.length, names.size);
   const server = harness(options), clock = browserClock(), calls = [], logs = [], messages = [], elements = {};
   for (const name of ["payTin", "approveTinFunding", "cancelTinFunding", "recipientTin", "tinAmount", "tinMint", "tinResolution"]) elements[name] = { style: {}, after(element) { elements[element.id] = element; } };
@@ -191,15 +217,18 @@ async function browserCreditHarness(options = {}) {
   const lateCancel = options.delayCancellation ? new Promise(resolve => { lateCancelResolve = resolve; }) : null;
   let lateSignResolve;
   const lateSign = options.delaySigning ? new Promise(resolve => { lateSignResolve = resolve; }) : null;
+  const recoveryGate = options.delayRecoveryResponse ? deferred() : null;
+  let recoveryFailures = options.recoveryFailures ?? 0, statusGate;
   const wallet = { publicKey: owner.publicKey, async signTransaction(transaction) {
     transactionSignatures++; if (lateSign) await lateSign;
     transaction.instructions.unshift(ComputeBudgetProgram.setComputeUnitLimit({ units: 400000 }));
     if (options.replaceBlockhash) transaction.recentBlockhash = key(8).toBase58(); transaction.partialSign(owner); return transaction;
   } };
-  const instance = vm.runInNewContext(`let pendingTinCredit; let tinCreditInFlight = false; let tinCreditGeneration = 0; let tinFundingReadinessTimer;\n${declarations.join("\n")}\n({payTin,approveTinFunding,cancelTinFundingApproval,renderTinFundingControls,getPending:()=>pendingTinCredit,getGeneration:()=>tinCreditGeneration,disconnectWallet:()=>handleWalletDisconnect(activeWallet),setWallet:wallet=>{activeWallet=wallet;renderTinFundingControls();}})`, {
+  const instance = vm.runInNewContext(`let pendingTinCredit; let tinCreditInFlight = false; let tinCreditGeneration = 0; let tinFundingReadinessTimer;\n${declarations.join("\n")}\nfunction watchTinCredit(operationId){if(creditTrackingEnabled)return actualWatchTinCredit(operationId);}\n({payTin,approveTinFunding,cancelTinFundingApproval,recoverTinCredit,renderTinFundingControls,watchCredit:actualWatchTinCredit,getPending:()=>pendingTinCredit,getGeneration:()=>tinCreditGeneration,disconnectWallet:()=>handleWalletDisconnect(activeWallet),setWallet:wallet=>{activeWallet=wallet;renderTinFundingControls();}})`, {
     Buffer, BigInt, Error, AbortController, Date: clock.Date, setTimeout: clock.setTimeout, clearTimeout: clock.clearTimeout, crypto: globalThis.crypto,
     window: { TsnRecipientCreditSdk: { ...sdk, PublicKey } }, $: name => elements[name] ??= { style: {} },
     requireWallet() {}, requireNetwork() {}, setWalletConnectedView() {}, ownerTinIdentity: null, balanceController: null, balanceInFlight: null,
+    creditTrackingEnabled: Boolean(options.trackCredit),
     resolvedTin: { tin: "1234567890", ownerPubkeyHash: "ab".repeat(32), displayName: "Synthetic owner" }, activeWallet: wallet,
     sign: async message => { messages.push(message); return Buffer.from(nacl.sign.detached(new TextEncoder().encode(message), owner.secretKey)).toString("base64"); },
     encodeBase64: value => Buffer.from(value).toString("base64"),
@@ -210,11 +239,19 @@ async function browserCreditHarness(options = {}) {
       if (path === "/api/tsn/sdk/cancel-tin-credit" && cancelFailures-- > 0) throw new Error("cancellation response unavailable");
       const result = await server.call(url.pathname, body, request.method ?? "GET", url.searchParams.get("operationId"));
       if (path === "/api/tsn/sdk/cancel-tin-credit" && lateCancel) await lateCancel;
+      if (path.includes("tin-credit-status") && statusGate) await statusGate.promise;
+      if (path === "/api/tsn/sdk/recover-tin-credit") {
+        if (recoveryGate) await recoveryGate.promise;
+        if (recoveryFailures-- > 0) throw new Error("recovery response unavailable");
+      }
       if (result.status >= 400) throw new Error(result.body.error); return result.body;
-    }, document: { createElement: () => ({ style: {} }) }, log: (...values) => logs.push(values), watchTinCredit() {},
+    }, document: { createElement: () => ({ style: {} }) }, log: (...values) => logs.push(values),
   });
   const settle = async () => { for (let i = 0; i < 12; i++) await new Promise(resolve => setImmediate(resolve)); };
-  return { ...instance, server, clock, wallet, calls, logs, messages, elements, settle, releaseReadiness: () => lateReadyResolve?.(), releaseCancellation: () => lateCancelResolve?.(), releaseSigning: () => lateSignResolve?.(), transactionSignatures: () => transactionSignatures };
+  return { ...instance, server, clock, wallet, calls, logs, messages, elements, settle,
+    holdStatusResponses: () => { statusGate = deferred(); }, releaseStatusResponses: () => { statusGate?.resolve(); statusGate = null; },
+    releaseRecoveryResponse: () => recoveryGate?.resolve(),
+    releaseReadiness: () => lateReadyResolve?.(), releaseCancellation: () => lateCancelResolve?.(), releaseSigning: () => lateSignResolve?.(), transactionSignatures: () => transactionSignatures };
 }
 
 test("XP browser signs only the canonical message before readiness and requires explicit funding approval", async () => {

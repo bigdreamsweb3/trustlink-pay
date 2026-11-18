@@ -5,19 +5,23 @@ import { reclaimExpiredWorkLease } from "./reclaim-expired-work-lease";
 import { compareAccountingPriority } from "./compare-accounting-priority";
 import { claimWorkTransaction } from "./claim-work-transaction";
 import { workWithStatus } from "./workWithStatus";
-export async function lease(dependencies: Pick<WorkDependencies, "db" | "hasResolvedNonExecution" | "isSupportedWorkKind" | "randomInt" | "workCollection">, status: "RECEIVED" | "VERIFIED", next: "NODE_VERIFYING" | "CRANKER_LEASED", owner: string, supportedKinds?: WorkKind[]) {
+import { matchesFundingLeasePhase } from "./matches-funding-lease-phase";
+export async function lease(dependencies: Pick<WorkDependencies, "db" | "hasResolvedNonExecution" | "isSupportedWorkKind" | "randomInt" | "workCollection">, status: "RECEIVED" | "VERIFIED", next: "NODE_VERIFYING" | "CRANKER_LEASED", owner: string, supportedKinds?: WorkKind[], fundingPhase?: "SIGNED_DEPOSIT") {
+    if (fundingPhase !== undefined && next !== "NODE_VERIFYING") throw new Error("INVALID_NODE_FUNDING_FILTER");
     // Requeue abandoned leases before selecting fresh work. This prevents a
     // Node authorization failure or Cranker crash from permanently stranding
     // settlement work in an intermediate state.
     const stale = await workWithStatus(dependencies, next);
     for (const candidate of stale.docs) {
         const data = candidate.data() as ReceiverWork;
+        if (!matchesFundingLeasePhase(data, fundingPhase))
+            continue;
         if (!dependencies.isSupportedWorkKind(data.kind))
             continue;
         const leaseValue = next === "NODE_VERIFYING" ? data.nodeLease : data.crankerLease;
         if (!leaseValue || Date.parse(leaseValue.expiresAt) > Date.now())
             continue;
-        await dependencies.db.runTransaction(reclaimExpiredWorkLease.bind(null, dependencies, candidate, next));
+        await dependencies.db.runTransaction(reclaimExpiredWorkLease.bind(null, dependencies, candidate, next, fundingPhase));
     }
     // Avoid requiring a composite Firestore index for the hot lease path. The
     // bounded result set is ordered locally and remains deterministic.
@@ -30,6 +34,8 @@ export async function lease(dependencies: Pick<WorkDependencies, "db" | "hasReso
     // Accounting frees dependent credits before selecting them.
     candidates.docs.sort(compareAccountingPriority);
     for (const candidate of candidates.docs) {
+        if (!matchesFundingLeasePhase(candidate.data() as ReceiverWork, fundingPhase))
+            continue;
         if (!dependencies.isSupportedWorkKind(candidate.get("kind")))
             continue;
         if (supportedKinds?.length && !supportedKinds.includes(candidate.get("kind") as WorkKind))
@@ -52,7 +58,7 @@ export async function lease(dependencies: Pick<WorkDependencies, "db" | "hasReso
             if (!funding?.exists || funding.get("kind") !== "AUTHORIZED_FUNDING" || funding.get("status") !== "CONFIRMED")
                 continue;
         }
-        const leased = await dependencies.db.runTransaction(claimWorkTransaction.bind(null, dependencies, candidate, status, next, owner));
+        const leased = await dependencies.db.runTransaction(claimWorkTransaction.bind(null, dependencies, candidate, status, next, owner, fundingPhase));
         if (leased)
             return leased;
     }

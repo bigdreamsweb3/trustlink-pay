@@ -4,6 +4,7 @@ import type { requireService } from "../../../../../auth";
 import type { getWorkForNode, leaseForNode, renewNodeLease, transition } from "../../../../../store";
 
 import type { Dependencies } from "./dependencies";
+import { assertNodeFundingLeaseFilter } from "../../../../../work/assert-node-funding-lease-filter";
 
 export async function POST(dependencies: Pick<Dependencies, "NextResponse" | "leaseForNode" | "requireService">, request: NextRequest) {
     try {
@@ -11,14 +12,19 @@ export async function POST(dependencies: Pick<Dependencies, "NextResponse" | "le
         const body = await request.json() as {
             nodeId?: string;
             supportedKinds?: Parameters<typeof leaseForNode>[1];
+            fundingPhase?: Parameters<typeof leaseForNode>[2];
         };
         if (!body.nodeId)
             throw new Error("nodeId is required");
-        return dependencies.NextResponse.json({ work: await dependencies.leaseForNode(body.nodeId, body.supportedKinds) });
+        assertNodeFundingLeaseFilter(body.fundingPhase, body.supportedKinds);
+        const work = body.fundingPhase === undefined
+            ? await dependencies.leaseForNode(body.nodeId, body.supportedKinds)
+            : await dependencies.leaseForNode(body.nodeId, body.supportedKinds, body.fundingPhase);
+        return dependencies.NextResponse.json({ work });
     }
     catch (error) {
         const message = error instanceof Error ? error.message : "ERROR";
-        const status = message === "UNAUTHORIZED_SERVICE" ? 401 : message.includes("required") ? 400 : 500;
+        const status = message === "UNAUTHORIZED_SERVICE" ? 401 : message.includes("required") || message === "INVALID_NODE_FUNDING_FILTER" ? 400 : 500;
         console.error("[receiver] node work request failed", message);
         return dependencies.NextResponse.json({ error: message }, { status });
     }

@@ -4,8 +4,10 @@ import type { WorkDependencies } from "./dependencies";
 import { getWorkForNode } from "./getWorkForNode";
 import { lease } from "./lease";
 import { projectWorkForNode } from "./projectWorkForNode";
-export async function leaseForNode(dependencies: Pick<WorkDependencies, "db" | "decryptPayloadForNode" | "hasResolvedNonExecution" | "isSupportedWorkKind" | "randomInt" | "workCollection">, owner: string, supportedKinds?: WorkKind[]) {
-    const work = await lease(dependencies, "RECEIVED", "NODE_VERIFYING", owner, supportedKinds);
+import { assertNodeFundingLeaseFilter } from "./assert-node-funding-lease-filter";
+export async function leaseForNode(dependencies: Pick<WorkDependencies, "db" | "decryptPayloadForNode" | "hasResolvedNonExecution" | "isSupportedWorkKind" | "randomInt" | "workCollection">, owner: string, supportedKinds?: WorkKind[], fundingPhase?: "SIGNED_DEPOSIT") {
+    assertNodeFundingLeaseFilter(fundingPhase, supportedKinds);
+    const work = await lease(dependencies, "RECEIVED", "NODE_VERIFYING", owner, supportedKinds, fundingPhase);
     if (!work)
         return work;
     if (work.kind === "SETTLEMENT")

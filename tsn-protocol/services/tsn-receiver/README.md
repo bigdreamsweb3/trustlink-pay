@@ -20,6 +20,8 @@ State flow:
 
 The TSN Node is the only service allowed to move work from `RECEIVED` to `VERIFIED`. Crankers can lease only `VERIFIED` work. All leases and transitions use Firestore transactions and monotonic state versions.
 
+Node can request one signed-deposit fast claim with `{nodeId, supportedKinds: ["AUTHORIZED_FUNDING"], fundingPhase: "SIGNED_DEPOSIT"}` at `POST /api/internal/node/work`. Receiver validates that exact filter, excludes message-only funding, and rechecks the phase in the claim transaction. Normal claims retain accounting priority and the existing shared-root controls; Node runs coordination and normal selection after each fast pass. No service configuration or stored-record conversion is required.
+
 ## Funded-note ingress and settlement projection
 
 Native funding begins with `senderFundingMode: "tcap_funded_note_v1"`, the wallet-signed payment authorization and restricted `fundingNote: {version: 1, secret, blinding, commitment}` material. Initial `/intents` ingress forbids `senderSignedFundingTransaction` and `senderFundingBlockhashContext`. The three note values use canonical 32-byte BN254 scalar hex; secret and commitment must be nonzero. Receiver verifies the sender signature and shape, encrypts the original intent, and preserves its immutable `authorizationPayloadCommitment`. Node performs authorization, recipient, asset and source-balance checks before returning a signed `FUNDING_READY` decision; a balance observation reserves no funds.

@@ -7066,7 +7066,7 @@
           ],
           "output": "inferred; see implementation and family contract",
           "dependencyDeclaration": null,
-          "bodySha256": "ee5574cd798025f9f7043cfb1fe0ca34d17479ef6a388e2637e8d6350ca20331"
+          "bodySha256": "b4c5994ad3093e90793364c11dc4a4642a410cce5d31fad68a557fe70f2daa13"
         }
       ],
       "imports": [
@@ -11547,6 +11547,29 @@
       "syntaxErrors": []
     },
     {
+      "path": "tests/cases/staged-funding/capture-node-work-lease.mjs",
+      "functions": [
+        {
+          "name": "captureNodeWorkLease",
+          "line": 2,
+          "inputs": [
+            "calls",
+            "owner",
+            "supportedKinds",
+            "fundingPhase"
+          ],
+          "output": "inferred; see implementation and family contract",
+          "dependencyDeclaration": null,
+          "bodySha256": "6d7a4bca2a63e5e030a3a21e4a5770278a89f2e5273a54718cbc68135da54a07"
+        }
+      ],
+      "imports": [],
+      "classBindings": [],
+      "literalErrors": [],
+      "forbidden": [],
+      "syntaxErrors": []
+    },
+    {
       "path": "tests/cases/staged-funding/capture-wake.mjs",
       "functions": [
         {
@@ -11762,7 +11785,7 @@
           "inputs": [],
           "output": "inferred; see implementation and family contract",
           "dependencyDeclaration": null,
-          "bodySha256": "a831824f0b8a73dd0452f24b8f722c8500d368dc84e9a2ce06797f9e90ccec11"
+          "bodySha256": "6d3c4b5904e0ca5249e03cebfe8316dfa01cd7e8611e2044252bd97ccaf1b1e7"
         }
       ],
       "imports": [
@@ -11790,6 +11813,47 @@
           "source": "node:fs/promises",
           "typeOnly": false,
           "bindings": "{ mkdtemp }"
+        }
+      ],
+      "classBindings": [],
+      "literalErrors": [],
+      "forbidden": [],
+      "syntaxErrors": []
+    },
+    {
+      "path": "tests/cases/staged-funding/empty-signed-funding-lease-test.mjs",
+      "functions": [
+        {
+          "name": "emptySignedFundingLeaseTest",
+          "line": 7,
+          "inputs": [
+            "fixture"
+          ],
+          "output": "inferred; see implementation and family contract",
+          "dependencyDeclaration": null,
+          "bodySha256": "5ae0a45af6d3ff36071b5db2d9691e09b96481dd57c0ae3eec5940fd22257fa1"
+        }
+      ],
+      "imports": [
+        {
+          "source": "./read-work.mjs",
+          "typeOnly": false,
+          "bindings": "{ readWork }"
+        },
+        {
+          "source": "./create-authorization.mjs",
+          "typeOnly": false,
+          "bindings": "{ createAuthorization }"
+        },
+        {
+          "source": "./create-case-dependencies.mjs",
+          "typeOnly": false,
+          "bindings": "{ createCaseDependencies }"
+        },
+        {
+          "source": "node:assert/strict",
+          "typeOnly": false,
+          "bindings": null
         }
       ],
       "classBindings": [],
@@ -12207,6 +12271,175 @@
           "source": "node:crypto",
           "typeOnly": false,
           "bindings": "{ createHash }"
+        },
+        {
+          "source": "node:assert/strict",
+          "typeOnly": false,
+          "bindings": null
+        }
+      ],
+      "classBindings": [],
+      "literalErrors": [],
+      "forbidden": [],
+      "syntaxErrors": []
+    },
+    {
+      "path": "tests/cases/staged-funding/signed-funding-filter-race-test.mjs",
+      "functions": [
+        {
+          "name": "signedFundingFilterRaceTest",
+          "line": 6,
+          "inputs": [
+            "fixture"
+          ],
+          "output": "inferred; see implementation and family contract",
+          "dependencyDeclaration": null,
+          "bodySha256": "53a16f9e3aab01489394afbf052a6175dc15d1cfc9d88017a750bba3c9e207e4"
+        }
+      ],
+      "imports": [
+        {
+          "source": "./read-work.mjs",
+          "typeOnly": false,
+          "bindings": "{ readWork }"
+        },
+        {
+          "source": "./create-case-dependencies.mjs",
+          "typeOnly": false,
+          "bindings": "{ createCaseDependencies }"
+        },
+        {
+          "source": "node:assert/strict",
+          "typeOnly": false,
+          "bindings": null
+        }
+      ],
+      "classBindings": [],
+      "literalErrors": [],
+      "forbidden": [],
+      "syntaxErrors": []
+    },
+    {
+      "path": "tests/cases/staged-funding/signed-funding-filter-route-test.mjs",
+      "functions": [
+        {
+          "name": "signedFundingFilterRouteTest",
+          "line": 8,
+          "inputs": [
+            "fixture"
+          ],
+          "output": "inferred; see implementation and family contract",
+          "dependencyDeclaration": null,
+          "bodySha256": "47be811118237f15c342780880a73b9b5369be32e0b85b3647898ee147354362"
+        }
+      ],
+      "imports": [
+        {
+          "source": "./capture-node-work-lease.mjs",
+          "typeOnly": false,
+          "bindings": "{ captureNodeWorkLease }"
+        },
+        {
+          "source": "./require-node-service.mjs",
+          "typeOnly": false,
+          "bindings": "{ requireNodeService }"
+        },
+        {
+          "source": "./request-json.mjs",
+          "typeOnly": false,
+          "bindings": "{ requestJson }"
+        },
+        {
+          "source": "./response-json.mjs",
+          "typeOnly": false,
+          "bindings": "{ responseJson }"
+        },
+        {
+          "source": "node:assert/strict",
+          "typeOnly": false,
+          "bindings": null
+        }
+      ],
+      "classBindings": [],
+      "literalErrors": [],
+      "forbidden": [],
+      "syntaxErrors": []
+    },
+    {
+      "path": "tests/cases/staged-funding/signed-funding-lease-test.mjs",
+      "functions": [
+        {
+          "name": "signedFundingLeaseTest",
+          "line": 9,
+          "inputs": [
+            "fixture"
+          ],
+          "output": "inferred; see implementation and family contract",
+          "dependencyDeclaration": null,
+          "bodySha256": "bdbeb98804cd50c3437a7a603ad16cd212335238d99566866e718ace3b6d05b8"
+        }
+      ],
+      "imports": [
+        {
+          "source": "./read-work.mjs",
+          "typeOnly": false,
+          "bindings": "{ readWork }"
+        },
+        {
+          "source": "./create-authorization.mjs",
+          "typeOnly": false,
+          "bindings": "{ createAuthorization }"
+        },
+        {
+          "source": "./attachment-params.mjs",
+          "typeOnly": false,
+          "bindings": "{ attachmentParams }"
+        },
+        {
+          "source": "./create-ready-work.mjs",
+          "typeOnly": false,
+          "bindings": "{ createReadyWork }"
+        },
+        {
+          "source": "./create-case-dependencies.mjs",
+          "typeOnly": false,
+          "bindings": "{ createCaseDependencies }"
+        },
+        {
+          "source": "node:assert/strict",
+          "typeOnly": false,
+          "bindings": null
+        }
+      ],
+      "classBindings": [],
+      "literalErrors": [],
+      "forbidden": [],
+      "syntaxErrors": []
+    },
+    {
+      "path": "tests/cases/staged-funding/signed-funding-reclamation-race-test.mjs",
+      "functions": [
+        {
+          "name": "signedFundingReclamationRaceTest",
+          "line": 6,
+          "inputs": [
+            "fixture"
+          ],
+          "output": "inferred; see implementation and family contract",
+          "dependencyDeclaration": null,
+          "bodySha256": "f789d902d9eac3b1c6aa4ff49e58ba101bd61fc2a6a598a6a368e4bbbe76538e"
+        }
+      ],
+      "imports": [
+        {
+          "source": "./read-work.mjs",
+          "typeOnly": false,
+          "bindings": "{ readWork }"
+        },
+        {
+          "source": "./create-case-dependencies.mjs",
+          "typeOnly": false,
+          "bindings": "{ createCaseDependencies }"
         },
         {
           "source": "node:assert/strict",
@@ -15563,6 +15796,31 @@
       "path": "tests/staged-funding.test.mjs",
       "functions": [],
       "imports": [
+        {
+          "source": "./cases/staged-funding/signed-funding-reclamation-race-test.mjs",
+          "typeOnly": false,
+          "bindings": "{ signedFundingReclamationRaceTest }"
+        },
+        {
+          "source": "./cases/staged-funding/signed-funding-filter-route-test.mjs",
+          "typeOnly": false,
+          "bindings": "{ signedFundingFilterRouteTest }"
+        },
+        {
+          "source": "./cases/staged-funding/signed-funding-filter-race-test.mjs",
+          "typeOnly": false,
+          "bindings": "{ signedFundingFilterRaceTest }"
+        },
+        {
+          "source": "./cases/staged-funding/empty-signed-funding-lease-test.mjs",
+          "typeOnly": false,
+          "bindings": "{ emptySignedFundingLeaseTest }"
+        },
+        {
+          "source": "./cases/staged-funding/signed-funding-lease-test.mjs",
+          "typeOnly": false,
+          "bindings": "{ signedFundingLeaseTest }"
+        },
         {
           "source": "./cases/staged-funding/confirmed-lineage-test.mjs",
           "typeOnly": false,

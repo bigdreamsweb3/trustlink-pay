@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createHash, createHmac, createPublicKey, randomBytes, randomInt, randomUUID, verify as verifySignature } from "node:crypto";
 import { Connection, PublicKey } from "@solana/web3.js";
+import { inspectTinFundingOutcome } from "./funding-outcome.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const mode = process.argv.includes("--local") ? "local" : "devnet";
@@ -218,6 +219,7 @@ async function handleApi(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/tsn/sdk/refresh-tin-credit-blockhash") {
     const body = await readJson(req), prepared = session.pendingTinCredit;
+    if (prepared?.recoveryInFlight) return json(res, 409, { error: "TIN_CREDIT_RECOVERY_IN_PROGRESS" });
     if (!prepared?.readiness || prepared.completion || prepared.senderWallet !== session.wallet
         || prepared.expiresAt <= Date.now() || Date.parse(prepared.readiness.expiresAt) <= Date.now()
         || body.operationId !== prepared.workId || body.expectedStateVersion !== prepared.readiness.stateVersion
@@ -577,7 +579,9 @@ async function handleApi(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/tsn/sdk/prepare-tin-credit") {
     const body = await readJson(req);
-    if (session.pendingTinCredit?.request && !session.pendingTinCredit.attached) return json(res, 409, { error: "TIN_CREDIT_AUTHORIZATION_ALREADY_STARTED" });
+    const previous = session.pendingTinCredit, senderWallet = session.wallet;
+    if (previous?.request && !previous.settlementConfirmed) return json(res, 409, { error: "TIN_CREDIT_AUTHORIZATION_ALREADY_STARTED" });
+    if (previous?.recoveryInFlight) return json(res, 409, { error: "TIN_CREDIT_RECOVERY_IN_PROGRESS" });
     const recipientTin = String(body.recipientTin ?? "").trim();
     const resolved = session.resolvedTin;
     if (!resolved || resolved.tin !== recipientTin || resolved.expiresAt < Date.now()) return json(res, 409, { error: "TIN_RESOLUTION_REQUIRED" });
@@ -603,6 +607,12 @@ async function handleApi(req, res, url) {
     if (fraction.length > asset.decimals) return json(res, 422, { error: "AMOUNT_EXCEEDS_TOKEN_DECIMALS" });
     const amountBaseUnits = BigInt(whole + fraction.padEnd(asset.decimals, "0"));
     if (amountBaseUnits <= 0n || amountBaseUnits > 0xffff_ffff_ffff_ffffn) return json(res, 422, { error: "TOKEN_AMOUNT_OUT_OF_RANGE" });
+    if (session.pendingTinCredit !== previous || session.wallet !== senderWallet || session.resolvedTin !== resolved
+        || resolved.expiresAt <= Date.now()) return json(res, 409, { error: "TIN_CREDIT_PREPARATION_SESSION_CHANGED" });
+    if (previous?.request) {
+      (session.tinCreditAttempts ??= []).push({ prepared: previous, outcome: { status: "CREDIT_CONFIRMED" }, clearedAt: Date.now() });
+    }
+    session.pendingTinCreditOperationId = null;
     session.pendingTinCredit = { recipientTin, recipientHash: resolved.ownerPubkeyHash, mint: mint.toBase58(),
       senderWallet: session.wallet, amountBaseUnits: amountBaseUnits.toString(), decimals: asset.decimals,
       tcapProgramId: tcapProgram.toBase58(), expiresAt: Date.now() + 5 * 60_000 };
@@ -612,6 +622,7 @@ async function handleApi(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/tsn/sdk/submit-tin-credit") {
     const body = await readJson(req), prepared = session.pendingTinCredit, request = body.request;
+    if (prepared?.recoveryInFlight) return json(res, 409, { error: "TIN_CREDIT_RECOVERY_IN_PROGRESS" });
     if (!prepared || prepared.expiresAt < Date.now()) return json(res, 409, { error: "TIN_CREDIT_PREPARATION_EXPIRED" });
     if (!request || request.senderWallet !== session.wallet || request.senderWallet !== prepared.senderWallet
         || request.recipientTin !== prepared.recipientTin || request.recipientHash !== prepared.recipientHash
@@ -645,6 +656,7 @@ async function handleApi(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/tsn/sdk/prepare-tin-credit-funding") {
     const body = await readJson(req), prepared = session.pendingTinCredit;
+    if (prepared?.recoveryInFlight) return json(res, 409, { error: "TIN_CREDIT_RECOVERY_IN_PROGRESS" });
     if (!prepared?.request || prepared.senderWallet !== session.wallet || prepared.expiresAt <= Date.now()
         || body.operationId !== prepared.workId || prepared.completion) return json(res, 409, { error: "TIN_CREDIT_FUNDING_PREPARATION_UNAVAILABLE" });
     const nodeUrl = configuredNodeUrl();
@@ -661,6 +673,7 @@ async function handleApi(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/tsn/sdk/complete-tin-credit") {
     const body = await readJson(req), prepared = session.pendingTinCredit, completion = body.completion;
+    if (prepared?.recoveryInFlight) return json(res, 409, { error: "TIN_CREDIT_RECOVERY_IN_PROGRESS" });
     if (!prepared?.request || !prepared.readiness || prepared.senderWallet !== session.wallet || !completion) {
       return json(res, 409, { error: "TIN_CREDIT_FUNDING_PREPARATION_UNAVAILABLE" });
     }
@@ -692,21 +705,85 @@ async function handleApi(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/tsn/sdk/cancel-tin-credit") {
     await readJson(req);
+    if (session.pendingTinCredit?.recoveryInFlight) return json(res, 409, { error: "TIN_CREDIT_RECOVERY_IN_PROGRESS" });
     if (session.pendingTinCredit?.completion) return json(res, 409, { error: "TIN_CREDIT_SIGNED_ATTEMPT_REQUIRES_RECONCILIATION" });
     session.pendingTinCredit = null;
     session.pendingTinCreditOperationId = null;
     return json(res, 200, { status: "LOCAL_FUNDING_APPROVAL_CANCELLED" });
   }
 
+  if (req.method === "POST" && url.pathname === "/api/tsn/sdk/recover-tin-credit") {
+    const body = await readJson(req), operationId = String(body.operationId ?? "");
+    // Return a lost clearance response without releasing a newer active attempt.
+    const archived = session.tinCreditAttempts?.find(attempt => attempt.prepared.workId === operationId
+      && attempt.prepared.senderWallet === session.wallet);
+    if (archived) return json(res, 200, archived.outcome);
+    const prepared = session.pendingTinCredit, senderWallet = session.wallet;
+    if (!operationId || !prepared?.request || prepared.workId !== operationId || prepared.senderWallet !== senderWallet
+        || session.pendingTinCreditOperationId !== operationId) return json(res, 404, { error: "TIN_CREDIT_OPERATION_NOT_FOUND_IN_SESSION" });
+    if (prepared.recoveryInFlight) return json(res, 409, { error: "TIN_CREDIT_RECOVERY_IN_PROGRESS" });
+    prepared.recoveryInFlight = true;
+    const completion = prepared.completion;
+    const current = () => session.pendingTinCredit === prepared && session.wallet === senderWallet
+      && session.pendingTinCreditOperationId === operationId && prepared.completion === completion;
+    const receiverUrl = (mode === "local" ? process.env.TSN_LOCAL_RECEIVER_URL ?? "http://127.0.0.1:8010"
+      : process.env.TSN_RECEIVER_URL ?? "https://tsn-receiver-kappa.vercel.app").replace(/\/$/, "");
+    const readStatus = async () => {
+      const response = await fetch(`${receiverUrl}/api/work-status/${encodeURIComponent(operationId)}`,
+        { cache: "no-store", signal: AbortSignal.timeout(10_000) });
+      if (!response.ok) throw new Error("TIN_CREDIT_RECOVERY_STATUS_UNAVAILABLE");
+      const work = await response.json();
+      if (work.operationId !== operationId || work.kind !== "AUTHORIZED_FUNDING" || !Number.isSafeInteger(work.stateVersion)
+          || work.stateVersion < 1) throw new Error("TIN_CREDIT_RECOVERY_STATUS_INVALID");
+      return work;
+    };
+    try {
+      const work = await readStatus();
+      if (!current()) return json(res, 409, { error: "TIN_CREDIT_RECOVERY_SESSION_CHANGED" });
+      let outcome;
+      if (work.status === "CONFIRMED" && work.settlement?.status === "CONFIRMED") {
+        outcome = { status: "CREDIT_CONFIRMED", reason: "The original funding and credit are confirmed." };
+      } else if (!["REJECTED", "FAILED"].includes(work.status)
+          || (work.settlement && (!["RECEIVED", "REJECTED"].includes(work.settlement.status) || work.settlement.result?.signature))) {
+        return json(res, 200, { status: "OUTCOME_UNKNOWN", reason: "Preserve the original funding and reconcile its existing settlement; a replacement deposit is unavailable." });
+      } else if (!completion) {
+        if (work.fundingPhase !== "AUTHORIZATION" || work.result?.signature) {
+          return json(res, 200, { status: "OUTCOME_UNKNOWN", reason: "The original signed funding is unavailable in this session. Preserve the work for reconciliation." });
+        }
+        outcome = { status: "UNSIGNED_INTENT_RELEASED", reason: "The rejected authorization has no signed funding transaction." };
+      } else {
+        if (work.fundingPhase !== "SIGNED_DEPOSIT") return json(res, 200,
+          { status: "OUTCOME_UNKNOWN", reason: "Receiver funding phase does not match the saved signed attempt." });
+        outcome = await inspectTinFundingOutcome({ completion, rpcUrl: await resolveRpcUrl() });
+        if (work.result?.signature && work.result.signature !== outcome.signature) return json(res, 200,
+          { status: "OUTCOME_UNKNOWN", reason: "Receiver reports a different funding signature. Preserve both records for reconciliation." });
+        if (outcome.status !== "NONEXECUTION_CONFIRMED") return json(res, 200, outcome);
+      }
+      // Receiver terminal version and the exact owner session must survive every read.
+      const checked = await readStatus();
+      if (!current() || JSON.stringify(checked) !== JSON.stringify(work)) return json(res, 409, { error: "TIN_CREDIT_RECOVERY_STATE_CHANGED" });
+      (session.tinCreditAttempts ??= []).push({ prepared, workStatus: checked, outcome, clearedAt: Date.now() });
+      session.pendingTinCredit = null;
+      session.pendingTinCreditOperationId = null;
+      return json(res, 200, outcome);
+    } catch {
+      return json(res, 200, { status: "OUTCOME_UNKNOWN", reason: "Funding outcome could not be established. Keep the original attempt and check again." });
+    } finally { prepared.recoveryInFlight = false; }
+  }
+
   if (req.method === "GET" && url.pathname === "/api/tsn/sdk/tin-credit-status") {
     const operationId = String(url.searchParams.get("operationId") ?? "");
-    if (!operationId || operationId !== session.pendingTinCreditOperationId) return json(res, 404, { error: "TIN_CREDIT_OPERATION_NOT_FOUND_IN_SESSION" });
+    const prepared = session.pendingTinCredit?.workId === operationId ? session.pendingTinCredit
+      : session.tinCreditAttempts?.find(attempt => attempt.prepared.workId === operationId)?.prepared;
+    if (!operationId || !prepared || prepared.senderWallet !== session.wallet) return json(res, 404, { error: "TIN_CREDIT_OPERATION_NOT_FOUND_IN_SESSION" });
     const receiverUrl = (mode === "local"
       ? (process.env.TSN_LOCAL_RECEIVER_URL ?? "http://127.0.0.1:8010")
       : process.env.TSN_RECEIVER_URL ?? "https://tsn-receiver-kappa.vercel.app").replace(/\/$/, "");
     const response = await fetch(`${receiverUrl}/api/work-status/${encodeURIComponent(operationId)}`, { cache: "no-store", signal: AbortSignal.timeout(10_000) });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) return json(res, response.status, result);
+    if (session.pendingTinCredit === prepared && result.operationId === operationId && result.kind === "AUTHORIZED_FUNDING"
+        && result.status === "CONFIRMED" && result.settlement?.status === "CONFIRMED") prepared.settlementConfirmed = true;
     return json(res, 200, result);
   }
 

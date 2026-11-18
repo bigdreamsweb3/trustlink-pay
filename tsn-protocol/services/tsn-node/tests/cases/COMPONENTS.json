@@ -2051,6 +2051,62 @@
       "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
     },
     {
+      "component": "cases/deposit_rpc/functions/f015_test_fresh_issuance_preserves_tuple_and_confirmed_margin.py",
+      "name": "test_fresh_issuance_preserves_tuple_and_confirmed_margin",
+      "definitionLine": 5,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/deposit_rpc/functions/f016_test_stale_issuance_retries_new_tuple_before_signing.py",
+      "name": "test_stale_issuance_retries_new_tuple_before_signing",
+      "definitionLine": 6,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/deposit_rpc/functions/f017_test_low_signing_margin_exhausts_bounded_issuance.py",
+      "name": "test_low_signing_margin_exhausts_bounded_issuance",
+      "definitionLine": 6,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/deposit_rpc/functions/f018_test_unknown_height_never_issues_or_echoes_rpc_error.py",
+      "name": "test_unknown_height_never_issues_or_echoes_rpc_error",
+      "definitionLine": 6,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/deposit_rpc/functions/f019_test_issuance_rejects_unknown_and_noncanonical_checks.py",
+      "name": "test_issuance_rejects_unknown_and_noncanonical_checks",
+      "definitionLine": 6,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/deposit_rpc/functions/f020_test_issuance_retries_never_regress_verified_bank_context.py",
+      "name": "test_issuance_retries_never_regress_verified_bank_context",
+      "definitionLine": 5,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/deposit_rpc/functions/f021_test_issuance_logs_only_gated_sanitized_context.py",
+      "name": "test_issuance_logs_only_gated_sanitized_context",
+      "definitionLine": 6,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
       "component": "cases/epoch_prover_dependencies/authorize_component.py",
       "name": "test_authorization_uses_injected_prover_and_current_lease",
       "definitionLine": 12,
@@ -2062,6 +2118,102 @@
       "component": "cases/epoch_prover_dependencies/verify_component.py",
       "name": "test_verification_uses_injected_epoch_prover",
       "definitionLine": 12,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/funding_queue/functions/coordinate.py",
+      "name": "coordinate",
+      "definitionLine": 1,
+      "async": true,
+      "kind": "fixture-or-support",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/funding_queue/functions/log.py",
+      "name": "log",
+      "definitionLine": 1,
+      "async": false,
+      "kind": "fixture-or-support",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/funding_queue/functions/make_ports.py",
+      "name": "make_ports",
+      "definitionLine": 12,
+      "async": false,
+      "kind": "fixture-or-support",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/funding_queue/functions/process.py",
+      "name": "process",
+      "definitionLine": 1,
+      "async": true,
+      "kind": "fixture-or-support",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/funding_queue/functions/request.py",
+      "name": "request",
+      "definitionLine": 4,
+      "async": true,
+      "kind": "fixture-or-support",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/funding_queue/functions/run_cycle.py",
+      "name": "run_cycle",
+      "definitionLine": 5,
+      "async": true,
+      "kind": "fixture-or-support",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/funding_queue/functions/test_cancellation.py",
+      "name": "test_cancellation",
+      "definitionLine": 6,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/funding_queue/functions/test_failure_bound.py",
+      "name": "test_failure_bound",
+      "definitionLine": 6,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/funding_queue/functions/test_fair_order.py",
+      "name": "test_fair_order",
+      "definitionLine": 5,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/funding_queue/functions/test_fast_queue_drains.py",
+      "name": "test_fast_queue_drains",
+      "definitionLine": 5,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/funding_queue/functions/test_idle_wake.py",
+      "name": "test_idle_wake",
+      "definitionLine": 6,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/funding_queue/functions/test_message_authorization.py",
+      "name": "test_message_authorization",
+      "definitionLine": 5,
       "async": true,
       "kind": "test",
       "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."

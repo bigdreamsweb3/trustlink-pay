@@ -12,6 +12,11 @@ import { attachmentGuardsTest } from "./cases/staged-funding/attachment-guards-t
 import { fundingRouteTest } from "./cases/staged-funding/funding-route-test.mjs";
 import { nonceClaimTest } from "./cases/staged-funding/nonce-claim-test.mjs";
 import { confirmedLineageTest } from "./cases/staged-funding/confirmed-lineage-test.mjs";
+import { signedFundingLeaseTest } from "./cases/staged-funding/signed-funding-lease-test.mjs";
+import { emptySignedFundingLeaseTest } from "./cases/staged-funding/empty-signed-funding-lease-test.mjs";
+import { signedFundingFilterRaceTest } from "./cases/staged-funding/signed-funding-filter-race-test.mjs";
+import { signedFundingFilterRouteTest } from "./cases/staged-funding/signed-funding-filter-route-test.mjs";
+import { signedFundingReclamationRaceTest } from "./cases/staged-funding/signed-funding-reclamation-race-test.mjs";
 
 /** Discovery facade; each case uses fresh explicit local storage and synthetic cryptographic material. */
 const fixture = await createStagedFixture();
@@ -27,3 +32,8 @@ test("attachment readiness, expiry, version and canonical-bank-context guards ar
 test("HTTP signed funding attachment requires Node credentials and validates its guarded contract", fundingRouteTest.bind(null, fixture));
 test("same-work nonce claims recover safely and conflicting claims remain exclusive", nonceClaimTest.bind(null, fixture));
 test("confirmed funding retains final settlement lineage and private ingress while compacting execution receipt", confirmedLineageTest.bind(null, fixture));
+test("one signed-funding claim bypasses unrelated work while the next ordinary claim retains accounting priority", signedFundingLeaseTest.bind(null, fixture));
+test("a signed-funding fast claim leaves message-only work available for normal verification", emptySignedFundingLeaseTest.bind(null, fixture));
+test("signed-funding selection rechecks the current phase atomically before leasing", signedFundingFilterRaceTest.bind(null, fixture));
+test("Node work HTTP validates the optional signed-funding filter before the persistence call", signedFundingFilterRouteTest.bind(null, fixture));
+test("signed-funding reclamation rechecks the persisted phase while ordinary reclamation remains unchanged", signedFundingReclamationRaceTest.bind(null, fixture));

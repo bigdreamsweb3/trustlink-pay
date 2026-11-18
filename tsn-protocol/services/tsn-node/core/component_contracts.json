@@ -1661,6 +1661,76 @@
           }
         },
         {
+          "source": "tests/cases/deposit_rpc/functions/f015_test_fresh_issuance_preserves_tuple_and_confirmed_margin.py",
+          "line": 8,
+          "kind": "patch-target",
+          "expression": "server.solana_rpc",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f015_test_fresh_issuance_preserves_tuple_and_confirmed_margin.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f016_test_stale_issuance_retries_new_tuple_before_signing.py",
+          "line": 13,
+          "kind": "patch-target",
+          "expression": "server.solana_rpc",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f016_test_stale_issuance_retries_new_tuple_before_signing.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f017_test_low_signing_margin_exhausts_bounded_issuance.py",
+          "line": 12,
+          "kind": "patch-target",
+          "expression": "server.solana_rpc",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f017_test_low_signing_margin_exhausts_bounded_issuance.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f018_test_unknown_height_never_issues_or_echoes_rpc_error.py",
+          "line": 14,
+          "kind": "patch-target",
+          "expression": "server.solana_rpc",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f018_test_unknown_height_never_issues_or_echoes_rpc_error.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f019_test_issuance_rejects_unknown_and_noncanonical_checks.py",
+          "line": 23,
+          "kind": "patch-target",
+          "expression": "server.solana_rpc",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f019_test_issuance_rejects_unknown_and_noncanonical_checks.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f020_test_issuance_retries_never_regress_verified_bank_context.py",
+          "line": 13,
+          "kind": "patch-target",
+          "expression": "server.solana_rpc",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f020_test_issuance_retries_never_regress_verified_bank_context.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f021_test_issuance_logs_only_gated_sanitized_context.py",
+          "line": 11,
+          "kind": "patch-target",
+          "expression": "server.solana_rpc",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f021_test_issuance_logs_only_gated_sanitized_context.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
           "source": "tests/cases/global_funding_credit/functions/f001_test_single_deposit_reaches_witness_preparation_without_pool_work.py",
           "line": 34,
           "kind": "patch-target",
@@ -4662,9 +4732,70 @@
       "receiver_request": "Callable[..., Any]"
     },
     "verification": {
-      "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-      "testReferences": [],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "status": "DIRECT_TEST_CALL_SOURCE_REFERENCES",
+      "testReferences": [
+        {
+          "source": "tests/cases/funding_queue/functions/run_cycle.py",
+          "line": 2,
+          "kind": "symbol-import",
+          "expression": "core.worker.receiver_verification_worker.receiver_verification_worker",
+          "newComponentTest": {
+            "component": "cases/funding_queue/functions/run_cycle.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/funding_queue/functions/run_cycle.py",
+          "line": 6,
+          "kind": "direct-call",
+          "expression": "receiver_verification_worker",
+          "newComponentTest": {
+            "component": "cases/funding_queue/functions/run_cycle.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/funding_queue/functions/test_cancellation.py",
+          "line": 2,
+          "kind": "symbol-import",
+          "expression": "core.worker.receiver_verification_worker.receiver_verification_worker",
+          "newComponentTest": {
+            "component": "cases/funding_queue/functions/test_cancellation.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/funding_queue/functions/test_cancellation.py",
+          "line": 10,
+          "kind": "direct-call",
+          "expression": "receiver_verification_worker",
+          "newComponentTest": {
+            "component": "cases/funding_queue/functions/test_cancellation.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/funding_queue/functions/test_idle_wake.py",
+          "line": 2,
+          "kind": "symbol-import",
+          "expression": "core.worker.receiver_verification_worker.receiver_verification_worker",
+          "newComponentTest": {
+            "component": "cases/funding_queue/functions/test_idle_wake.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/funding_queue/functions/test_idle_wake.py",
+          "line": 8,
+          "kind": "direct-call",
+          "expression": "receiver_verification_worker",
+          "newComponentTest": {
+            "component": "cases/funding_queue/functions/test_idle_wake.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        }
+      ],
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -5450,6 +5581,8 @@
     "inputs": "",
     "output": "dict[str, Any]",
     "dependencies": [
+      "TSN_LOCAL_FLOW_LOGS",
+      "logger",
       "solana_rpc"
     ],
     "originalLine": 3763,
@@ -5460,6 +5593,8 @@
       "HTTPException"
     ],
     "dependencyTypes": {
+      "TSN_LOCAL_FLOW_LOGS": "bool",
+      "logger": "Any",
       "solana_rpc": "Callable[..., Any]"
     },
     "verification": {
@@ -5467,7 +5602,7 @@
       "testReferences": [
         {
           "source": "tests/cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
-          "line": 9,
+          "line": 10,
           "kind": "direct-call",
           "expression": "server.get_network_recent_blockhash",
           "newComponentTest": {
@@ -5477,11 +5612,81 @@
         },
         {
           "source": "tests/cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
-          "line": 20,
+          "line": 26,
           "kind": "direct-call",
           "expression": "server.get_network_recent_blockhash",
           "newComponentTest": {
             "component": "cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f015_test_fresh_issuance_preserves_tuple_and_confirmed_margin.py",
+          "line": 11,
+          "kind": "direct-call",
+          "expression": "server.get_network_recent_blockhash",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f015_test_fresh_issuance_preserves_tuple_and_confirmed_margin.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f016_test_stale_issuance_retries_new_tuple_before_signing.py",
+          "line": 14,
+          "kind": "direct-call",
+          "expression": "server.get_network_recent_blockhash",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f016_test_stale_issuance_retries_new_tuple_before_signing.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f017_test_low_signing_margin_exhausts_bounded_issuance.py",
+          "line": 14,
+          "kind": "direct-call",
+          "expression": "server.get_network_recent_blockhash",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f017_test_low_signing_margin_exhausts_bounded_issuance.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f018_test_unknown_height_never_issues_or_echoes_rpc_error.py",
+          "line": 17,
+          "kind": "direct-call",
+          "expression": "server.get_network_recent_blockhash",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f018_test_unknown_height_never_issues_or_echoes_rpc_error.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f019_test_issuance_rejects_unknown_and_noncanonical_checks.py",
+          "line": 25,
+          "kind": "direct-call",
+          "expression": "server.get_network_recent_blockhash",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f019_test_issuance_rejects_unknown_and_noncanonical_checks.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f020_test_issuance_retries_never_regress_verified_bank_context.py",
+          "line": 14,
+          "kind": "direct-call",
+          "expression": "server.get_network_recent_blockhash",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f020_test_issuance_retries_never_regress_verified_bank_context.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f021_test_issuance_logs_only_gated_sanitized_context.py",
+          "line": 13,
+          "kind": "direct-call",
+          "expression": "server.get_network_recent_blockhash",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f021_test_issuance_logs_only_gated_sanitized_context.py",
             "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
           }
         }

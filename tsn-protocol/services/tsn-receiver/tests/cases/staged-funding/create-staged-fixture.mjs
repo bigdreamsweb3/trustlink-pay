@@ -14,6 +14,7 @@ export async function createStagedFixture() {
     "security/node-envelope/encrypt-payload-for-node.ts", "security/node-envelope/decrypt-payload-for-node.ts",
     "security/node-attestation/assert-node-verification-attestation.ts", "state/node-key-value/execute-state-operation.ts",
     "http/api/work-status/by-id/GET.ts", "http/api/internal/node/work/funding/POST.ts",
+    "http/api/internal/node/work/POST.ts",
   ]);
   const load = loadReceiverFixtureModule.bind(null, directory);
   const contract = await load("work-contract");
@@ -33,7 +34,11 @@ export async function createStagedFixture() {
   const { executeStateOperation } = await load("state/node-key-value/execute-state-operation");
   const { GET: getPublicStatus } = await load("http/api/work-status/by-id/GET");
   const { POST: postSignedFunding } = await load("http/api/internal/node/work/funding/POST");
+  const { POST: postNodeWork } = await load("http/api/internal/node/work/POST");
+  const { claimWorkTransaction } = await load("work/claim-work-transaction");
+  const { reclaimExpiredWorkLease } = await load("work/reclaim-expired-work-lease");
   return { directory, contract, LocalDb, createStoreContext, encryptPayloadForNode, decryptPayloadForNode,
     assertNodeVerificationAttestation, nodeCommitment, attestationMessage, receive, attachSignedFunding,
-    getWorkForNode, leaseForNode, leaseForCranker, transition, executeStateOperation, getPublicStatus, postSignedFunding };
+    getWorkForNode, leaseForNode, leaseForCranker, transition, executeStateOperation, getPublicStatus, postSignedFunding,
+    postNodeWork, claimWorkTransaction, reclaimExpiredWorkLease };
 }

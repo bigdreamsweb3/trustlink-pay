@@ -550,9 +550,13 @@
     clearTinFundingReadinessTimer();
     const pending = pendingTinCredit, readinessCurrent = hasCurrentTinFundingReadiness(pending);
     const fundingExpired = Boolean(pending?.readiness) && Date.parse(pending.readiness.expiresAt) <= Date.now();
-    $("payTin").disabled = tinCreditInFlight || !resolvedTin || Boolean(pending?.accepted);
-    $("payTin").textContent = pending?.request && !pending.accepted ? "Retry intent authorization" : "Authorize intent";
-    $("approveTinFunding").hidden = !(pending?.readiness || pending?.completion) || Boolean(pending?.attached);
+    const recovering = Boolean(pending?.terminalWork);
+    $("payTin").disabled = tinCreditInFlight || (recovering
+      ? activeWallet?.publicKey?.toBase58() !== pending.senderWallet
+      : !resolvedTin || Boolean(pending?.accepted));
+    $("payTin").textContent = recovering ? "Check funding outcome"
+      : pending?.request && !pending.accepted ? "Retry intent authorization" : "Authorize intent";
+    $("approveTinFunding").hidden = recovering || !(pending?.readiness || pending?.completion) || Boolean(pending?.attached);
     $("approveTinFunding").disabled = tinCreditInFlight || (!pending?.completion && !readinessCurrent)
       || activeWallet?.publicKey?.toBase58() !== pending?.senderWallet;
     $("approveTinFunding").textContent = pending?.completion ? "Retry funding submission"
@@ -560,7 +564,7 @@
     $("cancelTinFunding").hidden = !pending || Boolean(pending.completion) || Boolean(pending.attached);
     $("cancelTinFunding").disabled = tinCreditInFlight;
     for (const name of ["recipientTin", "tinAmount", "tinMint"]) $(name).disabled = tinCreditInFlight || Boolean(pending);
-    if (readinessCurrent && !pending.completion && !pending.attached) {
+    if (!recovering && readinessCurrent && !pending.completion && !pending.attached) {
       const readiness = pending.readiness, generation = tinCreditGeneration;
       const timer = setTimeout(() => {
         if (tinFundingReadinessTimer !== timer || pending !== pendingTinCredit || generation !== tinCreditGeneration
@@ -606,7 +610,42 @@
         || activeWallet?.publicKey?.toBase58() !== pending.senderWallet) throw new Error("The funding approval session changed.");
   }
 
+  async function recoverTinCredit() {
+    if (tinCreditInFlight || !pendingTinCredit?.terminalWork) return;
+    const pending = pendingTinCredit, generation = tinCreditGeneration;
+    tinCreditInFlight = true;
+    renderTinFundingControls();
+    try {
+      requireWallet(); requireNetwork(); requireCurrentTinFunding(pending, generation);
+      $("tinCreditResult").textContent = "Checking the original funding outcome. Keep this window open; wallet approval is paused.";
+      const outcome = await api("/api/tsn/sdk/recover-tin-credit", { method: "POST", body: JSON.stringify({ operationId: pending.workId }) });
+      requireCurrentTinFunding(pending, generation);
+      if (["NONEXECUTION_CONFIRMED", "UNSIGNED_INTENT_RELEASED", "CREDIT_CONFIRMED"].includes(outcome.status)) {
+        clearTinFundingReadinessTimer();
+        pending.controller.abort();
+        pendingTinCredit = null;
+        tinCreditGeneration++;
+        $("tinCreditResult").textContent = outcome.status === "CREDIT_CONFIRMED"
+          ? "The original credit is confirmed. You can authorize another intent."
+          : "The original attempt is cleared for a fresh authorization. Review the recipient and amount, then select Authorize intent.";
+        log("TIN FUNDING OUTCOME CHECKED", `${outcome.reason ?? outcome.status} The original intent and signed attempt remain recorded.`);
+      } else {
+        $("tinCreditResult").textContent = outcome.status === "FUNDING_OBSERVED"
+          ? "The original funding signature was found. Reconcile that work before approving another deposit."
+          : outcome.reason ?? "The funding outcome remains uncertain. Keep the original attempt and check again.";
+        log("TIN FUNDING RECOVERY WAITING", outcome.reason ?? outcome.status);
+      }
+    } catch (error) {
+      if (pending === pendingTinCredit && generation === tinCreditGeneration
+          && activeWallet?.publicKey?.toBase58() === pending.senderWallet) {
+        $("tinCreditResult").textContent = "The outcome check could not finish. Keep the original attempt and check again.";
+        log("TIN FUNDING RECOVERY WAITING", error instanceof Error ? error.message : String(error));
+      }
+    } finally { tinCreditInFlight = false; renderTinFundingControls(); }
+  }
+
   async function payTin() {
+    if (pendingTinCredit?.terminalWork) { await recoverTinCredit(); return; }
     if (tinCreditInFlight || pendingTinCredit?.accepted) return;
     let stage = "validating sender and recipient";
     tinCreditInFlight = true;
@@ -669,7 +708,12 @@
     try {
       const sdk = window.TsnRecipientCreditSdk;
       const status = await sdk.waitForTsnFundingReadiness({ workId: pending.workId, signal: pending.controller.signal,
-        getStatus: () => api(`/api/tsn/sdk/tin-credit-status?operationId=${encodeURIComponent(pending.workId)}`) });
+        getStatus: async () => {
+          const work = await api(`/api/tsn/sdk/tin-credit-status?operationId=${encodeURIComponent(pending.workId)}`);
+          requireCurrentTinFunding(pending, generation);
+          if (["FAILED", "REJECTED"].includes(work.status)) { pending.terminalWork = work; renderTinFundingControls(); }
+          return work;
+        } });
       requireCurrentTinFunding(pending, generation);
       const ready = await api("/api/tsn/sdk/prepare-tin-credit-funding", { method: "POST", body: JSON.stringify({ operationId: pending.workId }) });
       requireCurrentTinFunding(pending, generation);
@@ -682,7 +726,13 @@
       $("tinCreditResult").textContent = `Intent ${pending.workId} is ready. Approve the funding transaction when you are ready.`;
       log("TIN FUNDING READY", `Node checked intent ${pending.workId}. Use Ready to approve funding for the wallet transaction.`);
     } catch (error) {
-      if (pending !== pendingTinCredit || pending.controller.signal.aborted) return;
+      if (pending !== pendingTinCredit || generation !== tinCreditGeneration || pending.controller.signal.aborted
+          || activeWallet?.publicKey?.toBase58() !== pending.senderWallet) return;
+      if (pending.terminalWork) {
+        $("tinCreditResult").textContent = `Intent ${pending.workId} was rejected. Select Check funding outcome to review it before a fresh authorization.`;
+        log("TIN AUTHORIZATION ENDED", error instanceof Error ? error.message : String(error));
+        return;
+      }
       if (!/AUTHORIZATION_ENDED|DIFFERS_FROM_AUTHORIZATION|OPERATION_MISMATCH/.test(String(error.message))
           && Date.parse(pending.request.senderAuthorizationExpiresAt) > Date.now()) {
         if (!pending.watchRetryLogged) log("TIN AUTHORIZATION WAITING", error instanceof Error ? error.message : String(error));
@@ -696,7 +746,7 @@
   }
 
   async function approveTinFunding() {
-    if (tinCreditInFlight || !pendingTinCredit || pendingTinCredit.attached) return;
+    if (tinCreditInFlight || !pendingTinCredit || pendingTinCredit.attached || pendingTinCredit.terminalWork) return;
     if (!pendingTinCredit.completion && !hasCurrentTinFundingReadiness(pendingTinCredit)) { renderTinFundingControls(); return; }
     const pending = pendingTinCredit, generation = tinCreditGeneration;
     let stage = "checking the ready intent";
@@ -741,11 +791,16 @@
   }
 
   async function watchTinCredit(operationId) {
+    const pending = pendingTinCredit, generation = tinCreditGeneration;
+    const current = () => pending && pending === pendingTinCredit && generation === tinCreditGeneration
+      && pending.workId === operationId && activeWallet?.publicKey?.toBase58() === pending.senderWallet;
     let lastStatus = "";
     for (let attempt = 0; attempt < 180; attempt += 1) {
       await new Promise((resolve) => setTimeout(resolve, 5000));
+      if (!current()) return;
       try {
         const work = await api(`/api/tsn/sdk/tin-credit-status?operationId=${encodeURIComponent(operationId)}`);
+        if (!current()) return;
         const fundingStatus = String(work.status ?? "UNKNOWN").toUpperCase();
         const creditStatus = String(work.settlement?.status ?? "WAITING_FOR_FUNDING").toUpperCase();
         const fundingReason = String(work.nodeDecisionReason ?? "").trim();
@@ -779,20 +834,25 @@
             : fundingStatus === "REJECTED"
               ? `TSN Node rejected reserve funding for ${operationId}${fundingReason ? `: ${fundingReason}` : "."} Settlement work is ${creditStatus} and has not executed.`
               : `TIN credit ${operationId} ended with reserve funding ${fundingStatus} and settlement ${creditStatus}${settlementReason ? `: ${settlementReason}` : "."}`;
-          if (creditStatus === "CONFIRMED" && pendingTinCredit?.workId === operationId) {
+          if (creditStatus === "CONFIRMED") {
             clearTinFundingReadinessTimer();
             pendingTinCredit.controller.abort();
             pendingTinCredit = null;
             tinCreditGeneration++;
             renderTinFundingControls();
+          } else {
+            pending.terminalWork = work;
+            renderTinFundingControls();
+            if (output) output.textContent += " Select Check funding outcome to review the original attempt before retrying.";
           }
           return;
         }
       } catch (error) {
+        if (!current()) return;
         if (attempt === 0) log("TIN CREDIT STATUS WAITING", error instanceof Error ? error.message : String(error));
       }
     }
-    log("TIN CREDIT STATUS PENDING", `Check Receiver work ${operationId} for its latest Node and Cranker state.`);
+    if (current()) log("TIN CREDIT STATUS PENDING", `Check Receiver work ${operationId} for its latest Node and Cranker state.`);
   }
 
   async function buildWalletTransfer() {

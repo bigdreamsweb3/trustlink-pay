@@ -107,7 +107,7 @@
       "path": "/network/recent-blockhash",
       "function": "get_network_recent_blockhash",
       "file": "tsn-protocol/services/tsn-node/api/handlers/get_network_recent_blockhash.py",
-      "line": 17,
+      "line": 24,
       "signature": "",
       "implementationSignature": "node: Dependencies",
       "returns": "dict[str, Any]",
@@ -2694,7 +2694,7 @@
       "line": 5,
       "implementation": {
         "file": "tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/work/POST.ts",
-        "line": 8,
+        "line": 9,
         "function": "POST"
       },
       "authReferences": [

@@ -3994,17 +3994,22 @@
       "functions": [
         {
           "name": "POST",
-          "line": 8,
+          "line": 9,
           "inputs": [
             "dependencies: Pick<Dependencies, \"NextResponse\" | \"leaseForNode\" | \"requireService\">",
             "request: NextRequest"
           ],
           "output": "inferred; see implementation and family contract",
           "dependencyDeclaration": "Pick<Dependencies, \"NextResponse\" | \"leaseForNode\" | \"requireService\">",
-          "bodySha256": "318958060200c8ccfb163be40cf3620a34fb75c84d1d03c44b787fcbda74846a"
+          "bodySha256": "567fc8f3f5e5b267e1158e76fe9117647114dffcbc1deb7ff24983d46a95b6a0"
         }
       ],
       "imports": [
+        {
+          "source": "../../../../../work/assert-node-funding-lease-filter",
+          "typeOnly": false,
+          "bindings": "{ assertNodeFundingLeaseFilter }"
+        },
         {
           "source": "./dependencies",
           "typeOnly": true,
@@ -12116,6 +12121,29 @@
       "syntaxErrors": []
     },
     {
+      "path": "lib/work/assert-node-funding-lease-filter.ts",
+      "functions": [
+        {
+          "name": "assertNodeFundingLeaseFilter",
+          "line": 2,
+          "inputs": [
+            "fundingPhase: unknown",
+            "supportedKinds: unknown"
+          ],
+          "output": "asserts fundingPhase is \"SIGNED_DEPOSIT\" | undefined",
+          "dependencyDeclaration": null,
+          "bodySha256": "5e2f823421330dd21a7493dac53606afdcd2df19cf0e1cd8fee3d2abd0651af5"
+        }
+      ],
+      "imports": [],
+      "classBindings": [],
+      "literalErrors": [
+        "INVALID_NODE_FUNDING_FILTER"
+      ],
+      "forbidden": [],
+      "syntaxErrors": []
+    },
+    {
       "path": "lib/work/attach-cranker-authorization-transaction.ts",
       "functions": [
         {
@@ -12294,21 +12322,27 @@
       "functions": [
         {
           "name": "claimWorkTransaction",
-          "line": 5,
+          "line": 6,
           "inputs": [
             "dependencies: Pick<WorkDependencies, \"db\" | \"hasResolvedNonExecution\" | \"isSupportedWorkKind\" | \"workCollection\">",
             "candidate: any",
             "status: any",
             "next: any",
             "owner: any",
+            "fundingPhase: \"SIGNED_DEPOSIT\" | undefined",
             "transaction: any"
           ],
           "output": "inferred; see implementation and family contract",
           "dependencyDeclaration": "Pick<WorkDependencies, \"db\" | \"hasResolvedNonExecution\" | \"isSupportedWorkKind\" | \"workCollection\">",
-          "bodySha256": "8f3484d213aad03ad2c34d7e7ca65ce22c1656c825801f50411dafa0359bc1c8"
+          "bodySha256": "41b734c04efff9b1011cd85efc14a2b0a4a0c50978d66654743d5d396040fe08"
         }
       ],
       "imports": [
+        {
+          "source": "./matches-funding-lease-phase",
+          "typeOnly": false,
+          "bindings": "{ matchesFundingLeasePhase }"
+        },
         {
           "source": "./now",
           "typeOnly": false,
@@ -12559,20 +12593,26 @@
       "functions": [
         {
           "name": "lease",
-          "line": 8,
+          "line": 9,
           "inputs": [
             "dependencies: Pick<WorkDependencies, \"db\" | \"hasResolvedNonExecution\" | \"isSupportedWorkKind\" | \"randomInt\" | \"workCollection\">",
             "status: \"RECEIVED\" | \"VERIFIED\"",
             "next: \"NODE_VERIFYING\" | \"CRANKER_LEASED\"",
             "owner: string",
-            "supportedKinds?: WorkKind[]"
+            "supportedKinds?: WorkKind[]",
+            "fundingPhase?: \"SIGNED_DEPOSIT\""
           ],
           "output": "inferred; see implementation and family contract",
           "dependencyDeclaration": "Pick<WorkDependencies, \"db\" | \"hasResolvedNonExecution\" | \"isSupportedWorkKind\" | \"randomInt\" | \"workCollection\">",
-          "bodySha256": "cb985eca7a8570a72efe331455329a363eb9eeb20e94ed037e41ab69b8024272"
+          "bodySha256": "495e352539b0af1da26f6b6e208d54762e9020bb67e514f4c07327b2ddf72b23"
         }
       ],
       "imports": [
+        {
+          "source": "./matches-funding-lease-phase",
+          "typeOnly": false,
+          "bindings": "{ matchesFundingLeasePhase }"
+        },
         {
           "source": "./workWithStatus",
           "typeOnly": false,
@@ -12605,7 +12645,9 @@
         }
       ],
       "classBindings": [],
-      "literalErrors": [],
+      "literalErrors": [
+        "INVALID_NODE_FUNDING_FILTER"
+      ],
       "forbidden": [],
       "syntaxErrors": []
     },
@@ -12652,18 +12694,24 @@
       "functions": [
         {
           "name": "leaseForNode",
-          "line": 7,
+          "line": 8,
           "inputs": [
             "dependencies: Pick<WorkDependencies, \"db\" | \"decryptPayloadForNode\" | \"hasResolvedNonExecution\" | \"isSupportedWorkKind\" | \"randomInt\" | \"workCollection\">",
             "owner: string",
-            "supportedKinds?: WorkKind[]"
+            "supportedKinds?: WorkKind[]",
+            "fundingPhase?: \"SIGNED_DEPOSIT\""
           ],
           "output": "inferred; see implementation and family contract",
           "dependencyDeclaration": "Pick<WorkDependencies, \"db\" | \"decryptPayloadForNode\" | \"hasResolvedNonExecution\" | \"isSupportedWorkKind\" | \"randomInt\" | \"workCollection\">",
-          "bodySha256": "47ce282ca48208106c549130582ab980a26f1657fcd285d3e0163db1dad16471"
+          "bodySha256": "36a8b397bed9ab0796f6ea9f823cb3d3f6ee0041818f2a08d49fa488f4a6fea5"
         }
       ],
       "imports": [
+        {
+          "source": "./assert-node-funding-lease-filter",
+          "typeOnly": false,
+          "bindings": "{ assertNodeFundingLeaseFilter }"
+        },
         {
           "source": "./projectWorkForNode",
           "typeOnly": false,
@@ -12809,6 +12857,27 @@
           "bindings": "{ ReceiverWork, WorkKind, WorkStatus }"
         }
       ],
+      "classBindings": [],
+      "literalErrors": [],
+      "forbidden": [],
+      "syntaxErrors": []
+    },
+    {
+      "path": "lib/work/matches-funding-lease-phase.ts",
+      "functions": [
+        {
+          "name": "matchesFundingLeasePhase",
+          "line": 2,
+          "inputs": [
+            "work: { kind?: unknown; fundingPhase?: unknown }",
+            "fundingPhase?: \"SIGNED_DEPOSIT\""
+          ],
+          "output": "boolean",
+          "dependencyDeclaration": null,
+          "bodySha256": "134c826afb5199cb814d74c60f97f139ab5f2a78027d71f91073b464fc84699d"
+        }
+      ],
+      "imports": [],
       "classBindings": [],
       "literalErrors": [],
       "forbidden": [],
@@ -12994,19 +13063,25 @@
       "functions": [
         {
           "name": "reclaimExpiredWorkLease",
-          "line": 5,
+          "line": 6,
           "inputs": [
             "dependencies: Pick<WorkDependencies, \"isSupportedWorkKind\">",
             "candidate: any",
             "next: any",
+            "fundingPhase: \"SIGNED_DEPOSIT\" | undefined",
             "transaction: any"
           ],
           "output": "inferred; see implementation and family contract",
           "dependencyDeclaration": "Pick<WorkDependencies, \"isSupportedWorkKind\">",
-          "bodySha256": "6939f664384892127b08cdfa3f99de365d64739137de3f191789e2bea2b82ed1"
+          "bodySha256": "01f2ddc0e08df4f877a4e491ba221643a75ba657b883f45b46fdd700bb1ff424"
         }
       ],
       "imports": [
+        {
+          "source": "./matches-funding-lease-phase",
+          "typeOnly": false,
+          "bindings": "{ matchesFundingLeasePhase }"
+        },
         {
           "source": "./now",
           "typeOnly": false,

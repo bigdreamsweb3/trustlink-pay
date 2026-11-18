@@ -1,21 +1,8 @@
-import { payloadCommitment, type ReceiverWork } from "./work-contract";
-import { NATIVE_REVERIFY_REASONS, fundedRootRetryPatch } from "./settlement-retry";
+/** Stable native-work-retry facade and production composition; implementations live in recovery/native-retry. */
+import { nativeWorkRetryPatch as nativeWorkRetryPatchComponent } from "./recovery/native-retry/native-work-retry-patch";
 
-export function nativeWorkRetryPatch(current: ReceiverWork, funding: ReceiverWork | null,
-    version: number, owner: string, requestedBy: string, reason: string) {
-  if (!NATIVE_REVERIFY_REASONS.has(reason)) throw new Error("SETTLEMENT_RETRY_REASON_NOT_ALLOWED");
-  if (current.kind === "SETTLEMENT") {
-    if (!funding) throw new Error("SETTLEMENT_FUNDING_NOT_CONFIRMED");
-    return fundedRootRetryPatch(current, funding, version, owner, requestedBy, reason);
-  }
-  if (!["TCAP_EPOCH_ACCOUNTING"].includes(current.kind)) throw new Error("SETTLEMENT_RETRY_MODE_NOT_ALLOWED");
-  if (!Number.isSafeInteger(version) || current.stateVersion !== version) throw new Error("STALE_STATE_VERSION");
-  if (current.status !== "CRANKER_LEASED" || current.crankerLease?.owner !== owner
-      || !Number.isFinite(Date.parse(current.crankerLease.expiresAt)) || Date.parse(current.crankerLease.expiresAt) <= Date.now()) throw new Error("SETTLEMENT_RETRY_LEASE_INVALID");
-  if (current.nodeLease || (current.result && Object.keys(current.result).length)) throw new Error("SETTLEMENT_RETRY_HAS_EXECUTION_STATE");
-  if (payloadCommitment(current.payload) !== current.payloadCommitment) throw new Error("PRIVATE_COORDINATION_PAYLOAD_MISMATCH");
-  return {status:"RECEIVED",stateVersion:version+1,updatedAt:new Date().toISOString(),
-    verification:null,authorization:null,nodeLease:null,crankerLease:null,result:null,
-    retryHistory:[...(current.retryHistory ?? []),{rejectedStateVersion:version,reason,
-      retriedAt:new Date().toISOString(),requestedBy,previousStatus:current.status}]};
-}
+const dependencies = {
+  clock: Date,
+};
+
+export const nativeWorkRetryPatch = nativeWorkRetryPatchComponent.bind(null, dependencies);

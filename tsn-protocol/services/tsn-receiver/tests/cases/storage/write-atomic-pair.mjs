@@ -1,0 +1,1 @@
+export async function writeAtomicPair(collection,transaction) { transaction.set(collection.doc("funding"),{id:"funding",kind:"AUTHORIZED_FUNDING",payload:{},stateVersion:2});transaction.set(collection.doc("settlement"),{id:"settlement",kind:"SETTLEMENT",payload:{},stateVersion:2}); }

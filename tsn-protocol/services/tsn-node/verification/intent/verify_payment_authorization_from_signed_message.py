@@ -30,7 +30,9 @@ class Dependencies(Protocol):
     verify_destination_route: Any
 
 
-async def _verify_payment_authorization_from_signed_message(node: Dependencies, req: CreateIntentRequest) -> dict[str, Any]:
+async def _verify_payment_authorization_from_signed_message(node: Dependencies, req: CreateIntentRequest,
+    *, work_id: str | None = None, authorization_payload_commitment: str | None = None,
+) -> dict[str, Any]:
     mode = req.senderFundingMode or ""
     if mode != "tcap_funded_note_v1":
         raise HTTPException(400, "TSN requires a proof-bound private funded-note wallet deposit")
@@ -139,12 +141,6 @@ async def _verify_payment_authorization_from_signed_message(node: Dependencies, 
         canonical_credentials = verify_payment_authorization_from_signed_message_key
         if canonical_credentials(signed_credentials) != canonical_credentials(node_credentials):
             raise HTTPException(400, "Signed recipient credentials do not match Node-verified credentials")
-    await node._assert_canonical_nonce_unused(
-        action=action,
-        authorization_domain=str(fields.get("Domain") or "").strip(),
-        sender_public_key=sender_public_key,
-        nonce=str(fields.get("Nonce") or "").strip(),
-    )
     if is_cross_chain:
         try:
             await node.verify_destination_route(
@@ -163,6 +159,11 @@ async def _verify_payment_authorization_from_signed_message(node: Dependencies, 
     node._assert_recipient_hash_matches_owner(req.recipientHash, str(route.get("ownerPubkeyHash") or ""))
     recipient_route_commitment = str(route["gpruElgamalKeyCommitment"]).lower()
     recipient_route_version = int(route["tipRouteVersion"])
+    await node._assert_canonical_nonce_unused(
+        action=action, authorization_domain=str(fields.get("Domain") or "").strip(),
+        sender_public_key=sender_public_key, nonce=str(fields.get("Nonce") or "").strip(),
+        **({"work_id": work_id, "authorization_payload_commitment": authorization_payload_commitment} if work_id is not None else {}),
+    )
     return {
         "recipientTin": recipient_tin,
         "recipientRouteCommitment": recipient_route_commitment,

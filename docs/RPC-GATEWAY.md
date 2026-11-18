@@ -15,9 +15,10 @@ TSN gateway:
 TSN_RPC_URL=https://tsn-rpc-gateway.vercel.app
 ```
 
-For a local gateway, use `http://127.0.0.1:8787`. The SDK and Cranker validate
-and use the one selected RPC endpoint. They do not silently switch to
-Solana's public endpoint or another RPC if it fails. Network status describes
+For a local gateway, use `http://127.0.0.1:8787`. The SDK validates and uses
+the selected RPC endpoint. Cranker also uses that endpoint, with its existing
+same-cluster funding retry after `BlockhashNotFound`; `TSN_RPC_FALLBACK_URL`
+selects that retry endpoint. Network status describes
 the endpoint as `configured`; Node and Receiver can be independently labelled
 `local` or `live`.
 
@@ -59,11 +60,17 @@ adjacent port.
 
 ## Readiness
 
-Native Cranker submission carries the confirmed blockhash read's context slot into `sendTransaction` and block-height polling as `minContextSlot`. A lagging bank can return RPC `-32016` (minimum context slot not reached); the gateway tries the next provider with the exact request. Existing `BlockhashNotFound` failover remains unchanged. The minimum slot prevents reads/submission below that context but does not prove fork agreement or extend a signed hash's lifetime. Reload Gateway and Cranker after this transport correction; no program deployment or additional deposit is required.
+Native Cranker submission carries the confirmed blockhash read's context slot into `sendTransaction` and block-height polling as `minContextSlot`. A lagging bank can return RPC `-32016` (minimum context slot not reached); the gateway tries the next provider with the exact request. The minimum slot prevents reads/submission below that context but does not prove fork agreement or extend a signed hash's lifetime.
+
+New owner-signed funding carries `senderFundingBlockhashContext` through XP, SDK, Receiver, Node and Cranker. It contains the exact prepared `blockhash`, positive safe-integer `lastValidBlockHeight` and nonnegative safe-integer `contextSlot`. Node checks the hash in the signed wire before independent authorization and simulates unchanged bytes at that minimum slot. Cranker checks the Node-signed projection and wire again before confirmed preflight. The tuple is a client-reported routing/retry hint, not an issuer signature or proof of expiry/nonexecution; confirmed funding remains governed by its exact receipt.
+
+The gateway retries identical requests after `BlockhashNotFound`, minimum-context failures and malformed JSON-RPC envelopes. Valid `result: null` and scalar results remain valid envelopes. Logs correlate issuance, simulation and submission through a short SHA-256 blockhash fingerprint, provider hostname, requested minimum slot and returned context/lifetime where available. They do not print signed transaction wires or provider credentials. HTTP 200 can still contain a simulation rejection or JSON-RPC error; the event label reflects that distinction.
+
+Node keeps hash unavailability within the reported lifetime retryable. Terminal hash rejection requires every configured endpoint to reject it explicitly and successfully report a height beyond that lifetime. Partial transport, context or height failure remains availability uncertainty. Neither branch proves whether the original transaction executed. Reload the affected Gateway, Receiver, Node, Cranker and XP processes after building the current SDK/browser bundle; this repair needs no program deployment or account migration. Inspect existing work/signatures before another deposit.
 
 The SDK reports the selected endpoint as configured and probes its health.
 The Cranker performs `getVersion` and Mother Escrow account validation against
 the same endpoint before it leases work. A healthy HTTP `/getHealth` response
 alone does not prove account reads or transaction submission are working.
-Gateway upstream health and failover are handled inside the gateway; client
-fallback to a different RPC is disabled.
+Gateway upstream health and failover are handled inside the gateway; the
+SDK's endpoint selection and Cranker's bounded funding retry remain separate.

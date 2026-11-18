@@ -53,6 +53,8 @@ sharing. Receiver records are read only from the local JSON store; hosted
 Firebase records are not fetched by this local tool. Do not treat the full
 forensic bundle as a public demo asset.
 
+**November 17 local-format boundary:** Receiver runtime uses only an ordered manifest with individual work files and a recovery journal; automatic monolithic import and backup creation have been removed. The ignored `tsn-demo/evidence_taker.py` currently reads the former monolithic collection directly and has not been updated or verified for this format. Do not interpret its empty Receiver selection as missing canonical work. Use the existing Receiver status API for current observations until the collector gains a consistent manifest-aware reader; raw unlocked per-file reads can combine different transaction states. This task preserves the separate demo tool rather than claiming its earlier capture commands establish compatibility. [Receiver verification](../tsn-protocol/services/tsn-receiver/docs/verification.md) records the source/offline scope.
+
 Create an evidence directory before starting the flow:
 
 ```powershell

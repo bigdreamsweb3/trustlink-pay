@@ -1,14 +1,20 @@
 {
   "schemaVersion": 1,
-  "scope": "Source declarations only; authentication also depends on handler bodies, middleware and configuration.",
+  "scope": "Static source discovery resolves Node route bindings, inherited Pydantic fields and Receiver component exports without importing services. Control references are not complete authorization analysis.",
   "nodeEndpoints": [
     {
       "method": "POST",
       "path": "/internal/wake",
       "function": "wake_receiver_verification",
-      "line": 3404,
+      "file": "tsn-protocol/services/tsn-node/api/handlers/wake_receiver_verification.py",
+      "line": 20,
       "signature": "",
+      "implementationSignature": "node: Dependencies",
       "returns": "dict[str, Any]",
+      "binding": "wake_receiver_verification",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 331,
       "decoratorOptions": {
         "dependencies": "[Depends(require_worker_api_key)]"
       }
@@ -17,9 +23,15 @@
       "method": "POST",
       "path": "/internal/settlement-authorizations/settlement",
       "function": "create_settlement_authorization",
-      "line": 3486,
+      "file": "tsn-protocol/services/tsn-node/api/handlers/create_settlement_authorization.py",
+      "line": 34,
       "signature": "body: dict[str, Any]",
+      "implementationSignature": "node: Dependencies, body: dict[str, Any]",
       "returns": "dict[str, Any]",
+      "binding": "create_settlement_authorization",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 333,
       "decoratorOptions": {
         "dependencies": "[Depends(require_worker_api_key)]"
       }
@@ -28,9 +40,15 @@
       "method": "POST",
       "path": "/internal/settlement-authorizations/signature",
       "function": "sign_settlement_transaction",
-      "line": 3572,
+      "file": "tsn-protocol/services/tsn-node/transactions/native/signing/sign_settlement_transaction.py",
+      "line": 29,
       "signature": "body: dict[str, Any]",
+      "implementationSignature": "node: Dependencies, body: dict[str, Any]",
       "returns": "dict[str, Any]",
+      "binding": "sign_settlement_transaction",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 334,
       "decoratorOptions": {
         "dependencies": "[Depends(require_worker_api_key)]"
       }
@@ -39,9 +57,15 @@
       "method": "POST",
       "path": "/",
       "function": "mempool_status",
-      "line": 3654,
+      "file": "tsn-protocol/services/tsn-node/api/handlers/mempool_status.py",
+      "line": 15,
       "signature": "request: MempoolStatusRequest",
+      "implementationSignature": "node: Dependencies, request: MempoolStatusRequest",
       "returns": "MempoolStatusResponse",
+      "binding": "mempool_status",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 335,
       "decoratorOptions": {
         "response_model": "MempoolStatusResponse"
       }
@@ -50,18 +74,30 @@
       "method": "POST",
       "path": "/threshold-access/nonces/consume",
       "function": "consume_threshold_access_nonce",
-      "line": 3663,
+      "file": "tsn-protocol/services/tsn-node/api/handlers/consume_threshold_access_nonce.py",
+      "line": 27,
       "signature": "request: dict[str, Any]",
+      "implementationSignature": "node: Dependencies, request: dict[str, Any]",
       "returns": "dict[str, Any]",
+      "binding": "consume_threshold_access_nonce",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 336,
       "decoratorOptions": {}
     },
     {
       "method": "POST",
       "path": "/intents",
       "function": "post_intent",
-      "line": 3720,
+      "file": "tsn-protocol/services/tsn-node/api/handlers/post_intent.py",
+      "line": 22,
       "signature": "req: CreateIntentRequest",
+      "implementationSignature": "node: Dependencies, req: CreateIntentRequest",
       "returns": "PublicMempoolIntent",
+      "binding": "post_intent",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 337,
       "decoratorOptions": {
         "response_model": "PublicMempoolIntent"
       }
@@ -70,18 +106,60 @@
       "method": "GET",
       "path": "/network/recent-blockhash",
       "function": "get_network_recent_blockhash",
-      "line": 3763,
+      "file": "tsn-protocol/services/tsn-node/api/handlers/get_network_recent_blockhash.py",
+      "line": 17,
       "signature": "",
+      "implementationSignature": "node: Dependencies",
       "returns": "dict[str, Any]",
+      "binding": "get_network_recent_blockhash",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 338,
+      "decoratorOptions": {}
+    },
+    {
+      "method": "POST",
+      "path": "/network/funding/readiness",
+      "function": "post_funding_readiness",
+      "file": "tsn-protocol/services/tsn-node/api/handlers/post_funding_readiness.py",
+      "line": 18,
+      "signature": "request: FundingReadinessRequest",
+      "implementationSignature": "node: Dependencies, request: FundingReadinessRequest",
+      "returns": "dict[str, Any]",
+      "binding": "post_funding_readiness",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 339,
+      "decoratorOptions": {}
+    },
+    {
+      "method": "POST",
+      "path": "/network/funding/complete",
+      "function": "post_complete_funding",
+      "file": "tsn-protocol/services/tsn-node/api/handlers/post_complete_funding.py",
+      "line": 28,
+      "signature": "request: CompleteFundingRequest",
+      "implementationSignature": "node: Dependencies, request: CompleteFundingRequest",
+      "returns": "dict[str, Any]",
+      "binding": "post_complete_funding",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 340,
       "decoratorOptions": {}
     },
     {
       "method": "GET",
       "path": "/intents",
       "function": "list_intents",
-      "line": 3784,
+      "file": "tsn-protocol/services/tsn-node/api/handlers/list_intents.py",
+      "line": 22,
       "signature": "status: Optional[str]=Query(None)",
+      "implementationSignature": "node: Dependencies, status: Optional[str]=Query(None)",
       "returns": "list[PublicMempoolIntent]",
+      "binding": "list_intents",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 341,
       "decoratorOptions": {
         "response_model": "list[PublicMempoolIntent]",
         "dependencies": "[Depends(require_worker_api_key)]"
@@ -91,9 +169,15 @@
       "method": "PATCH",
       "path": "/intents/{intent_id}/status",
       "function": "update_intent_status",
-      "line": 3795,
+      "file": "tsn-protocol/services/tsn-node/api/handlers/update_intent_status.py",
+      "line": 22,
       "signature": "intent_id: str=ApiPath(...), body: UpdateStatusRequest=...",
+      "implementationSignature": "node: Dependencies, intent_id: str=ApiPath(...), body: UpdateStatusRequest=...",
       "returns": "MempoolIntent",
+      "binding": "update_intent_status",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 342,
       "decoratorOptions": {
         "response_model": "MempoolIntent",
         "dependencies": "[Depends(require_worker_api_key)]"
@@ -103,9 +187,15 @@
       "method": "GET",
       "path": "/intent-work",
       "function": "list_pending_intent_work",
-      "line": 3824,
+      "file": "tsn-protocol/services/tsn-node/api/handlers/list_pending_intent_work.py",
+      "line": 20,
       "signature": "limit: int=Query(50, ge=1, le=500)",
+      "implementationSignature": "node: Dependencies, limit: int=Query(50, ge=1, le=500)",
       "returns": "list[IntentWorkItem]",
+      "binding": "list_pending_intent_work",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 343,
       "decoratorOptions": {
         "response_model": "list[IntentWorkItem]",
         "dependencies": "[Depends(require_worker_api_key)]"
@@ -115,9 +205,15 @@
       "method": "GET",
       "path": "/metrics",
       "function": "get_metrics",
-      "line": 3841,
+      "file": "tsn-protocol/services/tsn-node/api/handlers/get_metrics.py",
+      "line": 21,
       "signature": "",
+      "implementationSignature": "node: Dependencies",
       "returns": "MetricsResponse",
+      "binding": "get_metrics",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 344,
       "decoratorOptions": {
         "response_model": "MetricsResponse"
       }
@@ -126,9 +222,15 @@
       "method": "POST",
       "path": "/crankers/heartbeat",
       "function": "post_cranker_heartbeat",
-      "line": 3869,
+      "file": "tsn-protocol/services/tsn-node/api/handlers/post_cranker_heartbeat.py",
+      "line": 20,
       "signature": "req: CrankerHeartbeatRequest",
+      "implementationSignature": "node: Dependencies, req: CrankerHeartbeatRequest",
       "returns": "CrankerHeartbeatRecord",
+      "binding": "post_cranker_heartbeat",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 345,
       "decoratorOptions": {
         "response_model": "CrankerHeartbeatRecord",
         "dependencies": "[Depends(require_worker_api_key)]"
@@ -138,18 +240,30 @@
       "method": "GET",
       "path": "/settlement-networks",
       "function": "get_settlement_networks",
-      "line": 3889,
+      "file": "tsn-protocol/services/tsn-node/api/handlers/get_settlement_networks.py",
+      "line": 17,
       "signature": "",
+      "implementationSignature": "node: Dependencies",
       "returns": "list[dict[str, Any]]",
+      "binding": "get_settlement_networks",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 346,
       "decoratorOptions": {}
     },
     {
       "method": "GET",
       "path": "/network/overview",
       "function": "get_network_overview",
-      "line": 3903,
+      "file": "tsn-protocol/services/tsn-node/api/handlers/get_network_overview.py",
+      "line": 26,
       "signature": "",
+      "implementationSignature": "node: Dependencies",
       "returns": "NetworkOverviewResponse",
+      "binding": "get_network_overview",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 347,
       "decoratorOptions": {
         "response_model": "NetworkOverviewResponse"
       }
@@ -158,9 +272,15 @@
       "method": "GET",
       "path": "/epoch/status",
       "function": "get_epoch_status",
-      "line": 3991,
+      "file": "tsn-protocol/services/tsn-node/api/handlers/get_epoch_status.py",
+      "line": 14,
       "signature": "",
+      "implementationSignature": "node: Dependencies",
       "returns": "EpochStatus",
+      "binding": "get_epoch_status",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 348,
       "decoratorOptions": {
         "response_model": "EpochStatus"
       }
@@ -169,9 +289,15 @@
       "method": "POST",
       "path": "/epoch/close",
       "function": "close_epoch",
-      "line": 3999,
+      "file": "tsn-protocol/services/tsn-node/api/handlers/close_epoch.py",
+      "line": 16,
       "signature": "",
+      "implementationSignature": "node: Dependencies",
       "returns": "EpochCloseResult",
+      "binding": "close_epoch",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 349,
       "decoratorOptions": {
         "response_model": "EpochCloseResult",
         "dependencies": "[Depends(require_worker_api_key)]"
@@ -180,8 +306,82 @@
   ],
   "nodeSchemas": [
     {
-      "name": "CreateIntentRequest",
-      "line": 1430,
+      "name": "CompleteFundingRequest",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/complete_funding_request.py",
+      "line": 7,
+      "fields": [
+        "workId: str = Field(..., min_length=1, max_length=128)",
+        "senderPubkey: str = Field(..., min_length=32, max_length=44)",
+        "authorizationSignature: str = Field(..., repr=False, min_length=1, max_length=128)",
+        "expectedStateVersion: int = Field(..., strict=True, gt=0)",
+        "authorizationPayloadCommitment: str = Field(..., pattern='^[0-9a-f]{64}$')",
+        "senderFundingDepositTxB64: str = Field(..., repr=False, min_length=1, max_length=5464)",
+        "senderFundingBlockhashContext: SenderFundingBlockhashContext"
+      ],
+      "fieldSources": [
+        {
+          "name": "workId",
+          "declaration": "workId: str = Field(..., min_length=1, max_length=128)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/funding_readiness_request.py",
+          "line": 7,
+          "declaredIn": "FundingReadinessRequest"
+        },
+        {
+          "name": "senderPubkey",
+          "declaration": "senderPubkey: str = Field(..., min_length=32, max_length=44)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/funding_readiness_request.py",
+          "line": 8,
+          "declaredIn": "FundingReadinessRequest"
+        },
+        {
+          "name": "authorizationSignature",
+          "declaration": "authorizationSignature: str = Field(..., repr=False, min_length=1, max_length=128)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/funding_readiness_request.py",
+          "line": 9,
+          "declaredIn": "FundingReadinessRequest"
+        },
+        {
+          "name": "expectedStateVersion",
+          "declaration": "expectedStateVersion: int = Field(..., strict=True, gt=0)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/complete_funding_request.py",
+          "line": 8,
+          "declaredIn": "CompleteFundingRequest"
+        },
+        {
+          "name": "authorizationPayloadCommitment",
+          "declaration": "authorizationPayloadCommitment: str = Field(..., pattern='^[0-9a-f]{64}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/complete_funding_request.py",
+          "line": 9,
+          "declaredIn": "CompleteFundingRequest"
+        },
+        {
+          "name": "senderFundingDepositTxB64",
+          "declaration": "senderFundingDepositTxB64: str = Field(..., repr=False, min_length=1, max_length=5464)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/complete_funding_request.py",
+          "line": 10,
+          "declaredIn": "CompleteFundingRequest"
+        },
+        {
+          "name": "senderFundingBlockhashContext",
+          "declaration": "senderFundingBlockhashContext: SenderFundingBlockhashContext",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/complete_funding_request.py",
+          "line": 11,
+          "declaredIn": "CompleteFundingRequest"
+        }
+      ],
+      "bases": [
+        {
+          "name": "FundingReadinessRequest",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/funding_readiness_request.py",
+          "line": 5
+        }
+      ],
+      "modelConfig": "model_config = ConfigDict(extra='forbid')"
+    },
+    {
+      "name": "ConfirmedFundingRequest",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/confirmed_funding_request.py",
+      "line": 11,
       "fields": [
         "paymentId: str = Field(..., description='Unique payment ID')",
         "intentSeedHash: str = Field(..., description='SHA-256 hex of paymentId')",
@@ -196,7 +396,323 @@
         "senderAuthorizationIssuedAt: Optional[str] = Field(None, description='Authorization issue timestamp')",
         "senderAuthorizationExpiresAt: Optional[str] = Field(None, description='Authorization expiry timestamp')",
         "senderFeeAmount: Optional[float] = Field(None, description='Sender-side protocol fee routed to treasury')",
-        "senderSignedFundingTransaction: str = Field(..., description='Owner-signed TCAP private funded-note deposit transaction')",
+        "senderFundingMode: Literal['tcap_funded_note_v1'] = Field(..., description='Required proof-bound private funding authority model')",
+        "fundingNote: dict[str, Any] = Field(..., repr=False, description='Private note opening restricted to Node verification')",
+        "recipientAmount: Optional[float] = Field(None, description='Amount paid to recipient')",
+        "destinationNetwork: Optional[str] = Field(None, description='Signed destination settlement network for cross-chain exits')",
+        "destinationExecutor: Optional[str] = Field(None, description='Signed destination executor contract for cross-chain exits')",
+        "destinationToken: Optional[str] = Field(None, description='Signed destination-chain ERC-20 settlement token')",
+        "settlementRouteId: Optional[str] = Field(None, description='Signed registered TSN settlement route')",
+        "source: Optional[str] = Field(None)",
+        "senderSignedFundingTransaction: str = Field(..., description='Original owner-signed deposit retained for receipt verification')",
+        "senderFundingBlockhashContext: Optional[dict[str, Any]] = Field(None, repr=False, description='Retained RPC hint unused by confirmed receipt verification')"
+      ],
+      "fieldSources": [
+        {
+          "name": "paymentId",
+          "declaration": "paymentId: str = Field(..., description='Unique payment ID')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 10,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "intentSeedHash",
+          "declaration": "intentSeedHash: str = Field(..., description='SHA-256 hex of paymentId')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 11,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "recipientHash",
+          "declaration": "recipientHash: str = Field(..., description='Hashed recipient')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 12,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "recipientTin",
+          "declaration": "recipientTin: str = Field(..., description='Recipient TIN used for private settlement routing')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 13,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "tokenMintAddress",
+          "declaration": "tokenMintAddress: str = Field(..., description='SPL token mint address')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 14,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "amount",
+          "declaration": "amount: float = Field(..., description='Payment amount')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 15,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderWallet",
+          "declaration": "senderWallet: str = Field(..., description='Wallet that signed the TSN payment authorization')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 16,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationMessage",
+          "declaration": "senderAuthorizationMessage: str = Field(..., description='Canonical TSN payment authorization message')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 17,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationSignature",
+          "declaration": "senderAuthorizationSignature: str = Field(..., description='Wallet signature over the authorization message')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 18,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationNonce",
+          "declaration": "senderAuthorizationNonce: str = Field(..., description='Unique authorization nonce')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 19,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationIssuedAt",
+          "declaration": "senderAuthorizationIssuedAt: Optional[str] = Field(None, description='Authorization issue timestamp')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 20,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationExpiresAt",
+          "declaration": "senderAuthorizationExpiresAt: Optional[str] = Field(None, description='Authorization expiry timestamp')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 21,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderFeeAmount",
+          "declaration": "senderFeeAmount: Optional[float] = Field(None, description='Sender-side protocol fee routed to treasury')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 22,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderFundingMode",
+          "declaration": "senderFundingMode: Literal['tcap_funded_note_v1'] = Field(..., description='Required proof-bound private funding authority model')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 23,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "fundingNote",
+          "declaration": "fundingNote: dict[str, Any] = Field(..., repr=False, description='Private note opening restricted to Node verification')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 24,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "recipientAmount",
+          "declaration": "recipientAmount: Optional[float] = Field(None, description='Amount paid to recipient')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 25,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "destinationNetwork",
+          "declaration": "destinationNetwork: Optional[str] = Field(None, description='Signed destination settlement network for cross-chain exits')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 26,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "destinationExecutor",
+          "declaration": "destinationExecutor: Optional[str] = Field(None, description='Signed destination executor contract for cross-chain exits')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 27,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "destinationToken",
+          "declaration": "destinationToken: Optional[str] = Field(None, description='Signed destination-chain ERC-20 settlement token')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 28,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "settlementRouteId",
+          "declaration": "settlementRouteId: Optional[str] = Field(None, description='Signed registered TSN settlement route')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 29,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "source",
+          "declaration": "source: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 30,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderSignedFundingTransaction",
+          "declaration": "senderSignedFundingTransaction: str = Field(..., description='Original owner-signed deposit retained for receipt verification')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/confirmed_funding_request.py",
+          "line": 12,
+          "declaredIn": "ConfirmedFundingRequest"
+        },
+        {
+          "name": "senderFundingBlockhashContext",
+          "declaration": "senderFundingBlockhashContext: Optional[dict[str, Any]] = Field(None, repr=False, description='Retained RPC hint unused by confirmed receipt verification')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/confirmed_funding_request.py",
+          "line": 13,
+          "declaredIn": "ConfirmedFundingRequest"
+        }
+      ],
+      "bases": [
+        {
+          "name": "PaymentAuthorizationFields",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 7
+        }
+      ],
+      "modelConfig": "model_config = ConfigDict(extra='forbid')"
+    },
+    {
+      "name": "CrankerHeartbeatRecord",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/cranker_heartbeat_record.py",
+      "line": 4,
+      "fields": [
+        "operator_pubkey: str = Field(...)",
+        "cranker_pubkey: Optional[str] = Field(None)",
+        "version: Optional[str] = Field(None)",
+        "source: Optional[str] = Field(None)",
+        "first_seen_at: str",
+        "last_seen_at: str",
+        "online: bool = True"
+      ],
+      "fieldSources": [
+        {
+          "name": "operator_pubkey",
+          "declaration": "operator_pubkey: str = Field(...)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/cranker_heartbeat_request.py",
+          "line": 7,
+          "declaredIn": "CrankerHeartbeatRequest"
+        },
+        {
+          "name": "cranker_pubkey",
+          "declaration": "cranker_pubkey: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/cranker_heartbeat_request.py",
+          "line": 8,
+          "declaredIn": "CrankerHeartbeatRequest"
+        },
+        {
+          "name": "version",
+          "declaration": "version: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/cranker_heartbeat_request.py",
+          "line": 9,
+          "declaredIn": "CrankerHeartbeatRequest"
+        },
+        {
+          "name": "source",
+          "declaration": "source: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/cranker_heartbeat_request.py",
+          "line": 10,
+          "declaredIn": "CrankerHeartbeatRequest"
+        },
+        {
+          "name": "first_seen_at",
+          "declaration": "first_seen_at: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/cranker_heartbeat_record.py",
+          "line": 5,
+          "declaredIn": "CrankerHeartbeatRecord"
+        },
+        {
+          "name": "last_seen_at",
+          "declaration": "last_seen_at: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/cranker_heartbeat_record.py",
+          "line": 6,
+          "declaredIn": "CrankerHeartbeatRecord"
+        },
+        {
+          "name": "online",
+          "declaration": "online: bool = True",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/cranker_heartbeat_record.py",
+          "line": 7,
+          "declaredIn": "CrankerHeartbeatRecord"
+        }
+      ],
+      "bases": [
+        {
+          "name": "CrankerHeartbeatRequest",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/cranker_heartbeat_request.py",
+          "line": 6
+        }
+      ],
+      "modelConfig": null
+    },
+    {
+      "name": "CrankerHeartbeatRequest",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/cranker_heartbeat_request.py",
+      "line": 6,
+      "fields": [
+        "operator_pubkey: str = Field(...)",
+        "cranker_pubkey: Optional[str] = Field(None)",
+        "version: Optional[str] = Field(None)",
+        "source: Optional[str] = Field(None)"
+      ],
+      "fieldSources": [
+        {
+          "name": "operator_pubkey",
+          "declaration": "operator_pubkey: str = Field(...)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/cranker_heartbeat_request.py",
+          "line": 7,
+          "declaredIn": "CrankerHeartbeatRequest"
+        },
+        {
+          "name": "cranker_pubkey",
+          "declaration": "cranker_pubkey: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/cranker_heartbeat_request.py",
+          "line": 8,
+          "declaredIn": "CrankerHeartbeatRequest"
+        },
+        {
+          "name": "version",
+          "declaration": "version: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/cranker_heartbeat_request.py",
+          "line": 9,
+          "declaredIn": "CrankerHeartbeatRequest"
+        },
+        {
+          "name": "source",
+          "declaration": "source: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/cranker_heartbeat_request.py",
+          "line": 10,
+          "declaredIn": "CrankerHeartbeatRequest"
+        }
+      ],
+      "bases": [],
+      "modelConfig": null
+    },
+    {
+      "name": "CreateIntentRequest",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/create_intent_request.py",
+      "line": 5,
+      "fields": [
+        "paymentId: str = Field(..., description='Unique payment ID')",
+        "intentSeedHash: str = Field(..., description='SHA-256 hex of paymentId')",
+        "recipientHash: str = Field(..., description='Hashed recipient')",
+        "recipientTin: str = Field(..., description='Recipient TIN used for private settlement routing')",
+        "tokenMintAddress: str = Field(..., description='SPL token mint address')",
+        "amount: float = Field(..., description='Payment amount')",
+        "senderWallet: str = Field(..., description='Wallet that signed the TSN payment authorization')",
+        "senderAuthorizationMessage: str = Field(..., description='Canonical TSN payment authorization message')",
+        "senderAuthorizationSignature: str = Field(..., description='Wallet signature over the authorization message')",
+        "senderAuthorizationNonce: str = Field(..., description='Unique authorization nonce')",
+        "senderAuthorizationIssuedAt: Optional[str] = Field(None, description='Authorization issue timestamp')",
+        "senderAuthorizationExpiresAt: Optional[str] = Field(None, description='Authorization expiry timestamp')",
+        "senderFeeAmount: Optional[float] = Field(None, description='Sender-side protocol fee routed to treasury')",
         "senderFundingMode: Literal['tcap_funded_note_v1'] = Field(..., description='Required proof-bound private funding authority model')",
         "fundingNote: dict[str, Any] = Field(..., repr=False, description='Private note opening restricted to Node verification')",
         "recipientAmount: Optional[float] = Field(None, description='Amount paid to recipient')",
@@ -205,11 +721,1000 @@
         "destinationToken: Optional[str] = Field(None, description='Signed destination-chain ERC-20 settlement token')",
         "settlementRouteId: Optional[str] = Field(None, description='Signed registered TSN settlement route')",
         "source: Optional[str] = Field(None)"
-      ]
+      ],
+      "fieldSources": [
+        {
+          "name": "paymentId",
+          "declaration": "paymentId: str = Field(..., description='Unique payment ID')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 10,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "intentSeedHash",
+          "declaration": "intentSeedHash: str = Field(..., description='SHA-256 hex of paymentId')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 11,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "recipientHash",
+          "declaration": "recipientHash: str = Field(..., description='Hashed recipient')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 12,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "recipientTin",
+          "declaration": "recipientTin: str = Field(..., description='Recipient TIN used for private settlement routing')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 13,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "tokenMintAddress",
+          "declaration": "tokenMintAddress: str = Field(..., description='SPL token mint address')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 14,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "amount",
+          "declaration": "amount: float = Field(..., description='Payment amount')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 15,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderWallet",
+          "declaration": "senderWallet: str = Field(..., description='Wallet that signed the TSN payment authorization')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 16,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationMessage",
+          "declaration": "senderAuthorizationMessage: str = Field(..., description='Canonical TSN payment authorization message')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 17,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationSignature",
+          "declaration": "senderAuthorizationSignature: str = Field(..., description='Wallet signature over the authorization message')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 18,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationNonce",
+          "declaration": "senderAuthorizationNonce: str = Field(..., description='Unique authorization nonce')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 19,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationIssuedAt",
+          "declaration": "senderAuthorizationIssuedAt: Optional[str] = Field(None, description='Authorization issue timestamp')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 20,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationExpiresAt",
+          "declaration": "senderAuthorizationExpiresAt: Optional[str] = Field(None, description='Authorization expiry timestamp')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 21,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderFeeAmount",
+          "declaration": "senderFeeAmount: Optional[float] = Field(None, description='Sender-side protocol fee routed to treasury')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 22,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderFundingMode",
+          "declaration": "senderFundingMode: Literal['tcap_funded_note_v1'] = Field(..., description='Required proof-bound private funding authority model')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 23,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "fundingNote",
+          "declaration": "fundingNote: dict[str, Any] = Field(..., repr=False, description='Private note opening restricted to Node verification')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 24,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "recipientAmount",
+          "declaration": "recipientAmount: Optional[float] = Field(None, description='Amount paid to recipient')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 25,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "destinationNetwork",
+          "declaration": "destinationNetwork: Optional[str] = Field(None, description='Signed destination settlement network for cross-chain exits')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 26,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "destinationExecutor",
+          "declaration": "destinationExecutor: Optional[str] = Field(None, description='Signed destination executor contract for cross-chain exits')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 27,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "destinationToken",
+          "declaration": "destinationToken: Optional[str] = Field(None, description='Signed destination-chain ERC-20 settlement token')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 28,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "settlementRouteId",
+          "declaration": "settlementRouteId: Optional[str] = Field(None, description='Signed registered TSN settlement route')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 29,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "source",
+          "declaration": "source: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 30,
+          "declaredIn": "PaymentAuthorizationFields"
+        }
+      ],
+      "bases": [
+        {
+          "name": "PaymentAuthorizationFields",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 7
+        }
+      ],
+      "modelConfig": "model_config = ConfigDict(extra='forbid')"
+    },
+    {
+      "name": "EpochCloseResult",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_close_result.py",
+      "line": 4,
+      "fields": [
+        "epoch_number: int",
+        "intents_archived: int",
+        "settlements_archived: int",
+        "intents_rolled_over: int = 0",
+        "intents_pruned: int = 0",
+        "settlements_pruned: int = 0",
+        "github_commit_url: str",
+        "new_epoch_number: int",
+        "message: str"
+      ],
+      "fieldSources": [
+        {
+          "name": "epoch_number",
+          "declaration": "epoch_number: int",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_close_result.py",
+          "line": 5,
+          "declaredIn": "EpochCloseResult"
+        },
+        {
+          "name": "intents_archived",
+          "declaration": "intents_archived: int",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_close_result.py",
+          "line": 6,
+          "declaredIn": "EpochCloseResult"
+        },
+        {
+          "name": "settlements_archived",
+          "declaration": "settlements_archived: int",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_close_result.py",
+          "line": 7,
+          "declaredIn": "EpochCloseResult"
+        },
+        {
+          "name": "intents_rolled_over",
+          "declaration": "intents_rolled_over: int = 0",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_close_result.py",
+          "line": 8,
+          "declaredIn": "EpochCloseResult"
+        },
+        {
+          "name": "intents_pruned",
+          "declaration": "intents_pruned: int = 0",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_close_result.py",
+          "line": 9,
+          "declaredIn": "EpochCloseResult"
+        },
+        {
+          "name": "settlements_pruned",
+          "declaration": "settlements_pruned: int = 0",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_close_result.py",
+          "line": 10,
+          "declaredIn": "EpochCloseResult"
+        },
+        {
+          "name": "github_commit_url",
+          "declaration": "github_commit_url: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_close_result.py",
+          "line": 11,
+          "declaredIn": "EpochCloseResult"
+        },
+        {
+          "name": "new_epoch_number",
+          "declaration": "new_epoch_number: int",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_close_result.py",
+          "line": 12,
+          "declaredIn": "EpochCloseResult"
+        },
+        {
+          "name": "message",
+          "declaration": "message: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_close_result.py",
+          "line": 13,
+          "declaredIn": "EpochCloseResult"
+        }
+      ],
+      "bases": [],
+      "modelConfig": null
+    },
+    {
+      "name": "EpochStatus",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_status.py",
+      "line": 4,
+      "fields": [
+        "epoch_number: int",
+        "epoch_started_at: str",
+        "next_close_at: str",
+        "intent_count: int",
+        "settlement_count: int"
+      ],
+      "fieldSources": [
+        {
+          "name": "epoch_number",
+          "declaration": "epoch_number: int",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_status.py",
+          "line": 5,
+          "declaredIn": "EpochStatus"
+        },
+        {
+          "name": "epoch_started_at",
+          "declaration": "epoch_started_at: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_status.py",
+          "line": 6,
+          "declaredIn": "EpochStatus"
+        },
+        {
+          "name": "next_close_at",
+          "declaration": "next_close_at: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_status.py",
+          "line": 7,
+          "declaredIn": "EpochStatus"
+        },
+        {
+          "name": "intent_count",
+          "declaration": "intent_count: int",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_status.py",
+          "line": 8,
+          "declaredIn": "EpochStatus"
+        },
+        {
+          "name": "settlement_count",
+          "declaration": "settlement_count: int",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/epoch_status.py",
+          "line": 9,
+          "declaredIn": "EpochStatus"
+        }
+      ],
+      "bases": [],
+      "modelConfig": null
+    },
+    {
+      "name": "FundingReadinessRequest",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/funding_readiness_request.py",
+      "line": 5,
+      "fields": [
+        "workId: str = Field(..., min_length=1, max_length=128)",
+        "senderPubkey: str = Field(..., min_length=32, max_length=44)",
+        "authorizationSignature: str = Field(..., repr=False, min_length=1, max_length=128)"
+      ],
+      "fieldSources": [
+        {
+          "name": "workId",
+          "declaration": "workId: str = Field(..., min_length=1, max_length=128)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/funding_readiness_request.py",
+          "line": 7,
+          "declaredIn": "FundingReadinessRequest"
+        },
+        {
+          "name": "senderPubkey",
+          "declaration": "senderPubkey: str = Field(..., min_length=32, max_length=44)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/funding_readiness_request.py",
+          "line": 8,
+          "declaredIn": "FundingReadinessRequest"
+        },
+        {
+          "name": "authorizationSignature",
+          "declaration": "authorizationSignature: str = Field(..., repr=False, min_length=1, max_length=128)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/funding_readiness_request.py",
+          "line": 9,
+          "declaredIn": "FundingReadinessRequest"
+        }
+      ],
+      "bases": [],
+      "modelConfig": "model_config = ConfigDict(extra='forbid')"
+    },
+    {
+      "name": "IntentToSettlementMetrics",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/intent_to_settlement_metrics.py",
+      "line": 5,
+      "fields": [
+        "sample_count: int",
+        "average_ms: float",
+        "min_ms: float",
+        "max_ms: float",
+        "last_ms: float",
+        "updated_at: Optional[str] = None"
+      ],
+      "fieldSources": [
+        {
+          "name": "sample_count",
+          "declaration": "sample_count: int",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/intent_to_settlement_metrics.py",
+          "line": 6,
+          "declaredIn": "IntentToSettlementMetrics"
+        },
+        {
+          "name": "average_ms",
+          "declaration": "average_ms: float",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/intent_to_settlement_metrics.py",
+          "line": 7,
+          "declaredIn": "IntentToSettlementMetrics"
+        },
+        {
+          "name": "min_ms",
+          "declaration": "min_ms: float",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/intent_to_settlement_metrics.py",
+          "line": 8,
+          "declaredIn": "IntentToSettlementMetrics"
+        },
+        {
+          "name": "max_ms",
+          "declaration": "max_ms: float",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/intent_to_settlement_metrics.py",
+          "line": 9,
+          "declaredIn": "IntentToSettlementMetrics"
+        },
+        {
+          "name": "last_ms",
+          "declaration": "last_ms: float",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/intent_to_settlement_metrics.py",
+          "line": 10,
+          "declaredIn": "IntentToSettlementMetrics"
+        },
+        {
+          "name": "updated_at",
+          "declaration": "updated_at: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/intent_to_settlement_metrics.py",
+          "line": 11,
+          "declaredIn": "IntentToSettlementMetrics"
+        }
+      ],
+      "bases": [],
+      "modelConfig": null
+    },
+    {
+      "name": "IntentWorkItem",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/intent_work_item.py",
+      "line": 5,
+      "fields": [
+        "intent: MempoolIntent"
+      ],
+      "fieldSources": [
+        {
+          "name": "intent",
+          "declaration": "intent: MempoolIntent",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/intent_work_item.py",
+          "line": 6,
+          "declaredIn": "IntentWorkItem"
+        }
+      ],
+      "bases": [],
+      "modelConfig": null
+    },
+    {
+      "name": "MempoolIntent",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/mempool_intent.py",
+      "line": 5,
+      "fields": [
+        "paymentId: str = Field(..., description='Unique payment ID')",
+        "intentSeedHash: str = Field(..., description='SHA-256 hex of paymentId')",
+        "recipientHash: str = Field(..., description='Hashed recipient')",
+        "recipientTin: str = Field(..., description='Recipient TIN used for private settlement routing')",
+        "tokenMintAddress: str = Field(..., description='SPL token mint address')",
+        "amount: float = Field(..., description='Payment amount')",
+        "senderWallet: str = Field(..., description='Wallet that signed the TSN payment authorization')",
+        "senderAuthorizationMessage: str = Field(..., description='Canonical TSN payment authorization message')",
+        "senderAuthorizationSignature: str = Field(..., description='Wallet signature over the authorization message')",
+        "senderAuthorizationNonce: str = Field(..., description='Unique authorization nonce')",
+        "senderAuthorizationIssuedAt: Optional[str] = Field(None, description='Authorization issue timestamp')",
+        "senderAuthorizationExpiresAt: Optional[str] = Field(None, description='Authorization expiry timestamp')",
+        "senderFeeAmount: Optional[float] = Field(None, description='Sender-side protocol fee routed to treasury')",
+        "senderFundingMode: Literal['tcap_funded_note_v1'] = Field(..., description='Required proof-bound private funding authority model')",
+        "fundingNote: dict[str, Any] = Field(..., repr=False, description='Private note opening restricted to Node verification')",
+        "recipientAmount: Optional[float] = Field(None, description='Amount paid to recipient')",
+        "destinationNetwork: Optional[str] = Field(None, description='Signed destination settlement network for cross-chain exits')",
+        "destinationExecutor: Optional[str] = Field(None, description='Signed destination executor contract for cross-chain exits')",
+        "destinationToken: Optional[str] = Field(None, description='Signed destination-chain ERC-20 settlement token')",
+        "settlementRouteId: Optional[str] = Field(None, description='Signed registered TSN settlement route')",
+        "source: Optional[str] = Field(None)",
+        "senderSignedFundingTransaction: str = Field(..., description='Original owner-signed deposit retained for receipt verification')",
+        "senderFundingBlockhashContext: Optional[dict[str, Any]] = Field(None, repr=False, description='Retained RPC hint unused by confirmed receipt verification')",
+        "id: str",
+        "status: str = 'pending'",
+        "assignedCrankerPubkey: Optional[str] = None",
+        "fundingTxSig: Optional[str] = None",
+        "settlementTxSig: Optional[str] = None",
+        "settlementResolution: Optional[str] = None",
+        "settlementReason: Optional[str] = None",
+        "postedAt: str",
+        "updatedAt: str"
+      ],
+      "fieldSources": [
+        {
+          "name": "paymentId",
+          "declaration": "paymentId: str = Field(..., description='Unique payment ID')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 10,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "intentSeedHash",
+          "declaration": "intentSeedHash: str = Field(..., description='SHA-256 hex of paymentId')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 11,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "recipientHash",
+          "declaration": "recipientHash: str = Field(..., description='Hashed recipient')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 12,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "recipientTin",
+          "declaration": "recipientTin: str = Field(..., description='Recipient TIN used for private settlement routing')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 13,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "tokenMintAddress",
+          "declaration": "tokenMintAddress: str = Field(..., description='SPL token mint address')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 14,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "amount",
+          "declaration": "amount: float = Field(..., description='Payment amount')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 15,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderWallet",
+          "declaration": "senderWallet: str = Field(..., description='Wallet that signed the TSN payment authorization')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 16,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationMessage",
+          "declaration": "senderAuthorizationMessage: str = Field(..., description='Canonical TSN payment authorization message')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 17,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationSignature",
+          "declaration": "senderAuthorizationSignature: str = Field(..., description='Wallet signature over the authorization message')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 18,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationNonce",
+          "declaration": "senderAuthorizationNonce: str = Field(..., description='Unique authorization nonce')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 19,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationIssuedAt",
+          "declaration": "senderAuthorizationIssuedAt: Optional[str] = Field(None, description='Authorization issue timestamp')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 20,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationExpiresAt",
+          "declaration": "senderAuthorizationExpiresAt: Optional[str] = Field(None, description='Authorization expiry timestamp')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 21,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderFeeAmount",
+          "declaration": "senderFeeAmount: Optional[float] = Field(None, description='Sender-side protocol fee routed to treasury')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 22,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderFundingMode",
+          "declaration": "senderFundingMode: Literal['tcap_funded_note_v1'] = Field(..., description='Required proof-bound private funding authority model')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 23,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "fundingNote",
+          "declaration": "fundingNote: dict[str, Any] = Field(..., repr=False, description='Private note opening restricted to Node verification')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 24,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "recipientAmount",
+          "declaration": "recipientAmount: Optional[float] = Field(None, description='Amount paid to recipient')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 25,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "destinationNetwork",
+          "declaration": "destinationNetwork: Optional[str] = Field(None, description='Signed destination settlement network for cross-chain exits')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 26,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "destinationExecutor",
+          "declaration": "destinationExecutor: Optional[str] = Field(None, description='Signed destination executor contract for cross-chain exits')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 27,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "destinationToken",
+          "declaration": "destinationToken: Optional[str] = Field(None, description='Signed destination-chain ERC-20 settlement token')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 28,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "settlementRouteId",
+          "declaration": "settlementRouteId: Optional[str] = Field(None, description='Signed registered TSN settlement route')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 29,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "source",
+          "declaration": "source: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 30,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderSignedFundingTransaction",
+          "declaration": "senderSignedFundingTransaction: str = Field(..., description='Original owner-signed deposit retained for receipt verification')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/confirmed_funding_request.py",
+          "line": 12,
+          "declaredIn": "ConfirmedFundingRequest"
+        },
+        {
+          "name": "senderFundingBlockhashContext",
+          "declaration": "senderFundingBlockhashContext: Optional[dict[str, Any]] = Field(None, repr=False, description='Retained RPC hint unused by confirmed receipt verification')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/confirmed_funding_request.py",
+          "line": 13,
+          "declaredIn": "ConfirmedFundingRequest"
+        },
+        {
+          "name": "id",
+          "declaration": "id: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/mempool_intent.py",
+          "line": 6,
+          "declaredIn": "MempoolIntent"
+        },
+        {
+          "name": "status",
+          "declaration": "status: str = 'pending'",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/mempool_intent.py",
+          "line": 7,
+          "declaredIn": "MempoolIntent"
+        },
+        {
+          "name": "assignedCrankerPubkey",
+          "declaration": "assignedCrankerPubkey: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/mempool_intent.py",
+          "line": 8,
+          "declaredIn": "MempoolIntent"
+        },
+        {
+          "name": "fundingTxSig",
+          "declaration": "fundingTxSig: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/mempool_intent.py",
+          "line": 9,
+          "declaredIn": "MempoolIntent"
+        },
+        {
+          "name": "settlementTxSig",
+          "declaration": "settlementTxSig: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/mempool_intent.py",
+          "line": 10,
+          "declaredIn": "MempoolIntent"
+        },
+        {
+          "name": "settlementResolution",
+          "declaration": "settlementResolution: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/mempool_intent.py",
+          "line": 11,
+          "declaredIn": "MempoolIntent"
+        },
+        {
+          "name": "settlementReason",
+          "declaration": "settlementReason: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/mempool_intent.py",
+          "line": 12,
+          "declaredIn": "MempoolIntent"
+        },
+        {
+          "name": "postedAt",
+          "declaration": "postedAt: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/mempool_intent.py",
+          "line": 13,
+          "declaredIn": "MempoolIntent"
+        },
+        {
+          "name": "updatedAt",
+          "declaration": "updatedAt: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/mempool_intent.py",
+          "line": 14,
+          "declaredIn": "MempoolIntent"
+        }
+      ],
+      "bases": [
+        {
+          "name": "ConfirmedFundingRequest",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/confirmed_funding_request.py",
+          "line": 11
+        }
+      ],
+      "modelConfig": "model_config = ConfigDict(extra='forbid')"
+    },
+    {
+      "name": "MempoolStatusRequest",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/mempool_status_request.py",
+      "line": 6,
+      "fields": [
+        "action: Optional[str] = Field(default='status')"
+      ],
+      "fieldSources": [
+        {
+          "name": "action",
+          "declaration": "action: Optional[str] = Field(default='status')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/mempool_status_request.py",
+          "line": 7,
+          "declaredIn": "MempoolStatusRequest"
+        }
+      ],
+      "bases": [],
+      "modelConfig": null
+    },
+    {
+      "name": "MempoolStatusResponse",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/mempool_status_response.py",
+      "line": 5,
+      "fields": [
+        "status: str = 'ok'",
+        "epoch: EpochStatus"
+      ],
+      "fieldSources": [
+        {
+          "name": "status",
+          "declaration": "status: str = 'ok'",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/mempool_status_response.py",
+          "line": 6,
+          "declaredIn": "MempoolStatusResponse"
+        },
+        {
+          "name": "epoch",
+          "declaration": "epoch: EpochStatus",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/mempool_status_response.py",
+          "line": 7,
+          "declaredIn": "MempoolStatusResponse"
+        }
+      ],
+      "bases": [],
+      "modelConfig": null
+    },
+    {
+      "name": "MetricsResponse",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/metrics_response.py",
+      "line": 6,
+      "fields": [
+        "intent_to_settlement: IntentToSettlementMetrics",
+        "uptime: UptimeMetrics",
+        "active_crankers_last_epoch: int"
+      ],
+      "fieldSources": [
+        {
+          "name": "intent_to_settlement",
+          "declaration": "intent_to_settlement: IntentToSettlementMetrics",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/metrics_response.py",
+          "line": 7,
+          "declaredIn": "MetricsResponse"
+        },
+        {
+          "name": "uptime",
+          "declaration": "uptime: UptimeMetrics",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/metrics_response.py",
+          "line": 8,
+          "declaredIn": "MetricsResponse"
+        },
+        {
+          "name": "active_crankers_last_epoch",
+          "declaration": "active_crankers_last_epoch: int",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/metrics_response.py",
+          "line": 9,
+          "declaredIn": "MetricsResponse"
+        }
+      ],
+      "bases": [],
+      "modelConfig": null
+    },
+    {
+      "name": "NetworkOverviewResponse",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/network_overview_response.py",
+      "line": 5,
+      "fields": [
+        "online_crankers_last_epoch: int",
+        "total_crankers_seen: int",
+        "total_vault_liquidity_usd: float",
+        "total_vault_liquidity: float",
+        "tokens: list[TokenNetworkStatus]"
+      ],
+      "fieldSources": [
+        {
+          "name": "online_crankers_last_epoch",
+          "declaration": "online_crankers_last_epoch: int",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/network_overview_response.py",
+          "line": 6,
+          "declaredIn": "NetworkOverviewResponse"
+        },
+        {
+          "name": "total_crankers_seen",
+          "declaration": "total_crankers_seen: int",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/network_overview_response.py",
+          "line": 7,
+          "declaredIn": "NetworkOverviewResponse"
+        },
+        {
+          "name": "total_vault_liquidity_usd",
+          "declaration": "total_vault_liquidity_usd: float",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/network_overview_response.py",
+          "line": 8,
+          "declaredIn": "NetworkOverviewResponse"
+        },
+        {
+          "name": "total_vault_liquidity",
+          "declaration": "total_vault_liquidity: float",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/network_overview_response.py",
+          "line": 9,
+          "declaredIn": "NetworkOverviewResponse"
+        },
+        {
+          "name": "tokens",
+          "declaration": "tokens: list[TokenNetworkStatus]",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/network_overview_response.py",
+          "line": 10,
+          "declaredIn": "NetworkOverviewResponse"
+        }
+      ],
+      "bases": [],
+      "modelConfig": null
+    },
+    {
+      "name": "PaymentAuthorizationFields",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+      "line": 7,
+      "fields": [
+        "paymentId: str = Field(..., description='Unique payment ID')",
+        "intentSeedHash: str = Field(..., description='SHA-256 hex of paymentId')",
+        "recipientHash: str = Field(..., description='Hashed recipient')",
+        "recipientTin: str = Field(..., description='Recipient TIN used for private settlement routing')",
+        "tokenMintAddress: str = Field(..., description='SPL token mint address')",
+        "amount: float = Field(..., description='Payment amount')",
+        "senderWallet: str = Field(..., description='Wallet that signed the TSN payment authorization')",
+        "senderAuthorizationMessage: str = Field(..., description='Canonical TSN payment authorization message')",
+        "senderAuthorizationSignature: str = Field(..., description='Wallet signature over the authorization message')",
+        "senderAuthorizationNonce: str = Field(..., description='Unique authorization nonce')",
+        "senderAuthorizationIssuedAt: Optional[str] = Field(None, description='Authorization issue timestamp')",
+        "senderAuthorizationExpiresAt: Optional[str] = Field(None, description='Authorization expiry timestamp')",
+        "senderFeeAmount: Optional[float] = Field(None, description='Sender-side protocol fee routed to treasury')",
+        "senderFundingMode: Literal['tcap_funded_note_v1'] = Field(..., description='Required proof-bound private funding authority model')",
+        "fundingNote: dict[str, Any] = Field(..., repr=False, description='Private note opening restricted to Node verification')",
+        "recipientAmount: Optional[float] = Field(None, description='Amount paid to recipient')",
+        "destinationNetwork: Optional[str] = Field(None, description='Signed destination settlement network for cross-chain exits')",
+        "destinationExecutor: Optional[str] = Field(None, description='Signed destination executor contract for cross-chain exits')",
+        "destinationToken: Optional[str] = Field(None, description='Signed destination-chain ERC-20 settlement token')",
+        "settlementRouteId: Optional[str] = Field(None, description='Signed registered TSN settlement route')",
+        "source: Optional[str] = Field(None)"
+      ],
+      "fieldSources": [
+        {
+          "name": "paymentId",
+          "declaration": "paymentId: str = Field(..., description='Unique payment ID')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 10,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "intentSeedHash",
+          "declaration": "intentSeedHash: str = Field(..., description='SHA-256 hex of paymentId')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 11,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "recipientHash",
+          "declaration": "recipientHash: str = Field(..., description='Hashed recipient')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 12,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "recipientTin",
+          "declaration": "recipientTin: str = Field(..., description='Recipient TIN used for private settlement routing')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 13,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "tokenMintAddress",
+          "declaration": "tokenMintAddress: str = Field(..., description='SPL token mint address')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 14,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "amount",
+          "declaration": "amount: float = Field(..., description='Payment amount')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 15,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderWallet",
+          "declaration": "senderWallet: str = Field(..., description='Wallet that signed the TSN payment authorization')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 16,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationMessage",
+          "declaration": "senderAuthorizationMessage: str = Field(..., description='Canonical TSN payment authorization message')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 17,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationSignature",
+          "declaration": "senderAuthorizationSignature: str = Field(..., description='Wallet signature over the authorization message')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 18,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationNonce",
+          "declaration": "senderAuthorizationNonce: str = Field(..., description='Unique authorization nonce')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 19,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationIssuedAt",
+          "declaration": "senderAuthorizationIssuedAt: Optional[str] = Field(None, description='Authorization issue timestamp')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 20,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationExpiresAt",
+          "declaration": "senderAuthorizationExpiresAt: Optional[str] = Field(None, description='Authorization expiry timestamp')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 21,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderFeeAmount",
+          "declaration": "senderFeeAmount: Optional[float] = Field(None, description='Sender-side protocol fee routed to treasury')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 22,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderFundingMode",
+          "declaration": "senderFundingMode: Literal['tcap_funded_note_v1'] = Field(..., description='Required proof-bound private funding authority model')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 23,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "fundingNote",
+          "declaration": "fundingNote: dict[str, Any] = Field(..., repr=False, description='Private note opening restricted to Node verification')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 24,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "recipientAmount",
+          "declaration": "recipientAmount: Optional[float] = Field(None, description='Amount paid to recipient')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 25,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "destinationNetwork",
+          "declaration": "destinationNetwork: Optional[str] = Field(None, description='Signed destination settlement network for cross-chain exits')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 26,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "destinationExecutor",
+          "declaration": "destinationExecutor: Optional[str] = Field(None, description='Signed destination executor contract for cross-chain exits')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 27,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "destinationToken",
+          "declaration": "destinationToken: Optional[str] = Field(None, description='Signed destination-chain ERC-20 settlement token')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 28,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "settlementRouteId",
+          "declaration": "settlementRouteId: Optional[str] = Field(None, description='Signed registered TSN settlement route')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 29,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "source",
+          "declaration": "source: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 30,
+          "declaredIn": "PaymentAuthorizationFields"
+        }
+      ],
+      "bases": [],
+      "modelConfig": "model_config = ConfigDict(extra='forbid')"
     },
     {
       "name": "PublicMempoolIntent",
-      "line": 1467,
+      "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+      "line": 5,
       "fields": [
         "id: str",
         "paymentId: str",
@@ -227,121 +1732,399 @@
         "settlementReason: Optional[str] = None",
         "postedAt: str",
         "updatedAt: str"
-      ]
+      ],
+      "fieldSources": [
+        {
+          "name": "id",
+          "declaration": "id: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 6,
+          "declaredIn": "PublicMempoolIntent"
+        },
+        {
+          "name": "paymentId",
+          "declaration": "paymentId: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 7,
+          "declaredIn": "PublicMempoolIntent"
+        },
+        {
+          "name": "intentSeedHash",
+          "declaration": "intentSeedHash: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 8,
+          "declaredIn": "PublicMempoolIntent"
+        },
+        {
+          "name": "recipientHash",
+          "declaration": "recipientHash: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 9,
+          "declaredIn": "PublicMempoolIntent"
+        },
+        {
+          "name": "tokenMintAddress",
+          "declaration": "tokenMintAddress: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 10,
+          "declaredIn": "PublicMempoolIntent"
+        },
+        {
+          "name": "amount",
+          "declaration": "amount: float",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 11,
+          "declaredIn": "PublicMempoolIntent"
+        },
+        {
+          "name": "recipientAmount",
+          "declaration": "recipientAmount: Optional[float] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 12,
+          "declaredIn": "PublicMempoolIntent"
+        },
+        {
+          "name": "source",
+          "declaration": "source: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 13,
+          "declaredIn": "PublicMempoolIntent"
+        },
+        {
+          "name": "status",
+          "declaration": "status: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 14,
+          "declaredIn": "PublicMempoolIntent"
+        },
+        {
+          "name": "assignedCrankerPubkey",
+          "declaration": "assignedCrankerPubkey: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 15,
+          "declaredIn": "PublicMempoolIntent"
+        },
+        {
+          "name": "fundingTxSig",
+          "declaration": "fundingTxSig: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 16,
+          "declaredIn": "PublicMempoolIntent"
+        },
+        {
+          "name": "settlementTxSig",
+          "declaration": "settlementTxSig: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 17,
+          "declaredIn": "PublicMempoolIntent"
+        },
+        {
+          "name": "settlementResolution",
+          "declaration": "settlementResolution: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 18,
+          "declaredIn": "PublicMempoolIntent"
+        },
+        {
+          "name": "settlementReason",
+          "declaration": "settlementReason: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 19,
+          "declaredIn": "PublicMempoolIntent"
+        },
+        {
+          "name": "postedAt",
+          "declaration": "postedAt: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 20,
+          "declaredIn": "PublicMempoolIntent"
+        },
+        {
+          "name": "updatedAt",
+          "declaration": "updatedAt: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/public_mempool_intent.py",
+          "line": 21,
+          "declaredIn": "PublicMempoolIntent"
+        }
+      ],
+      "bases": [],
+      "modelConfig": null
+    },
+    {
+      "name": "SenderFundingBlockhashContext",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/sender_funding_blockhash_context.py",
+      "line": 5,
+      "fields": [
+        "blockhash: str = Field(..., strict=True, min_length=32, max_length=44)",
+        "lastValidBlockHeight: int = Field(..., strict=True, gt=0, le=9007199254740991)",
+        "contextSlot: int = Field(..., strict=True, ge=0, le=9007199254740991)"
+      ],
+      "fieldSources": [
+        {
+          "name": "blockhash",
+          "declaration": "blockhash: str = Field(..., strict=True, min_length=32, max_length=44)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/sender_funding_blockhash_context.py",
+          "line": 8,
+          "declaredIn": "SenderFundingBlockhashContext"
+        },
+        {
+          "name": "lastValidBlockHeight",
+          "declaration": "lastValidBlockHeight: int = Field(..., strict=True, gt=0, le=9007199254740991)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/sender_funding_blockhash_context.py",
+          "line": 9,
+          "declaredIn": "SenderFundingBlockhashContext"
+        },
+        {
+          "name": "contextSlot",
+          "declaration": "contextSlot: int = Field(..., strict=True, ge=0, le=9007199254740991)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/sender_funding_blockhash_context.py",
+          "line": 10,
+          "declaredIn": "SenderFundingBlockhashContext"
+        }
+      ],
+      "bases": [],
+      "modelConfig": "model_config = ConfigDict(extra='forbid')"
+    },
+    {
+      "name": "SignedFundingRequest",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/signed_funding_request.py",
+      "line": 7,
+      "fields": [
+        "paymentId: str = Field(..., description='Unique payment ID')",
+        "intentSeedHash: str = Field(..., description='SHA-256 hex of paymentId')",
+        "recipientHash: str = Field(..., description='Hashed recipient')",
+        "recipientTin: str = Field(..., description='Recipient TIN used for private settlement routing')",
+        "tokenMintAddress: str = Field(..., description='SPL token mint address')",
+        "amount: float = Field(..., description='Payment amount')",
+        "senderWallet: str = Field(..., description='Wallet that signed the TSN payment authorization')",
+        "senderAuthorizationMessage: str = Field(..., description='Canonical TSN payment authorization message')",
+        "senderAuthorizationSignature: str = Field(..., description='Wallet signature over the authorization message')",
+        "senderAuthorizationNonce: str = Field(..., description='Unique authorization nonce')",
+        "senderAuthorizationIssuedAt: Optional[str] = Field(None, description='Authorization issue timestamp')",
+        "senderAuthorizationExpiresAt: Optional[str] = Field(None, description='Authorization expiry timestamp')",
+        "senderFeeAmount: Optional[float] = Field(None, description='Sender-side protocol fee routed to treasury')",
+        "senderFundingMode: Literal['tcap_funded_note_v1'] = Field(..., description='Required proof-bound private funding authority model')",
+        "fundingNote: dict[str, Any] = Field(..., repr=False, description='Private note opening restricted to Node verification')",
+        "recipientAmount: Optional[float] = Field(None, description='Amount paid to recipient')",
+        "destinationNetwork: Optional[str] = Field(None, description='Signed destination settlement network for cross-chain exits')",
+        "destinationExecutor: Optional[str] = Field(None, description='Signed destination executor contract for cross-chain exits')",
+        "destinationToken: Optional[str] = Field(None, description='Signed destination-chain ERC-20 settlement token')",
+        "settlementRouteId: Optional[str] = Field(None, description='Signed registered TSN settlement route')",
+        "source: Optional[str] = Field(None)",
+        "senderSignedFundingTransaction: str = Field(..., repr=False)",
+        "senderFundingBlockhashContext: SenderFundingBlockhashContext"
+      ],
+      "fieldSources": [
+        {
+          "name": "paymentId",
+          "declaration": "paymentId: str = Field(..., description='Unique payment ID')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 10,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "intentSeedHash",
+          "declaration": "intentSeedHash: str = Field(..., description='SHA-256 hex of paymentId')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 11,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "recipientHash",
+          "declaration": "recipientHash: str = Field(..., description='Hashed recipient')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 12,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "recipientTin",
+          "declaration": "recipientTin: str = Field(..., description='Recipient TIN used for private settlement routing')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 13,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "tokenMintAddress",
+          "declaration": "tokenMintAddress: str = Field(..., description='SPL token mint address')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 14,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "amount",
+          "declaration": "amount: float = Field(..., description='Payment amount')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 15,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderWallet",
+          "declaration": "senderWallet: str = Field(..., description='Wallet that signed the TSN payment authorization')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 16,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationMessage",
+          "declaration": "senderAuthorizationMessage: str = Field(..., description='Canonical TSN payment authorization message')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 17,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationSignature",
+          "declaration": "senderAuthorizationSignature: str = Field(..., description='Wallet signature over the authorization message')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 18,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationNonce",
+          "declaration": "senderAuthorizationNonce: str = Field(..., description='Unique authorization nonce')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 19,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationIssuedAt",
+          "declaration": "senderAuthorizationIssuedAt: Optional[str] = Field(None, description='Authorization issue timestamp')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 20,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderAuthorizationExpiresAt",
+          "declaration": "senderAuthorizationExpiresAt: Optional[str] = Field(None, description='Authorization expiry timestamp')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 21,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderFeeAmount",
+          "declaration": "senderFeeAmount: Optional[float] = Field(None, description='Sender-side protocol fee routed to treasury')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 22,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderFundingMode",
+          "declaration": "senderFundingMode: Literal['tcap_funded_note_v1'] = Field(..., description='Required proof-bound private funding authority model')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 23,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "fundingNote",
+          "declaration": "fundingNote: dict[str, Any] = Field(..., repr=False, description='Private note opening restricted to Node verification')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 24,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "recipientAmount",
+          "declaration": "recipientAmount: Optional[float] = Field(None, description='Amount paid to recipient')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 25,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "destinationNetwork",
+          "declaration": "destinationNetwork: Optional[str] = Field(None, description='Signed destination settlement network for cross-chain exits')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 26,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "destinationExecutor",
+          "declaration": "destinationExecutor: Optional[str] = Field(None, description='Signed destination executor contract for cross-chain exits')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 27,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "destinationToken",
+          "declaration": "destinationToken: Optional[str] = Field(None, description='Signed destination-chain ERC-20 settlement token')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 28,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "settlementRouteId",
+          "declaration": "settlementRouteId: Optional[str] = Field(None, description='Signed registered TSN settlement route')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 29,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "source",
+          "declaration": "source: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 30,
+          "declaredIn": "PaymentAuthorizationFields"
+        },
+        {
+          "name": "senderSignedFundingTransaction",
+          "declaration": "senderSignedFundingTransaction: str = Field(..., repr=False)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/signed_funding_request.py",
+          "line": 8,
+          "declaredIn": "SignedFundingRequest"
+        },
+        {
+          "name": "senderFundingBlockhashContext",
+          "declaration": "senderFundingBlockhashContext: SenderFundingBlockhashContext",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/signed_funding_request.py",
+          "line": 9,
+          "declaredIn": "SignedFundingRequest"
+        }
+      ],
+      "bases": [
+        {
+          "name": "PaymentAuthorizationFields",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/payment_authorization_fields.py",
+          "line": 7
+        }
+      ],
+      "modelConfig": "model_config = ConfigDict(extra='forbid')"
     },
     {
       "name": "SignedLeasePermitRequest",
-      "line": 1495,
+      "file": "tsn-protocol/services/tsn-node/core/schemas/signed_lease_permit_request.py",
+      "line": 4,
       "fields": [
         "operatorPubkey: str",
         "requestedAtTs: int",
         "requestSignatureBase64: str"
-      ]
-    },
-    {
-      "name": "IntentWorkItem",
-      "line": 1500,
-      "fields": [
-        "intent: MempoolIntent"
-      ]
-    },
-    {
-      "name": "UpdateStatusRequest",
-      "line": 1503,
-      "fields": [
-        "status: str = Field(...)",
-        "assignedCrankerPubkey: Optional[str] = Field(None)",
-        "fundingTxSig: Optional[str] = Field(None)",
-        "settlementTxSig: Optional[str] = Field(None)",
-        "settlementResolution: Optional[str] = Field(None)",
-        "settlementReason: Optional[str] = Field(None)"
-      ]
-    },
-    {
-      "name": "CrankerHeartbeatRequest",
-      "line": 1511,
-      "fields": [
-        "operator_pubkey: str = Field(...)",
-        "cranker_pubkey: Optional[str] = Field(None)",
-        "version: Optional[str] = Field(None)",
-        "source: Optional[str] = Field(None)"
-      ]
-    },
-    {
-      "name": "EpochStatus",
-      "line": 1522,
-      "fields": [
-        "epoch_number: int",
-        "epoch_started_at: str",
-        "next_close_at: str",
-        "intent_count: int",
-        "settlement_count: int"
-      ]
-    },
-    {
-      "name": "EpochCloseResult",
-      "line": 1529,
-      "fields": [
-        "epoch_number: int",
-        "intents_archived: int",
-        "settlements_archived: int",
-        "intents_rolled_over: int = 0",
-        "intents_pruned: int = 0",
-        "settlements_pruned: int = 0",
-        "github_commit_url: str",
-        "new_epoch_number: int",
-        "message: str"
-      ]
-    },
-    {
-      "name": "MempoolStatusRequest",
-      "line": 1540,
-      "fields": [
-        "action: Optional[str] = Field(default='status')"
-      ]
-    },
-    {
-      "name": "MempoolStatusResponse",
-      "line": 1543,
-      "fields": [
-        "status: str = 'ok'",
-        "epoch: EpochStatus"
-      ]
-    },
-    {
-      "name": "IntentToSettlementMetrics",
-      "line": 1547,
-      "fields": [
-        "sample_count: int",
-        "average_ms: float",
-        "min_ms: float",
-        "max_ms: float",
-        "last_ms: float",
-        "updated_at: Optional[str] = None"
-      ]
-    },
-    {
-      "name": "UptimeMetrics",
-      "line": 1555,
-      "fields": [
-        "service_started_at: str",
-        "uptime_seconds: int",
-        "uptime_days: float",
-        "downtime_events: int = 0"
-      ]
-    },
-    {
-      "name": "MetricsResponse",
-      "line": 1561,
-      "fields": [
-        "intent_to_settlement: IntentToSettlementMetrics",
-        "uptime: UptimeMetrics",
-        "active_crankers_last_epoch: int"
-      ]
+      ],
+      "fieldSources": [
+        {
+          "name": "operatorPubkey",
+          "declaration": "operatorPubkey: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/signed_lease_permit_request.py",
+          "line": 5,
+          "declaredIn": "SignedLeasePermitRequest"
+        },
+        {
+          "name": "requestedAtTs",
+          "declaration": "requestedAtTs: int",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/signed_lease_permit_request.py",
+          "line": 6,
+          "declaredIn": "SignedLeasePermitRequest"
+        },
+        {
+          "name": "requestSignatureBase64",
+          "declaration": "requestSignatureBase64: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/signed_lease_permit_request.py",
+          "line": 7,
+          "declaredIn": "SignedLeasePermitRequest"
+        }
+      ],
+      "bases": [],
+      "modelConfig": null
     },
     {
       "name": "TokenNetworkStatus",
-      "line": 1566,
+      "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
+      "line": 5,
       "fields": [
         "token_mint: str",
         "token_symbol: Optional[str] = None",
@@ -357,18 +2140,211 @@
         "executed_intent_amount: float",
         "vault_liquidity_estimate: float",
         "liquidity_source: str = 'program_scan'"
-      ]
+      ],
+      "fieldSources": [
+        {
+          "name": "token_mint",
+          "declaration": "token_mint: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
+          "line": 6,
+          "declaredIn": "TokenNetworkStatus"
+        },
+        {
+          "name": "token_symbol",
+          "declaration": "token_symbol: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
+          "line": 7,
+          "declaredIn": "TokenNetworkStatus"
+        },
+        {
+          "name": "token_name",
+          "declaration": "token_name: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
+          "line": 8,
+          "declaredIn": "TokenNetworkStatus"
+        },
+        {
+          "name": "unit_price_usd",
+          "declaration": "unit_price_usd: Optional[float] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
+          "line": 9,
+          "declaredIn": "TokenNetworkStatus"
+        },
+        {
+          "name": "vault_token_account",
+          "declaration": "vault_token_account: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
+          "line": 10,
+          "declaredIn": "TokenNetworkStatus"
+        },
+        {
+          "name": "cranker_vault",
+          "declaration": "cranker_vault: Optional[str] = None",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
+          "line": 11,
+          "declaredIn": "TokenNetworkStatus"
+        },
+        {
+          "name": "total_vault_liquidity_units",
+          "declaration": "total_vault_liquidity_units: float = 0",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
+          "line": 12,
+          "declaredIn": "TokenNetworkStatus"
+        },
+        {
+          "name": "total_vault_liquidity_usd",
+          "declaration": "total_vault_liquidity_usd: float = 0",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
+          "line": 13,
+          "declaredIn": "TokenNetworkStatus"
+        },
+        {
+          "name": "total_vault_liquidity",
+          "declaration": "total_vault_liquidity: float = 0",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
+          "line": 14,
+          "declaredIn": "TokenNetworkStatus"
+        },
+        {
+          "name": "total_intent_amount",
+          "declaration": "total_intent_amount: float",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
+          "line": 15,
+          "declaredIn": "TokenNetworkStatus"
+        },
+        {
+          "name": "pending_intent_amount",
+          "declaration": "pending_intent_amount: float",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
+          "line": 16,
+          "declaredIn": "TokenNetworkStatus"
+        },
+        {
+          "name": "executed_intent_amount",
+          "declaration": "executed_intent_amount: float",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
+          "line": 17,
+          "declaredIn": "TokenNetworkStatus"
+        },
+        {
+          "name": "vault_liquidity_estimate",
+          "declaration": "vault_liquidity_estimate: float",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
+          "line": 18,
+          "declaredIn": "TokenNetworkStatus"
+        },
+        {
+          "name": "liquidity_source",
+          "declaration": "liquidity_source: str = 'program_scan'",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
+          "line": 19,
+          "declaredIn": "TokenNetworkStatus"
+        }
+      ],
+      "bases": [],
+      "modelConfig": null
     },
     {
-      "name": "NetworkOverviewResponse",
-      "line": 1582,
+      "name": "UpdateStatusRequest",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/update_status_request.py",
+      "line": 6,
       "fields": [
-        "online_crankers_last_epoch: int",
-        "total_crankers_seen: int",
-        "total_vault_liquidity_usd: float",
-        "total_vault_liquidity: float",
-        "tokens: list[TokenNetworkStatus]"
-      ]
+        "status: str = Field(...)",
+        "assignedCrankerPubkey: Optional[str] = Field(None)",
+        "fundingTxSig: Optional[str] = Field(None)",
+        "settlementTxSig: Optional[str] = Field(None)",
+        "settlementResolution: Optional[str] = Field(None)",
+        "settlementReason: Optional[str] = Field(None)"
+      ],
+      "fieldSources": [
+        {
+          "name": "status",
+          "declaration": "status: str = Field(...)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/update_status_request.py",
+          "line": 7,
+          "declaredIn": "UpdateStatusRequest"
+        },
+        {
+          "name": "assignedCrankerPubkey",
+          "declaration": "assignedCrankerPubkey: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/update_status_request.py",
+          "line": 8,
+          "declaredIn": "UpdateStatusRequest"
+        },
+        {
+          "name": "fundingTxSig",
+          "declaration": "fundingTxSig: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/update_status_request.py",
+          "line": 9,
+          "declaredIn": "UpdateStatusRequest"
+        },
+        {
+          "name": "settlementTxSig",
+          "declaration": "settlementTxSig: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/update_status_request.py",
+          "line": 10,
+          "declaredIn": "UpdateStatusRequest"
+        },
+        {
+          "name": "settlementResolution",
+          "declaration": "settlementResolution: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/update_status_request.py",
+          "line": 11,
+          "declaredIn": "UpdateStatusRequest"
+        },
+        {
+          "name": "settlementReason",
+          "declaration": "settlementReason: Optional[str] = Field(None)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/update_status_request.py",
+          "line": 12,
+          "declaredIn": "UpdateStatusRequest"
+        }
+      ],
+      "bases": [],
+      "modelConfig": null
+    },
+    {
+      "name": "UptimeMetrics",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/uptime_metrics.py",
+      "line": 4,
+      "fields": [
+        "service_started_at: str",
+        "uptime_seconds: int",
+        "uptime_days: float",
+        "downtime_events: int = 0"
+      ],
+      "fieldSources": [
+        {
+          "name": "service_started_at",
+          "declaration": "service_started_at: str",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/uptime_metrics.py",
+          "line": 5,
+          "declaredIn": "UptimeMetrics"
+        },
+        {
+          "name": "uptime_seconds",
+          "declaration": "uptime_seconds: int",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/uptime_metrics.py",
+          "line": 6,
+          "declaredIn": "UptimeMetrics"
+        },
+        {
+          "name": "uptime_days",
+          "declaration": "uptime_days: float",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/uptime_metrics.py",
+          "line": 7,
+          "declaredIn": "UptimeMetrics"
+        },
+        {
+          "name": "downtime_events",
+          "declaration": "downtime_events: int = 0",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/uptime_metrics.py",
+          "line": 8,
+          "declaredIn": "UptimeMetrics"
+        }
+      ],
+      "bases": [],
+      "modelConfig": null
     }
   ],
   "receiverHandlers": [
@@ -377,186 +2353,669 @@
       "path": "/api/cranker/auth/challenge",
       "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/auth/challenge/route.ts",
       "line": 5,
-      "authReferences": []
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/cranker/auth/challenge/POST.ts",
+        "line": 7,
+        "function": "POST"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
     },
     {
       "method": "POST",
       "path": "/api/cranker/auth/session",
       "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/auth/session/route.ts",
-      "line": 6,
-      "authReferences": []
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/cranker/auth/session/POST.ts",
+        "line": 7,
+        "function": "POST"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
     },
     {
       "method": "POST",
       "path": "/api/cranker/settlement-signature",
       "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/settlement-signature/route.ts",
-      "line": 7,
-      "authReferences": []
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/cranker/settlement-signature/POST.ts",
+        "line": 8,
+        "function": "POST"
+      },
+      "authReferences": [
+        "authenticateCrankerRequest",
+        "enforceCrankerLeaseRateLimit"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "authenticateCrankerRequest",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/cranker/authenticate-cranker-request.ts",
+          "line": 12,
+          "function": "authenticateCrankerRequest"
+        },
+        {
+          "name": "enforceCrankerLeaseRateLimit",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/cranker/enforce-cranker-lease-rate-limit.ts",
+          "line": 7,
+          "function": "enforceCrankerLeaseRateLimit"
+        }
+      ]
     },
     {
       "method": "POST",
       "path": "/api/cranker/wake-token",
       "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/wake-token/route.ts",
-      "line": 13,
-      "authReferences": []
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/cranker/wake-token/POST.ts",
+        "line": 9,
+        "function": "POST"
+      },
+      "authReferences": [
+        "authenticateCrankerRequest"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "authenticateCrankerRequest",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/cranker/authenticate-cranker-request.ts",
+          "line": 12,
+          "function": "authenticateCrankerRequest"
+        }
+      ]
     },
     {
       "method": "POST",
       "path": "/api/cranker/work/retry",
       "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/work/retry/route.ts",
-      "line": 7,
-      "authReferences": []
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/cranker/work/retry/POST.ts",
+        "line": 9,
+        "function": "POST"
+      },
+      "authReferences": [
+        "authenticateCrankerRequest"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "authenticateCrankerRequest",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/cranker/authenticate-cranker-request.ts",
+          "line": 12,
+          "function": "authenticateCrankerRequest"
+        }
+      ]
     },
     {
       "method": "PUT",
       "path": "/api/cranker/work",
       "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts",
-      "line": 11,
-      "authReferences": []
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/cranker/work/PUT.ts",
+        "line": 12,
+        "function": "PUT"
+      },
+      "authReferences": [
+        "authenticateCrankerRequest"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "authenticateCrankerRequest",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/cranker/authenticate-cranker-request.ts",
+          "line": 12,
+          "function": "authenticateCrankerRequest"
+        }
+      ]
     },
     {
       "method": "POST",
       "path": "/api/cranker/work",
       "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts",
-      "line": 58,
-      "authReferences": []
+      "line": 7,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/cranker/work/POST.ts",
+        "line": 13,
+        "function": "POST"
+      },
+      "authReferences": [
+        "authenticateCrankerRequest",
+        "enforceCrankerLeaseRateLimit"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "authenticateCrankerRequest",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/cranker/authenticate-cranker-request.ts",
+          "line": 12,
+          "function": "authenticateCrankerRequest"
+        },
+        {
+          "name": "enforceCrankerLeaseRateLimit",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/cranker/enforce-cranker-lease-rate-limit.ts",
+          "line": 7,
+          "function": "enforceCrankerLeaseRateLimit"
+        }
+      ]
     },
     {
       "method": "PATCH",
       "path": "/api/cranker/work",
       "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/work/route.ts",
-      "line": 103,
-      "authReferences": []
+      "line": 9,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/cranker/work/PATCH.ts",
+        "line": 12,
+        "function": "PATCH"
+      },
+      "authReferences": [
+        "authenticateCrankerRequest"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "authenticateCrankerRequest",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/cranker/authenticate-cranker-request.ts",
+          "line": 12,
+          "function": "authenticateCrankerRequest"
+        }
+      ]
     },
     {
       "method": "GET",
       "path": "/api/health",
       "file": "tsn-protocol/services/tsn-receiver/app/api/health/route.ts",
-      "line": 7,
-      "authReferences": []
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/health/GET.ts",
+        "line": 8,
+        "function": "GET"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
     },
     {
       "method": "GET",
       "path": "/api/internal/node/coordination",
       "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/coordination/route.ts",
       "line": 5,
-      "authReferences": []
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/coordination/GET.ts",
+        "line": 8,
+        "function": "GET"
+      },
+      "authReferences": [
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts",
+          "line": 6,
+          "function": "requireService"
+        }
+      ]
     },
     {
       "method": "POST",
       "path": "/api/internal/node/coordination",
       "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/coordination/route.ts",
-      "line": 9,
-      "authReferences": []
+      "line": 7,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/coordination/POST.ts",
+        "line": 8,
+        "function": "POST"
+      },
+      "authReferences": [
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts",
+          "line": 6,
+          "function": "requireService"
+        }
+      ]
     },
     {
       "method": "POST",
       "path": "/api/internal/node/state",
       "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/state/route.ts",
-      "line": 6,
-      "authReferences": []
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/state/POST.ts",
+        "line": 8,
+        "function": "POST"
+      },
+      "authReferences": [
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts",
+          "line": 6,
+          "function": "requireService"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/node/work/funding",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/funding/route.ts",
+      "line": 4,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/work/funding/POST.ts",
+        "line": 6,
+        "function": "POST"
+      },
+      "authReferences": [
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts",
+          "line": 6,
+          "function": "requireService"
+        }
+      ]
     },
     {
       "method": "POST",
       "path": "/api/internal/node/work/reconcile",
       "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/reconcile/route.ts",
-      "line": 6,
-      "authReferences": []
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/work/reconcile/POST.ts",
+        "line": 8,
+        "function": "POST"
+      },
+      "authReferences": [
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts",
+          "line": 6,
+          "function": "requireService"
+        }
+      ]
     },
     {
       "method": "POST",
       "path": "/api/internal/node/work/resolve-failed",
       "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/resolve-failed/route.ts",
-      "line": 6,
-      "authReferences": []
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/work/resolve-failed/POST.ts",
+        "line": 8,
+        "function": "POST"
+      },
+      "authReferences": [
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts",
+          "line": 6,
+          "function": "requireService"
+        }
+      ]
     },
     {
       "method": "POST",
       "path": "/api/internal/node/work/retry",
       "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/retry/route.ts",
-      "line": 6,
-      "authReferences": []
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/work/retry/POST.ts",
+        "line": 8,
+        "function": "POST"
+      },
+      "authReferences": [
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts",
+          "line": 6,
+          "function": "requireService"
+        }
+      ]
     },
     {
       "method": "POST",
       "path": "/api/internal/node/work",
       "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/route.ts",
-      "line": 6,
-      "authReferences": []
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/work/POST.ts",
+        "line": 8,
+        "function": "POST"
+      },
+      "authReferences": [
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts",
+          "line": 6,
+          "function": "requireService"
+        }
+      ]
     },
     {
       "method": "GET",
       "path": "/api/internal/node/work",
       "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/route.ts",
-      "line": 20,
-      "authReferences": []
+      "line": 7,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/work/GET.ts",
+        "line": 8,
+        "function": "GET"
+      },
+      "authReferences": [
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts",
+          "line": 6,
+          "function": "requireService"
+        }
+      ]
     },
     {
       "method": "PATCH",
       "path": "/api/internal/node/work",
       "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/route.ts",
-      "line": 35,
-      "authReferences": []
+      "line": 9,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/work/PATCH.ts",
+        "line": 8,
+        "function": "PATCH"
+      },
+      "authReferences": [
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts",
+          "line": 6,
+          "function": "requireService"
+        }
+      ]
     },
     {
       "method": "PUT",
       "path": "/api/internal/node/work",
       "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/work/route.ts",
-      "line": 45,
-      "authReferences": []
+      "line": 11,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/internal/node/work/PUT.ts",
+        "line": 8,
+        "function": "PUT"
+      },
+      "authReferences": [
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts",
+          "line": 6,
+          "function": "requireService"
+        }
+      ]
     },
     {
       "method": "POST",
       "path": "/api/work",
       "file": "tsn-protocol/services/tsn-receiver/app/api/work/route.ts",
-      "line": 6,
-      "authReferences": []
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/work/POST.ts",
+        "line": 8,
+        "function": "POST"
+      },
+      "authReferences": [
+        "assertExternalWorkKind"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "assertExternalWorkKind",
+          "file": "tsn-protocol/services/tsn-receiver/lib/contracts/kinds/assert-external-work-kind.ts",
+          "line": 10,
+          "function": "assertExternalWorkKind"
+        }
+      ]
     },
     {
       "method": "GET",
       "path": "/api/work",
       "file": "tsn-protocol/services/tsn-receiver/app/api/work/route.ts",
-      "line": 21,
-      "authReferences": []
+      "line": 7,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/work/GET.ts",
+        "line": 8,
+        "function": "GET"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
     },
     {
       "method": "GET",
       "path": "/api/work-status/[id]",
       "file": "tsn-protocol/services/tsn-receiver/app/api/work-status/[id]/route.ts",
-      "line": 9,
-      "authReferences": []
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/work-status/by-id/GET.ts",
+        "line": 13,
+        "function": "GET"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
     },
     {
       "method": "POST",
       "path": "/intents",
       "file": "tsn-protocol/services/tsn-receiver/app/intents/route.ts",
-      "line": 8,
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/intents/POST.ts",
+        "line": 9,
+        "function": "POST"
+      },
       "authReferences": [
-        "assertAuthorizedFundingIngress"
+        "assertPaymentAuthorizationIngress",
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "assertPaymentAuthorizationIngress",
+          "file": "tsn-protocol/services/tsn-receiver/lib/contracts/validation/assert-payment-authorization-ingress.ts",
+          "line": 6,
+          "function": "assertPaymentAuthorizationIngress"
+        },
+        {
+          "name": "requireService",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts",
+          "line": 6,
+          "function": "requireService"
+        }
       ]
     },
     {
       "method": "GET",
       "path": "/intents",
       "file": "tsn-protocol/services/tsn-receiver/app/intents/route.ts",
-      "line": 22,
+      "line": 7,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/intents/GET.ts",
+        "line": 10,
+        "function": "GET"
+      },
       "authReferences": [
-        "assertAuthorizedFundingIngress"
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts",
+          "line": 6,
+          "function": "requireService"
+        }
       ]
     },
     {
       "method": "GET",
+      "path": "/network/[...path]",
+      "file": "tsn-protocol/services/tsn-receiver/app/network/[...path]/route.ts",
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/network/proxy/GET.ts",
+        "line": 11,
+        "function": "GET"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
+    },
+    {
+      "method": "POST",
+      "path": "/network/[...path]",
+      "file": "tsn-protocol/services/tsn-receiver/app/network/[...path]/route.ts",
+      "line": 6,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/network/proxy/GET.ts",
+        "line": 11,
+        "function": "GET"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
+    },
+    {
+      "method": "GET",
+      "path": "/tin-operations/[...path]",
+      "file": "tsn-protocol/services/tsn-receiver/app/tin-operations/[...path]/route.ts",
+      "line": 6,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/tin-operations/proxy/forward.ts",
+        "line": 11,
+        "function": "forward"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
+    },
+    {
+      "method": "POST",
+      "path": "/tin-operations/[...path]",
+      "file": "tsn-protocol/services/tsn-receiver/app/tin-operations/[...path]/route.ts",
+      "line": 7,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/tin-operations/proxy/forward.ts",
+        "line": 11,
+        "function": "forward"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/tin-operations/[...path]",
+      "file": "tsn-protocol/services/tsn-receiver/app/tin-operations/[...path]/route.ts",
+      "line": 8,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/tin-operations/proxy/forward.ts",
+        "line": 11,
+        "function": "forward"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/tin-operations/[...path]",
+      "file": "tsn-protocol/services/tsn-receiver/app/tin-operations/[...path]/route.ts",
+      "line": 9,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/tin-operations/proxy/forward.ts",
+        "line": 11,
+        "function": "forward"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
+    },
+    {
+      "method": "GET",
+      "path": "/tin-operations",
+      "file": "tsn-protocol/services/tsn-receiver/app/tin-operations/route.ts",
+      "line": 5,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/tin-operations/GET.ts",
+        "line": 8,
+        "function": "GET"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
+    },
+    {
+      "method": "POST",
       "path": "/tin-operations",
       "file": "tsn-protocol/services/tsn-receiver/app/tin-operations/route.ts",
       "line": 7,
-      "authReferences": []
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/tin-operations/POST.ts",
+        "line": 8,
+        "function": "POST"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
+    },
+    {
+      "method": "GET",
+      "path": "/tin-routes/[...path]",
+      "file": "tsn-protocol/services/tsn-receiver/app/tin-routes/[...path]/route.ts",
+      "line": 6,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/tin-routes/proxy/run.ts",
+        "line": 11,
+        "function": "run"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
     },
     {
       "method": "POST",
-      "path": "/tin-operations",
-      "file": "tsn-protocol/services/tsn-receiver/app/tin-operations/route.ts",
-      "line": 11,
-      "authReferences": []
+      "path": "/tin-routes/[...path]",
+      "file": "tsn-protocol/services/tsn-receiver/app/tin-routes/[...path]/route.ts",
+      "line": 7,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/tin-routes/proxy/run.ts",
+        "line": 11,
+        "function": "run"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/tin-routes/[...path]",
+      "file": "tsn-protocol/services/tsn-receiver/app/tin-routes/[...path]/route.ts",
+      "line": 8,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/http/tin-routes/proxy/run.ts",
+        "line": 11,
+        "function": "run"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
     }
   ]
 }

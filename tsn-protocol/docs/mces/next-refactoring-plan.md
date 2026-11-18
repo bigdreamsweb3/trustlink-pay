@@ -1,12 +1,12 @@
 # Proposed next MCES implementation: Receiver
 
-**Status: PROPOSED; implementation has not started.** The single selected directory is `tsn-protocol/services/tsn-receiver/`. The [ranking](candidate-ranking.md) explains its 80/100 priority score, and the [assessment](candidate-assessment.md) records the inspected contracts and current tests. Explicit approval of a separate implementation task is required before extracting any candidate code.
+**Status: original implementation plan, approved on November 17, 2026.** The user selected Receiver and additionally requested local work files grouped by TCAP accounting epoch/kind, with funding/TIN unassigned. [Receiver architecture](../../services/tsn-receiver/docs/architecture.md) and [verification](../../services/tsn-receiver/docs/verification.md) record implementation and bounded evidence. The [ranking](candidate-ranking.md) and [assessment](candidate-assessment.md) preserve the pre-refactor selection rationale; this sequence does not authorize another service's refactor.
 
 ## Intended contract and scope
 
 Apply the [verified Node reference](../../services/tsn-node/docs/architecture.md) to Receiver's existing responsibilities. The intended result is one implementation for each authored function, grouped by responsibility, with explicit narrow dependencies, stable framework/import facades, a reviewable component inventory and behavior-preserving tests. Use idiomatic TypeScript named exports and typed dependency interfaces; Python class descriptor assembly is not a TypeScript requirement.
 
-Keep the work database, monotonic state versions, existing record formats and Next.js runtime. Receiver remains the durable coordination authority. Node retains verification/proving and Mother authority; Cranker retains permitted submission. The task must not move their implementations into Receiver, add a new queue, invent a crypto capability, change protocol layouts, remove a distinct execution family or create an old fallback path.
+Keep the work database, monotonic state versions, work document shapes and Next.js runtime. The approved local adapter change replaces the monolithic file with an ordered manifest and individual records; hosted storage retains its format. Receiver remains the durable coordination authority. Node retains verification/proving and Mother authority; Cranker retains permitted submission. Do not move those implementations into Receiver, add a queue, invent cryptography, change protocol layouts, remove a distinct execution family or retain an obsolete fallback.
 
 Root Git publication work discussed alongside this assessment is a separate workflow; it does not authorize the MCES implementation. Existing application/source work, instructions, configurations, keys, program IDs and user-managed processes remain preserved. Any later service startup, signing, submission, deployment or Git publication requires its own applicable authorization.
 

@@ -1,0 +1,12 @@
+{
+  "discovery": "../../node-envelope.test.mjs",
+  "components": [
+    {
+      "name": "verifyPaymentSecretsAreEncryptedAndOnlyTheNodeEnvelopeCan",
+      "file": "verify-payment-secrets-are-encrypted-and-only-the-node-envelope-can.mjs",
+      "originalLine": 9,
+      "captures": [],
+      "sharedLocals": []
+    }
+  ]
+}

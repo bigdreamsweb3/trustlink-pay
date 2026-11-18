@@ -30,9 +30,9 @@ Some flows use separate transactions for funding and the subsequent credit. Each
 
 ## Current native-credit sequence
 
-The sender approves the canonical message and exact TCAP reserve-deposit transaction. The application builds a request using the resolved owner hash and posts it to Node's `/intents`. Node forwards it to Receiver. Receiver stores idempotent funding work and pre-creates an internal RECEIVED settlement reference; that reference is not executable before confirmed funding.
+The sender first approves the canonical message. The application posts a message-only request with the resolved owner hash and private note to Node's `/intents`; Node forwards it to Receiver. Receiver stores idempotent funding in phase `AUTHORIZATION`. Node checks the signed intent, recipient, asset and advisory token balance, then reports a signed `FUNDING_READY` decision. No settlement is created or Cranker work enabled at this stage.
 
-Node leases funding and checks the sender signature/message, current recipient, registered asset and exactly one approved funded-note deposit. Canonical, nonduplicate wallet ComputeBudget settings are permitted around that deposit; extra payment actions are rejected. Its signed decision binds input, evidence, execution projection and lease. Cranker claims only verified funding, independently checks the attestation and submits the unchanged signed deposit. Node matches the entire successful confirmed transaction wire and its receipt signature to the original owner-signed deposit before preparing settlement.
+The application shows readiness and offers explicit funding approval. It reads the owner-authenticated preparation, obtains a fresh blockhash, requests the transaction signature and completes the same intent through `/network/funding/complete`. Receiver atomically attaches the immutable wire/context, enters `SIGNED_DEPOSIT` and creates the settlement reference. Node reuses the signed preparation and validates/simulates exactly one funded-note deposit; canonical wallet ComputeBudget settings remain permitted, while extra payment actions are rejected. Only its final `VERIFIED` decision enables Cranker, which submits the unchanged signed deposit. Node matches the entire successful receipt wire and signature before preparing settlement.
 
 After the exact funded deposit confirms, Node resolves the TIP route, reads current private state/verifier/epoch and the canonical global funding account, reconstructs membership and generates/reverifies the private-amount proof. A single deposit is eligible; no pool account, capture transaction or release window is required. Current or retained funding roots remain usable within the bounded history, while current shared spending state protects against replay. Cranker obtains current-lease Mother co-signing and submits the TSNP call with its bound Memo. TCAP/GPRU acceptance atomically advances shared head/root and blinded epoch transcript without token movement or individual reserve-liability change.
 
@@ -43,10 +43,18 @@ sequenceDiagram
   participant R as Receiver
   participant K as Cranker
   participant S as Solana programs
-  A->>A: Sign canonical message and reserve deposit
+  A->>A: Sign canonical payment message
   A->>N: POST /intents
-  N->>R: Persist funding and settlement reference
-  N->>R: Lease funding and report signed VERIFIED decision
+  N->>R: Persist message-only funding authorization
+  N->>S: Verify recipient, asset and advisory wallet balance
+  N->>R: Report signed FUNDING_READY decision
+  A->>N: Owner-authenticated readiness request
+  N-->>A: Bound deposit accounts, amount and expiry
+  A->>A: Explicit approval with fresh hash and deposit signature
+  A->>N: Complete original intent with exact signed wire
+  N->>R: Atomic attachment and settlement reference
+  N->>S: Simulate unchanged signed deposit
+  N->>R: Report final signed VERIFIED funding decision
   K->>R: Lease verified funding
   K->>S: Submit unchanged signed deposit
   K->>R: Report confirmed funding signature
@@ -63,7 +71,7 @@ sequenceDiagram
   N->>N: Select eligible epoch and prove every ordered credit opening
   N->>R: Create verified epoch accounting work
   K->>S: Submit one Mother-authorized aggregate accounting
-  S->>S: GPRU verifies proof; TCAP reclassifies total and advances epoch
+  S->>S: GPRU verifies proof then TCAP reclassifies total and advances epoch
 ```
 
 The sequence describes the experimental source contract. TCAP owns the shared credit-epoch transcript and aggregate accounting, while GPRU verifies its complete proof. Node prepares separate `TCAP_EPOCH_ACCOUNTING` work for 2–63 credits once at least 120 slots have elapsed since the first credit, or immediately at 64 credits. A singleton stays open; the threshold is scheduling maturity, not expiry. At 64, further credits wait for accounting. Receiver coordinates leases and Cranker submits the Mother-authorized transaction, after which TCAP marks the epoch accounted and advances the reserve epoch. The first credit in each asset epoch can create a shared account; later credits reuse it, and accounted accounts remain on chain. See [the TCAP lifecycle](/layers/tcap#native-credit-epoch-lifecycle).
@@ -72,13 +80,13 @@ Matching binaries, explicit credit rekey, separate epoch-verifier enrollment, ac
 
 ## Status and reconciliation
 
-Receiver work uses `RECEIVED`, `NODE_VERIFYING`, `VERIFIED`, `REJECTED`, `CRANKER_LEASED`, `SUBMITTED`, `CONFIRMED`, and `FAILED`. SDK intent status uses a separate lower-case vocabulary; applications must read the actual response type instead of equating the two models.
+Receiver work uses `RECEIVED`, `NODE_VERIFYING`, `FUNDING_READY`, `VERIFIED`, `REJECTED`, `CRANKER_LEASED`, `SUBMITTED`, `CONFIRMED`, and `FAILED`. Readiness is an authorization decision, not funding execution. SDK intent status uses a separate lower-case vocabulary; applications must read the actual response type instead of equating the two models.
 
 Receiver provides `GET /api/work-status/<funding-work-id>` with operation ID, kind, status, verification type, sanitized decision reason and `result.signature`. Funding status additionally includes a nested `settlement` object with its independent status/result. TIN operation status is supported separately. This is a coordination view; verify successful transaction results and expected TCAP root/reserve changes on the selected cluster.
 
 Confirmed funding with settlement still `RECEIVED` can be waiting behind an older unresolved signed shared-root transition. Node verification must complete before Cranker can lease settlement. Preserve the existing deposit while the operator reconciles that holder; a restricted nonexecution resolution exists for expired credit with an unchanged finalized predecessor root. Applications should read the nested settlement decision reason separately from funding rejection reasons. See [Receiver recovery](/operators/receiver).
 
-There is no dedicated `waitForSettlement` or public payment-status polling helper in the current `TsnHttpClient`. Its intent listing/status-update helpers serve worker-authorized endpoints. An application can call the documented Receiver work-status route with its own fetch/timeout policy, without exposing worker credentials.
+`waitForTsnFundingReadiness` observes initial readiness using a supplied public-status fetch function. `TsnHttpClient` has no dedicated `waitForSettlement`; its intent listing/status-update helpers serve worker-authorized endpoints. Applications observe later funding/settlement status using the Receiver route and their own fetch/timeout policy, without exposing worker credentials.
 
 Owner recovery additionally requires owner-held scan material and validated Memo history. The SDK checks action and predecessor continuity; a scanner must supply complete enough history. A single confirmed signature does not establish that all owner records were indexed or reconstructed.
 
@@ -90,4 +98,4 @@ Already confirmed funding remains distinct if settlement fails. The native-credi
 
 The native epoch currently records credits only. A mixed credit/debit/exit transcript is proposed work, and retained TSNP Epoch Treasury/payout/refund APIs have separate contracts. The November 16 credit/accounting result does not establish those distinct execution paths.
 
-For application request and response types, see the [TSN SDK reference](/api-reference/sdk/tsn-sdk). Service implementation and operations belong in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).
+For application request and response types, see the [TSN SDK reference](/api-reference/sdk/tsn-sdk). Service implementation and operations belong in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/README.md).

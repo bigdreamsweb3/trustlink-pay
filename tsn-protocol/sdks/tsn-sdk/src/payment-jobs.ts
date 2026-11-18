@@ -90,7 +90,6 @@ export async function createTsnPaymentMempoolJobs(params: {
   senderAuthorizationMessage: string;
   senderAuthorizationSignature: string;
   senderAuthorizationNonce: string;
-  senderSignedFundingTransaction: string;
   senderFundingMode: "tcap_funded_note_v1";
   fundingNote: FundingNoteV1;
   senderAuthorizationIssuedAt?: string | null;
@@ -117,7 +116,6 @@ export function prepareTsnPaymentMempoolJobRequests(params: {
   senderAuthorizationMessage: string;
   senderAuthorizationSignature: string;
   senderAuthorizationNonce: string;
-  senderSignedFundingTransaction: string;
   senderFundingMode: "tcap_funded_note_v1";
   fundingNote: FundingNoteV1;
   senderAuthorizationIssuedAt?: string | null;
@@ -126,6 +124,9 @@ export function prepareTsnPaymentMempoolJobRequests(params: {
   recipientAmount?: number;
   source?: string;
 }) {
+  if ("senderSignedFundingTransaction" in params || "senderFundingDepositTxB64" in params || "senderFundingBlockhashContext" in params) {
+    throw new Error("TSN_INITIAL_INTENT_REQUIRES_MESSAGE_AUTHORIZATION_ONLY");
+  }
   const intentRequest = {
     ...buildCreateIntentRequest({
       paymentId: params.paymentId,
@@ -140,7 +141,6 @@ export function prepareTsnPaymentMempoolJobRequests(params: {
       senderAuthorizationIssuedAt: params.senderAuthorizationIssuedAt,
       senderAuthorizationExpiresAt: params.senderAuthorizationExpiresAt,
       senderFeeAmount: params.senderFeeAmount,
-      senderSignedFundingTransaction: params.senderSignedFundingTransaction,
       senderFundingMode: params.senderFundingMode,
       fundingNote: params.fundingNote,
       source: params.source,

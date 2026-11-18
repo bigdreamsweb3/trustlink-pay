@@ -12,15 +12,21 @@ This reference is generated from the checked-out TypeScript exports. Types and s
 Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-jobs`. [Implementation, line 82](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L82).
 
 ```ts
-createTsnPaymentMempoolJobs(params: { mempool: TsnMempool; paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderSignedFundingTransaction: string; senderFundingMode: "tcap_funded_note_v1"; fundingNote: FundingNoteV1; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; recipientAmount?: number; source?: string; }): Promise<{ intent: PublicTsnMempoolIntent; intentRequest: CreateIntentRequest; }>
+createTsnPaymentMempoolJobs(params: { mempool: TsnMempool; paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderFundingMode: "tcap_funded_note_v1"; fundingNote: FundingNoteV1; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; recipientAmount?: number; source?: string; }): Promise<{ intent: PublicTsnMempoolIntent; intentRequest: CreateIntentRequest; }>
 ```
 
 ## prepareTsnPaymentMempoolJobRequests
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-jobs`. [Implementation, line 110](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L110).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-jobs`. [Implementation, line 109](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-jobs.ts#L109).
 
 ```ts
-prepareTsnPaymentMempoolJobRequests(params: { paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderSignedFundingTransaction: string; senderFundingMode: "tcap_funded_note_v1"; fundingNote: FundingNoteV1; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; recipientAmount?: number; source?: string; }): { intentRequest: CreateIntentRequest; }
+prepareTsnPaymentMempoolJobRequests(params: { paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; amount: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderFundingMode: "tcap_funded_note_v1"; fundingNote: FundingNoteV1; senderAuthorizationIssuedAt?: string | null; senderAuthorizationExpiresAt?: string | null; senderFeeAmount?: number | null; recipientAmount?: number; source?: string; }): { intentRequest: CreateIntentRequest; }
+```
+
+Direct failure expressions:
+
+```text
+new Error("TSN_INITIAL_INTENT_REQUIRES_MESSAGE_AUTHORIZATION_ONLY")
 ```
 
 ## TsnSenderBalance

@@ -1,0 +1,349 @@
+{
+  "status": "CURRENT one-function test/fixture ownership; test assertions and names preserved",
+  "suite": "work-contract.test.mjs",
+  "originalTestCases": 13,
+  "addedPortAndCompatibilityCases": 2,
+  "implementationFunctions": 33,
+  "components": [
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/work-creation-ports.mjs",
+      "name": "caseWorkCreationPorts",
+      "captures": [
+        "createReceivedWork"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/compact-and-legacy-records.mjs",
+      "name": "caseCompactAndLegacyRecords",
+      "captures": [
+        "createReceivedWork",
+        "compactVerificationPayload",
+        "verifiedPayloadForWork"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/encode-fixture-base58.mjs",
+      "name": "caseEncodeFixtureBase58",
+      "captures": [],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/initial-work-state.mjs",
+      "name": "caseInitialWorkState",
+      "captures": [
+        "createReceivedWork"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/durable-payload-allowlists.mjs",
+      "name": "caseDurablePayloadAllowlists",
+      "captures": [
+        "createReceivedWork"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/reject-extra-funding-fields.mjs",
+      "name": "caseRejectExtraFundingFields",
+      "captures": [
+        "createReceivedWork"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/reject-extra-settlement-fields.mjs",
+      "name": "caseRejectExtraSettlementFields",
+      "captures": [
+        "createReceivedWork"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/funding-private-fields.mjs",
+      "name": "caseFundingPrivateFields",
+      "captures": [
+        "createReceivedWork",
+        "fundingNoteFixture"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/reject-plaintext-recipient.mjs",
+      "name": "caseRejectPlaintextRecipient",
+      "captures": [
+        "createReceivedWork"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/reject-plaintext-funded-note.mjs",
+      "name": "caseRejectPlaintextFundedNote",
+      "captures": [
+        "createReceivedWork",
+        "fundingNoteFixture"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/current-tin-ingress.mjs",
+      "name": "caseCurrentTinIngress",
+      "captures": [
+        "createReceivedWork"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/reject-obsolete-tin-field.mjs",
+      "name": "caseRejectObsoleteTinField",
+      "captures": [
+        "createReceivedWork",
+        "payload",
+        "obsolete"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/canonical-object-order.mjs",
+      "name": "caseCanonicalObjectOrder",
+      "captures": [
+        "createReceivedWork"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/public-envelope-exclusion.mjs",
+      "name": "casePublicEnvelopeExclusion",
+      "captures": [
+        "createReceivedWork",
+        "publicCoordinationPayload"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/funding-evidence-compaction.mjs",
+      "name": "caseFundingEvidenceCompaction",
+      "captures": [
+        "compactAuthorizedFundingVerification",
+        "fundingNoteFixture",
+        "crankerExecutionPayload"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/legacy-public-projection.mjs",
+      "name": "caseLegacyPublicProjection",
+      "captures": [
+        "createReceivedWork",
+        "publicCoordinationPayload"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/sender-authorization.mjs",
+      "name": "caseSenderAuthorization",
+      "captures": [
+        "base58",
+        "fundingNoteFixture",
+        "assertAuthorizedFundingIngress"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/validate-sender-authorization.mjs",
+      "name": "caseValidateSenderAuthorization",
+      "captures": [
+        "assertAuthorizedFundingIngress",
+        "payload"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/reject-invalid-sender-signature.mjs",
+      "name": "caseRejectInvalidSenderSignature",
+      "captures": [
+        "assertAuthorizedFundingIngress",
+        "payload"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/reject-retired-funding-mode.mjs",
+      "name": "caseRejectRetiredFundingMode",
+      "captures": [
+        "assertAuthorizedFundingIngress",
+        "payload"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/validate-funding-note-fixture.mjs",
+      "name": "validateFundingNoteFixture",
+      "captures": [
+        "assertAuthorizedFundingIngress",
+        "payload",
+        "note"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/validate-funding-note-fixture.mjs",
+      "name": "validateFundingNoteFixture",
+      "captures": [
+        "assertAuthorizedFundingIngress",
+        "payload",
+        "note"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/reject-extra-note-opening-field.mjs",
+      "name": "caseRejectExtraNoteOpeningField",
+      "captures": [
+        "assertAuthorizedFundingIngress",
+        "payload",
+        "fundingNoteFixture"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/accept-zero-note-blinding.mjs",
+      "name": "caseAcceptZeroNoteBlinding",
+      "captures": [
+        "assertAuthorizedFundingIngress",
+        "payload",
+        "fundingNoteFixture"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/reject-obsolete-funding-field.mjs",
+      "name": "caseRejectObsoleteFundingField",
+      "captures": [
+        "assertAuthorizedFundingIngress",
+        "payload",
+        "obsolete"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/public-work-kind-boundary.mjs",
+      "name": "casePublicWorkKindBoundary",
+      "captures": [
+        "assertExternalWorkKind"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/reject-public-settlement-kind.mjs",
+      "name": "caseRejectPublicSettlementKind",
+      "captures": [
+        "assertExternalWorkKind"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/accept-public-funding-kind.mjs",
+      "name": "caseAcceptPublicFundingKind",
+      "captures": [
+        "assertExternalWorkKind"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/settlement-proof-projection.mjs",
+      "name": "caseSettlementProofProjection",
+      "captures": [
+        "fundingNoteFixture",
+        "crankerExecutionPayload"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/settlement-authorization-binding.mjs",
+      "name": "caseSettlementAuthorizationBinding",
+      "captures": [
+        "createReceivedWork",
+        "fundingNoteFixture",
+        "crankerAuthorizationForWork"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/reject-changed-verified-transition.mjs",
+      "name": "caseRejectChangedVerifiedTransition",
+      "captures": [
+        "crankerAuthorizationForWork",
+        "work",
+        "authorization",
+        "changed"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/reject-unverified-transition.mjs",
+      "name": "caseRejectUnverifiedTransition",
+      "captures": [
+        "crankerAuthorizationForWork",
+        "work",
+        "authorization"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/accounting-proof-projection.mjs",
+      "name": "caseAccountingProofProjection",
+      "captures": [
+        "crankerExecutionPayload",
+        "crankerAuthorizationForWork"
+      ],
+      "boxedCaptures": []
+    },
+    {
+      "source": "work-contract.test.mjs",
+      "component": "cases/contracts/reject-changed-coordination-asset.mjs",
+      "name": "caseRejectChangedCoordinationAsset",
+      "captures": [
+        "crankerAuthorizationForWork",
+        "work",
+        "publicValue"
+      ],
+      "boxedCaptures": []
+    }
+  ]
+}

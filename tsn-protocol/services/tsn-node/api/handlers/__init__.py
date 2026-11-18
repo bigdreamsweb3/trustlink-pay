@@ -6,6 +6,8 @@ from .mempool_status import mempool_status
 from .consume_threshold_access_nonce import consume_threshold_access_nonce
 from .post_intent import post_intent
 from .get_network_recent_blockhash import get_network_recent_blockhash
+from .post_funding_readiness import post_funding_readiness
+from .post_complete_funding import post_complete_funding
 from .list_intents import list_intents
 from .update_intent_status import update_intent_status
 from .list_pending_intent_work import list_pending_intent_work

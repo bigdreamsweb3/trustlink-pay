@@ -100,6 +100,26 @@
           }
         },
         {
+          "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
+          "line": 16,
+          "kind": "patch-target",
+          "expression": "node.receiver_request",
+          "newComponentTest": {
+            "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
+          "line": 23,
+          "kind": "patch-target",
+          "expression": "node.receiver_request",
+          "newComponentTest": {
+            "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
           "source": "tests/cases/wallet_funding_transaction/functions/f020_test_epoch_coordinator_uses_deposit_accounts_after_budget_prefix.py",
           "line": 10,
           "kind": "patch-target",
@@ -111,7 +131,7 @@
           }
         }
       ],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -196,6 +216,16 @@
       "status": "TEST_SOURCE_REFERENCES_WITHOUT_DIRECT_CALL",
       "testReferences": [
         {
+          "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+          "line": 18,
+          "kind": "patch-target",
+          "expression": "server.resolve_tcap_registered_asset",
+          "newComponentTest": {
+            "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
           "source": "tests/cases/wallet_funding_transaction/functions/f019_test_settlement_context_selects_actual_deposit_with_budget_prefix_and_suffix.py",
           "line": 9,
           "kind": "patch-target",
@@ -207,7 +237,7 @@
           }
         }
       ],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -730,9 +760,72 @@
             "line": 12,
             "name": "setUp"
           }
+        },
+        {
+          "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
+          "line": 15,
+          "kind": "patch-target",
+          "expression": "node._node_verification_signing_key",
+          "newComponentTest": {
+            "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/staged_funding/functions/test_owner_readiness.py",
+          "line": 11,
+          "kind": "patch-target",
+          "expression": "node._node_verification_signing_key",
+          "newComponentTest": {
+            "component": "cases/staged_funding/functions/test_owner_readiness.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/staged_funding/functions/test_readiness_integrity.py",
+          "line": 8,
+          "kind": "patch-target",
+          "expression": "node._node_verification_signing_key",
+          "newComponentTest": {
+            "component": "cases/staged_funding/functions/test_readiness_integrity.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/wallet_funding_transaction/functions/f013_setUp.py",
+          "line": 26,
+          "kind": "patch-target",
+          "expression": "server._node_verification_signing_key",
+          "originalTest": {
+            "source": "tests/test_wallet_funding_transaction.py",
+            "line": 138,
+            "name": "setUp"
+          }
+        },
+        {
+          "source": "tests/cases/wallet_funding_transaction/functions/f015_test_node_verifies_deposit_before_simulating_unchanged_wallet_wire.py",
+          "line": 9,
+          "kind": "patch-target",
+          "expression": "server._node_verification_signing_key",
+          "originalTest": {
+            "source": "tests/test_wallet_funding_transaction.py",
+            "line": 162,
+            "name": "test_node_verifies_deposit_before_simulating_unchanged_wallet_wire"
+          }
+        },
+        {
+          "source": "tests/cases/wallet_funding_transaction/functions/f016_test_extra_action_is_rejected_before_simulation.py",
+          "line": 11,
+          "kind": "patch-target",
+          "expression": "server._node_verification_signing_key",
+          "originalTest": {
+            "source": "tests/test_wallet_funding_transaction.py",
+            "line": 172,
+            "name": "test_extra_action_is_rejected_before_simulation"
+          }
         }
       ],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -830,6 +923,17 @@
           "originalTest": {
             "source": "tests/test_hidden_head_attestation.py",
             "line": 12,
+            "name": "setUp"
+          }
+        },
+        {
+          "source": "tests/cases/wallet_funding_transaction/functions/f013_setUp.py",
+          "line": 27,
+          "kind": "direct-call",
+          "expression": "server._sign_node_verification",
+          "originalTest": {
+            "source": "tests/test_wallet_funding_transaction.py",
+            "line": 138,
             "name": "setUp"
           }
         }
@@ -1048,13 +1152,13 @@
       "RuntimeError"
     ],
     "dependencyTypes": {
-      "ReceiverStore": "Callable[..., Any]",
-      "FileStore": "Callable[..., Any]",
-      "FirebaseStore": "Callable[..., Any]",
       "ALLOW_DIRECT_FIREBASE_STORE": "Any",
       "ALLOW_LOCAL_JSON_STORE": "Any",
+      "FileStore": "Callable[..., Any]",
+      "FirebaseStore": "Callable[..., Any]",
       "MEMPOOL_FILE": "Any",
       "MEMPOOL_STORE": "Any",
+      "ReceiverStore": "Callable[..., Any]",
       "TSN_RECEIVER_FALLBACK_URL": "Any",
       "TSN_RECEIVER_NODE_API_KEY": "Any",
       "TSN_RECEIVER_URL": "Any",
@@ -1534,8 +1638,28 @@
       "logger": "Any"
     },
     "verification": {
-      "status": "TEST_SOURCE_REFERENCES_WITHOUT_DIRECT_CALL",
+      "status": "DIRECT_TEST_CALL_SOURCE_REFERENCES",
       "testReferences": [
+        {
+          "source": "tests/cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+          "line": 8,
+          "kind": "patch-target",
+          "expression": "server.solana_rpc",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f013_test_malformed_common_rpc_falls_through_without_raw_diagnostics.py",
+          "line": 16,
+          "kind": "direct-call",
+          "expression": "server.solana_rpc",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f013_test_malformed_common_rpc_falls_through_without_raw_diagnostics.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
         {
           "source": "tests/cases/global_funding_credit/functions/f001_test_single_deposit_reaches_witness_preparation_without_pool_work.py",
           "line": 34,
@@ -1567,6 +1691,26 @@
             "source": "tests/test_private_credit_coordination.py",
             "line": 93,
             "name": "sign_fixture"
+          }
+        },
+        {
+          "source": "tests/cases/staged_funding/functions/test_authorization_readiness.py",
+          "line": 11,
+          "kind": "patch-target",
+          "expression": "node.solana_rpc",
+          "newComponentTest": {
+            "component": "cases/staged_funding/functions/test_authorization_readiness.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/staged_funding/functions/test_deposit_account_preflight.py",
+          "line": 43,
+          "kind": "patch-target",
+          "expression": "node.solana_rpc",
+          "newComponentTest": {
+            "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
           }
         },
         {
@@ -1614,7 +1758,7 @@
           }
         }
       ],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -2208,6 +2352,16 @@
       "status": "TEST_SOURCE_REFERENCES_WITHOUT_DIRECT_CALL",
       "testReferences": [
         {
+          "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+          "line": 17,
+          "kind": "patch-target",
+          "expression": "server._parse_canonical_message",
+          "newComponentTest": {
+            "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
           "source": "tests/cases/wallet_funding_transaction/functions/f019_test_settlement_context_selects_actual_deposit_with_budget_prefix_and_suffix.py",
           "line": 9,
           "kind": "patch-target",
@@ -2219,7 +2373,7 @@
           }
         }
       ],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -2271,7 +2425,7 @@
   {
     "name": "_assert_canonical_nonce_unused",
     "path": "verification/intent/assert_canonical_nonce_unused.py",
-    "inputs": "*, action: str, authorization_domain: str, sender_public_key: str, nonce: str",
+    "inputs": "*, action: str, authorization_domain: str, sender_public_key: str, nonce: str, work_id: str | None=None, authorization_payload_commitment: str | None=None",
     "output": "None",
     "dependencies": [
       "get_mempool_store",
@@ -2289,9 +2443,50 @@
       "k_canonical_message_nonces": "Callable[..., Any]"
     },
     "verification": {
-      "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-      "testReferences": [],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "status": "DIRECT_TEST_CALL_SOURCE_REFERENCES",
+      "testReferences": [
+        {
+          "source": "tests/cases/staged_funding/functions/test_nonce_binding.py",
+          "line": 7,
+          "kind": "symbol-import",
+          "expression": "verification.intent.assert_canonical_nonce_unused._assert_canonical_nonce_unused",
+          "newComponentTest": {
+            "component": "cases/staged_funding/functions/test_nonce_binding.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/staged_funding/functions/test_nonce_binding.py",
+          "line": 17,
+          "kind": "direct-call",
+          "expression": "_assert_canonical_nonce_unused",
+          "newComponentTest": {
+            "component": "cases/staged_funding/functions/test_nonce_binding.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/staged_funding/functions/test_nonce_binding.py",
+          "line": 19,
+          "kind": "direct-call",
+          "expression": "_assert_canonical_nonce_unused",
+          "newComponentTest": {
+            "component": "cases/staged_funding/functions/test_nonce_binding.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/staged_funding/functions/test_nonce_binding.py",
+          "line": 21,
+          "kind": "direct-call",
+          "expression": "_assert_canonical_nonce_unused",
+          "newComponentTest": {
+            "component": "cases/staged_funding/functions/test_nonce_binding.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        }
+      ],
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -2421,7 +2616,7 @@
   {
     "name": "_verify_payment_authorization_from_signed_message",
     "path": "verification/intent/verify_payment_authorization_from_signed_message.py",
-    "inputs": "req: CreateIntentRequest",
+    "inputs": "req: CreateIntentRequest, *, work_id: str | None=None, authorization_payload_commitment: str | None=None",
     "output": "dict[str, Any]",
     "dependencies": [
       "_assert_canonical_nonce_unused",
@@ -2462,6 +2657,16 @@
       "status": "TEST_SOURCE_REFERENCES_WITHOUT_DIRECT_CALL",
       "testReferences": [
         {
+          "source": "tests/cases/staged_funding/functions/test_authorization_readiness.py",
+          "line": 9,
+          "kind": "patch-target",
+          "expression": "node._verify_payment_authorization_from_signed_message",
+          "newComponentTest": {
+            "component": "cases/staged_funding/functions/test_authorization_readiness.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
           "source": "tests/cases/wallet_funding_transaction/functions/f015_test_node_verifies_deposit_before_simulating_unchanged_wallet_wire.py",
           "line": 9,
           "kind": "patch-target",
@@ -2482,9 +2687,19 @@
             "line": 172,
             "name": "test_extra_action_is_rejected_before_simulation"
           }
+        },
+        {
+          "source": "tests/cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+          "line": 8,
+          "kind": "patch-target",
+          "expression": "server._verify_payment_authorization_from_signed_message",
+          "newComponentTest": {
+            "component": "cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
         }
       ],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -2579,6 +2794,16 @@
       "status": "TEST_SOURCE_REFERENCES_WITHOUT_DIRECT_CALL",
       "testReferences": [
         {
+          "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+          "line": 17,
+          "kind": "patch-target",
+          "expression": "server._verify_ed25519_signature",
+          "newComponentTest": {
+            "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
           "source": "tests/cases/wallet_funding_transaction/functions/f019_test_settlement_context_selects_actual_deposit_with_budget_prefix_and_suffix.py",
           "line": 9,
           "kind": "patch-target",
@@ -2590,7 +2815,7 @@
           }
         }
       ],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -2875,10 +3100,12 @@
   {
     "name": "_simulate_owner_signed_tcap_deposit",
     "path": "transactions/native/funding/simulate_owner_signed_tcap_deposit.py",
-    "inputs": "transaction_base64: str",
+    "inputs": "transaction_base64: str, blockhash_context: dict[str, Any]",
     "output": "dict[str, Any]",
     "dependencies": [
-      "TSN_SOLANA_RPC_URLS"
+      "TSN_SOLANA_RPC_URLS",
+      "_read_solana_shortvec",
+      "logger"
     ],
     "originalLine": 2280,
     "async": true,
@@ -2889,7 +3116,9 @@
       "ValueError"
     ],
     "dependencyTypes": {
-      "TSN_SOLANA_RPC_URLS": "Any"
+      "TSN_SOLANA_RPC_URLS": "Any",
+      "_read_solana_shortvec": "Callable[..., Any]",
+      "logger": "Any"
     },
     "verification": {
       "status": "DIRECT_TEST_CALL_SOURCE_REFERENCES",
@@ -2903,6 +3132,16 @@
             "source": "tests/test_deposit_rpc.py",
             "line": 12,
             "name": "simulate"
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
+          "line": 15,
+          "kind": "direct-call",
+          "expression": "server._simulate_owner_signed_tcap_deposit",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
           }
         },
         {
@@ -2926,9 +3165,19 @@
             "line": 172,
             "name": "test_extra_action_is_rejected_before_simulation"
           }
+        },
+        {
+          "source": "tests/cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+          "line": 8,
+          "kind": "patch-target",
+          "expression": "server._simulate_owner_signed_tcap_deposit",
+          "newComponentTest": {
+            "component": "cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
         }
       ],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -3277,9 +3526,19 @@
             "line": 153,
             "name": "confirm"
           }
+        },
+        {
+          "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+          "line": 19,
+          "kind": "patch-target",
+          "expression": "server._verify_confirmed_tcap_deposit",
+          "newComponentTest": {
+            "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
         }
       ],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -3580,7 +3839,7 @@
     "name": "_settlement_funding_context",
     "path": "verification/credit/settlement_funding_context.py",
     "inputs": "funding: dict[str, Any]",
-    "output": "tuple[CreateIntentRequest, dict[str, Any], dict[str, Any]]",
+    "output": "tuple[ConfirmedFundingRequest, dict[str, Any], dict[str, Any]]",
     "dependencies": [
       "_parse_canonical_message",
       "_parse_signed_tcap_deposit_instructions",
@@ -3636,6 +3895,26 @@
           }
         },
         {
+          "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+          "line": 20,
+          "kind": "direct-call",
+          "expression": "server._settlement_funding_context",
+          "newComponentTest": {
+            "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+          "line": 26,
+          "kind": "direct-call",
+          "expression": "server._settlement_funding_context",
+          "newComponentTest": {
+            "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
           "source": "tests/cases/wallet_funding_transaction/functions/f019_test_settlement_context_selects_actual_deposit_with_budget_prefix_and_suffix.py",
           "line": 10,
           "kind": "direct-call",
@@ -3647,7 +3926,7 @@
           }
         }
       ],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -3771,9 +4050,9 @@
       "build_epoch_witness": "Callable[..., Any]",
       "clean_env": "Callable[..., Any]",
       "epoch_credits": "Callable[..., Any]",
+      "prove_epoch": "Callable[..., Any]",
       "read_epoch": "Callable[..., Any]",
-      "solana_rpc": "Callable[..., Any]",
-      "prove_epoch": "Callable[..., Any]"
+      "solana_rpc": "Callable[..., Any]"
     },
     "verification": {
       "status": "DIRECT_TEST_CALL_SOURCE_REFERENCES",
@@ -3783,7 +4062,27 @@
           "line": 9,
           "kind": "symbol-import",
           "expression": "verification.accounting._verify_private_coordination_work",
+          "newComponentTest": {
+            "component": "cases/epoch_prover_dependencies/verify_component.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/epoch_prover_dependencies/verify_component.py",
+          "line": 9,
+          "kind": "symbol-import",
+          "expression": "verification.accounting._verify_private_coordination_work",
           "testIdentity": "New component test; not an extracted original test function"
+        },
+        {
+          "source": "tests/cases/epoch_prover_dependencies/verify_component.py",
+          "line": 27,
+          "kind": "direct-call",
+          "expression": "_verify_private_coordination_work",
+          "newComponentTest": {
+            "component": "cases/epoch_prover_dependencies/verify_component.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
         },
         {
           "source": "tests/cases/epoch_prover_dependencies/verify_component.py",
@@ -3797,10 +4096,20 @@
           "line": 36,
           "kind": "direct-call",
           "expression": "_verify_private_coordination_work",
+          "newComponentTest": {
+            "component": "cases/epoch_prover_dependencies/verify_component.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/epoch_prover_dependencies/verify_component.py",
+          "line": 36,
+          "kind": "direct-call",
+          "expression": "_verify_private_coordination_work",
           "testIdentity": "New component test; not an extracted original test function"
         }
       ],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -4068,15 +4377,21 @@
     "dependencies": [
       "TCAP_PROGRAM_ID",
       "_construct_verified_tcap_transition",
+      "_node_verification_message",
+      "_node_verification_signing_key",
       "_normalize_tin_operation_input",
+      "_parse_canonical_expiry",
       "_parse_signed_tcap_deposit_instructions",
+      "_read_solana_shortvec",
       "_receiver_work_by_id",
       "_select_tcap_private_funding_deposit",
       "_simulate_owner_signed_tcap_deposit",
+      "_stable_verification_json",
       "_verify_payment_authorization_from_signed_message",
       "_verify_private_coordination_work",
       "assert_tin_operation_can_enter",
       "funding_root_address",
+      "solana_rpc",
       "ui_amount_to_base_units"
     ],
     "originalLine": 3066,
@@ -4089,15 +4404,21 @@
     "dependencyTypes": {
       "TCAP_PROGRAM_ID": "Any",
       "_construct_verified_tcap_transition": "Callable[..., Any]",
+      "_node_verification_message": "Callable[..., Any]",
+      "_node_verification_signing_key": "Callable[..., Any]",
       "_normalize_tin_operation_input": "Callable[..., Any]",
+      "_parse_canonical_expiry": "Callable[..., Any]",
       "_parse_signed_tcap_deposit_instructions": "Callable[..., Any]",
+      "_read_solana_shortvec": "Callable[..., Any]",
       "_receiver_work_by_id": "Callable[..., Any]",
       "_select_tcap_private_funding_deposit": "Callable[..., Any]",
       "_simulate_owner_signed_tcap_deposit": "Callable[..., Any]",
+      "_stable_verification_json": "Callable[..., Any]",
       "_verify_payment_authorization_from_signed_message": "Callable[..., Any]",
       "_verify_private_coordination_work": "Callable[..., Any]",
       "assert_tin_operation_can_enter": "Callable[..., Any]",
       "funding_root_address": "Callable[..., Any]",
+      "solana_rpc": "Callable[..., Any]",
       "ui_amount_to_base_units": "Callable[..., Any]"
     },
     "verification": {
@@ -4157,9 +4478,19 @@
             "line": 172,
             "name": "test_extra_action_is_rejected_before_simulation"
           }
+        },
+        {
+          "source": "tests/cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+          "line": 10,
+          "kind": "direct-call",
+          "expression": "server._verify_receiver_work",
+          "newComponentTest": {
+            "component": "cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
         }
       ],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -4373,9 +4704,39 @@
             "line": 93,
             "name": "sign_fixture"
           }
+        },
+        {
+          "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
+          "line": 15,
+          "kind": "patch-target",
+          "expression": "node._receiver_work_by_id",
+          "newComponentTest": {
+            "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/staged_funding/functions/test_completion_retry_and_fences.py",
+          "line": 23,
+          "kind": "patch-target",
+          "expression": "node._receiver_work_by_id",
+          "newComponentTest": {
+            "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/staged_funding/functions/test_owner_readiness.py",
+          "line": 11,
+          "kind": "patch-target",
+          "expression": "node._receiver_work_by_id",
+          "newComponentTest": {
+            "component": "cases/staged_funding/functions/test_owner_readiness.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
         }
       ],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -4404,7 +4765,7 @@
     "name": "lifespan",
     "path": "core/lifecycle/lifespan.py",
     "inputs": "app: FastAPI",
-    "output": "Unannotated legacy output; see implementation",
+    "output": "Any",
     "dependencies": [
       "EPOCH_HOURS",
       "MEMPOOL_API_KEY",
@@ -4537,7 +4898,7 @@
     "name": "private_payment_validation_error",
     "path": "api/handlers/private_payment_validation_error.py",
     "inputs": "request: Request, exc: RequestValidationError",
-    "output": "Unannotated legacy output; see implementation",
+    "output": "Any",
     "dependencies": [],
     "originalLine": 3425,
     "async": true,
@@ -4640,9 +5001,9 @@
       "build_epoch_witness": "Callable[..., Any]",
       "clean_env": "Callable[..., Any]",
       "epoch_credits": "Callable[..., Any]",
+      "prove_epoch": "Callable[..., Any]",
       "read_epoch": "Callable[..., Any]",
-      "solana_rpc": "Callable[..., Any]",
-      "prove_epoch": "Callable[..., Any]"
+      "solana_rpc": "Callable[..., Any]"
     },
     "verification": {
       "status": "DIRECT_TEST_CALL_SOURCE_REFERENCES",
@@ -4652,7 +5013,27 @@
           "line": 9,
           "kind": "symbol-import",
           "expression": "verification.accounting._authorize_private_coordination",
+          "newComponentTest": {
+            "component": "cases/epoch_prover_dependencies/authorize_component.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/epoch_prover_dependencies/authorize_component.py",
+          "line": 9,
+          "kind": "symbol-import",
+          "expression": "verification.accounting._authorize_private_coordination",
           "testIdentity": "New component test; not an extracted original test function"
+        },
+        {
+          "source": "tests/cases/epoch_prover_dependencies/authorize_component.py",
+          "line": 31,
+          "kind": "direct-call",
+          "expression": "_authorize_private_coordination",
+          "newComponentTest": {
+            "component": "cases/epoch_prover_dependencies/authorize_component.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
         },
         {
           "source": "tests/cases/epoch_prover_dependencies/authorize_component.py",
@@ -4666,7 +5047,27 @@
           "line": 42,
           "kind": "direct-call",
           "expression": "_authorize_private_coordination",
+          "newComponentTest": {
+            "component": "cases/epoch_prover_dependencies/authorize_component.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/epoch_prover_dependencies/authorize_component.py",
+          "line": 42,
+          "kind": "direct-call",
+          "expression": "_authorize_private_coordination",
           "testIdentity": "New component test; not an extracted original test function"
+        },
+        {
+          "source": "tests/cases/epoch_prover_dependencies/authorize_component.py",
+          "line": 50,
+          "kind": "direct-call",
+          "expression": "_authorize_private_coordination",
+          "newComponentTest": {
+            "component": "cases/epoch_prover_dependencies/authorize_component.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
         },
         {
           "source": "tests/cases/epoch_prover_dependencies/authorize_component.py",
@@ -4680,7 +5081,27 @@
           "line": 57,
           "kind": "direct-call",
           "expression": "_authorize_private_coordination",
+          "newComponentTest": {
+            "component": "cases/epoch_prover_dependencies/authorize_component.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/epoch_prover_dependencies/authorize_component.py",
+          "line": 57,
+          "kind": "direct-call",
+          "expression": "_authorize_private_coordination",
           "testIdentity": "New component test; not an extracted original test function"
+        },
+        {
+          "source": "tests/cases/epoch_prover_dependencies/authorize_component.py",
+          "line": 62,
+          "kind": "direct-call",
+          "expression": "_authorize_private_coordination",
+          "newComponentTest": {
+            "component": "cases/epoch_prover_dependencies/authorize_component.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
         },
         {
           "source": "tests/cases/epoch_prover_dependencies/authorize_component.py",
@@ -4690,7 +5111,7 @@
           "testIdentity": "New component test; not an extracted original test function"
         }
       ],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
@@ -5042,9 +5463,30 @@
       "solana_rpc": "Callable[..., Any]"
     },
     "verification": {
-      "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-      "testReferences": [],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
+      "status": "DIRECT_TEST_CALL_SOURCE_REFERENCES",
+      "testReferences": [
+        {
+          "source": "tests/cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+          "line": 9,
+          "kind": "direct-call",
+          "expression": "server.get_network_recent_blockhash",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        },
+        {
+          "source": "tests/cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+          "line": 20,
+          "kind": "direct-call",
+          "expression": "server.get_network_recent_blockhash",
+          "newComponentTest": {
+            "component": "cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+            "provenance": "Post-extraction source; current AST reference, no original test hash or historical line."
+          }
+        }
+      ],
+      "testProvenance": "tests/cases/COMPONENTS.json; original extraction mappings and separately listed post-extraction test components",
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }

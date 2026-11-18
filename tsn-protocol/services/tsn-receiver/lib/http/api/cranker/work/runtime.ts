@@ -1,0 +1,16 @@
+import { NextResponse } from "next/server";
+import { authenticateCrankerRequest } from "../../../../cranker-auth";
+import { enforceCrankerLeaseRateLimit } from "../../../../cranker-auth";
+import { attachCrankerAuthorization } from "../../../../store";
+import { leaseForCranker } from "../../../../store";
+import { recordSettlementSubmission } from "../../../../store";
+import { retryLeasedSettlementFundingRoot } from "../../../../store";
+import { transition } from "../../../../store";
+import { reconcileExpiredCrankerConfirmation } from "../../../../settlement-reconciliation";
+import { NATIVE_REVERIFY_REASONS } from "../../../../settlement-retry";
+import { requestNodeAuthorization } from "../../../../node-authorizations";
+import { crankerAuthorizationForWork } from "../../../../work-contract";
+import { crankerExecutionPayload } from "../../../../work-contract";
+import { verifiedPayloadForWork } from "../../../../work-contract";
+import type { Dependencies } from "./dependencies";
+export const dependencies: Dependencies = { NextResponse, authenticateCrankerRequest, enforceCrankerLeaseRateLimit, attachCrankerAuthorization, leaseForCranker, recordSettlementSubmission, retryLeasedSettlementFundingRoot, transition, reconcileExpiredCrankerConfirmation, NATIVE_REVERIFY_REASONS, requestNodeAuthorization, crankerAuthorizationForWork, crankerExecutionPayload, verifiedPayloadForWork };

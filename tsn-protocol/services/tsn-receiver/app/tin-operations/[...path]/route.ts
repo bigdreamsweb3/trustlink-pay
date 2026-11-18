@@ -1,15 +1,8 @@
-import { NextRequest } from "next/server";
-import { proxyNode } from "../../../lib/node-proxy";
-
+/** Stable Next route facade; implementations are bound at this request boundary. */
 export const runtime = "nodejs";
-
-type Context = { params: Promise<{ path: string[] }> };
-
-async function forward(request: NextRequest, context: Context) {
-  const { path } = await context.params;
-  return proxyNode(request, `tin-operations/${path.join("/")}`);
-}
-
+import { dependencies } from "../../../lib/http/tin-operations/proxy/runtime";
+import { forward as forwardComponent } from "../../../lib/http/tin-operations/proxy/forward";
+const forward = forwardComponent.bind(null, dependencies);
 export const GET = forward;
 export const POST = forward;
 export const PATCH = forward;

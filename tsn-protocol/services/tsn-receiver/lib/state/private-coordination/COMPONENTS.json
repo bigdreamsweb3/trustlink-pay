@@ -1,0 +1,51 @@
+{
+  "facade": "../../private-credit-coordination.ts",
+  "responsibility": "Private credit queue coordination",
+  "components": [
+    {
+      "name": "coordinationInventory",
+      "file": "coordination-inventory.ts",
+      "imports": [
+        "./dependencies",
+        "../../work-contract",
+        "../../work-contract"
+      ]
+    },
+    {
+      "name": "createCoordinationWork",
+      "file": "create-coordination-work.ts",
+      "imports": [
+        "../../storage/ports",
+        "../../work-contract",
+        "../../work-contract"
+      ]
+    },
+    {
+      "name": "deferCoordinationWork",
+      "file": "defer-coordination-work.ts",
+      "imports": [
+        "../../storage/ports",
+        "./dependencies",
+        "../../work-contract"
+      ]
+    },
+    {
+      "name": "deferPrivateCredit",
+      "file": "defer-private-credit.ts",
+      "imports": [
+        "./dependencies",
+        "./defer-coordination-work"
+      ]
+    },
+    {
+      "name": "enqueueCoordination",
+      "file": "enqueue-coordination.ts",
+      "imports": [
+        "./dependencies",
+        "../../work-contract",
+        "../../work-contract",
+        "./create-coordination-work"
+      ]
+    }
+  ]
+}

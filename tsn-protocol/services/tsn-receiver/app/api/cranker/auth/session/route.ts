@@ -1,26 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { issueCrankerSession } from "../../../../../lib/cranker-auth";
-
+/** Stable Next route facade; implementations are bound at this request boundary. */
 export const runtime = "nodejs";
-
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json() as {
-      publicKey?: string;
-      nonce?: string;
-      timestamp?: string;
-      signature?: string;
-    };
-    const session = await issueCrankerSession({
-      publicKey: body.publicKey?.trim() ?? "",
-      nonce: body.nonce?.trim() ?? "",
-      timestamp: body.timestamp?.trim() ?? "",
-      signature: body.signature?.trim() ?? "",
-    });
-    return NextResponse.json(session, { headers: { "cache-control": "no-store" } });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "ERROR";
-    const status = message.startsWith("CRANKER_") ? 401 : 400;
-    return NextResponse.json({ error: message }, { status, headers: { "cache-control": "no-store" } });
-  }
-}
+import { dependencies } from "../../../../../lib/http/api/cranker/auth/session/runtime";
+import { POST as POSTComponent } from "../../../../../lib/http/api/cranker/auth/session/POST";
+export const POST = POSTComponent.bind(null, dependencies);

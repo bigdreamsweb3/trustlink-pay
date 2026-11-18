@@ -1,5 +1,5 @@
 import { createPaymentAuthorization, buildPaymentAuthorizationIntentRequest } from "@trustlink/tsn-sdk/payment-authorization";
-import { assertFundingNoteV1, type FundingNoteV1 } from "@trustlink/tsn-sdk";
+import { assertFundingNoteV1, buildCompleteTsnFundingRequest, type CreateIntentRequest, type TsnFundingReadiness, type FundingNoteV1, type SenderFundingBlockhashContext } from "@trustlink/tsn-sdk";
 
 // Pure preparation: no RPC, signing, submission, service start, or secret lookup.
 export function prepareIntent(input: {
@@ -17,7 +17,7 @@ export function prepareIntent(input: {
   expiresAt: string;
   fundingNote: FundingNoteV1;
 }) {
-  // The caller created this private note before approving its matching deposit.
+  // One note is retained through message authorization and later funding approval.
   const fundingNote = assertFundingNoteV1(input.fundingNote);
   const authorization = createPaymentAuthorization({
     senderWallet: input.senderWallet,
@@ -36,8 +36,8 @@ export function prepareIntent(input: {
   });
   return {
     authorization,
-    // Invoke only with the connected sender's signature and exact signed deposit.
-    withWalletApproval(signatureBase64: string, signedDepositBase64: string) {
+    // First submit the signed message; funding has no wire or blockhash yet.
+    withWalletApproval(signatureBase64: string) {
       return buildPaymentAuthorizationIntentRequest({
         paymentId: input.paymentId,
         recipientHash: input.recipientOwnerHash,
@@ -51,7 +51,6 @@ export function prepareIntent(input: {
         senderAuthorizationIssuedAt: authorization.issuedAt,
         senderAuthorizationExpiresAt: authorization.expiresAt,
         senderFeeAmount: input.fee,
-        senderSignedFundingTransaction: signedDepositBase64,
         senderFundingMode: "tcap_funded_note_v1",
         fundingNote,
         amount: input.amount,
@@ -59,4 +58,17 @@ export function prepareIntent(input: {
       });
     },
   };
+}
+
+// Call after Receiver FUNDING_READY and owner-authenticated Node preparation.
+// The caller presents an explicit funding-approval action and fetches a fresh
+// blockhash immediately before requesting the wallet transaction signature.
+export function prepareFundingCompletion(input: {
+  request: CreateIntentRequest;
+  readiness: TsnFundingReadiness;
+  workId: string;
+  senderFundingDepositTxB64: string;
+  senderFundingBlockhashContext: SenderFundingBlockhashContext;
+}) {
+  return buildCompleteTsnFundingRequest(input);
 }

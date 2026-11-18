@@ -35,6 +35,7 @@ import { createMotherNodeTransactionSigner } from "../src/dbrix/mother-node-sign
 import { ConfirmedReceiptReportPending, RetryableConfirmedReportError, confirmedReportAvailabilityError, sendConfirmedWorkReport } from "../src/receiver/confirmed-report.js";
 import { nativeConflictReason, nativeSigningAvailabilityReason, nativeWorkRetryReason } from "../src/receiver/native-retry.js";
 import { assertFundingRoot } from "../src/dbrix/funding-root.js";
+import { createOwnerFundingSubmission, OwnerFundingSubmissionError, readOwnerSignedFunding, sendOwnerSignedFunding } from "../src/dbrix/owner-signed-funding.js";
 import {
   getTinsGlobalStatePda,
   getTipRouteMerkleRootV1Pda,
@@ -128,7 +129,7 @@ function verifyNodeAttestation(work: Work) {
   const verifiedPayload = work.verification?.verifiedPayload ?? {};
   const attestedFields: Record<Work["kind"], readonly string[]> = {
     AUTHORIZED_FUNDING: [
-      "senderSignedFundingTransaction", "senderFundingMode", "tcapCreditTransition", "recipientTin",
+      "senderSignedFundingTransaction", "senderFundingMode", "senderFundingBlockhashContext", "tcapCreditTransition", "recipientTin",
       "tokenMintAddress", "amount", "senderWallet",
       "senderAuthorizationMessage", "senderAuthorizationSignature", "senderAuthorizationNonce",
     ],
@@ -516,42 +517,41 @@ async function processAuthorizedFunding(
   rpcUrl: string,
 ) {
   const payload = work.verification?.verifiedPayload;
-  const encoded = payload?.senderSignedFundingTransaction;
-  if (typeof encoded !== "string" || !encoded)
-    throw new Error("Node did not provide the owner-signed TCAP deposit transaction");
   if (payload?.senderFundingMode !== "tcap_funded_note_v1") throw new Error("TCAP funded-note deposit is required");
+  const funding = readOwnerSignedFunding(payload.senderSignedFundingTransaction, payload.senderFundingBlockhashContext);
+  const submission = createOwnerFundingSubmission(funding);
   let connection = createSolanaConnection(rpcUrl);
-  const wire = Buffer.from(encoded, "base64");
-  if (!wire.length || wire.toString("base64") !== encoded) throw new Error("Owner-signed TCAP deposit is not valid base64 transaction data");
-  const tx = Transaction.from(wire);
-  const ownerSignature = tx.signatures.find((item) => item.signature)?.signature;
-  if (!ownerSignature) throw new Error("Owner-signed TCAP deposit signature is missing");
-  const verifiedWire = tx.serialize({ requireAllSignatures: true, verifySignatures: true });
-  if (!verifiedWire.equals(wire)) throw new Error("Cranker will not alter the owner-signed TCAP deposit transaction");
-  const expectedSignature = bs58Encode(ownerSignature);
-  crankerLog(`TCAP deposit submit start workId=${work.id} transactionBytes=${wire.length} ownerSignature=${expectedSignature}`);
+  const expectedSignature = submission.expectedSignature;
+  const hashFingerprint = submission.blockhashFingerprint;
+  crankerLog(`TCAP deposit submit start workId=${work.id} transactionBytes=${funding.wire.length} ownerSignature=${expectedSignature} blockhashFingerprint=${hashFingerprint} contextSlot=${funding.blockhashContext.contextSlot} lastValidBlockHeight=${funding.blockhashContext.lastValidBlockHeight}`);
   let signature: string;
   try {
-    signature = await connection.sendRawTransaction(wire, { skipPreflight: false, preflightCommitment: "confirmed" });
+    signature = await sendOwnerSignedFunding(connection, funding, submission);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (/already processed|already been processed/i.test(message)) {
-      signature = expectedSignature;
-      crankerLog(`TCAP deposit replay detected workId=${work.id} signature=${signature}; checking chain status`);
-    } else if (/BlockhashNotFound|blockhash not found/i.test(message)) {
+    if (error instanceof OwnerFundingSubmissionError && error.reason === "BLOCKHASH_NOT_FOUND") {
       const fallbackRpcUrl = process.env.TSN_RPC_FALLBACK_URL?.trim() || "https://api.devnet.solana.com";
       if (fallbackRpcUrl.replace(/\/+$/, "") === rpcUrl.replace(/\/+$/, "")) {
-        throw new Error("Configured Cranker RPC did not recognize the sender-signed deposit blockhash and no fallback RPC is configured");
+        throw error;
       }
       crankerLog(`TCAP deposit blockhash not recognized by ${displayRpcEndpoint(rpcUrl)}; retrying unchanged signed transaction via ${displayRpcEndpoint(fallbackRpcUrl)}`);
       connection = createSolanaConnection(fallbackRpcUrl);
-      signature = await connection.sendRawTransaction(wire, { skipPreflight: false, preflightCommitment: "confirmed" });
+      signature = await sendOwnerSignedFunding(connection, funding, submission, "FALLBACK");
     } else {
       throw error;
     }
   }
-  if (signature !== expectedSignature) throw new Error("RPC returned a different signature for the owner-signed TCAP deposit");
-  await confirmSignatureViaRpc(connection, signature, "TCAP deposit");
+  const attempt = submission.attempts.at(-1)!;
+  if (attempt.outcome === "ALREADY_PROCESSED") {
+    crankerLog(`TCAP deposit replay detected workId=${work.id} signature=${expectedSignature}; checking chain status`);
+  }
+  attempt.phase = "CONFIRM";
+  try {
+    await confirmSignatureViaRpc(connection, signature, "TCAP deposit");
+  } catch {
+    attempt.outcome = "CONFIRMATION_FAILED";
+    throw new OwnerFundingSubmissionError(attempt.outcome, submission);
+  }
+  attempt.outcome = "CONFIRMED";
   crankerLog(`TCAP deposit confirmed workId=${work.id} signature=${signature}`);
   await report(signer, work, "CONFIRMED", {
     signature,
@@ -1177,6 +1177,7 @@ async function main() {
         }
         await report(signer, work, "FAILED", {
           ...(work.result ?? {}),
+          ...(error instanceof OwnerFundingSubmissionError ? error.evidence : {}),
           reason: error instanceof Error ? error.message : String(error),
         }).catch(() => undefined);
         console.error(error);

@@ -1,0 +1,1 @@
+export async function rejectedTransaction(collection,failed,transaction) { transaction.update(failed,{status:"SUBMITTED",stateVersion:169}); await transaction.get(collection.where("kind","in",["TCAP_EPOCH_ACCOUNTING"])); }

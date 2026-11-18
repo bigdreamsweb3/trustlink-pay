@@ -287,6 +287,8 @@ mempool_status = runtime.mempool_status
 consume_threshold_access_nonce = runtime.consume_threshold_access_nonce
 post_intent = runtime.post_intent
 get_network_recent_blockhash = runtime.get_network_recent_blockhash
+post_funding_readiness = runtime.post_funding_readiness
+post_complete_funding = runtime.post_complete_funding
 list_intents = runtime.list_intents
 update_intent_status = runtime.update_intent_status
 list_pending_intent_work = runtime.list_pending_intent_work
@@ -334,6 +336,8 @@ app.post('/', response_model=MempoolStatusResponse)(mempool_status)
 app.post('/threshold-access/nonces/consume')(consume_threshold_access_nonce)
 app.post('/intents', response_model=PublicMempoolIntent)(post_intent)
 app.get('/network/recent-blockhash')(get_network_recent_blockhash)
+app.post('/network/funding/readiness')(post_funding_readiness)
+app.post('/network/funding/complete')(post_complete_funding)
 app.get('/intents', response_model=list[PublicMempoolIntent], dependencies=[Depends(require_worker_api_key)])(list_intents)
 app.patch('/intents/{intent_id}/status', response_model=MempoolIntent, dependencies=[Depends(require_worker_api_key)])(update_intent_status)
 app.get('/intent-work', response_model=list[IntentWorkItem], dependencies=[Depends(require_worker_api_key)])(list_pending_intent_work)

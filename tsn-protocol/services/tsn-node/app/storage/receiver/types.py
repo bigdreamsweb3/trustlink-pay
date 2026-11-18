@@ -9,6 +9,7 @@ from .receiver_store_hgetall import hgetall as _ReceiverStore_hgetall
 from .receiver_store_hlen import hlen as _ReceiverStore_hlen
 from .receiver_store_hset import hset as _ReceiverStore_hset
 from .receiver_store_consume_once import consume_once as _ReceiverStore_consume_once
+from .receiver_store_claim_once import claim_once as _ReceiverStore_claim_once
 from .receiver_store_delete import delete as _ReceiverStore_delete
 from .receiver_store_aclose import aclose as _ReceiverStore_aclose
 
@@ -23,5 +24,6 @@ class ReceiverStore:
     hlen = _ReceiverStore_hlen
     hset = _ReceiverStore_hset
     consume_once = _ReceiverStore_consume_once
+    claim_once = _ReceiverStore_claim_once
     delete = _ReceiverStore_delete
     aclose = _ReceiverStore_aclose

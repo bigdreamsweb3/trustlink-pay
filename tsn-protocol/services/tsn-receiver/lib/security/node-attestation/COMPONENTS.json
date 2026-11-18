@@ -1,0 +1,79 @@
+{
+  "facade": "../../node-verification.ts",
+  "responsibility": "Node signed verification decisions",
+  "components": [
+    {
+      "name": "assertNodeVerificationAttestation",
+      "file": "assert-node-verification-attestation.ts",
+      "imports": [
+        "./dependencies",
+        "node:crypto",
+        "node:crypto",
+        "../../work-contract",
+        "../../work-contract",
+        "../../work-contract",
+        "./configured-public-key",
+        "./node-commitment",
+        "./attestation-message",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "attestationFieldValue",
+      "file": "attestation-field-value.ts",
+      "imports": [
+        "./configuration"
+      ]
+    },
+    {
+      "name": "attestationMessage",
+      "file": "attestation-message.ts",
+      "imports": [
+        "./attestation-field-value",
+        "./has-attestation-line-break",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "compareNodeValueKeys",
+      "file": "compare-node-value-keys.ts",
+      "imports": []
+    },
+    {
+      "name": "configuredPublicKey",
+      "file": "configured-public-key.ts",
+      "imports": [
+        "./dependencies",
+        "node:crypto"
+      ]
+    },
+    {
+      "name": "formatNodeValueEntry",
+      "file": "format-node-value-entry.ts",
+      "imports": [
+        "./stable-node-value"
+      ]
+    },
+    {
+      "name": "hasAttestationLineBreak",
+      "file": "has-attestation-line-break.ts",
+      "imports": []
+    },
+    {
+      "name": "nodeCommitment",
+      "file": "node-commitment.ts",
+      "imports": [
+        "node:crypto",
+        "./stable-node-value"
+      ]
+    },
+    {
+      "name": "stableNodeValue",
+      "file": "stable-node-value.ts",
+      "imports": [
+        "./compare-node-value-keys",
+        "./format-node-value-entry"
+      ]
+    }
+  ]
+}

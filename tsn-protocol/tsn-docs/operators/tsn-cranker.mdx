@@ -8,7 +8,7 @@ A Cranker is an independent transaction-submission role in TSN. It receives work
 
 A Cranker cannot change the sender's authorized amount, recipient, asset, or settlement conditions. Its submission is not proof of success; the transaction must confirm on chain. The Cranker does not replace GPRU's private-state guard or TCAP's authority over assets and settlement.
 
-This site documents application SDK use and protocol responsibilities. Operator onboarding, credentials, deployment, and service operation belong in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).
+This site documents application SDK use and protocol responsibilities. Operator onboarding, credentials, deployment, and service operation belong in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/README.md).
 
 ## Execution and evidence requirements
 
@@ -40,7 +40,7 @@ The earlier DBrix sender used a root WebSocket URL while the TSN gateway accepts
 
 ## Blockhash provider disagreement
 
-The configured gateway retries the unchanged funding request across its providers after a bank blockhash rejection. Cranker retains its exact signed-wire fallback for funding; neither mechanism can repair an expired owner signature. Inspect funding confirmation before another deposit, and preserve a confirmed deposit while recovering its separate settlement. Deployment and initialized matching verifier state are separate execution prerequisites.
+The configured gateway retries the unchanged funding request across its providers after a bank blockhash rejection. Cranker receives funding only after the owner's post-readiness approval and final Node `VERIFIED`; `FUNDING_READY` cannot be leased for execution. Before each endpoint submits, Cranker requires at least twenty remaining blocks with confirmed commitment and the prepared minimum context slot. Fallback retains identical signed bytes, and neither mechanism can repair an expired owner signature. Failure reports preserve the original candidate signature and sanitized context/height/attempt phase; a candidate signature proves neither broadcast nor confirmation. Inspect original funding before another deposit, and preserve confirmed funding while recovering its separate settlement. Deployment and initialized matching verifier state remain independent prerequisites.
 
 If confirmation reporting misses the Cranker lease, the corrected authenticated PATCH validates that exact signed checkpoint and reporting payer against the finalized authorized receipt before updating Receiver. Cranker retries only temporary finality/RPC/report transport failures with the same confirmation body up to six times, with a 25-second request deadline and five seconds between attempts. Mismatched receipts or authorization are not retried. A remaining report failure logs the preserved signature for receipt reconciliation and does not report the confirmed transaction as FAILED. Existing FAILED work needs receipt-only recovery, not another deposit or settlement; see [the November 5 command and evidence](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/references/TSN-OPERATOR-GUIDE-20261105.md#expired-cranker-confirmation-report).
 

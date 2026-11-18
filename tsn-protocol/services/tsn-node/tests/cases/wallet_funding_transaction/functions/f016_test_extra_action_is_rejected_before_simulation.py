@@ -8,7 +8,7 @@ async def test_extra_action_is_rejected_before_simulation(self):
     accounts = self.context['depositAccounts']
     fields = {'tokenDecimals': 6, 'tcapAssetEntry': accounts['assetEntry'], 'tokenProgram': accounts['tokenProgram']}
     simulation = AsyncMock()
-    with patch.object(server, '_verify_payment_authorization_from_signed_message', AsyncMock(return_value=fields)), patch.object(server, '_simulate_owner_signed_tcap_deposit', simulation):
+    with patch.object(server, '_verify_payment_authorization_from_signed_message', AsyncMock(return_value=fields)), patch.object(server, '_simulate_owner_signed_tcap_deposit', simulation), patch.object(server, '_node_verification_signing_key', return_value=self.key):
         with self.assertRaisesRegex(ValueError, 'unsupported additional'):
             await server._verify_receiver_work({**self.work, 'payload': {**self.payload, 'senderSignedFundingTransaction': wire}})
     simulation.assert_not_awaited()

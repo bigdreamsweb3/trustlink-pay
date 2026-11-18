@@ -201,7 +201,6 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   senderAuthorizationIssuedAt: string;
   senderAuthorizationExpiresAt: string;
   senderFeeAmount?: string | number | null;
-  senderSignedFundingTransaction: string;
   senderFundingMode: "tcap_funded_note_v1";
   fundingNote: FundingNoteV1;
   amount: string | number;
@@ -212,6 +211,9 @@ export function buildPaymentAuthorizationIntentRequest(params: {
   recipientAmount?: number;
   source?: string;
 }): CreateIntentRequest {
+  if ("senderSignedFundingTransaction" in params || "senderFundingDepositTxB64" in params || "senderFundingBlockhashContext" in params) {
+    throw new Error("TSN_INITIAL_INTENT_REQUIRES_MESSAGE_AUTHORIZATION_ONLY");
+  }
   const fundingNote = assertFundingNoteV1(params.fundingNote);
   const signedMessage = params.senderAuthorizationMessage.startsWith("TSN Cross-Chain Payment Intent\n")
     ? parseCrossChainPaymentIntentMessage(params.senderAuthorizationMessage) : parsePaymentIntentMessage(params.senderAuthorizationMessage);
@@ -240,7 +242,6 @@ export function buildPaymentAuthorizationIntentRequest(params: {
       senderAuthorizationIssuedAt: params.senderAuthorizationIssuedAt,
       senderAuthorizationExpiresAt: params.senderAuthorizationExpiresAt,
       senderFeeAmount: params.senderFeeAmount == null ? null : requestFee,
-      senderSignedFundingTransaction: params.senderSignedFundingTransaction,
       senderFundingMode: params.senderFundingMode,
       fundingNote,
       recipientHash: params.recipientHash,

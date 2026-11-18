@@ -1,0 +1,24 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { after, test } from "node:test";
+import { compileReceiverFixture } from "./support/compile-receiver-fixture.mjs";
+import { caseFundingBlockhashValidation } from "./cases/contracts/funding-blockhash-validation.mjs";
+import { caseFundingBlockhashPrivacy } from "./cases/contracts/funding-blockhash-privacy.mjs";
+import { caseFundingBlockhashAttestation } from "./cases/contracts/funding-blockhash-attestation.mjs";
+
+const directory = await mkdtemp(path.join(os.tmpdir(), "receiver-funding-context-"));
+await compileReceiverFixture(directory, ["work-contract.ts", "work/paymentReceiptVerification.ts", "security/node-envelope/encrypt-payload-for-node.ts", "security/node-envelope/decrypt-payload-for-node.ts", "security/node-attestation/assert-node-verification-attestation.ts"]);
+const contract = await import(pathToFileURL(path.join(directory, "work-contract.mjs")).href);
+const { assertSenderFundingBlockhashContext } = await import(pathToFileURL(path.join(directory, "contracts/validation/assert-sender-funding-blockhash-context.mjs")).href);
+const { paymentReceiptVerification } = await import(pathToFileURL(path.join(directory, "work/paymentReceiptVerification.mjs")).href);
+const { encryptPayloadForNode } = await import(pathToFileURL(path.join(directory, "security/node-envelope/encrypt-payload-for-node.mjs")).href);
+const { decryptPayloadForNode } = await import(pathToFileURL(path.join(directory, "security/node-envelope/decrypt-payload-for-node.mjs")).href);
+const { assertNodeVerificationAttestation } = await import(pathToFileURL(path.join(directory, "security/node-attestation/assert-node-verification-attestation.mjs")).href);
+const { nodeCommitment } = await import(pathToFileURL(path.join(directory, "security/node-attestation/node-commitment.mjs")).href);
+const { attestationMessage } = await import(pathToFileURL(path.join(directory, "security/node-attestation/attestation-message.mjs")).href);
+after(rm.bind(null, directory, { recursive: true, force: true }));
+test("funding bank context is canonical and missing old execution context fails closed", caseFundingBlockhashValidation.bind(null, assertSenderFundingBlockhashContext, contract.crankerExecutionPayload));
+test("funding context stays encrypted at ingress and private in public/confirmed views", caseFundingBlockhashPrivacy.bind(null, contract.createReceivedWork, contract.publicCoordinationPayload, contract.compactAuthorizedFundingVerification, contract.compactVerificationPayload, contract.verifiedPayloadForWork, paymentReceiptVerification, encryptPayloadForNode, decryptPayloadForNode));
+test("funding Node execution attestation binds every bank-context field", caseFundingBlockhashAttestation.bind(null, assertNodeVerificationAttestation, contract.createReceivedWork, contract.crankerExecutionPayload, nodeCommitment, attestationMessage));

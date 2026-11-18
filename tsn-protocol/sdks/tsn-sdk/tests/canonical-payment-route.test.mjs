@@ -5,7 +5,9 @@ import {
   buildPaymentIntentMessage,
   parsePaymentIntentMessage,
 } from "../dist/canonical-message.js";
-import { buildCreateIntentRequest } from "../dist/contracts.js";
+import { assertSenderFundingBlockhashContext, buildCreateIntentRequest } from "../dist/contracts.js";
+import { PublicKey } from "@solana/web3.js";
+const blockhashContext = { blockhash: new PublicKey(new Uint8Array(32).fill(9)).toBase58(), lastValidBlockHeight: 200, contextSlot: 100 };
 import { deriveFundingNoteCommitmentV1 } from "../dist/gpru/funding-note.js";
 const fundingNote = { version: 1, secret: "01".padStart(64, "0"), blinding: "02".padStart(64, "0"),
   commitment: deriveFundingNoteCommitmentV1("01".padStart(64, "0"), "02".padStart(64, "0")) };
@@ -54,10 +56,13 @@ test("intent builder accepts only the Node-resolved 32-byte recipient owner hash
     senderAuthorizationMessage: "authorization",
     senderAuthorizationSignature: "signature",
     senderAuthorizationNonce: "nonce",
-    senderSignedFundingTransaction: "signed-transaction",
     senderFundingMode: "tcap_funded_note_v1", fundingNote,
   });
   assert.equal(request.recipientHash, "ab".repeat(32));
+  assert.equal("senderSignedFundingTransaction" in request, false);
+  assert.equal("senderFundingBlockhashContext" in request, false);
+  assert.throws(() => buildCreateIntentRequest({ ...request, senderFundingBlockhashContext: blockhashContext }), /MESSAGE_AUTHORIZATION_ONLY/);
+  assert.throws(() => buildCreateIntentRequest({ ...request, senderFundingDepositTxB64: "signed-wire" }), /MESSAGE_AUTHORIZATION_ONLY/);
   assert.throws(
     () => buildCreateIntentRequest({
       paymentId: "payment-1",
@@ -69,9 +74,24 @@ test("intent builder accepts only the Node-resolved 32-byte recipient owner hash
       senderAuthorizationMessage: "authorization",
       senderAuthorizationSignature: "signature",
       senderAuthorizationNonce: "nonce",
-      senderSignedFundingTransaction: "signed-transaction",
       senderFundingMode: "tcap_funded_note_v1", fundingNote,
     }),
     /32-byte hexadecimal hash returned by TSN Node TIN resolution/,
   );
+});
+
+test("funding blockhash context has exact keys, canonical hash and safe numeric boundaries", () => {
+  const accepted = assertSenderFundingBlockhashContext(blockhashContext);
+  assert.deepEqual(accepted, blockhashContext);
+  assert.notEqual(accepted, blockhashContext);
+  assert.equal(assertSenderFundingBlockhashContext({ ...blockhashContext, contextSlot: 0 }).contextSlot, 0);
+  for (const value of [undefined, null, [], {}, { ...blockhashContext, extra: true },
+    { ...blockhashContext, blockhash: "1" }, { ...blockhashContext, blockhash: "0".repeat(32) },
+    { ...blockhashContext, blockhash: "11111111111111111111111111111111" }, { ...blockhashContext, blockhash: "z".repeat(44) },
+    { ...blockhashContext, lastValidBlockHeight: 0 }, { ...blockhashContext, lastValidBlockHeight: "200" },
+    { ...blockhashContext, lastValidBlockHeight: Number.MAX_SAFE_INTEGER + 1 },
+    { ...blockhashContext, contextSlot: -1 }, { ...blockhashContext, contextSlot: 1.5 },
+    { ...blockhashContext, contextSlot: NaN }, { ...blockhashContext, contextSlot: "100" }]) {
+    assert.throws(() => assertSenderFundingBlockhashContext(value), /BLOCKHASH_CONTEXT_INVALID/);
+  }
 });

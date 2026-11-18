@@ -1,0 +1,231 @@
+{
+  "status": "CURRENT named test/fixture ownership; assertions and boxed mutable capture behavior preserved",
+  "family": "failed-settlement-resolution",
+  "mappings": [
+    {
+      "original": "cases/failed-settlement-resolution/callback-10.mjs",
+      "component": "cases/failed-settlement-resolution/offline-resolution-rpc.mjs",
+      "name": "offlineResolutionRpc"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-11.mjs",
+      "component": "cases/failed-settlement-resolution/assert-durable-resolution-before-wake.mjs",
+      "name": "assertDurableResolutionBeforeWake"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-15.mjs",
+      "component": "cases/failed-settlement-resolution/newer-signature-status-context.mjs",
+      "name": "newerSignatureStatusContext"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-16.mjs",
+      "component": "cases/failed-settlement-resolution/is-blockhash-valid-request.mjs",
+      "name": "isBlockhashValidRequest"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-18.mjs",
+      "component": "cases/failed-settlement-resolution/successful-transaction-meta.mjs",
+      "name": "successfulTransactionMeta"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-19.mjs",
+      "component": "cases/failed-settlement-resolution/failed-transaction-meta.mjs",
+      "name": "failedTransactionMeta"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-20.mjs",
+      "component": "cases/failed-settlement-resolution/processed-signature-status.mjs",
+      "name": "processedSignatureStatus"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-21.mjs",
+      "component": "cases/failed-settlement-resolution/context-before-baseline.mjs",
+      "name": "contextBeforeBaseline"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-22.mjs",
+      "component": "cases/failed-settlement-resolution/older-root-context.mjs",
+      "name": "olderRootContext"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-23.mjs",
+      "component": "cases/failed-settlement-resolution/change-root-sequence.mjs",
+      "name": "changeRootSequence"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-24.mjs",
+      "component": "cases/failed-settlement-resolution/change-root-hash.mjs",
+      "name": "changeRootHash"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-25.mjs",
+      "component": "cases/failed-settlement-resolution/change-root-owner.mjs",
+      "name": "changeRootOwner"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-26.mjs",
+      "component": "cases/failed-settlement-resolution/change-root-suffix.mjs",
+      "name": "changeRootSuffix"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-27.mjs",
+      "component": "cases/failed-settlement-resolution/valid-blockhash-reply.mjs",
+      "name": "validBlockhashReply"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-28.mjs",
+      "component": "cases/failed-settlement-resolution/context-before-baseline.mjs",
+      "name": "contextBeforeBaseline"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-29.mjs",
+      "component": "cases/failed-settlement-resolution/unexpired-block-height.mjs",
+      "name": "unexpiredBlockHeight"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-30.mjs",
+      "component": "cases/failed-settlement-resolution/missing-root-reply.mjs",
+      "name": "missingRootReply"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-31.mjs",
+      "component": "cases/failed-settlement-resolution/alter-selected-rpc-result.mjs",
+      "name": "alterSelectedRpcResult"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-32.mjs",
+      "component": "cases/failed-settlement-resolution/flip-root-account-byte.mjs",
+      "name": "flipRootAccountByte"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-33.mjs",
+      "component": "cases/failed-settlement-resolution/truncate-root-account-data.mjs",
+      "name": "truncateRootAccountData"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-34.mjs",
+      "component": "cases/failed-settlement-resolution/stale-second-root-context.mjs",
+      "name": "staleSecondRootContext"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-36.mjs",
+      "component": "cases/failed-settlement-resolution/fail-resolution-fetch.mjs",
+      "name": "failResolutionFetch"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-37.mjs",
+      "component": "cases/failed-settlement-resolution/failed-rpc-http-response.mjs",
+      "name": "failedRpcHttpResponse"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-38.mjs",
+      "component": "cases/failed-settlement-resolution/rpc-error-response.mjs",
+      "name": "rpcErrorResponse"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-39.mjs",
+      "component": "cases/failed-settlement-resolution/missing-rpc-result-response.mjs",
+      "name": "missingRpcResultResponse"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-40.mjs",
+      "component": "cases/failed-settlement-resolution/null-rpc-result-response.mjs",
+      "name": "nullRpcResultResponse"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-43.mjs",
+      "component": "cases/failed-settlement-resolution/mutate-work-version.mjs",
+      "name": "mutateWorkVersion"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-44.mjs",
+      "component": "cases/failed-settlement-resolution/write-changed-work-version.mjs",
+      "name": "writeChangedWorkVersion"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-45.mjs",
+      "component": "cases/failed-settlement-resolution/mutate-authorization-context.mjs",
+      "name": "mutateAuthorizationContext"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-46.mjs",
+      "component": "cases/failed-settlement-resolution/write-changed-authorization.mjs",
+      "name": "writeChangedAuthorization"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-47.mjs",
+      "component": "cases/failed-settlement-resolution/mutate-funding-version.mjs",
+      "name": "mutateFundingVersion"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-48.mjs",
+      "component": "cases/failed-settlement-resolution/write-changed-funding-version.mjs",
+      "name": "writeChangedFundingVersion"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-49.mjs",
+      "component": "cases/failed-settlement-resolution/mutate-checkpoint-context.mjs",
+      "name": "mutateCheckpointContext"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-5.mjs",
+      "component": "cases/shared/request-fixture-body.mjs",
+      "name": "requestFixtureBody"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-50.mjs",
+      "component": "cases/failed-settlement-resolution/write-changed-checkpoint.mjs",
+      "name": "writeChangedCheckpoint"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-51.mjs",
+      "component": "cases/failed-settlement-resolution/mutate-during-receipt-read.mjs",
+      "name": "mutateDuringReceiptRead"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-7.mjs",
+      "component": "cases/failed-settlement-resolution/seed-resolution-lineage.mjs",
+      "name": "seedResolutionLineage"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback-9.mjs",
+      "component": "cases/failed-settlement-resolution/retain-rpc-result.mjs",
+      "name": "retainRpcResult"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/callback.mjs",
+      "component": "cases/shared/capture-environment-entry.mjs",
+      "name": "captureEnvironmentEntry"
+    },
+    {
+      "original": "cases/failed-settlement-resolution/load.mjs",
+      "component": "cases/shared/load-receiver-fixture-module.mjs",
+      "name": "loadReceiverFixtureModule"
+    }
+  ],
+  "sharedComponents": [
+    "authenticatedRequestFixture",
+    "captureEnvironmentEntry",
+    "loadReceiverFixtureModule"
+  ],
+  "sharedOperations": [
+    {
+      "name": "captureEnvironmentEntry",
+      "component": "cases/shared/capture-environment-entry.mjs"
+    },
+    {
+      "name": "loadReceiverFixtureModule",
+      "component": "cases/shared/load-receiver-fixture-module.mjs"
+    },
+    {
+      "name": "authenticatedRequestFixture",
+      "component": "cases/shared/authenticated-request-fixture.mjs"
+    }
+  ],
+  "requestAdapter": {
+    "component": "cases/failed-settlement-resolution/request.mjs",
+    "sharedConstruction": "cases/shared/authenticated-request-fixture.mjs",
+    "signature": "params, body = params, key = synthetic-recovery-key",
+    "purpose": "Preserve original resolution fixture body/key argument order and defaults."
+  }
+}

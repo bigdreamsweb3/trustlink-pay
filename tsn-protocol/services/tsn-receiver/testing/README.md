@@ -1,0 +1,7 @@
+# Receiver architectural audit
+
+Run `node testing/audit-components.mjs --write` from the service directory to inspect authored `app`, `lib`, `tests` and `testing` sources without importing runtime modules. It refreshes the production component inventory, test component inventory and architectural audit. Source enumeration excludes operator files, installed dependencies, generated Next output, deployment configuration and diagnostic scripts.
+
+The AST checks function/method/constructor/callback bodies, syntax, explicit imports, parameter/dependency declarations, class bindings, literal errors and forbidden production namespace/dynamic execution patterns. Relative imports are resolved against authored sources. The command fails on multiple-function files, parse errors, missing source imports or forbidden production patterns. One-time generators and synthetic stub source strings in isolated tests are not production runtime execution.
+
+Value-import graph cycles and exact body hashes are review evidence. Deferred Ref/Query class factories, legacy-store import and recursive Node-value formatting form safe deferred function cycles in observed isolated imports/builds; the graph alone cannot prove initialization safety. Empty parameter-property constructor bodies represent TypeScript model shells. Exact-body test helpers should be reused when their captures/signatures/contracts agree; matching bodies alone do not make every constructor or typed contract interchangeable.

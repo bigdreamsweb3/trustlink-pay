@@ -1,6 +1,6 @@
 # MCES candidate ranking
 
-**Status: PROPOSED selection from the November 17, 2026 source assessment.** Recommend exactly one next implementation directory: **`tsn-protocol/services/tsn-receiver/`**. The [assessment](candidate-assessment.md) supplies source findings and verification limits; the [plan](next-refactoring-plan.md) defines an independent Receiver task that requires approval before refactoring.
+**Status: retained selection from the November 17, 2026 pre-refactor assessment.** Receiver was the single recommended directory and was subsequently approved by the user. The [assessment](candidate-assessment.md) supplies original findings and verification limits; the [plan](next-refactoring-plan.md) preserves its proposed sequence and links the resulting Receiver implementation. Scores describe the baseline architectures rather than the post-refactor file layout.
 
 ## Scoring method
 

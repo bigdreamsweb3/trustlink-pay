@@ -1,0 +1,213 @@
+{
+  "status": "CURRENT structural extraction mapping; per-function execution coverage is unmeasured",
+  "reference": "TSN Node MCES ownership and single-implementation rules",
+  "originalBodies": 32,
+  "implementationFunctions": 26,
+  "compatibleAllowlistCallbacksReused": 7,
+  "records": [
+    {
+      "source": "lib/work-contract.ts",
+      "name": "isSupportedWorkKind",
+      "originalLine": 5,
+      "implementation": "kinds/is-supported-work-kind.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "nonExecutionContextCommitment",
+      "originalLine": 39,
+      "implementation": "recovery/non-execution-context-commitment.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "hasResolvedNonExecution",
+      "originalLine": 46,
+      "implementation": "recovery/has-resolved-non-execution.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "assertExternalWorkKind",
+      "originalLine": 68,
+      "implementation": "kinds/assert-external-work-kind.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "assertAllowlisted",
+      "originalLine": 98,
+      "implementation": "validation/assert-allowlisted.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "decodeBase58",
+      "originalLine": 102,
+      "implementation": "validation/decode-sender-base58.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "assertAuthorizedFundingIngress",
+      "originalLine": 118,
+      "implementation": "validation/assert-authorized-funding-ingress.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "assertDurablePayload",
+      "originalLine": 158,
+      "implementation": "validation/assert-durable-payload.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "stable",
+      "originalLine": 163,
+      "implementation": "commitments/stable.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "diffPayload",
+      "originalLine": 173,
+      "implementation": "verification/diff-payload.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "compactVerificationPayload",
+      "originalLine": 186,
+      "implementation": "verification/compact-verification-payload.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "compactAuthorizedFundingVerification",
+      "originalLine": 199,
+      "implementation": "verification/compact-authorized-funding-verification.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "verifiedPayloadForWork",
+      "originalLine": 220,
+      "implementation": "verification/verified-payload-for-work.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "crankerExecutionPayload",
+      "originalLine": 236,
+      "implementation": "projection/cranker-execution-payload.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "crankerAuthorizationForWork",
+      "originalLine": 282,
+      "implementation": "projection/cranker-authorization-for-work.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "payloadCommitment",
+      "originalLine": 306,
+      "implementation": "commitments/payload-commitment.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "createReceivedWork",
+      "originalLine": 310,
+      "implementation": "creation/create-received-work.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "name": "publicCoordinationPayload",
+      "originalLine": 330,
+      "implementation": "projection/public-coordination-payload.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "owner": "stable",
+      "kind": "callback",
+      "originalLine": 167,
+      "implementation": "commitments/compare-stable-keys.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "owner": "stable",
+      "kind": "callback",
+      "originalLine": 168,
+      "implementation": "commitments/format-stable-entry.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "owner": "compactAuthorizedFundingVerification",
+      "kind": "callback",
+      "originalLine": 207,
+      "implementation": "verification/has-defined-verified-field.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "owner": "compactAuthorizedFundingVerification",
+      "kind": "callback",
+      "originalLine": 208,
+      "implementation": "verification/verified-field-entry.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "owner": "crankerExecutionPayload",
+      "kind": "callback",
+      "originalLine": 252,
+      "implementation": "projection/allowlisted-entry.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "owner": "crankerExecutionPayload",
+      "kind": "callback",
+      "originalLine": 260,
+      "implementation": "projection/allowlisted-entry.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "owner": "crankerExecutionPayload",
+      "kind": "callback",
+      "originalLine": 263,
+      "implementation": "projection/allowlisted-entry.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "owner": "crankerExecutionPayload",
+      "kind": "callback",
+      "originalLine": 271,
+      "implementation": "projection/allowlisted-entry.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "owner": "crankerExecutionPayload",
+      "kind": "callback",
+      "originalLine": 274,
+      "implementation": "projection/allowlisted-entry.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "owner": "crankerAuthorizationForWork",
+      "kind": "callback",
+      "originalLine": 289,
+      "implementation": "projection/non-transition-authorization-entry.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "owner": "crankerAuthorizationForWork",
+      "kind": "callback",
+      "originalLine": 303,
+      "implementation": "projection/allowlisted-entry.ts"
+    },
+    {
+      "source": "lib/work-contract.ts",
+      "owner": "publicCoordinationPayload",
+      "kind": "callback",
+      "originalLine": 333,
+      "implementation": "projection/allowlisted-entry.ts"
+    },
+    {
+      "source": "lib/public-view.ts",
+      "name": "status",
+      "originalLine": 3,
+      "implementation": "projection/public-intent-status.ts"
+    },
+    {
+      "source": "lib/public-view.ts",
+      "name": "publicIntent",
+      "originalLine": 10,
+      "implementation": "projection/public-intent.ts"
+    }
+  ]
+}

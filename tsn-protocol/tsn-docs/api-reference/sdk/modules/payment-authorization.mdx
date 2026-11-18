@@ -12,12 +12,13 @@ This reference is generated from the checked-out TypeScript exports. Types and s
 Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/payment-authorization`. [Implementation, line 191](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/payment-authorization.ts#L191).
 
 ```ts
-buildPaymentAuthorizationIntentRequest(params: { paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; tokenDecimals: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderAuthorizationIssuedAt: string; senderAuthorizationExpiresAt: string; senderFeeAmount?: string | number | null; senderSignedFundingTransaction: string; senderFundingMode: "tcap_funded_note_v1"; fundingNote: FundingNoteV1; amount: string | number; destinationNetwork?: string | null; destinationExecutor?: string | null; destinationToken?: string | null; settlementRouteId?: string | null; recipientAmount?: number; source?: string; }): CreateIntentRequest
+buildPaymentAuthorizationIntentRequest(params: { paymentId: string; recipientHash: string; recipientTin: string; tokenMintAddress: string; tokenDecimals: number; senderWallet: string; senderAuthorizationMessage: string; senderAuthorizationSignature: string; senderAuthorizationNonce: string; senderAuthorizationIssuedAt: string; senderAuthorizationExpiresAt: string; senderFeeAmount?: string | number | null; senderFundingMode: "tcap_funded_note_v1"; fundingNote: FundingNoteV1; amount: string | number; destinationNetwork?: string | null; destinationExecutor?: string | null; destinationToken?: string | null; settlementRouteId?: string | null; recipientAmount?: number; source?: string; }): CreateIntentRequest
 ```
 
 Direct failure expressions:
 
 ```text
+new Error("TSN_INITIAL_INTENT_REQUIRES_MESSAGE_AUTHORIZATION_ONLY")
 new Error("Funding note commitment differs from the sender-signed payment intent")
 new Error("Payment amount cannot be represented exactly in the TSN intent request")
 new Error("Sender fee cannot be represented exactly in the TSN intent request")

@@ -198,22 +198,37 @@ async function handleApi(req, res, url) {
         cache: "no-store", signal: AbortSignal.timeout(10_000),
       });
     } catch (error) {
-      return json(res, 503, { error: "TSN_NODE_BLOCKHASH_UNAVAILABLE", detail: error instanceof Error ? error.message : String(error) });
+      return void json(res, 503, { error: "TSN_NODE_BLOCKHASH_UNAVAILABLE", detail: error instanceof Error ? error.message : String(error) });
     }
     const latestBlockhash = await blockhashResponse.json().catch(() => ({}));
-    if (!blockhashResponse.ok || typeof latestBlockhash.recentBlockhash !== "string"
-      || !Number.isInteger(latestBlockhash.lastValidBlockHeight)) {
-      return json(res, 503, { error: "TSN_NODE_BLOCKHASH_UNAVAILABLE", detail: latestBlockhash.detail ?? latestBlockhash.error ?? "Node returned an invalid blockhash response" });
+    if (!blockhashResponse.ok) {
+      return void json(res, 503, { error: "TSN_NODE_BLOCKHASH_UNAVAILABLE", detail: latestBlockhash.detail ?? latestBlockhash.error ?? "Node returned an invalid blockhash response" });
     }
-    return latestBlockhash;
+    try {
+      const context = tsnSdk.assertSenderFundingBlockhashContext({
+        blockhash: latestBlockhash.recentBlockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+        contextSlot: latestBlockhash.contextSlot,
+      });
+      return { recentBlockhash: context.blockhash, lastValidBlockHeight: context.lastValidBlockHeight, contextSlot: context.contextSlot };
+    } catch {
+      return void json(res, 503, { error: "TSN_NODE_BLOCKHASH_UNAVAILABLE", detail: "Node returned an invalid blockhash context" });
+    }
   }
 
   if (req.method === "POST" && url.pathname === "/api/tsn/sdk/refresh-tin-credit-blockhash") {
-    const prepared = session.pendingTinCredit;
-    if (!prepared || prepared.expiresAt < Date.now()) return json(res, 409, { error: "TIN_CREDIT_PREPARATION_EXPIRED" });
+    const body = await readJson(req), prepared = session.pendingTinCredit;
+    if (!prepared?.readiness || prepared.completion || prepared.senderWallet !== session.wallet
+        || prepared.expiresAt <= Date.now() || Date.parse(prepared.readiness.expiresAt) <= Date.now()
+        || body.operationId !== prepared.workId || body.expectedStateVersion !== prepared.readiness.stateVersion
+        || body.authorizationPayloadCommitment !== prepared.readiness.authorizationPayloadCommitment) {
+      return json(res, 409, { error: "TIN_CREDIT_FUNDING_READINESS_REQUIRED" });
+    }
     const latestBlockhash = await readNodeBlockhash();
     if (!latestBlockhash) return;
-    return json(res, 200, { recentBlockhash: latestBlockhash.recentBlockhash, lastValidBlockHeight: latestBlockhash.lastValidBlockHeight });
+    prepared.senderFundingBlockhashContext = { blockhash: latestBlockhash.recentBlockhash,
+      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight, contextSlot: latestBlockhash.contextSlot };
+    return json(res, 200, latestBlockhash);
   }
 
   if (url.pathname === "/api/tsn/sdk/network-status") {
@@ -236,6 +251,10 @@ async function handleApi(req, res, url) {
     const body = await readJson(req);
     const publicKey = String(body.publicKey ?? "").trim();
     if (!publicKey) return json(res, 422, { error: "WALLET_PUBLIC_KEY_REQUIRED" });
+    if (session.wallet !== publicKey && !session.pendingTinCredit?.completion) {
+      session.pendingTinCredit = null;
+      session.pendingTinCreditOperationId = null;
+    }
     session.wallet = publicKey;
     return json(res, 200, { wallet: publicKey, signer: "connected-browser-wallet" });
   }
@@ -558,158 +577,125 @@ async function handleApi(req, res, url) {
 
   if (req.method === "POST" && url.pathname === "/api/tsn/sdk/prepare-tin-credit") {
     const body = await readJson(req);
+    if (session.pendingTinCredit?.request && !session.pendingTinCredit.attached) return json(res, 409, { error: "TIN_CREDIT_AUTHORIZATION_ALREADY_STARTED" });
     const recipientTin = String(body.recipientTin ?? "").trim();
     const resolved = session.resolvedTin;
-    if (!resolved || resolved.tin !== recipientTin || resolved.expiresAt < Date.now()) {
-      return json(res, 409, { error: "TIN_RESOLUTION_REQUIRED" });
-    }
+    if (!resolved || resolved.tin !== recipientTin || resolved.expiresAt < Date.now()) return json(res, 409, { error: "TIN_RESOLUTION_REQUIRED" });
     const mintText = String(body.tokenMintAddress ?? "").trim();
     if (!/^\d{10}$/.test(recipientTin)) return json(res, 422, { error: "TEN_DIGIT_TIN_REQUIRED" });
     if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(mintText)) return json(res, 422, { error: "VALID_TOKEN_MINT_REQUIRED" });
     const amountText = String(body.amount ?? "").trim();
     if (!/^\d+(?:\.\d{1,9})?$/.test(amountText) || Number(amountText) <= 0) return json(res, 422, { error: "POSITIVE_TOKEN_AMOUNT_REQUIRED" });
+    // Read only the registered metadata needed for the human-readable message.
+    // Node performs reserve, source ownership and available-funds checks after approval.
     const rpc = createRpcReadSession(await resolveRpcUrl());
     const mint = new PublicKey(mintText);
-    const mintAccount = await rpc.read((connection) => connection.getAccountInfo(mint, "confirmed"));
+    const mintAccount = await rpc.read(connection => connection.getAccountInfo(mint, "confirmed"));
     const tokenProgram = mintAccount?.owner;
-    const supportedTokenPrograms = new Set([
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-      "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
-    ]);
-    if (!tokenProgram || !supportedTokenPrograms.has(tokenProgram.toBase58())) return json(res, 422, { error: "UNSUPPORTED_TOKEN_MINT_PROGRAM" });
-    const depositor = new PublicKey(session.wallet);
+    if (!tokenProgram || !["TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"].includes(tokenProgram.toBase58())) {
+      return json(res, 422, { error: "UNSUPPORTED_TOKEN_MINT_PROGRAM" });
+    }
     const tcapProgram = new PublicKey(process.env.TCAP_PROGRAM_ID ?? tsnSdk.GPRU_TCAP_PROGRAM_ID.toBase58());
-    const accounts = await rpc.read((connection) => tsnSdk.resolveTcapGpruDepositAccounts(connection, {
-      depositor, mint, tokenProgram, tcapProgramId: tcapProgram,
+    const asset = await rpc.read(connection => tsnSdk.resolveTcapGpruDepositAccounts(connection, {
+      depositor: new PublicKey(session.wallet), mint, tokenProgram, tcapProgramId: tcapProgram,
     }));
-    const [reserveAccount, vaultAccount, fundingRootAccount] = await rpc.read((connection) => connection.getMultipleAccountsInfo([
-      accounts.reserveState, accounts.vault, accounts.fundingRootAccount,
-    ], "confirmed"));
-    const { assetEntryAccount: entryAccount } = accounts;
-    const entryData = entryAccount?.data;
-    if (!entryAccount || !entryData || !entryAccount.owner.equals(tcapProgram) || entryData.length < 287
-      || entryData.subarray(0, 8).toString("hex") !== createHash("sha256").update("account:TcapAssetEntryV1").digest().subarray(0, 8).toString("hex")
-      || entryData.subarray(80, 112).toString("hex") !== mint.toBuffer().toString("hex")
-      || entryData.subarray(48, 80).toString("hex") !== tokenProgram.toBuffer().toString("hex")) {
-      return json(res, 409, { error: "MINT_NOT_REGISTERED_IN_TCAP" });
-    }
-    if (entryData[245] !== 1 || entryData[247] !== 0 || entryData[283] !== 1 || entryData[284] !== 1 || entryData[285] !== 0) {
-      return json(res, 409, { error: "TCAP_ASSET_DEPOSITS_NOT_ENABLED" });
-    }
-    if (!reserveAccount) return json(res, 409, { error: "TCAP_CANONICAL_RESERVE_ACCOUNT_MISSING", address: accounts.reserveState.toBase58() });
-    if (!vaultAccount) return json(res, 409, { error: "TCAP_CANONICAL_VAULT_ACCOUNT_MISSING", address: accounts.vault.toBase58() });
-    if (!fundingRootAccount) return json(res, 409, { error: "TCAP_FUNDING_ROOT_ACCOUNT_MISSING", address: accounts.fundingRootAccount.toBase58() });
-    if (!fundingRootAccount.owner.equals(tcapProgram)) return json(res, 409, { error: "TCAP_FUNDING_ROOT_OWNER_MISMATCH" });
-    if (!reserveAccount.owner.equals(tcapProgram)) return json(res, 409, { error: "TCAP_RESERVE_ACCOUNT_OWNER_MISMATCH" });
-    if (!vaultAccount.owner.equals(tokenProgram)) return json(res, 409, { error: "TCAP_VAULT_TOKEN_PROGRAM_MISMATCH" });
-    if (vaultAccount.data.length < 72 || vaultAccount.data.subarray(0, 32).toString("hex") !== mint.toBuffer().toString("hex")) {
-      return json(res, 409, { error: "TCAP_VAULT_TOKEN_ACCOUNT_BINDING_INVALID" });
-    }
-    const decimals = entryData[244];
     const [whole, fraction = ""] = amountText.split(".");
-    if (fraction.length > decimals) return json(res, 422, { error: "AMOUNT_EXCEEDS_TOKEN_DECIMALS" });
-    const amountBaseUnits = BigInt(whole + fraction.padEnd(decimals, "0"));
+    if (fraction.length > asset.decimals) return json(res, 422, { error: "AMOUNT_EXCEEDS_TOKEN_DECIMALS" });
+    const amountBaseUnits = BigInt(whole + fraction.padEnd(asset.decimals, "0"));
     if (amountBaseUnits <= 0n || amountBaseUnits > 0xffff_ffff_ffff_ffffn) return json(res, 422, { error: "TOKEN_AMOUNT_OUT_OF_RANGE" });
-    const senderTokenAccounts = await rpc.read((connection) => connection.getTokenAccountsByOwner(depositor, { mint }, "confirmed"));
-    const eligibleSources = senderTokenAccounts.value
-      .filter(({ account }) => account.owner.equals(tokenProgram) && account.data.length >= 72
-        && account.data.subarray(0, 32).equals(mint.toBuffer())
-        && account.data.subarray(32, 64).equals(depositor.toBuffer()))
-      .map(({ pubkey, account }) => ({ pubkey, account, balance: account.data.readBigUInt64LE(64) }))
-      .sort((left, right) => left.balance === right.balance ? 0 : left.balance > right.balance ? -1 : 1);
-    const selectedSource = eligibleSources.find(({ balance }) => balance >= amountBaseUnits);
-    if (!selectedSource) {
-      return json(res, 409, {
-        error: eligibleSources.length ? "INSUFFICIENT_SENDER_TOKEN_BALANCE" : "SENDER_TOKEN_ACCOUNT_MISSING",
-        mint: mint.toBase58(),
-        associatedTokenAccount: accounts.source.toBase58(),
-        availableBaseUnits: eligibleSources.reduce((sum, source) => sum + source.balance, 0n).toString(),
-        requiredBaseUnits: amountBaseUnits.toString(),
-      });
-    }
-    accounts.source = selectedSource.pubkey;
-    const sourceTokenBalance = selectedSource.balance;
-    if (sourceTokenBalance < amountBaseUnits) return json(res, 409, { error: "INSUFFICIENT_SENDER_TOKEN_BALANCE", availableBaseUnits: sourceTokenBalance.toString() });
-    const slot = await rpc.read((connection) => connection.getSlot("confirmed"));
-    const latestBlockhash = await readNodeBlockhash();
-    if (!latestBlockhash) return;
-    // The resolver also returns fetched account data and numeric token
-    // metadata. Serialize only deposit addresses, after selecting the source.
-    const depositAccounts = {
-      depositor: depositor.toBase58(), config: accounts.config.toBase58(),
-      assetEntry: accounts.assetEntry.toBase58(), reserveState: accounts.reserveState.toBase58(),
-      source: accounts.source.toBase58(), vault: accounts.vault.toBase58(), mint: mint.toBase58(),
-      tokenProgram: tokenProgram.toBase58(), tcapProgramId: tcapProgram.toBase58(),
-      fundingRootAccount: accounts.fundingRootAccount.toBase58(),
-    };
-    session.pendingTinCredit = {
-      recipientTin,
-      recipientHash: resolved.ownerPubkeyHash,
-      mint: mint.toBase58(),
-      amountBaseUnits: amountBaseUnits.toString(),
-      expiresAt: Date.now() + 120_000,
-      accounts: depositAccounts,
-      decimals,
-    };
-    return json(res, 200, {
-      recipientTin,
-      decimals,
-      amountBaseUnits: amountBaseUnits.toString(),
-      currentSlot: slot,
-      expiresAtSlot: (latestBlockhash.contextSlot ?? slot) + 300,
-      recentBlockhash: latestBlockhash.recentBlockhash,
-      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-      depositAccounts,
-      sourceTokenBalance: sourceTokenBalance.toString(),
-      sdk: "@trustlink/tsn-sdk.buildTcapGpruWalletDepositTransaction",
-    });
+    session.pendingTinCredit = { recipientTin, recipientHash: resolved.ownerPubkeyHash, mint: mint.toBase58(),
+      senderWallet: session.wallet, amountBaseUnits: amountBaseUnits.toString(), decimals: asset.decimals,
+      tcapProgramId: tcapProgram.toBase58(), expiresAt: Date.now() + 5 * 60_000 };
+    return json(res, 200, { recipientTin, tokenMintAddress: mint.toBase58(), decimals: asset.decimals,
+      amountBaseUnits: amountBaseUnits.toString(), tcapProgramId: tcapProgram.toBase58() });
   }
 
   if (req.method === "POST" && url.pathname === "/api/tsn/sdk/submit-tin-credit") {
-    const body = await readJson(req);
-    const prepared = session.pendingTinCredit;
-    const request = body.request;
+    const body = await readJson(req), prepared = session.pendingTinCredit, request = body.request;
     if (!prepared || prepared.expiresAt < Date.now()) return json(res, 409, { error: "TIN_CREDIT_PREPARATION_EXPIRED" });
-    if (!request || request.senderWallet !== session.wallet || request.recipientTin !== prepared.recipientTin
-      || request.recipientHash !== prepared.recipientHash || request.tokenMintAddress !== prepared.mint) {
-      return json(res, 409, { error: "TIN_CREDIT_REQUEST_DIFFERS_FROM_PREPARATION" });
+    if (!request || request.senderWallet !== session.wallet || request.senderWallet !== prepared.senderWallet
+        || request.recipientTin !== prepared.recipientTin || request.recipientHash !== prepared.recipientHash
+        || request.tokenMintAddress !== prepared.mint) return json(res, 409, { error: "TIN_CREDIT_REQUEST_DIFFERS_FROM_PREPARATION" });
+    if ("senderSignedFundingTransaction" in request || "senderFundingDepositTxB64" in request || "senderFundingBlockhashContext" in request) {
+      return json(res, 422, { error: "TSN_INITIAL_INTENT_REQUIRES_MESSAGE_AUTHORIZATION_ONLY" });
     }
-    let fundingNote;
     try {
-      fundingNote = tsnSdk.assertFundingNoteV1(request.fundingNote);
-      const signedIntent = tsnSdk.parsePaymentIntentMessage(request.senderAuthorizationMessage);
-      if (request.senderFundingMode !== "tcap_funded_note_v1" || signedIntent.fundingNoteCommitment !== fundingNote.commitment
-          || signedIntent.amountBaseUnits.toString() !== prepared.amountBaseUnits
-          || signedIntent.tokenMintAddress !== prepared.mint || signedIntent.recipientTin !== prepared.recipientTin) {
+      const note = tsnSdk.assertFundingNoteV1(request.fundingNote), signed = tsnSdk.parsePaymentIntentMessage(request.senderAuthorizationMessage);
+      if (request.senderFundingMode !== "tcap_funded_note_v1" || signed.fundingNoteCommitment !== note.commitment
+          || signed.amountBaseUnits.toString() !== prepared.amountBaseUnits || signed.tokenMintAddress !== prepared.mint
+          || signed.recipientTin !== prepared.recipientTin || signed.expires.getTime() <= Date.now()) {
         return json(res, 409, { error: "TIN_CREDIT_REQUEST_DIFFERS_FROM_PREPARATION" });
       }
-    } catch {
-      return json(res, 422, { error: "INVALID_PRIVATE_FUNDING_NOTE" });
+      prepared.expiresAt = Math.min(prepared.expiresAt, signed.expires.getTime());
+    } catch { return json(res, 422, { error: "INVALID_PRIVATE_FUNDING_AUTHORIZATION" }); }
+    const encoded = JSON.stringify(request);
+    if (prepared.request && JSON.stringify(prepared.request) !== encoded) return json(res, 409, { error: "TIN_CREDIT_AUTHORIZATION_ALREADY_STARTED" });
+    // Retain the exact message/note if the ingress response is lost; retry the same ID.
+    prepared.request = request;
+    const nodeUrl = configuredNodeUrl();
+    if (!nodeUrl) return json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED_FOR_LIVE_MODE" });
+    const response = await fetch(`${nodeUrl}/intents`, { method: "POST", headers: { "content-type": "application/json" },
+      body: encoded, signal: AbortSignal.timeout(30_000) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) return json(res, response.status, result);
+    session.pendingTinCreditOperationId = String(result.id ?? result.paymentId ?? request.paymentId);
+    prepared.workId = session.pendingTinCreditOperationId;
+    return json(res, 200, { ...result, sdk: "@trustlink/tsn-sdk.buildPaymentAuthorizationIntentRequest -> TSN Node /intents" });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/tsn/sdk/prepare-tin-credit-funding") {
+    const body = await readJson(req), prepared = session.pendingTinCredit;
+    if (!prepared?.request || prepared.senderWallet !== session.wallet || prepared.expiresAt <= Date.now()
+        || body.operationId !== prepared.workId || prepared.completion) return json(res, 409, { error: "TIN_CREDIT_FUNDING_PREPARATION_UNAVAILABLE" });
+    const nodeUrl = configuredNodeUrl();
+    if (!nodeUrl) return json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED_FOR_LIVE_MODE" });
+    const response = await fetch(`${nodeUrl}/network/funding/readiness`, { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ workId: prepared.workId, senderPubkey: prepared.senderWallet, authorizationSignature: prepared.request.senderAuthorizationSignature }),
+      signal: AbortSignal.timeout(10_000) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) return json(res, response.status, result);
+    try { prepared.readiness = tsnSdk.assertTsnFundingReadiness(result, prepared.request, prepared.workId, new PublicKey(prepared.tcapProgramId)); }
+    catch { return json(res, 409, { error: "TIN_CREDIT_READINESS_DIFFERS_FROM_AUTHORIZATION" }); }
+    return json(res, 200, prepared.readiness);
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/tsn/sdk/complete-tin-credit") {
+    const body = await readJson(req), prepared = session.pendingTinCredit, completion = body.completion;
+    if (!prepared?.request || !prepared.readiness || prepared.senderWallet !== session.wallet || !completion) {
+      return json(res, 409, { error: "TIN_CREDIT_FUNDING_PREPARATION_UNAVAILABLE" });
     }
-    try {
-      const encoded = request.senderSignedFundingTransaction;
-      if (typeof encoded !== "string" || encoded.length > 5464
-          || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded)) {
-        throw new Error("INVALID_SIGNED_DEPOSIT_ENCODING");
-      }
-      const accounts = Object.fromEntries(Object.entries(prepared.accounts).map(([name, value]) => [name, new PublicKey(value)]));
-      tsnSdk.assertSignedTcapGpruWalletDepositTransaction(Buffer.from(encoded, "base64"), {
-        accounts, amountBaseUnits: BigInt(prepared.amountBaseUnits), fundingNoteCommitment: fundingNote.commitment,
-      });
-    } catch {
-      return json(res, 422, { error: "SIGNED_FUNDING_TRANSACTION_DIFFERS_FROM_APPROVAL" });
+    if (prepared.completion && JSON.stringify(prepared.completion) !== JSON.stringify(completion)) {
+      return json(res, 409, { error: "TIN_CREDIT_SIGNED_ATTEMPT_ALREADY_SAVED" });
+    }
+    if (!prepared.completion) {
+      const issued = prepared.senderFundingBlockhashContext, supplied = completion.senderFundingBlockhashContext;
+      if (!issued || supplied?.blockhash !== issued.blockhash || supplied?.lastValidBlockHeight !== issued.lastValidBlockHeight
+          || supplied?.contextSlot !== issued.contextSlot) return json(res, 409, { error: "TIN_CREDIT_BLOCKHASH_CONTEXT_DIFFERS_FROM_ISSUANCE" });
+      try {
+        const checked = tsnSdk.buildCompleteTsnFundingRequest({ request: prepared.request, readiness: prepared.readiness, workId: prepared.workId,
+          senderFundingDepositTxB64: completion.senderFundingDepositTxB64, senderFundingBlockhashContext: supplied,
+          tcapProgramId: new PublicKey(prepared.tcapProgramId) });
+        if (JSON.stringify(checked) !== JSON.stringify(completion)) return json(res, 409, { error: "TIN_CREDIT_COMPLETION_DIFFERS_FROM_APPROVAL" });
+      } catch { return json(res, 422, { error: "SIGNED_FUNDING_TRANSACTION_DIFFERS_FROM_APPROVAL" }); }
+      // A lost response never permits a replacement wire or blockhash.
+      prepared.completion = completion;
     }
     const nodeUrl = configuredNodeUrl();
     if (!nodeUrl) return json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED_FOR_LIVE_MODE" });
-    const response = await fetch(`${nodeUrl}/intents`, {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request),
-      signal: AbortSignal.timeout(30_000),
-    });
+    const response = await fetch(`${nodeUrl}/network/funding/complete`, { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify(prepared.completion), signal: AbortSignal.timeout(30_000) });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) return json(res, response.status, result);
+    prepared.attached = true;
+    return json(res, 200, result);
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/tsn/sdk/cancel-tin-credit") {
+    await readJson(req);
+    if (session.pendingTinCredit?.completion) return json(res, 409, { error: "TIN_CREDIT_SIGNED_ATTEMPT_REQUIRES_RECONCILIATION" });
     session.pendingTinCredit = null;
-    session.pendingTinCreditOperationId = String(result.id ?? result.paymentId ?? "");
-    return json(res, 200, { ...result, sdk: "@trustlink/tsn-sdk.buildPaymentAuthorizationIntentRequest -> TSN Node /intents" });
+    session.pendingTinCreditOperationId = null;
+    return json(res, 200, { status: "LOCAL_FUNDING_APPROVAL_CANCELLED" });
   }
 
   if (req.method === "GET" && url.pathname === "/api/tsn/sdk/tin-credit-status") {

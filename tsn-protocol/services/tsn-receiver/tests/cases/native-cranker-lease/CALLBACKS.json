@@ -1,0 +1,30 @@
+{
+  "status": "CURRENT named test/fixture ownership; assertions and boxed mutable capture behavior preserved",
+  "family": "native-cranker-lease",
+  "mappings": [
+    {
+      "original": "cases/native-cranker-lease/callback.mjs",
+      "component": "cases/shared/read-boxed-clock.mjs",
+      "name": "readBoxedClock"
+    },
+    {
+      "original": "cases/native-cranker-lease/load.mjs",
+      "component": "cases/shared/load-receiver-fixture-module.mjs",
+      "name": "loadReceiverFixtureModule"
+    }
+  ],
+  "sharedComponents": [
+    "loadReceiverFixtureModule",
+    "readBoxedClock"
+  ],
+  "sharedOperations": [
+    {
+      "name": "loadReceiverFixtureModule",
+      "component": "cases/shared/load-receiver-fixture-module.mjs"
+    },
+    {
+      "name": "readBoxedClock",
+      "component": "cases/shared/read-boxed-clock.mjs"
+    }
+  ]
+}

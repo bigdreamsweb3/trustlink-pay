@@ -1,8 +1,6 @@
 ## What TSN Is
 
-TSN is a **Decentralized Settlement Protocol (DESP)** implementation designed to fix fragmentation in blockchain payments. It separates identity, authorization, liquidity, and settlement, similar to how traditional financial networks separate clearing and settlement.
-dorahacks.io
-dorahacks.io
+TSN is a **Decentralized Settlement Protocol (DESP)** implementation designed to fix fragmentation in blockchain payments. It separates identity, authorization, liquidity, and settlement, similar to how traditional financial networks separate clearing and settlement. TSN decouples user identity from public blockchain wallet addresses.
 
 **Key characteristics:**
 

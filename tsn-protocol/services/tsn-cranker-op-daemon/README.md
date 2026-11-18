@@ -24,10 +24,13 @@ Native wallet-to-TIN credit separates the sender-approved TCAP reserve deposit f
 ## Processing and evidence
 
 ```text
-User device signs intent approval and the funded-note reserve deposit
-    -> Receiver/Node verify `AUTHORIZED_FUNDING`
-    -> Receiver pre-creates internal RECEIVED settlement work at ingress
-    -> Cranker leases and submits the exact sender-signed TCAP deposit
+User device signs the canonical intent approval
+    -> Receiver stores AUTHORIZATION work; Node checks authorization, recipient, asset and advisory funds
+    -> Node returns FUNDING_READY; application shows Ready to approve funding
+    -> User approves a deposit with a fresh blockhash in the wallet
+    -> Receiver attaches that exact signed deposit to the same intent and creates its internal settlement reference
+    -> Node performs final signed-deposit verification and returns VERIFIED
+    -> Cranker leases funding, checks the 20-block margin and submits the exact sender-signed TCAP deposit
     -> Funding confirms; Node verifies the linked settlement and proves funded membership
     -> Receiver exposes Node-verified settlement authorization to the leased Cranker
     -> Cranker builds the exact settlement message and requests the Mother Node signature through Receiver
@@ -56,7 +59,10 @@ to another endpoint during startup. If an `AUTHORIZED_FUNDING` submission gets
 `BlockhashNotFound`, the Cranker retries the exact same sender-signed bytes
 through `TSN_RPC_FALLBACK_URL` (default
 `https://api.devnet.solana.com`). It does not refresh the blockhash or modify
-the transaction, and this retry does not apply to other work kinds. The gateway
+the transaction, and this retry does not apply to other work kinds. Before each
+endpoint sends, a confirmed `getBlockHeight` request uses the original
+`minContextSlot`; fewer than 20 blocks before the reported deadline or an invalid
+or unavailable height prevents that send. The gateway
 must have a working upstream; its `getHealth` response alone does not prove
 that account reads or transaction submission work.
 
@@ -100,7 +106,9 @@ initialization, environment configuration, and troubleshooting, see
 - [Native transaction contract](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/credit-abi.md)
 - [TSN operations and verification](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/operations-and-verification.md)
 
-Gateway bank failover preserves the exact request; it cannot extend the owner-signed deposit's blockhash lifetime.
+Funding execution requires the Node-signed `senderFundingBlockhashContext` tuple alongside its wire and mode. Cranker validates the exact keys, canonical nonzero hash and integer lifetime/slot, verifies all wallet signatures and checks that serialization preserves the wire. Confirmed height checks and preflight use the tuple's `contextSlot` as `minContextSlot` for both the selected endpoint and the existing funding fallback. Gateway bank failover preserves the exact request; it cannot extend the owner-signed deposit's blockhash lifetime. This tuple is a client-reported hint rather than independent expiry/nonexecution evidence; inspect original signatures and confirmed funding before replacement.
+
+The single FAILED report retains the original owner signature and `fundingSubmission` evidence: short hash fingerprint, context slot, reported last valid height, 20-block minimum and each endpoint's observed height, remaining blocks, phase and whether the send method was invoked. Numeric RPC/instruction/custom codes are retained when available; provider messages, transaction wires and logs are excluded. `sendInvoked=false` describes only that recorded attempt, and neither a margin rejection nor a failed send proves nonexecution. Confirmation failure retains the same identity; a chain-confirmed transaction with a pending Receiver receipt remains a pending confirmation report. Offline funding tests cover the margin boundary, malformed heights, same-wire fallback and ambiguous submission evidence; live submission remains unverified.
 
 ## Experimental private-credit and aggregate accounting
 

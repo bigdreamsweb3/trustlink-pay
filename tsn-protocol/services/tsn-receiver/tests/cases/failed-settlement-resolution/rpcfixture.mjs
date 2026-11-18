@@ -1,0 +1,17 @@
+/** Isolated test component; lexical state is supplied explicitly by its enclosing fixture. */
+import { compileReceiverFixture } from "../../support/compile-receiver-fixture.mjs";
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import test from "node:test";
+import { PublicKey } from "@solana/web3.js";
+import { offlineResolutionRpc } from "./offline-resolution-rpc.mjs";
+import { retainRpcResult } from "./retain-rpc-result.mjs";
+export function caseRpcfixture(calls, rootReply, rootAddress, signature, change = retainRpcResult) {
+    calls.value = [];
+    let roots = { value: 0 };
+    globalThis.fetch = offlineResolutionRpc.bind(null, calls, roots, rootReply, rootAddress, signature, change);
+}

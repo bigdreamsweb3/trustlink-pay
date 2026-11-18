@@ -1,0 +1,27 @@
+{
+  "facade": "../../node-wake.ts",
+  "responsibility": "Node control notification",
+  "components": [
+    {
+      "name": "abortWakeRequest",
+      "file": "abort-wake-request.ts",
+      "imports": []
+    },
+    {
+      "name": "isFirstNodeUrl",
+      "file": "is-first-node-url.ts",
+      "imports": []
+    },
+    {
+      "name": "wakeTsnNode",
+      "file": "wake-tsn-node.ts",
+      "imports": [
+        "./dependencies",
+        "../common/has-configured-node-url",
+        "../common/clean-node-url",
+        "./is-first-node-url",
+        "./abort-wake-request"
+      ]
+    }
+  ]
+}

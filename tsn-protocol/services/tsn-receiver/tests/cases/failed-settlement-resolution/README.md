@@ -1,0 +1,5 @@
+# Failed settlement resolution test components
+
+The `../../failed-settlement-resolution.test.mjs` discovery facade preserves the original parent scenario and eight subcases. Case components cover authorization and stale-version rejection, preview immutability, finalized-root requirements, RPC failures, lineage correspondence, concurrent changes and durable nonexecution recording before dependent work wakes. Named synthetic RPC and transaction callbacks isolate each altered observation; compatible stale-context callbacks share one implementation.
+
+[CALLBACKS.json](CALLBACKS.json) maps extracted callback ownership and reuse. RPC fixture defaults refer to the separate asynchronous result-retention component, so parameter defaults contain no nested function bodies. The family request adapter retains its original body/key argument order and synthetic recovery credential while sharing request construction. All subcases passed in the 27-check offline regression run using temporary storage and mocked RPC; the evidence does not demonstrate finalized on-chain nonexecution.

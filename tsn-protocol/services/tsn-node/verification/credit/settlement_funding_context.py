@@ -5,7 +5,7 @@ explicit structural ports; raised errors retain the original contract.
 """
 from __future__ import annotations
 from typing import Any
-from core.schemas.create_intent_request import CreateIntentRequest
+from core.schemas.confirmed_funding_request import ConfirmedFundingRequest
 from typing import Any, Callable, Protocol
 
 class Dependencies(Protocol):
@@ -20,10 +20,10 @@ class Dependencies(Protocol):
     validate_funding_note: Callable[..., Any]
 
 
-async def _settlement_funding_context(node: Dependencies, funding: dict[str, Any]) -> tuple[CreateIntentRequest, dict[str, Any], dict[str, Any]]:
+async def _settlement_funding_context(node: Dependencies, funding: dict[str, Any]) -> tuple[ConfirmedFundingRequest, dict[str, Any], dict[str, Any]]:
     if funding.get("kind") != "AUTHORIZED_FUNDING" or funding.get("status") != "CONFIRMED":
         raise ValueError("Settlement funding is not confirmed")
-    request = CreateIntentRequest(**(funding.get("payload") or {}))
+    request = ConfirmedFundingRequest(**(funding.get("payload") or {}))
     fields = node._parse_canonical_message(request.senderAuthorizationMessage, "Payment Intent")
     node._verify_ed25519_signature(public_key=request.senderWallet, message=request.senderAuthorizationMessage.encode("utf-8"), signature_base64=request.senderAuthorizationSignature)
     if fields.get("Recipient TIN") != request.recipientTin or fields.get("Token Mint") != request.tokenMintAddress or fields.get("Nonce") != request.senderAuthorizationNonce:

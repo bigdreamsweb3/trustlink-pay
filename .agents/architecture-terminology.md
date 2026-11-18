@@ -29,7 +29,7 @@ TrustLink and TSN are still developing their first release, **v1**. Every curren
 
 Native wallet-to-TIN credit requires canonical TIN-targeted approval and exact owner-signed TCAP funding. Receiver coordinates separate verification and leases. Node validates genuine funded-note membership through the existing global funding account and proves the private amount transition; Mother authorizes TSNP → TCAP → GPRU. Individual credit updates shared head/nullifier root and blinded epoch transcript with no token movement or liability reclassification. Separate `TCAP_EPOCH_ACCOUNTING` work proves the complete 2–64-credit total and reclassifies existing obligations once. This native epoch is distinct from retained TSNP Epoch Treasury/payout APIs.
 
-Receiver statuses are `RECEIVED`, `NODE_VERIFYING`, `VERIFIED`, `REJECTED`, `CRANKER_LEASED`, `SUBMITTED`, `CONFIRMED` and `FAILED`. SDK intent status strings are a separate contract. Funding CONFIRMED, settlement CONFIRMED and validated owner-history recovery establish different outcomes. Check the route's actual handlers before describing recovery or enabled debit/exit.
+Receiver statuses are `RECEIVED`, `NODE_VERIFYING`, `FUNDING_READY`, `VERIFIED`, `REJECTED`, `CRANKER_LEASED`, `SUBMITTED`, `CONFIRMED` and `FAILED`. `FUNDING_READY` records message-only authorization checks and permits owner funding approval; it supplies no Cranker execution. SDK intent status strings are a separate contract. Funding CONFIRMED, settlement CONFIRMED and validated owner-history recovery establish different outcomes. Check the route's actual handlers before describing recovery or enabled debit/exit.
 
 ## Privacy and evidence language
 

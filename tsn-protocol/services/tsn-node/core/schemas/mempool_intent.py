@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import Optional
-from core.schemas.create_intent_request import CreateIntentRequest
+from core.schemas.confirmed_funding_request import ConfirmedFundingRequest
 
-class MempoolIntent(CreateIntentRequest):
+class MempoolIntent(ConfirmedFundingRequest):
     id:                   str
     status:               str           = "pending"
     assignedCrankerPubkey: Optional[str] = None

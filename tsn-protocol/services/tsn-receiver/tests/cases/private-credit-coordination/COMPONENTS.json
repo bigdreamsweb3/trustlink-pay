@@ -1,0 +1,141 @@
+{
+  "discovery": "../../private-credit-coordination.test.mjs",
+  "components": [
+    {
+      "name": "verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodes",
+      "file": "verify-epochs-paginate-defer-and-serialize-across-concurrent-nodes.mjs",
+      "originalLine": 9,
+      "captures": [],
+      "sharedLocals": [
+        "directory",
+        "workCollection",
+        "enqueuedId",
+        "createReceivedWork",
+        "epochId",
+        "nativeWorkRetryPatch",
+        "leased",
+        "native",
+        "reason",
+        "funding",
+        "credit",
+        "epoch"
+      ]
+    },
+    {
+      "name": "loadComponent",
+      "file": "load-component.mjs",
+      "originalLine": 23,
+      "captures": [
+        "verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "runTransactionCase",
+      "file": "run-transaction-case.mjs",
+      "originalLine": 30,
+      "captures": [
+        "verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "runTransactionCase4",
+      "file": "run-transaction-case4.mjs",
+      "originalLine": 33,
+      "captures": [
+        "verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "throwsCase",
+      "file": "throws-case.mjs",
+      "originalLine": 53,
+      "captures": [
+        "verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "throwsCase6",
+      "file": "throws-case6.mjs",
+      "originalLine": 64,
+      "captures": [
+        "verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "throwsCase7",
+      "file": "throws-case7.mjs",
+      "originalLine": 72,
+      "captures": [
+        "verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "throwsCase8",
+      "file": "throws-case8.mjs",
+      "originalLine": 73,
+      "captures": [
+        "verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "throwsCase9",
+      "file": "throws-case9.mjs",
+      "originalLine": 74,
+      "captures": [
+        "verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "throwsCase10",
+      "file": "throws-case10.mjs",
+      "originalLine": 75,
+      "captures": [
+        "verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "throwsCase11",
+      "file": "throws-case11.mjs",
+      "originalLine": 76,
+      "captures": [
+        "verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "runTransactionCase12",
+      "file": "run-transaction-case12.mjs",
+      "originalLine": 81,
+      "captures": [
+        "verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "runTransactionCase13",
+      "file": "run-transaction-case13.mjs",
+      "originalLine": 86,
+      "captures": [
+        "verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "currentSyntheticTime",
+      "file": "current-synthetic-time.mjs",
+      "verificationPurpose": "Deterministic queue eligibility under concurrent filesystem load",
+      "captures": [],
+      "sharedLocals": []
+    }
+  ],
+  "implementationFiles": 14
+}

@@ -12,3 +12,6 @@ node_modules/
 .next-stale-mixed-runtime/
 tsconfig.tsbuildinfo
 npm-debug.log*
+
+# Protected local manifest, records, journals, backups, temporary files and locks.
+.receiver-store*

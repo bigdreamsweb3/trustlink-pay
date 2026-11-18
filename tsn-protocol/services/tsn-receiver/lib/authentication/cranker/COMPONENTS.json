@@ -1,0 +1,205 @@
+{
+  "facade": "../../cranker-auth.ts",
+  "responsibility": "Cranker admission, sessions and replay control",
+  "components": [
+    {
+      "name": "assertMotherDnaCranker",
+      "file": "assert-mother-dna-cranker.ts",
+      "imports": [
+        "./dependencies",
+        "node:crypto",
+        "@solana/web3.js",
+        "./schedule-rpc-retry",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "authenticateCrankerRequest",
+      "file": "authenticate-cranker-request.ts",
+      "imports": [
+        "./dependencies",
+        "node:crypto",
+        "node:crypto",
+        "next/server",
+        "./valid-timestamp",
+        "./canonical-session-request",
+        "./public-key-object",
+        "./decode-signature",
+        "./consume-cranker-session-request"
+      ]
+    },
+    {
+      "name": "canonicalSessionRequest",
+      "file": "canonical-session-request.ts",
+      "imports": [
+        "node:crypto"
+      ]
+    },
+    {
+      "name": "challengeId",
+      "file": "challenge-id.ts",
+      "imports": [
+        "node:crypto"
+      ]
+    },
+    {
+      "name": "connectSolana",
+      "file": "connect-solana.ts",
+      "imports": [
+        "@solana/web3.js"
+      ]
+    },
+    {
+      "name": "consumeCrankerChallenge",
+      "file": "consume-cranker-challenge.ts",
+      "imports": [
+        "../../storage/ports",
+        "./dependencies"
+      ]
+    },
+    {
+      "name": "consumeCrankerSessionRequest",
+      "file": "consume-cranker-session-request.ts",
+      "imports": [
+        "../../storage/ports",
+        "./dependencies",
+        "node:crypto",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "decodeBase58",
+      "file": "decode-base58.ts",
+      "imports": []
+    },
+    {
+      "name": "decodeSignature",
+      "file": "decode-signature.ts",
+      "imports": []
+    },
+    {
+      "name": "deleteDocumentReference",
+      "file": "delete-document-reference.ts",
+      "imports": [
+        "../../storage/ports"
+      ]
+    },
+    {
+      "name": "deleteStaleRateDocument",
+      "file": "delete-stale-rate-document.ts",
+      "imports": []
+    },
+    {
+      "name": "enforceCrankerLeaseRateLimit",
+      "file": "enforce-cranker-lease-rate-limit.ts",
+      "imports": [
+        "./dependencies",
+        "node:crypto",
+        "./prune-cranker-rate-limits",
+        "./increment-cranker-lease-bucket"
+      ]
+    },
+    {
+      "name": "hasRpcUrl",
+      "file": "has-rpc-url.ts",
+      "imports": []
+    },
+    {
+      "name": "incrementCrankerLeaseBucket",
+      "file": "increment-cranker-lease-bucket.ts",
+      "imports": [
+        "../../storage/ports",
+        "./dependencies",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "issueCrankerChallenge",
+      "file": "issue-cranker-challenge.ts",
+      "imports": [
+        "./dependencies",
+        "node:crypto",
+        "./assert-mother-dna-cranker",
+        "./prune-cranker-challenges",
+        "./prune-cranker-sessions",
+        "./challenge-id",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "issueCrankerSession",
+      "file": "issue-cranker-session.ts",
+      "imports": [
+        "./dependencies",
+        "node:crypto",
+        "node:crypto",
+        "node:crypto",
+        "./valid-timestamp",
+        "./session-challenge-message",
+        "./public-key-object",
+        "./decode-signature",
+        "./challenge-id",
+        "./consume-cranker-challenge",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "pruneCrankerChallenges",
+      "file": "prune-cranker-challenges.ts",
+      "imports": [
+        "./dependencies",
+        "./stale-document-entry",
+        "./delete-document-reference"
+      ]
+    },
+    {
+      "name": "pruneCrankerRateLimits",
+      "file": "prune-cranker-rate-limits.ts",
+      "imports": [
+        "./dependencies",
+        "./delete-stale-rate-document"
+      ]
+    },
+    {
+      "name": "pruneCrankerSessions",
+      "file": "prune-cranker-sessions.ts",
+      "imports": [
+        "./dependencies",
+        "./stale-document-entry",
+        "./delete-document-reference",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "publicKeyObject",
+      "file": "public-key-object.ts",
+      "imports": [
+        "node:crypto",
+        "./decode-base58"
+      ]
+    },
+    {
+      "name": "scheduleRpcRetry",
+      "file": "schedule-rpc-retry.ts",
+      "imports": []
+    },
+    {
+      "name": "sessionChallengeMessage",
+      "file": "session-challenge-message.ts",
+      "imports": []
+    },
+    {
+      "name": "staleDocumentEntry",
+      "file": "stale-document-entry.ts",
+      "imports": []
+    },
+    {
+      "name": "validTimestamp",
+      "file": "valid-timestamp.ts",
+      "imports": [
+        "./dependencies",
+        "./configuration"
+      ]
+    }
+  ]
+}

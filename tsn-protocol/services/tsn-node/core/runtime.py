@@ -248,6 +248,7 @@ from api.handlers import mempool_status
 from api.handlers import consume_threshold_access_nonce
 from api.handlers import post_intent
 from api.handlers import get_network_recent_blockhash
+from api.handlers import post_funding_readiness, post_complete_funding
 from api.handlers import list_intents
 from api.handlers import update_intent_status
 from api.handlers import list_pending_intent_work
@@ -568,6 +569,8 @@ class NodeRuntime:
     consume_threshold_access_nonce = consume_threshold_access_nonce
     post_intent = post_intent
     get_network_recent_blockhash = get_network_recent_blockhash
+    post_funding_readiness = post_funding_readiness
+    post_complete_funding = post_complete_funding
     list_intents = list_intents
     update_intent_status = update_intent_status
     list_pending_intent_work = list_pending_intent_work

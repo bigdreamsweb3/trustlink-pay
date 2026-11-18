@@ -1,0 +1,205 @@
+{
+  "facade": "../../settlement-reconciliation.ts",
+  "responsibility": "Finalized signed receipt reconciliation",
+  "components": [
+    {
+      "name": "assertEligible",
+      "file": "assert-eligible.ts",
+      "imports": [
+        "./dependencies",
+        "../../work-contract",
+        "../../work-contract",
+        "./hash"
+      ]
+    },
+    {
+      "name": "assertPermissions",
+      "file": "assert-permissions.ts",
+      "imports": [
+        "@solana/web3.js",
+        "./public-key-text",
+        "./is-unexpected-account",
+        "./is-readonly-account"
+      ]
+    },
+    {
+      "name": "assertSettlementReceipt",
+      "file": "assert-settlement-receipt.ts",
+      "imports": [
+        "node:crypto",
+        "node:crypto",
+        "node:crypto",
+        "@solana/web3.js",
+        "../../work-contract",
+        "./receipt-public-key",
+        "./parse-receipt-instructions",
+        "./hash",
+        "./pda",
+        "./integer",
+        "./proof-input-bytes",
+        "./bytes",
+        "./assert-permissions",
+        "./matches-expected-account",
+        "./is-mother-authority",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "bytes",
+      "file": "bytes.ts",
+      "imports": []
+    },
+    {
+      "name": "equalsWritableAccount",
+      "file": "equals-writable-account.ts",
+      "imports": [
+        "@solana/web3.js"
+      ]
+    },
+    {
+      "name": "hash",
+      "file": "hash.ts",
+      "imports": [
+        "node:crypto"
+      ]
+    },
+    {
+      "name": "instructionPublicKey",
+      "file": "instruction-public-key.ts",
+      "imports": [
+        "@solana/web3.js"
+      ]
+    },
+    {
+      "name": "integer",
+      "file": "integer.ts",
+      "imports": []
+    },
+    {
+      "name": "isInvalidAccountIndex",
+      "file": "is-invalid-account-index.ts",
+      "imports": []
+    },
+    {
+      "name": "isMotherAuthority",
+      "file": "is-mother-authority.ts",
+      "imports": [
+        "@solana/web3.js"
+      ]
+    },
+    {
+      "name": "isReadonlyAccount",
+      "file": "is-readonly-account.ts",
+      "imports": [
+        "@solana/web3.js",
+        "./equals-writable-account"
+      ]
+    },
+    {
+      "name": "isUnexpectedAccount",
+      "file": "is-unexpected-account.ts",
+      "imports": []
+    },
+    {
+      "name": "matchesExpectedAccount",
+      "file": "matches-expected-account.ts",
+      "imports": [
+        "@solana/web3.js"
+      ]
+    },
+    {
+      "name": "parseReceiptInstructions",
+      "file": "parse-receipt-instructions.ts",
+      "imports": [
+        "@solana/web3.js",
+        "./is-invalid-account-index",
+        "./instruction-public-key"
+      ]
+    },
+    {
+      "name": "pda",
+      "file": "pda.ts",
+      "imports": [
+        "@solana/web3.js"
+      ]
+    },
+    {
+      "name": "proofInputBytes",
+      "file": "proof-input-bytes.ts",
+      "imports": [
+        "./bytes"
+      ]
+    },
+    {
+      "name": "publicKeyText",
+      "file": "public-key-text.ts",
+      "imports": [
+        "@solana/web3.js"
+      ]
+    },
+    {
+      "name": "receiptContextCommitment",
+      "file": "receipt-context-commitment.ts",
+      "imports": [
+        "../../work-contract",
+        "../../work-contract"
+      ]
+    },
+    {
+      "name": "receiptPublicKey",
+      "file": "receipt-public-key.ts",
+      "imports": [
+        "@solana/web3.js"
+      ]
+    },
+    {
+      "name": "reconcileExpiredCrankerConfirmation",
+      "file": "reconcile-expired-cranker-confirmation.ts",
+      "imports": [
+        "./dependencies",
+        "./reconcile-receipt"
+      ]
+    },
+    {
+      "name": "reconcileReceipt",
+      "file": "reconcile-receipt.ts",
+      "imports": [
+        "./dependencies",
+        "../../work-contract",
+        "./assert-eligible",
+        "./rpc",
+        "./pda",
+        "./assert-settlement-receipt",
+        "./record-receipt-reconciliation",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "reconcileSettlementReceipt",
+      "file": "reconcile-settlement-receipt.ts",
+      "imports": [
+        "./dependencies",
+        "./reconcile-receipt"
+      ]
+    },
+    {
+      "name": "recordReceiptReconciliation",
+      "file": "record-receipt-reconciliation.ts",
+      "imports": [
+        "../../storage/ports",
+        "./dependencies",
+        "../../work-contract",
+        "../../work-contract",
+        "./assert-eligible",
+        "./receipt-context-commitment"
+      ]
+    },
+    {
+      "name": "rpc",
+      "file": "rpc.ts",
+      "imports": [
+        "./dependencies"
+      ]
+    }
+  ]
+}

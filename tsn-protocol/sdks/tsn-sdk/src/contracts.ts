@@ -1,6 +1,37 @@
 import { sha256 } from "@noble/hashes/sha2";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils";
 import { assertFundingNoteV1, type FundingNoteV1 } from "./gpru/funding-note.js";
+import { PublicKey } from "@solana/web3.js";
+
+/** Issuance context supplied by the client; routing metadata, not an issuer attestation. */
+export type SenderFundingBlockhashContext = {
+  blockhash: string;
+  lastValidBlockHeight: number;
+  contextSlot: number;
+};
+
+export function assertSenderFundingBlockhashContext(value: unknown): SenderFundingBlockhashContext {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("TCAP_FUNDING_BLOCKHASH_CONTEXT_INVALID");
+  }
+  const context = value as Record<string, unknown>;
+  const keys = Object.keys(context);
+  if (keys.length !== 3 || keys.some(key => !["blockhash", "lastValidBlockHeight", "contextSlot"].includes(key))
+      || typeof context.blockhash !== "string" || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(context.blockhash)
+      || !Number.isSafeInteger(context.lastValidBlockHeight) || (context.lastValidBlockHeight as number) <= 0
+      || !Number.isSafeInteger(context.contextSlot) || (context.contextSlot as number) < 0) {
+    throw new Error("TCAP_FUNDING_BLOCKHASH_CONTEXT_INVALID");
+  }
+  try {
+    const hash = new PublicKey(context.blockhash);
+    if (hash.toBase58() !== context.blockhash || !hash.toBytes().some(byte => byte !== 0)) throw new Error();
+  } catch { throw new Error("TCAP_FUNDING_BLOCKHASH_CONTEXT_INVALID"); }
+  return {
+    blockhash: context.blockhash,
+    lastValidBlockHeight: context.lastValidBlockHeight as number,
+    contextSlot: context.contextSlot as number,
+  };
+}
 
 export type TsnIntentStatus = "pending" | "onchain" | "executed" | "settled" | "expired" | "failed" | "canceled" | "reverted";
 export type TsnUiStage = "intent_pending" | "funded" | "lease_claimed" | "cranker_paid" | "epoch_settled" | "reverted";
@@ -36,7 +67,6 @@ export type CreateIntentRequest = {
   senderAuthorizationIssuedAt?: string | null;
   senderAuthorizationExpiresAt?: string | null;
   senderFeeAmount?: number | null;
-  senderSignedFundingTransaction: string;
   senderFundingMode: "tcap_funded_note_v1";
   fundingNote: FundingNoteV1;
   recipientAmount?: number;
@@ -57,6 +87,9 @@ export type TsnMempoolIntent = CreateIntentRequest & {
   settlementReason?: string | null;
   postedAt: string;
   updatedAt: string;
+  /** Present only after the existing authorization work receives wallet funding approval. */
+  senderSignedFundingTransaction?: string;
+  senderFundingBlockhashContext?: SenderFundingBlockhashContext;
 };
 
 export type PublicTsnMempoolIntent = Pick<
@@ -131,7 +164,6 @@ export function buildCreateIntentRequest(params: {
   senderAuthorizationIssuedAt?: string | null;
   senderAuthorizationExpiresAt?: string | null;
   senderFeeAmount?: number | null;
-  senderSignedFundingTransaction: string;
   senderFundingMode: "tcap_funded_note_v1";
   fundingNote: FundingNoteV1;
   recipientAmount?: number;
@@ -142,6 +174,9 @@ export function buildCreateIntentRequest(params: {
   source?: string;
 }): CreateIntentRequest {
   if (params.senderFundingMode !== "tcap_funded_note_v1") throw new Error("TCAP_FUNDED_NOTE_V1_REQUIRED");
+  if ("senderSignedFundingTransaction" in params || "senderFundingDepositTxB64" in params || "senderFundingBlockhashContext" in params) {
+    throw new Error("TSN_INITIAL_INTENT_REQUIRES_MESSAGE_AUTHORIZATION_ONLY");
+  }
   return {
     paymentId: params.paymentId,
     intentSeedHash: sha256Hex(params.paymentId),
@@ -156,7 +191,6 @@ export function buildCreateIntentRequest(params: {
     senderAuthorizationIssuedAt: params.senderAuthorizationIssuedAt,
     senderAuthorizationExpiresAt: params.senderAuthorizationExpiresAt,
     senderFeeAmount: params.senderFeeAmount,
-    senderSignedFundingTransaction: params.senderSignedFundingTransaction,
     senderFundingMode: params.senderFundingMode,
     fundingNote: assertFundingNoteV1(params.fundingNote),
     recipientAmount: params.recipientAmount,

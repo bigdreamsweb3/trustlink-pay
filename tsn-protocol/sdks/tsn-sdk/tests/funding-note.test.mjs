@@ -9,6 +9,7 @@ import { buildTcapGpruWalletDepositTransaction, buildTsnRegisterTcapCreditAuthor
 import { parsePaymentIntentMessage, parseCrossChainPaymentIntentMessage } from "../dist/canonical-message.js";
 
 const h = value => BigInt(value).toString(16).padStart(64, "0");
+const blockhashContext = { blockhash: new PublicKey(new Uint8Array(32).fill(9)).toBase58(), lastValidBlockHeight: 200, contextSlot: 100 };
 const note = { version: 1, secret: h(1), blinding: h(2), commitment: deriveFundingNoteCommitmentV1(h(1), h(2)) };
 
 test("funding note, leaf and nullifier match the shared Poseidon vectors and bind actual token/amount", () => {
@@ -71,8 +72,11 @@ test("canonical sender approval and restricted ingress bind the same note and re
   const fields = { paymentId: "payment", recipientHash: "ab".repeat(32), recipientTin: "1234567890", tokenMintAddress: "mint", tokenDecimals: 6,
     senderWallet: "wallet", senderAuthorizationMessage: authorization.message, senderAuthorizationSignature: "signature",
     senderAuthorizationNonce: authorization.nonce, senderAuthorizationIssuedAt: authorization.issuedAt, senderAuthorizationExpiresAt: authorization.expiresAt,
-    senderSignedFundingTransaction: "signed-wire", senderFundingMode: "tcap_funded_note_v1", fundingNote: note, amount: "1" };
-  assert.deepEqual(buildPaymentAuthorizationIntentRequest(fields).fundingNote, note);
+    senderFundingMode: "tcap_funded_note_v1", fundingNote: note, amount: "1" };
+  const initial = buildPaymentAuthorizationIntentRequest(fields);
+  assert.deepEqual(initial.fundingNote, note);
+  assert.equal("senderFundingBlockhashContext" in initial || "senderSignedFundingTransaction" in initial, false);
+  assert.throws(() => buildPaymentAuthorizationIntentRequest({ ...fields, senderSignedFundingTransaction: "signed-wire" }), /MESSAGE_AUTHORIZATION_ONLY/);
   const other = { version: 1, secret: h(3), blinding: h(2), commitment: deriveFundingNoteCommitmentV1(h(3), h(2)) };
   assert.throws(() => buildPaymentAuthorizationIntentRequest({ ...fields, fundingNote: other }), /differs from the sender-signed/);
   assert.throws(() => buildPaymentAuthorizationIntentRequest({ ...fields, senderFundingMode: "tcap_deposit_v2" }), /FUNDED_NOTE_V1_REQUIRED/);
@@ -111,7 +115,7 @@ test("specialized cross-chain intent retains signed destination fields and binds
   const request = buildPaymentAuthorizationIntentRequest({ paymentId: "payment", recipientHash: "ab".repeat(32), recipientTin: "1234567890",
     tokenMintAddress: "mint", tokenDecimals: 6, senderWallet: "wallet", senderAuthorizationMessage: authorization.message,
     senderAuthorizationSignature: "signature", senderAuthorizationNonce: authorization.nonce, senderAuthorizationIssuedAt: authorization.issuedAt,
-    senderAuthorizationExpiresAt: authorization.expiresAt, senderSignedFundingTransaction: "signed-wire", senderFundingMode: "tcap_funded_note_v1",
+    senderAuthorizationExpiresAt: authorization.expiresAt, senderFundingMode: "tcap_funded_note_v1",
     fundingNote: note, amount: "1", destinationNetwork: signed.destinationNetwork, destinationExecutor: signed.destinationExecutor,
     destinationToken: signed.destinationToken, settlementRouteId: signed.settlementRouteId });
   assert.equal(request.destinationExecutor, signed.destinationExecutor); assert.equal(request.fundingNote.commitment, note.commitment);

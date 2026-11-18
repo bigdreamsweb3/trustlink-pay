@@ -1,0 +1,10 @@
+import { sign } from "node:crypto";
+import { b58 } from "./b58.mjs";
+import { uint } from "./uint.mjs";
+import { publicKeyBytes } from "./public-key-bytes.mjs";
+
+export function makeReceiptComponent(captures, readonly = captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.keys2.length - 2 - captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.writable.length) {
+    const msg = Buffer.concat([Buffer.from([0x81, 2, 0, readonly]), uint(12, 4), Buffer.alloc(32), Buffer.from([1, captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.keys2.length]), ...captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.keys2.map(publicKeyBytes), uint(1400000, 4), uint(64 * 1024 * 1024, 4), Buffer.from([captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.index(captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.TCAP), captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.accounts.length]), uint(captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.payload.length, 2), Buffer.from(captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.accounts.map(captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.index)), captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.payload]);
+    const sig = sign(null, msg, captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.operatorKey.privateKey);
+    return { signature: b58(sig), receipt: { version: 1, slot: 100, meta: { err: null }, transaction: [Buffer.concat([msg, sig, sign(null, msg, captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.motherKey.privateKey)]).toString("base64"), "base64"] } };
+}

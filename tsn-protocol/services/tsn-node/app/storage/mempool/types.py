@@ -1,4 +1,5 @@
 from __future__ import annotations
+from storage.common.claim_once import claim_once
 
 from .firebase_store_init import __init__ as _FirebaseStore_init
 from .firebase_store_doc import _doc as _FirebaseStore_doc
@@ -54,6 +55,7 @@ class FirebaseStore:
     _consume_transaction = _FirebaseStore_consume_transaction
     _consume = _FirebaseStore_consume
     consume_once = _FirebaseStore_consume_once
+    claim_once = claim_once
     _delete_keys = _FirebaseStore_delete_keys
     delete = _FirebaseStore_delete
     aclose = _FirebaseStore_aclose
@@ -70,5 +72,6 @@ class FileStore:
     hlen = _FileStore_hlen
     hset = _FileStore_hset
     consume_once = _FileStore_consume_once
+    claim_once = claim_once
     delete = _FileStore_delete
     aclose = _FileStore_aclose

@@ -16,15 +16,21 @@ Cranker settlement](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/doc
 
 State flow:
 
-`RECEIVED -> NODE_VERIFYING -> VERIFIED -> CRANKER_LEASED -> SUBMITTED -> CONFIRMED`
+`RECEIVED (AUTHORIZATION) -> NODE_VERIFYING -> FUNDING_READY -> RECEIVED (SIGNED_DEPOSIT) -> NODE_VERIFYING -> VERIFIED -> CRANKER_LEASED -> SUBMITTED -> CONFIRMED`
 
 The TSN Node is the only service allowed to move work from `RECEIVED` to `VERIFIED`. Crankers can lease only `VERIFIED` work. All leases and transitions use Firestore transactions and monotonic state versions.
 
 ## Funded-note ingress and settlement projection
 
-Native funding requires `senderFundingMode: "tcap_funded_note_v1"`, an exact owner-signed `deposit_private_funding_v1` transaction, and restricted `fundingNote: {version: 1, secret, blinding, commitment}` material. The three note values use canonical 32-byte BN254 scalar hex; secret and commitment must be nonzero. Receiver verifies the sender approval signature and field shape. Node independently checks the signed intent, note opening, asset/amount and exact deposit transaction before funding becomes executable.
+Native funding begins with `senderFundingMode: "tcap_funded_note_v1"`, the wallet-signed payment authorization and restricted `fundingNote: {version: 1, secret, blinding, commitment}` material. Initial `/intents` ingress forbids `senderSignedFundingTransaction` and `senderFundingBlockhashContext`. The three note values use canonical 32-byte BN254 scalar hex; secret and commitment must be nonzero. Receiver verifies the sender signature and shape, encrypts the original intent, and preserves its immutable `authorizationPayloadCommitment`. Node performs authorization, recipient, asset and source-balance checks before returning a signed `FUNDING_READY` decision; a balance observation reserves no funds.
 
-Receiver stores the note only inside its existing authenticated encrypted Node envelope. Funding verification compaction, public status views and Cranker execution projections omit the note opening and recipient TIN. The operator still receives the original ingress body; encrypted storage does not establish operator blindness. A linked settlement reference is created at ingress, while confirmed funding gates its independent Node verification.
+The owner-authenticated Node readiness API prepares funding from the saved checks. The wallet obtains a fresh blockhash and signs the exact `deposit_private_funding_v1` transaction. Node forwards completion to `POST /api/internal/node/work/funding` using `{id, expectedVersion, authorizationPayloadCommitment, senderSignedFundingTransaction, senderFundingBlockhashContext}`. This Receiver route requires Node service credentials, current unexpired readiness and the original approval commitment. It merges only the signed wire and exact tuple into the encrypted intent, changes `fundingPhase` to `SIGNED_DEPOSIT`, and atomically creates settlement using the completed funding payload commitment. An exact attachment retry succeeds after later transitions; a changed wire or tuple fails. The public `/network/funding/readiness` and `/network/funding/complete` routes proxy owner requests to Node without browser service credentials.
+
+Attached funding requires `senderFundingBlockhashContext: {blockhash, lastValidBlockHeight, contextSlot}` for that signed transaction. The hash must be a canonical nonzero 32-byte Base58 value; the height must be a positive safe JavaScript integer number, and the slot a nonnegative safe integer number. Strings, incomplete tuples and extra nested keys fail validation. Receiver encrypts the attached tuple, retains its Node-verified execution evidence, and includes it in the attested Cranker projection. It provides RPC bank/lifetime context; it is not an issuer signature or proof of transaction acceptance.
+
+Public status projections omit this context. Confirmed receipt compaction removes it from execution evidence with the signed funding wire while retaining existing receipt and settlement lineage; the encrypted original ingress remains separate. Older unconfirmed funding without the required tuple fails closed; this repair neither rewrites those records nor refreshes signed bytes. A prior attempt still requires checking its receipt before preparing and signing replacement funding.
+
+Receiver stores the note and private readiness preflight inside authenticated encrypted Node envelopes. Public staged status exposes phase, version, readiness boolean/expiry and the initial commitment, while omitting the note, sender message/signature, resolved accounts and amount. The accepted readiness attestation and its Receiver lease context remain stable across attachment so Node can validate the saved private preflight before final wire checks. `FUNDING_READY` never permits a Cranker lease or wake. The operator still receives the original ingress body; encrypted storage does not establish operator blindness. Confirmed funding gates independent verification of the settlement created at attachment.
 
 Settlement exposes `fundingRootAccount`, the canonical global `tcap:funding-root:v1` PDA, and thirteen proof public inputs; the funding root value is input index 12. The projection excludes note commitment, secret, blinding and funding membership paths. Before storing a native authorization, Receiver filters its transition and nested proof fields and requires the public transition commitment to match the Node-verified work. New funding requires the funded tree and matching thirteen-input verifier/proving artifacts; source checks do not establish deployment or payment completion.
 
@@ -130,13 +136,19 @@ TSN Node and TSN Cranker. Internal API keys are for server-to-server calls
 only; they must not be placed in browser-visible Vercel variables.
 
 `TSN_NODE_VERIFICATION_PUBLIC_KEY` pins the Node's Ed25519 verification signer.
-The Receiver rejects Node `VERIFIED` or `REJECTED` transitions unless the
+The Receiver rejects Node `FUNDING_READY`, `VERIFIED` or `REJECTED` transitions unless the
 signature matches the current work, payload commitment, decision, and active
 Node lease. Configure the same public key in the Cranker so it can independently
 verify the receipt and the exact execution payload before submitting a
 transaction.
 
 ## Local verification
+
+Receiver follows the [MCES architecture](docs/architecture.md), with [component guidance](docs/engineering.md), a [source inventory](core/component_inventory.json) and [bounded verification](docs/verification.md). Runtime functions, methods and callbacks are isolated by responsibility with explicit dependency ports. The earlier canonical-storage checkpoint passed 72 isolated tests; the November 18 staged-funding checkpoint records its added tests, typecheck/audit and broader regression limits separately. Hosted Firestore parity, final-source live latency and payment execution remain unverified.
+
+In explicitly gated local mode, `TSN_RECEIVER_LOCAL_FILE` is a canonical ordered manifest backed by `<file>.d/epochs/<accounting-epoch>/<work-kind>/<id-sha256>.json`. Each work retains its full existing JSON row. Funding and TIN use `unassigned`; settlement remains unassigned until its stored verified transition supplies an accounting epoch. Metadata uses separate collection paths.
+
+A missing anchor represents a fresh empty store; an existing monolithic anchor fails closed without conversion or backup creation. After initialization and pending-journal recovery, ordinary reads validate the complete manifest index and load only the requested row or collection. Mutations, initialization compaction and journal preflight retain full record validation. Protect the manifest, complete companion directory and lock together, including pending `transaction.json` recovery; see [local storage contracts](lib/storage/local/README.md) for validation and the commit boundary.
 
 ```bash
 npm ci

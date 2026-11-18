@@ -80,11 +80,11 @@ const signature = await wallet.signMessage(
 );
 ```
 
-Native credit also requires a wallet-signed funded-note deposit. Resolve its accounts with `resolveTcapGpruDepositAccounts` and build it with `buildTcapGpruWalletDepositTransaction`, passing `fundingNoteCommitment: fundingNote.commitment`. Show that exact transaction in the wallet for approval. The selected TCAP program must have its canonical global funding root initialized and the updated thirteen-input verifier activated; responding services alone do not establish those prerequisites. See the complete [payment guide](/sdk/payment-guide).
+The selected TCAP program must have its canonical global funding root initialized and the updated thirteen-input verifier activated. Responding services alone do not establish those prerequisites; the [payment guide](/sdk/payment-guide) describes the staged application flow.
 
-## Submit and follow status
+## Submit the signed intent
 
-Submit the SDK-built intent with the sender's message signature, exact signed funding transaction and matching private note through the configured protected ingress route. The response identifies accepted work; it does not mean the Node has verified it or that funds have settled. Follow the [payment lifecycle](/developers/payment-intent-lifecycle) and verify funding and settlement signatures separately on the selected Solana cluster.
+Submit the SDK-built request with the sender's message signature and matching private note through the configured protected ingress route. Initial requests reject signed funding bytes and blockhash context. The response identifies accepted work; it does not mean Node verification has completed or that funds have settled.
 
 ```ts
 import {
@@ -107,7 +107,6 @@ const request = buildPaymentAuthorizationIntentRequest({
   senderAuthorizationIssuedAt: authorization.issuedAt,
   senderAuthorizationExpiresAt: authorization.expiresAt,
   senderFeeAmount,
-  senderSignedFundingTransaction,
   senderFundingMode: "tcap_funded_note_v1",
   fundingNote,
   amount,
@@ -119,4 +118,12 @@ const intent = await client.postIntent<CreateIntentRequest, PublicTsnMempoolInte
 console.log(intent.id, intent.status);
 ```
 
-For Node, Receiver, Cranker, program-build, and deployment procedures, use the repository's [root documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs). This site stays focused on protocol concepts and application SDK use.
+## Wait for readiness and approve funding
+
+Retain the same payment ID, message, signature, nonce, amount and private note while Node checks the authorization. Use `waitForTsnFundingReadiness` to observe Receiver's `FUNDING_READY` status, then obtain owner-authenticated preparation from Node's `POST /network/funding/readiness`. `assertTsnFundingReadiness` validates that preparation against the original request before the application enables an explicit funding approval action.
+
+When the sender chooses to approve funding, obtain a fresh blockhash tuple and build `buildTcapGpruWalletDepositTransaction` from the verified deposit accounts, amount and original note commitment. Ask the wallet to sign that exact deposit, then use `buildCompleteTsnFundingRequest` to attach its unchanged bytes and tuple to the same work through `POST /network/funding/complete`. The complete [wallet-credit example](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/tsn-docs/sdk/examples/credit-deposit.ts) implements these separate approval steps; all staged helpers are exported from `@trustlink/tsn-sdk`.
+
+Retain the exact signed completion for an uncertain response and retry it without another wallet approval. Follow the [payment lifecycle](/developers/payment-intent-lifecycle) and verify funding and settlement signatures separately on the selected Solana cluster.
+
+For Node, Receiver, Cranker, program-build, and deployment procedures, use the repository's [root documentation](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/README.md). This site stays focused on protocol concepts and application SDK use.

@@ -1,16 +1,8 @@
-import { timingSafeEqual } from "node:crypto";
-import type { NextRequest } from "next/server";
+/** Stable auth facade and production composition; implementations live in authentication/service. */
+import { requireService as requireServiceComponent } from "./authentication/service/require-service";
 
-function equal(left: string, right: string) {
-  const a = Buffer.from(left);
-  const b = Buffer.from(right);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
+const dependencies = {
+  environment: process.env,
+};
 
-export function requireService(request: NextRequest, service: "node") {
-  const expected = service === "node" ? process.env.TSN_RECEIVER_NODE_API_KEY : undefined;
-  const actual = request.headers.get("x-api-key") ?? "";
-  if (!expected || !actual || !equal(actual, expected)) {
-    throw new Error("UNAUTHORIZED_SERVICE");
-  }
-}
+export const requireService = requireServiceComponent.bind(null, dependencies);

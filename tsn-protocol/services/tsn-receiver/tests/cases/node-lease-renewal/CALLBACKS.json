@@ -1,0 +1,66 @@
+{
+  "status": "CURRENT named test/fixture ownership; assertions and boxed mutable capture behavior preserved",
+  "family": "node-lease-renewal",
+  "mappings": [
+    {
+      "original": "cases/node-lease-renewal/callback-3.mjs",
+      "component": "cases/shared/read-boxed-clock.mjs",
+      "name": "readBoxedClock"
+    },
+    {
+      "original": "cases/node-lease-renewal/callback-5.mjs",
+      "component": "cases/shared/request-fixture-body.mjs",
+      "name": "requestFixtureBody"
+    },
+    {
+      "original": "cases/node-lease-renewal/callback-6.mjs",
+      "component": "cases/node-lease-renewal/attestation-field-text.mjs",
+      "name": "attestationFieldText"
+    },
+    {
+      "original": "cases/node-lease-renewal/callback-7.mjs",
+      "component": "cases/node-lease-renewal/reassign-node-lease-transaction.mjs",
+      "name": "reassignNodeLeaseTransaction"
+    },
+    {
+      "original": "cases/node-lease-renewal/callback.mjs",
+      "component": "cases/shared/capture-environment-entry.mjs",
+      "name": "captureEnvironmentEntry"
+    },
+    {
+      "original": "cases/node-lease-renewal/load.mjs",
+      "component": "cases/shared/load-receiver-fixture-module.mjs",
+      "name": "loadReceiverFixtureModule"
+    }
+  ],
+  "sharedComponents": [
+    "authenticatedRequestFixture",
+    "captureEnvironmentEntry",
+    "loadReceiverFixtureModule",
+    "readBoxedClock"
+  ],
+  "sharedOperations": [
+    {
+      "name": "captureEnvironmentEntry",
+      "component": "cases/shared/capture-environment-entry.mjs"
+    },
+    {
+      "name": "loadReceiverFixtureModule",
+      "component": "cases/shared/load-receiver-fixture-module.mjs"
+    },
+    {
+      "name": "readBoxedClock",
+      "component": "cases/shared/read-boxed-clock.mjs"
+    },
+    {
+      "name": "authenticatedRequestFixture",
+      "component": "cases/shared/authenticated-request-fixture.mjs"
+    }
+  ],
+  "requestAdapter": {
+    "component": "cases/node-lease-renewal/request.mjs",
+    "sharedConstruction": "cases/shared/authenticated-request-fixture.mjs",
+    "signature": "params, key = synthetic-node-credential, body = params",
+    "purpose": "Preserve original Node fixture argument order and credential/body defaults."
+  }
+}

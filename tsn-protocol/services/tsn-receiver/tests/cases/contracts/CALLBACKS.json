@@ -1,0 +1,22 @@
+{
+  "status": "CURRENT named test/fixture ownership; assertions and boxed mutable capture behavior preserved",
+  "family": "contracts",
+  "mappings": [
+    {
+      "original": "cases/contracts/reject-malformed-funded-note.mjs",
+      "component": "cases/contracts/validate-funding-note-fixture.mjs",
+      "name": "validateFundingNoteFixture"
+    },
+    {
+      "original": "cases/contracts/reject-missing-funded-note.mjs",
+      "component": "cases/contracts/validate-funding-note-fixture.mjs",
+      "name": "validateFundingNoteFixture"
+    }
+  ],
+  "sharedComponents": [
+    "readBoxedClock",
+    "captureEnvironmentEntry",
+    "requestFixtureBody",
+    "loadReceiverFixtureModule"
+  ]
+}

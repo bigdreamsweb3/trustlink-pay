@@ -1,0 +1,11 @@
+# Receiver HTTP components
+
+The original twenty Next route modules retain exports, method aliases and runtime declarations. A subsequent staged-funding change adds Node-authenticated `POST /api/internal/node/work/funding` and makes initial `/intents` message-only. Each method binds one implementation here, using its route's `dependencies.ts` and `runtime.ts`; projection/error helpers also have individual files.
+
+Public ingress and monitoring preserve bounded coordination/status fields. TIN list access remains unauthorized; TIN submission and network/TIN forwarding retain current methods, paths and body handling. Node routes preserve authenticated ingress, work, state, coordination and guarded recovery. Cranker routes retain challenge/session admission, wake-token access, leasing/reporting, signed checkpoints and unsigned retry.
+
+The funding attachment body has exactly `id`, `expectedVersion`, `authorizationPayloadCommitment`, `senderSignedFundingTransaction` and `senderFundingBlockhashContext`. Success returns `{work}` on the internal authenticated route; status/conflict/expiry checks never replace a prior signed attachment. Public staged status adds phase/version, readiness boolean/expiry and initial commitment without private preflight. The existing network catchall forwards owner-authenticated Node readiness/completion POSTs; no browser receives the Receiver service key.
+
+Work leasing retains the Node-authorization availability/reverification branch and the separate expired-confirmation reconciliation branch. Each route preserves auth order and its distinct error mapping. Inputs remain `NextRequest` and dynamic context; outputs retain status, JSON/raw body, cache/content-type headers and existing caught/uncaught behavior. Dependencies appear in implementation `Pick` annotations and [the inventory](../../core/component_inventory.json).
+
+[Contract components](../contracts/README.md) own the public/private/Cranker field boundaries. [HTTP test fixtures](../../tests/cases/http/README.md) compare retained baseline projections, calls, errors, exports, arities and aliases without importing real runtime composition. Existing lease/retry/recovery tests invoke facades with isolated storage. [Verification](../../docs/verification.md) separates those results from build, hosting and chain evidence.

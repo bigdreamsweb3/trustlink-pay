@@ -1,0 +1,94 @@
+{
+  "status": "CURRENT named work callback ownership",
+  "mappings": [
+    {
+      "original": "receive_callback_2",
+      "name": "persistReceivedWork",
+      "file": "persist-received-work.ts"
+    },
+    {
+      "original": "retrySettlementSnapshot_callback_2",
+      "name": "retrySettlementSnapshotTransaction",
+      "file": "retry-settlement-snapshot-transaction.ts"
+    },
+    {
+      "original": "retryLeasedSettlementFundingRoot_callback_2",
+      "name": "retryLeasedFundingRootTransaction",
+      "file": "retry-leased-funding-root-transaction.ts"
+    },
+    {
+      "original": "attachCrankerAuthorization_callback_2",
+      "name": "attachCrankerAuthorizationTransaction",
+      "file": "attach-cranker-authorization-transaction.ts"
+    },
+    {
+      "original": "lease_callback_2",
+      "name": "reclaimExpiredWorkLease",
+      "file": "reclaim-expired-work-lease.ts"
+    },
+    {
+      "original": "lease_callback_3",
+      "name": "compareAccountingPriority",
+      "file": "compare-accounting-priority.ts"
+    },
+    {
+      "original": "lease_callback_4",
+      "name": "claimWorkTransaction",
+      "file": "claim-work-transaction.ts"
+    },
+    {
+      "original": "list_callback_2",
+      "name": "snapshotWorkData",
+      "file": "snapshot-work-data.ts"
+    },
+    {
+      "original": "listKind_callback_2",
+      "name": "snapshotWorkData",
+      "file": "snapshot-work-data.ts"
+    },
+    {
+      "original": "listRecent_callback_2",
+      "name": "snapshotWorkData",
+      "file": "snapshot-work-data.ts"
+    },
+    {
+      "original": "listKind_callback_3",
+      "name": "compareWorkReceivedAt",
+      "file": "compare-work-received-at.ts"
+    },
+    {
+      "original": "paymentReceiptVerification_callback_2",
+      "name": "hasDefinedVerifiedField",
+      "file": "../contracts/verification/has-defined-verified-field.ts"
+    },
+    {
+      "original": "paymentReceiptVerification_callback_3",
+      "name": "verifiedFieldEntry",
+      "file": "../contracts/verification/verified-field-entry.ts"
+    },
+    {
+      "original": "recordSettlementSubmission_callback_3",
+      "name": "verifiedFieldEntry",
+      "file": "../contracts/verification/verified-field-entry.ts"
+    },
+    {
+      "original": "recordSettlementSubmission_callback_2",
+      "name": "recordSubmissionTransaction",
+      "file": "record-submission-transaction.ts"
+    },
+    {
+      "original": "renewNodeLease_callback_2",
+      "name": "renewNodeLeaseTransaction",
+      "file": "renew-node-lease-transaction.ts"
+    },
+    {
+      "original": "transition_callback_2",
+      "name": "transitionWorkTransaction",
+      "file": "transition-work-transaction.ts"
+    }
+  ],
+  "reuse": [
+    "Three snapshot-to-work callbacks use snapshotWorkData.",
+    "Funding verification and submission-entry callbacks reuse existing contract field components."
+  ]
+}

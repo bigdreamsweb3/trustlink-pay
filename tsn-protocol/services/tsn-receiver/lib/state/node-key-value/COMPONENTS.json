@@ -1,0 +1,61 @@
+{
+  "facade": "../../node-state-store.ts",
+  "responsibility": "Node durable key/value and hash fields",
+  "components": [
+    {
+      "name": "bucket",
+      "file": "bucket.ts",
+      "imports": [
+        "./dependencies",
+        "./id"
+      ]
+    },
+    {
+      "name": "consumeStateField",
+      "file": "consume-state-field.ts",
+      "imports": [
+        "../../storage/ports"
+      ]
+    },
+    {
+      "name": "deleteStateChild",
+      "file": "delete-state-child.ts",
+      "imports": [
+        "../../storage/ports"
+      ]
+    },
+    {
+      "name": "executeStateOperation",
+      "file": "execute-state-operation.ts",
+      "imports": [
+        "./dependencies",
+        "./bucket",
+        "./item",
+        "./state-field-entry",
+        "./consume-state-field",
+        "./delete-state-child"
+      ]
+    },
+    {
+      "name": "id",
+      "file": "id.ts",
+      "imports": [
+        "node:crypto"
+      ]
+    },
+    {
+      "name": "item",
+      "file": "item.ts",
+      "imports": [
+        "./dependencies",
+        "./bucket",
+        "./id"
+      ]
+    },
+    {
+      "name": "stateFieldEntry",
+      "file": "state-field-entry.ts",
+      "imports": []
+    }
+  ]
+}

@@ -7,6 +7,7 @@ import { createFundingNoteV1 } from "../dist/gpru/funding-note.js";
 
 const wallet = Keypair.fromSeed(new Uint8Array(32).fill(1));
 const key = n => new PublicKey(new Uint8Array(32).fill(n));
+const context = { blockhash: key(9).toBase58(), lastValidBlockHeight: 210, contextSlot: 100 };
 const fields = {
   accounts: { depositor: wallet.publicKey, config: key(2), assetEntry: key(3), reserveState: key(4), source: key(5),
     vault: key(6), mint: key(7), tokenProgram: key(8), tcapProgramId: GPRU_TCAP_PROGRAM_ID,
@@ -27,7 +28,7 @@ test("signed funding accepts the exact deposit and wallet compute-budget setting
     new TransactionInstruction({ programId: ComputeBudgetProgram.programId, keys: [], data: Buffer.from([4, 0, 0, 0, 4]) })]]) {
     const wire = signedWire(transaction => transaction.instructions.unshift(...budget));
     const original = Buffer.from(wire);
-    assertSignedTcapGpruWalletDepositTransaction(wire, fields);
+    assertSignedTcapGpruWalletDepositTransaction(wire, fields, context);
     assert.deepEqual(wire, original);
   }
 });
@@ -41,21 +42,28 @@ test("signed funding rejects old deposits, substituted approval fields and extra
     transaction => transaction.add(transaction.instructions[0]),
     transaction => transaction.add(SystemProgram.transfer({ fromPubkey: wallet.publicKey, toPubkey: key(10), lamports: 1 })),
   ];
-  for (const change of changes) assert.throws(() => assertSignedTcapGpruWalletDepositTransaction(signedWire(change), fields), /TCAP_SIGNED_DEPOSIT_/);
+  for (const change of changes) assert.throws(() => assertSignedTcapGpruWalletDepositTransaction(signedWire(change), fields, context), /TCAP_SIGNED_DEPOSIT_/);
 });
 
 test("signed funding rejects unsigned/tampered wires and malformed or duplicate compute settings", () => {
   const tampered = signedWire(); tampered[1] ^= 1;
-  assert.throws(() => assertSignedTcapGpruWalletDepositTransaction(tampered, fields), /OWNER_SIGNATURE_INVALID/);
-  assert.throws(() => assertSignedTcapGpruWalletDepositTransaction(new Uint8Array(), fields), /WIRE_INVALID/);
-  assert.throws(() => assertSignedTcapGpruWalletDepositTransaction(Buffer.concat([signedWire(), Buffer.from([0])]), fields), /WIRE_INVALID/);
+  assert.throws(() => assertSignedTcapGpruWalletDepositTransaction(tampered, fields, context), /OWNER_SIGNATURE_INVALID/);
+  assert.throws(() => assertSignedTcapGpruWalletDepositTransaction(new Uint8Array(), fields, context), /WIRE_INVALID/);
+  assert.throws(() => assertSignedTcapGpruWalletDepositTransaction(Buffer.concat([signedWire(), Buffer.from([0])]), fields, context), /WIRE_INVALID/);
   for (const budget of [
     [ComputeBudgetProgram.setComputeUnitLimit({ units: 0 })],
     [ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }), ComputeBudgetProgram.setComputeUnitLimit({ units: 500_000 })],
     [new TransactionInstruction({ programId: ComputeBudgetProgram.programId, keys: [], data: Buffer.from([2]) })],
     [new TransactionInstruction({ programId: ComputeBudgetProgram.programId, keys: [], data: Buffer.from([0, 0, 0, 0, 0]) })],
     [new TransactionInstruction({ programId: ComputeBudgetProgram.programId, keys: [{ pubkey: key(10), isSigner: false, isWritable: true }], data: Buffer.from([2, 1, 0, 0, 0]) })],
-  ]) assert.throws(() => assertSignedTcapGpruWalletDepositTransaction(signedWire(transaction => transaction.add(...budget)), fields), /TCAP_SIGNED_DEPOSIT_/);
+  ]) assert.throws(() => assertSignedTcapGpruWalletDepositTransaction(signedWire(transaction => transaction.add(...budget)), fields, context), /TCAP_SIGNED_DEPOSIT_/);
+});
+
+test("signed funding rejects a wallet-replaced blockhash despite a valid owner signature", () => {
+  const wire = signedWire(transaction => { transaction.recentBlockhash = key(10).toBase58(); });
+  const original = Buffer.from(wire);
+  assert.throws(() => assertSignedTcapGpruWalletDepositTransaction(wire, fields, context), /BLOCKHASH_DIFFERS_FROM_ISSUANCE/);
+  assert.deepEqual(wire, original);
 });
 
 test("clean SDK builds exclude the retired generated TIN-credit adapter", () => {

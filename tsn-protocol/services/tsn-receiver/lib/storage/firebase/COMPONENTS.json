@@ -1,0 +1,20 @@
+{
+  "facade": "../../firebase.ts",
+  "responsibility": "Firebase credentials and database composition",
+  "components": [
+    {
+      "name": "credential",
+      "file": "credential.ts",
+      "imports": [
+        "./dependencies",
+        "firebase-admin/app",
+        "./normalize-private-key"
+      ]
+    },
+    {
+      "name": "normalizePrivateKey",
+      "file": "normalize-private-key.ts",
+      "imports": []
+    }
+  ]
+}

@@ -1,29 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireService } from "../../lib/auth";
-import { publicIntent } from "../../lib/public-view";
-import { listKind, receive } from "../../lib/store";
-import { assertAuthorizedFundingIngress } from "../../lib/work-contract";
+/** Stable Next route facade; implementations are bound at this request boundary. */
 export const runtime = "nodejs";
-
-export async function POST(request: NextRequest) {
-  try {
-    requireService(request, "node");
-    const payload = await request.json() as Record<string, unknown>;
-    const id = String(payload.paymentId ?? "");
-    if (!id) return NextResponse.json({ error: "paymentId is required" }, { status: 422 });
-    assertAuthorizedFundingIngress(payload);
-    return NextResponse.json(publicIntent(await receive({ id, kind: "AUTHORIZED_FUNDING", payload })), { status: 202 });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "RECEIVER_ERROR";
-    return NextResponse.json({ error: message }, { status: message === "IDEMPOTENCY_CONFLICT" ? 409 : 400 });
-  }
-}
-
-export async function GET(request: NextRequest) {
-  try {
-    requireService(request, "node");
-    return NextResponse.json((await listKind("AUTHORIZED_FUNDING")).map(publicIntent));
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-}
+import { dependencies } from "../../lib/http/intents/runtime";
+import { POST as POSTComponent } from "../../lib/http/intents/POST";
+export const POST = POSTComponent.bind(null, dependencies);
+import { GET as GETComponent } from "../../lib/http/intents/GET";
+export const GET = GETComponent.bind(null, dependencies);

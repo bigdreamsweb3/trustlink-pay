@@ -1,0 +1,18 @@
+import type { promises as nativeFs } from "node:fs";
+import type { AsyncLocalStorage } from "node:async_hooks";
+import type { Ref } from "./ref";
+import type { Snap } from "./snap";
+export type Row = Record<string, any>;
+export type Database = Record<string, Record<string, Row>>;
+export type Manifest = { format: "TSN_RECEIVER_FILE_STORE"; version: 1; collections: Record<string, Record<string, string>> };
+export type Journal = { format: "TSN_RECEIVER_FILE_TRANSACTION"; version: 1; manifest: Manifest; writes: { path: string; row: Row }[]; deletes: string[] };
+export type LoadedStore = { data: Database; manifest: Manifest; serialized: Map<string, string> };
+export type RecordLocation = { collection: string; id: string; relative: string };
+export type LoadedRecord = RecordLocation & { row: Row; serialized: string };
+export type StorageContext = { file: string; directory: string; lockFile: string; journalFile: string; workCollection: string; fs: typeof nativeFs; ready: Promise<unknown>; initialized: boolean };
+export type LockLease = { key: string; active: boolean };
+export type LockScheduler = { tails: Map<string, Promise<void>>; leases: AsyncLocalStorage<LockLease[]> };
+export type LockQueueTicket<T> = { startedAt: number; started: boolean; cancelled: boolean; timer?: ReturnType<typeof setTimeout>; resolve?: (value: T | PromiseLike<T>) => void; reject?: (error: unknown) => void };
+export type QueryState = { context: StorageContext; collectionPath: string; filters: [string,string,unknown][]; order?: [string,string]; max?: number; after?: string };
+export type BatchWrite = { operation: "set"; reference: Ref; value: Row; merge?: boolean } | { operation: "delete"; reference: Ref };
+export type QuerySnapshot = { docs: Snap[] };

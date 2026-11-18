@@ -1,0 +1,146 @@
+{
+  "status": "CURRENT named test/fixture ownership; assertions and boxed mutable capture behavior preserved",
+  "family": "settlement-retry",
+  "mappings": [
+    {
+      "original": "cases/settlement-retry/callback-10.mjs",
+      "component": "cases/settlement-retry/write-memo-rejection.mjs",
+      "name": "writeMemoRejection"
+    },
+    {
+      "original": "cases/settlement-retry/callback-11.mjs",
+      "component": "cases/settlement-retry/retry-unrecognized-funding-reason.mjs",
+      "name": "retryUnrecognizedFundingReason"
+    },
+    {
+      "original": "cases/settlement-retry/callback-12.mjs",
+      "component": "cases/settlement-retry/retry-stale-funding-lease-version.mjs",
+      "name": "retryStaleFundingLeaseVersion"
+    },
+    {
+      "original": "cases/settlement-retry/callback-13.mjs",
+      "component": "cases/settlement-retry/retry-wrong-funding-lease-owner.mjs",
+      "name": "retryWrongFundingLeaseOwner"
+    },
+    {
+      "original": "cases/settlement-retry/callback-14.mjs",
+      "component": "cases/settlement-retry/retry-changed-leased-work.mjs",
+      "name": "retryChangedLeasedWork"
+    },
+    {
+      "original": "cases/settlement-retry/callback-15.mjs",
+      "component": "cases/settlement-retry/retry-changed-funding-payload.mjs",
+      "name": "retryChangedFundingPayload"
+    },
+    {
+      "original": "cases/settlement-retry/callback-16.mjs",
+      "component": "cases/settlement-retry/retry-leased-unconfirmed-funding.mjs",
+      "name": "retryLeasedUnconfirmedFunding"
+    },
+    {
+      "original": "cases/settlement-retry/callback-17.mjs",
+      "component": "cases/settlement-retry/write-leased-settlement.mjs",
+      "name": "writeLeasedSettlement"
+    },
+    {
+      "original": "cases/settlement-retry/callback-19.mjs",
+      "component": "cases/settlement-retry/serialize-request-body.mjs",
+      "name": "serializeRequestBody"
+    },
+    {
+      "original": "cases/settlement-retry/callback-20.mjs",
+      "component": "cases/settlement-retry/write-verified-settlement.mjs",
+      "name": "writeVerifiedSettlement"
+    },
+    {
+      "original": "cases/settlement-retry/callback-21.mjs",
+      "component": "cases/settlement-retry/funding-root-conflict-response.mjs",
+      "name": "fundingRootConflictResponse"
+    },
+    {
+      "original": "cases/settlement-retry/callback-22.mjs",
+      "component": "cases/settlement-retry/unavailable-signing-response.mjs",
+      "name": "unavailableSigningResponse"
+    },
+    {
+      "original": "cases/settlement-retry/callback-23.mjs",
+      "component": "cases/settlement-retry/restore-epoch-work.mjs",
+      "name": "restoreEpochWork"
+    },
+    {
+      "original": "cases/settlement-retry/callback-24.mjs",
+      "component": "cases/settlement-retry/missing-work-response.mjs",
+      "name": "missingWorkResponse"
+    },
+    {
+      "original": "cases/settlement-retry/callback-25.mjs",
+      "component": "cases/settlement-retry/write-epoch-attempt.mjs",
+      "name": "writeEpochAttempt"
+    },
+    {
+      "original": "cases/settlement-retry/callback-26.mjs",
+      "component": "cases/settlement-retry/failed-signing-response.mjs",
+      "name": "failedSigningResponse"
+    },
+    {
+      "original": "cases/settlement-retry/callback-4.mjs",
+      "component": "cases/settlement-retry/retry-changed-funding.mjs",
+      "name": "retryChangedFunding"
+    },
+    {
+      "original": "cases/settlement-retry/callback-5.mjs",
+      "component": "cases/settlement-retry/retry-changed-snapshot.mjs",
+      "name": "retryChangedSnapshot"
+    },
+    {
+      "original": "cases/settlement-retry/callback-6.mjs",
+      "component": "cases/settlement-retry/write-asset-rejection.mjs",
+      "name": "writeAssetRejection"
+    },
+    {
+      "original": "cases/settlement-retry/callback-7.mjs",
+      "component": "cases/settlement-retry/retry-changed-snapshot.mjs",
+      "name": "retryChangedSnapshot"
+    },
+    {
+      "original": "cases/settlement-retry/callback-8.mjs",
+      "component": "cases/settlement-retry/retry-unconfirmed-funding.mjs",
+      "name": "retryUnconfirmedFunding"
+    },
+    {
+      "original": "cases/settlement-retry/callback-9.mjs",
+      "component": "cases/settlement-retry/retry-stale-snapshot-version.mjs",
+      "name": "retryStaleSnapshotVersion"
+    },
+    {
+      "original": "cases/settlement-retry/callback.mjs",
+      "component": "cases/shared/request-fixture-body.mjs",
+      "name": "requestFixtureBody"
+    },
+    {
+      "original": "cases/settlement-retry/load.mjs",
+      "component": "cases/shared/load-receiver-fixture-module.mjs",
+      "name": "loadReceiverFixtureModule"
+    }
+  ],
+  "sharedComponents": [
+    "authenticatedRequestFixture",
+    "loadReceiverFixtureModule"
+  ],
+  "sharedOperations": [
+    {
+      "name": "loadReceiverFixtureModule",
+      "component": "cases/shared/load-receiver-fixture-module.mjs"
+    },
+    {
+      "name": "authenticatedRequestFixture",
+      "component": "cases/shared/authenticated-request-fixture.mjs"
+    }
+  ],
+  "requestAdapter": {
+    "component": "cases/settlement-retry/request.mjs",
+    "sharedConstruction": "cases/shared/authenticated-request-fixture.mjs",
+    "signature": "id, key, body = { id, expectedVersion: 3 }",
+    "purpose": "Preserve original retry fixture expected-version default."
+  }
+}

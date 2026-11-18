@@ -1,0 +1,11 @@
+# Cranker admission, sessions and replay control
+
+**Status: CURRENT structural implementation; live service and chain checks remain unperformed.** Mother-DNA admission remains pinned to the verified TSNP program and configured RPC/Devnet fallback order. Challenge issuance, challenge consumption, signed session requests, token hashes, counters, idle/absolute expiry, pruning and lease-rate buckets retain their original encodings and bounds. Collections, transactions, the confirmed RPC constructor and Date constructor are explicit ports. Single-use and counter updates stay transactional; errors retain their CRANKER prefixes.
+
+The [cranker-auth facade](../../cranker-auth.ts) retains the original public import and call signatures. Pure functions import named compatible components; stateful implementations take a typed, focused dependency selection. Production composition stays in the facade, and isolated callers can provide their own ports. Dynamic database values retain their original loosely typed shape in the shared [storage port contract](../../storage/ports.ts).
+
+[prune-cranker-rate-limits.ts](prune-cranker-rate-limits.ts) selects at most one hundred rows with the existing stale `updatedAt` filter. An empty page performs no write; selected references are deleted in one atomic batch. Query and commit failures propagate. This avoids up to one hundred separate local-store transactions while preserving the selected page and subsequent cleanup opportunities. Focused tests cover the limit, fresh-row retention, empty pages and failure propagation.
+
+Each function or extracted callback has one implementation file. [COMPONENTS.json](COMPONENTS.json) lists those source interfaces and named dependencies. Shared Node URL normalization lives in networking/common; compatible Cranker reference and receipt account/proof callbacks are reused. Node decision canonicalization retains its distinct contract.
+
+Existing verification references: No dedicated baseline test exists for every branch in this package. The final Receiver verification record separates import/type checks from runtime integration.. Tests are offline fixtures; their pass counts and remaining limits belong to the service verification record.

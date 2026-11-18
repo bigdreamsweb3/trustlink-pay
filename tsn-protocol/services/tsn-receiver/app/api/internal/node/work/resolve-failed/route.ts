@@ -1,19 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireService } from "../../../../../../lib/auth";
-import { resolveFailedSettlement } from "../../../../../../lib/failed-settlement-resolution";
+/** Stable Next route facade; implementations are bound at this request boundary. */
 export const runtime = "nodejs";
-
-export async function POST(request: NextRequest) {
-  try {
-    requireService(request, "node");
-    const body = await request.json();
-    if (!body || typeof body.id !== "string" || !body.id.trim() || !Number.isSafeInteger(body.expectedVersion)
-        || body.expectedVersion < 1 || !/^[1-9A-HJ-NP-Za-km-z]{86,88}$/.test(body.signature ?? "") || typeof body.execute !== "boolean") {
-      return NextResponse.json({ error: "id, positive expectedVersion, signature and boolean execute are required" }, { status: 400 });
-    }
-    return NextResponse.json(await resolveFailedSettlement(body));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "ERROR";
-    return NextResponse.json({ error: message }, { status: message === "UNAUTHORIZED_SERVICE" ? 401 : message === "WORK_NOT_FOUND" ? 404 : 409 });
-  }
-}
+import { dependencies } from "../../../../../../lib/http/api/internal/node/work/resolve-failed/runtime";
+import { POST as POSTComponent } from "../../../../../../lib/http/api/internal/node/work/resolve-failed/POST";
+export const POST = POSTComponent.bind(null, dependencies);

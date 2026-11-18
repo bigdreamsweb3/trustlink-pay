@@ -6,6 +6,10 @@
   let ownerTinIdentity;
   let balanceInFlight;
   let balanceController;
+  let pendingTinCredit;
+  let tinCreditInFlight = false;
+  let tinCreditGeneration = 0;
+  let tinFundingReadinessTimer;
   const ownerIdentityClient = {
     post: (path, body) => api(`/api/tsn/sdk${path}`, { method: "POST", body: JSON.stringify(body) }),
   };
@@ -88,6 +92,7 @@
   function handleWalletDisconnect(wallet) {
     if (wallet !== activeWallet) return;
     activeWallet = null;
+    invalidateTinFundingApproval();
     ownerTinIdentity = null;
     balanceController?.abort();
     balanceInFlight = null;
@@ -179,6 +184,7 @@
       const publicKey = (connected.publicKey ?? wallet.publicKey)?.toBase58();
       if (!publicKey) throw new Error("Wallet did not return a Solana public key.");
       activeWallet = wallet;
+      renderTinFundingControls();
       setWalletConnectedView(true);
       if (typeof wallet.on === "function") {
         wallet.on("disconnect", () => handleWalletDisconnect(wallet));
@@ -524,108 +530,214 @@
     }
   }
 
-  async function payTin() {
-    let stage = "validating sender and recipient";
+  function clearTinFundingReadinessTimer() {
+    if (tinFundingReadinessTimer !== undefined) clearTimeout(tinFundingReadinessTimer);
+    tinFundingReadinessTimer = undefined;
+  }
+
+  function hasCurrentTinFundingReadiness(pending) {
+    if (!pending?.readiness || pending.request?.senderWallet !== pending.senderWallet
+        || activeWallet?.publicKey?.toBase58() !== pending.senderWallet
+        || Date.parse(pending.readiness.expiresAt) <= Date.now()) return false;
     try {
-      requireWallet();
-      requireNetwork();
-      const recipientTin = $("recipientTin").value.trim();
-      if (!resolvedTin || resolvedTin.tin !== recipientTin) throw new Error("Resolve the TIN and review its identity before continuing.");
-      if (!/^[a-f0-9]{64}$/i.test(resolvedTin.ownerPubkeyHash ?? "")) throw new Error("SDK did not return a valid recipient owner hash.");
-      const amount = String($("tinAmount").value ?? "").trim();
-      const mint = String($("tinMint").value ?? "").trim();
-      if (!/^\d+(?:\.\d{1,9})?$/.test(amount) || Number(amount) <= 0) throw new Error("Enter a positive amount with a supported token precision.");
-      if (!mint) throw new Error("Enter a token mint registered and enabled in the TCAP asset registry.");
-      if (typeof activeWallet.signTransaction !== "function") throw new Error("The connected wallet must support transaction signing.");
       const sdk = window.TsnRecipientCreditSdk;
-      if (!sdk?.buildTcapGpruWalletDepositTransaction || !sdk?.createFundingNoteV1) throw new Error("The browser TSN SDK bundle is missing the funded deposit builder.");
+      sdk.assertTsnFundingReadiness(pending.readiness, pending.request, pending.workId, new sdk.PublicKey(pending.prepared.tcapProgramId));
+      return true;
+    } catch { return false; }
+  }
 
-      stage = "checking the TCAP reserve and sender wallet token balance";
-      const prepared = await api("/api/tsn/sdk/prepare-tin-credit", {
-        method: "POST", body: JSON.stringify({ recipientTin, tokenMintAddress: mint, amount }),
-      });
-      const amountBaseUnits = BigInt(prepared.amountBaseUnits);
-      // This private opening stays in the current request; prepare/status responses never contain it.
-      const fundingNote = sdk.createFundingNoteV1();
-      stage = "building the wallet-authorized TCAP reserve deposit";
-      const key = (value) => new sdk.PublicKey(value);
-      const accounts = Object.fromEntries(Object.entries(prepared.depositAccounts).map(([name, value]) => [name, key(value)]));
-      const transaction = sdk.buildTcapGpruWalletDepositTransaction({
-        accounts,
-        amountBaseUnits,
-        fundingNoteCommitment: fundingNote.commitment,
-      });
+  function renderTinFundingControls() {
+    clearTinFundingReadinessTimer();
+    const pending = pendingTinCredit, readinessCurrent = hasCurrentTinFundingReadiness(pending);
+    const fundingExpired = Boolean(pending?.readiness) && Date.parse(pending.readiness.expiresAt) <= Date.now();
+    $("payTin").disabled = tinCreditInFlight || !resolvedTin || Boolean(pending?.accepted);
+    $("payTin").textContent = pending?.request && !pending.accepted ? "Retry intent authorization" : "Authorize intent";
+    $("approveTinFunding").hidden = !(pending?.readiness || pending?.completion) || Boolean(pending?.attached);
+    $("approveTinFunding").disabled = tinCreditInFlight || (!pending?.completion && !readinessCurrent)
+      || activeWallet?.publicKey?.toBase58() !== pending?.senderWallet;
+    $("approveTinFunding").textContent = pending?.completion ? "Retry funding submission"
+      : fundingExpired ? "Funding approval expired" : readinessCurrent ? "Ready to approve funding" : "Funding approval unavailable";
+    $("cancelTinFunding").hidden = !pending || Boolean(pending.completion) || Boolean(pending.attached);
+    $("cancelTinFunding").disabled = tinCreditInFlight;
+    for (const name of ["recipientTin", "tinAmount", "tinMint"]) $(name).disabled = tinCreditInFlight || Boolean(pending);
+    if (readinessCurrent && !pending.completion && !pending.attached) {
+      const readiness = pending.readiness, generation = tinCreditGeneration;
+      const timer = setTimeout(() => {
+        if (tinFundingReadinessTimer !== timer || pending !== pendingTinCredit || generation !== tinCreditGeneration
+            || pending.readiness !== readiness || pending.completion || pending.attached) return;
+        tinFundingReadinessTimer = undefined;
+        renderTinFundingControls();
+        if (Date.parse(readiness.expiresAt) <= Date.now() && $("tinCreditResult")) {
+          $("tinCreditResult").textContent = "Funding approval expired. Check the intent status or cancel this approval.";
+        }
+      }, Math.max(1, Math.min(2147483647, Date.parse(readiness.expiresAt) - Date.now())));
+      tinFundingReadinessTimer = timer;
+    }
+  }
 
-      stage = "requesting the sender's amount authorization";
-      const authorization = sdk.createPaymentAuthorization({
-        senderWallet: activeWallet.publicKey.toBase58(),
-        senderIdentity: activeWallet.publicKey.toBase58(),
-        receiverIdentity: `tin:${recipientTin}`,
-        recipientDisplayName: resolvedTin.displayName,
-        recipientDisplayNameSource: resolvedTin.displayNameSource,
-        recipientVerifiedCredentials: resolvedTin.verifiedCredentials,
-        tokenMintAddress: prepared.depositAccounts.mint,
-        amount,
-        senderFeeAmount: "0",
-        totalTokenRequiredUi: amount,
-        tokenDecimals: prepared.decimals,
-        fundingMode: "tcap_funded_note_v1",
-        fundingNoteCommitment: fundingNote.commitment,
-      });
-      if (authorization.amountBaseUnits !== amountBaseUnits.toString()) {
-        throw new Error("The SDK amount does not match the TCAP registry amount; review the token and amount before signing.");
+  function invalidateTinFundingApproval() {
+    clearTinFundingReadinessTimer();
+    tinCreditGeneration++;
+    pendingTinCredit?.controller?.abort();
+    if (!pendingTinCredit?.completion) pendingTinCredit = null;
+    renderTinFundingControls();
+  }
+
+  async function cancelTinFundingApproval() {
+    if (tinCreditInFlight || !pendingTinCredit || pendingTinCredit.completion || pendingTinCredit.attached) return;
+    const pending = pendingTinCredit, generation = tinCreditGeneration;
+    const current = () => pending === pendingTinCredit && generation === tinCreditGeneration
+      && activeWallet?.publicKey?.toBase58() === pending.senderWallet;
+    // Keep approval serialized until this cancellation settles, including wallet changes.
+    tinCreditInFlight = true;
+    renderTinFundingControls();
+    try {
+      await api("/api/tsn/sdk/cancel-tin-credit", { method: "POST", body: JSON.stringify({}) });
+      if (!current() || pending.completion) return;
+      invalidateTinFundingApproval();
+      log("TIN FUNDING APPROVAL CANCELLED", "No funding transaction was submitted. The signed intent remains subject to its original expiry.");
+    } catch (error) {
+      if (current()) log("TIN FUNDING CANCELLATION BLOCKED", error.message);
+    } finally { tinCreditInFlight = false; renderTinFundingControls(); }
+  }
+
+  function requireCurrentTinFunding(pending, generation) {
+    if (pending !== pendingTinCredit || generation !== tinCreditGeneration
+        || activeWallet?.publicKey?.toBase58() !== pending.senderWallet) throw new Error("The funding approval session changed.");
+  }
+
+  async function payTin() {
+    if (tinCreditInFlight || pendingTinCredit?.accepted) return;
+    let stage = "validating sender and recipient";
+    tinCreditInFlight = true;
+    renderTinFundingControls();
+    try {
+      requireWallet(); requireNetwork();
+      const sdk = window.TsnRecipientCreditSdk;
+      if (!sdk?.createFundingNoteV1 || !sdk?.waitForTsnFundingReadiness) throw new Error("The browser SDK is missing staged funding authorization.");
+      let pending = pendingTinCredit;
+      if (!pending?.request) {
+        const recipientTin = $("recipientTin").value.trim();
+        if (!resolvedTin || resolvedTin.tin !== recipientTin) throw new Error("Resolve the TIN and review its identity before continuing.");
+        if (!/^[a-f0-9]{64}$/i.test(resolvedTin.ownerPubkeyHash ?? "")) throw new Error("SDK did not return a valid recipient owner hash.");
+        const amount = String($("tinAmount").value ?? "").trim(), mint = String($("tinMint").value ?? "").trim();
+        if (!/^\d+(?:\.\d{1,9})?$/.test(amount) || Number(amount) <= 0 || !mint) throw new Error("Enter a positive amount and registered token mint.");
+        if (typeof activeWallet.signTransaction !== "function") throw new Error("The connected wallet must support transaction signing.");
+        stage = "reading the registered token metadata for review";
+        const prepared = await api("/api/tsn/sdk/prepare-tin-credit", { method: "POST", body: JSON.stringify({ recipientTin, tokenMintAddress: mint, amount }) });
+        const senderWallet = activeWallet.publicKey.toBase58();
+        const fundingNote = sdk.createFundingNoteV1();
+        pending = { senderWallet, prepared, amount, paymentId: crypto.randomUUID(), controller: new AbortController() };
+        pendingTinCredit = pending;
+        const generation = ++tinCreditGeneration;
+        renderTinFundingControls();
+        stage = "requesting the sender's canonical intent authorization";
+        const authorization = sdk.createPaymentAuthorization({ senderWallet, senderIdentity: senderWallet, receiverIdentity: `tin:${recipientTin}`,
+          recipientDisplayName: resolvedTin.displayName, recipientDisplayNameSource: resolvedTin.displayNameSource,
+          recipientVerifiedCredentials: resolvedTin.verifiedCredentials, tokenMintAddress: prepared.tokenMintAddress,
+          amount, senderFeeAmount: "0", totalTokenRequiredUi: Number(amount), tokenDecimals: prepared.decimals,
+          fundingMode: "tcap_funded_note_v1", fundingNoteCommitment: fundingNote.commitment });
+        if (authorization.amountBaseUnits !== prepared.amountBaseUnits) throw new Error("The SDK amount differs from the registered token amount.");
+        const senderAuthorizationSignature = await sign(authorization.message);
+        requireCurrentTinFunding(pending, generation);
+        pending.request = sdk.buildPaymentAuthorizationIntentRequest({ paymentId: pending.paymentId,
+          recipientHash: resolvedTin.ownerPubkeyHash.toLowerCase(), recipientTin, tokenMintAddress: prepared.tokenMintAddress,
+          tokenDecimals: prepared.decimals, senderWallet, senderAuthorizationMessage: authorization.message, senderAuthorizationSignature,
+          senderAuthorizationNonce: authorization.nonce, senderAuthorizationIssuedAt: authorization.issuedAt,
+          senderAuthorizationExpiresAt: authorization.expiresAt, senderFeeAmount: "0", senderFundingMode: "tcap_funded_note_v1",
+          fundingNote, amount, source: "TSN XP" });
       }
-      const senderAuthorizationSignature = await sign(authorization.message);
-
-      stage = "refreshing the deposit blockhash after amount approval";
-      const latestBlockhash = await api("/api/tsn/sdk/refresh-tin-credit-blockhash", {
-        method: "POST", body: JSON.stringify({}),
-      });
-      transaction.recentBlockhash = latestBlockhash.recentBlockhash;
-      transaction.lastValidBlockHeight = latestBlockhash.lastValidBlockHeight;
-
-      stage = "requesting the sender's TCAP deposit transaction signature";
-      const signedTransaction = await activeWallet.signTransaction(transaction);
-      const signedWire = signedTransaction.serialize();
-      stage = "checking the signed deposit against the sender's approval";
-      sdk.assertSignedTcapGpruWalletDepositTransaction(signedWire, {
-        accounts, amountBaseUnits, fundingNoteCommitment: fundingNote.commitment,
-      });
-      const senderSignedFundingTransaction = encodeBase64(signedWire);
-      const paymentId = crypto.randomUUID();
-      const request = sdk.buildPaymentAuthorizationIntentRequest({
-        paymentId,
-        recipientHash: resolvedTin.ownerPubkeyHash.toLowerCase(),
-        recipientTin,
-        tokenMintAddress: prepared.depositAccounts.mint,
-        tokenDecimals: prepared.decimals,
-        senderWallet: activeWallet.publicKey.toBase58(),
-        senderAuthorizationMessage: authorization.message,
-        senderAuthorizationSignature,
-        senderAuthorizationNonce: authorization.nonce,
-        senderAuthorizationIssuedAt: authorization.issuedAt,
-        senderAuthorizationExpiresAt: authorization.expiresAt,
-        senderFeeAmount: "0",
-        senderSignedFundingTransaction,
-        senderFundingMode: "tcap_funded_note_v1",
-        fundingNote,
-        amount,
-        source: "TSN XP",
-      });
-      stage = "validating the signed intent before Receiver ingress";
-      const accepted = await api("/api/tsn/sdk/submit-tin-credit", { method: "POST", body: JSON.stringify({ request }) });
-      const output = document.createElement("div");
-      output.id = "tinCreditResult";
-      output.className = "notice";
-      output.style.marginTop = "12px";
-      output.textContent = `Receiver accepted intent ${accepted.id ?? paymentId}. TSN Node verification is pending.`;
-      $("tinResolution").after(output);
-      log("SDK depositToTinCredit", `TIN ${recipientTin} / ${amount} / ${prepared.depositAccounts.mint} / wallet authorized`);
-      log("TIN CREDIT RECEIVER ACCEPTED", `Receiver accepted ${accepted.id ?? paymentId}; TSN Node verification is pending.`);
-      void watchTinCredit(accepted.id ?? paymentId);
+      const generation = tinCreditGeneration;
+      requireCurrentTinFunding(pending, generation);
+      stage = "submitting intent authorization to Receiver";
+      const accepted = await api("/api/tsn/sdk/submit-tin-credit", { method: "POST", body: JSON.stringify({ request: pending.request }) });
+      requireCurrentTinFunding(pending, generation);
+      pending.workId = accepted.id ?? pending.paymentId;
+      pending.accepted = true;
+      let output = $("tinCreditResult");
+      if (!output) { output = document.createElement("div"); output.id = "tinCreditResult"; output.className = "notice";
+        output.style.marginTop = "12px"; $("tinResolution").after(output); }
+      output.textContent = `Receiver accepted intent ${pending.workId}. TSN Node is checking authorization before funding approval.`;
+      log("TIN INTENT RECEIVER ACCEPTED", `Intent ${pending.workId}; funding has not been approved or submitted.`);
+      void watchTinFundingAuthorization(pending, generation);
     } catch (error) {
       log("TIN CREDIT BLOCKED", `${stage}: ${error instanceof Error ? error.message : String(error)}`);
+    } finally { tinCreditInFlight = false; renderTinFundingControls(); }
+  }
+
+  async function watchTinFundingAuthorization(pending, generation) {
+    try {
+      const sdk = window.TsnRecipientCreditSdk;
+      const status = await sdk.waitForTsnFundingReadiness({ workId: pending.workId, signal: pending.controller.signal,
+        getStatus: () => api(`/api/tsn/sdk/tin-credit-status?operationId=${encodeURIComponent(pending.workId)}`) });
+      requireCurrentTinFunding(pending, generation);
+      const ready = await api("/api/tsn/sdk/prepare-tin-credit-funding", { method: "POST", body: JSON.stringify({ operationId: pending.workId }) });
+      requireCurrentTinFunding(pending, generation);
+      const checked = sdk.assertTsnFundingReadiness(ready, pending.request, pending.workId, new sdk.PublicKey(pending.prepared.tcapProgramId));
+      if (checked.stateVersion !== status.stateVersion || checked.authorizationPayloadCommitment !== status.fundingReadiness.authorizationPayloadCommitment) {
+        throw new Error("Node readiness changed while preparing funding approval.");
+      }
+      pending.readiness = checked;
+      renderTinFundingControls();
+      $("tinCreditResult").textContent = `Intent ${pending.workId} is ready. Approve the funding transaction when you are ready.`;
+      log("TIN FUNDING READY", `Node checked intent ${pending.workId}. Use Ready to approve funding for the wallet transaction.`);
+    } catch (error) {
+      if (pending !== pendingTinCredit || pending.controller.signal.aborted) return;
+      if (!/AUTHORIZATION_ENDED|DIFFERS_FROM_AUTHORIZATION|OPERATION_MISMATCH/.test(String(error.message))
+          && Date.parse(pending.request.senderAuthorizationExpiresAt) > Date.now()) {
+        if (!pending.watchRetryLogged) log("TIN AUTHORIZATION WAITING", error instanceof Error ? error.message : String(error));
+        pending.watchRetryLogged = true;
+        setTimeout(() => { if (pending === pendingTinCredit && !pending.controller.signal.aborted) void watchTinFundingAuthorization(pending, generation); }, 1000);
+        return;
+      }
+      log("TIN AUTHORIZATION WAITING", error instanceof Error ? error.message : String(error));
+      if ($("tinCreditResult")) $("tinCreditResult").textContent = "Funding approval is unavailable. Check the intent status or cancel this approval.";
     }
+  }
+
+  async function approveTinFunding() {
+    if (tinCreditInFlight || !pendingTinCredit || pendingTinCredit.attached) return;
+    if (!pendingTinCredit.completion && !hasCurrentTinFundingReadiness(pendingTinCredit)) { renderTinFundingControls(); return; }
+    const pending = pendingTinCredit, generation = tinCreditGeneration;
+    let stage = "checking the ready intent";
+    tinCreditInFlight = true; renderTinFundingControls();
+    try {
+      requireWallet(); requireNetwork(); requireCurrentTinFunding(pending, generation);
+      const sdk = window.TsnRecipientCreditSdk;
+      if (!pending.completion) {
+        const ready = await api("/api/tsn/sdk/prepare-tin-credit-funding", { method: "POST", body: JSON.stringify({ operationId: pending.workId }) });
+        requireCurrentTinFunding(pending, generation);
+        pending.readiness = sdk.assertTsnFundingReadiness(ready, pending.request, pending.workId, new sdk.PublicKey(pending.prepared.tcapProgramId));
+        renderTinFundingControls();
+        stage = "issuing a fresh blockhash for funding approval";
+        const latest = await api("/api/tsn/sdk/refresh-tin-credit-blockhash", { method: "POST", body: JSON.stringify({ operationId: pending.workId,
+          expectedStateVersion: pending.readiness.stateVersion, authorizationPayloadCommitment: pending.readiness.authorizationPayloadCommitment }) });
+        requireCurrentTinFunding(pending, generation);
+        const context = sdk.assertSenderFundingBlockhashContext({ blockhash: latest.recentBlockhash,
+          lastValidBlockHeight: latest.lastValidBlockHeight, contextSlot: latest.contextSlot });
+        const accounts = Object.fromEntries(Object.entries(pending.readiness.depositAccounts).map(([name, value]) => [name, new sdk.PublicKey(value)]));
+        const transaction = sdk.buildTcapGpruWalletDepositTransaction({ accounts, amountBaseUnits: BigInt(pending.readiness.amountBaseUnits),
+          fundingNoteCommitment: pending.request.fundingNote.commitment });
+        transaction.recentBlockhash = context.blockhash;
+        transaction.lastValidBlockHeight = context.lastValidBlockHeight;
+        stage = "requesting the sender's funding transaction approval";
+        const signed = await activeWallet.signTransaction(transaction);
+        requireCurrentTinFunding(pending, generation);
+        pending.completion = sdk.buildCompleteTsnFundingRequest({ request: pending.request, readiness: pending.readiness, workId: pending.workId,
+          senderFundingDepositTxB64: encodeBase64(signed.serialize()), senderFundingBlockhashContext: context,
+          tcapProgramId: new sdk.PublicKey(pending.prepared.tcapProgramId) });
+        clearTinFundingReadinessTimer();
+      }
+      stage = "attaching the approved funding to the same intent";
+      await api("/api/tsn/sdk/complete-tin-credit", { method: "POST", body: JSON.stringify({ completion: pending.completion }) });
+      requireCurrentTinFunding(pending, generation);
+      pending.attached = true;
+      clearTinFundingReadinessTimer();
+      $("tinCreditResult").textContent = `Funding approval attached to intent ${pending.workId}. Node final validation and Cranker submission are pending.`;
+      log("TIN FUNDING APPROVAL ATTACHED", `Intent ${pending.workId}; the original message and private note are preserved.`);
+      void watchTinCredit(pending.workId);
+    } catch (error) { log("TIN FUNDING APPROVAL BLOCKED", `${stage}: ${error instanceof Error ? error.message : String(error)}`); }
+    finally { tinCreditInFlight = false; renderTinFundingControls(); }
   }
 
   async function watchTinCredit(operationId) {
@@ -667,6 +779,13 @@
             : fundingStatus === "REJECTED"
               ? `TSN Node rejected reserve funding for ${operationId}${fundingReason ? `: ${fundingReason}` : "."} Settlement work is ${creditStatus} and has not executed.`
               : `TIN credit ${operationId} ended with reserve funding ${fundingStatus} and settlement ${creditStatus}${settlementReason ? `: ${settlementReason}` : "."}`;
+          if (creditStatus === "CONFIRMED" && pendingTinCredit?.workId === operationId) {
+            clearTinFundingReadinessTimer();
+            pendingTinCredit.controller.abort();
+            pendingTinCredit = null;
+            tinCreditGeneration++;
+            renderTinFundingControls();
+          }
           return;
         }
       } catch (error) {
@@ -731,6 +850,8 @@
     $("tinResolution").hidden = true;
   });
   $("payTin").onclick = payTin;
+  $("approveTinFunding").onclick = approveTinFunding;
+  $("cancelTinFunding").onclick = cancelTinFundingApproval;
   $("buildWalletTransfer").onclick = buildWalletTransfer;
   configureCurrentTinPath();
   document.querySelectorAll('.tab-panel:not(#panel-status)').forEach((panel) => {

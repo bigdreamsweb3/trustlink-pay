@@ -1,0 +1,441 @@
+{
+  "discovery": "../../settlement-reconciliation.test.mjs",
+  "components": [
+    {
+      "name": "hash",
+      "file": "hash.mjs",
+      "originalLine": 11,
+      "captures": [],
+      "sharedLocals": []
+    },
+    {
+      "name": "b58",
+      "file": "b58.mjs",
+      "originalLine": 12,
+      "captures": [],
+      "sharedLocals": []
+    },
+    {
+      "name": "uint",
+      "file": "uint.mjs",
+      "originalLine": 13,
+      "captures": [],
+      "sharedLocals": []
+    },
+    {
+      "name": "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnly",
+      "file": "verify-finalized-receipt-repair-preserves-funding-rejects-mismatches-and-wakes-only.mjs",
+      "originalLine": 15,
+      "captures": [],
+      "sharedLocals": [
+        "directory",
+        "h",
+        "authority",
+        "keys",
+        "assertSettlementReceipt",
+        "work",
+        "signature",
+        "changed",
+        "mother",
+        "root",
+        "changed",
+        "receipt",
+        "TCAP",
+        "TSNP",
+        "keys",
+        "index",
+        "accounts",
+        "payload",
+        "operatorKey",
+        "motherKey",
+        "writable",
+        "cw",
+        "signature",
+        "receipt",
+        "root",
+        "changed",
+        "wrong",
+        "calls",
+        "t",
+        "id",
+        "workCollection",
+        "payer",
+        "realNow",
+        "db",
+        "reclaimed",
+        "reset",
+        "lateWork",
+        "failedRpcFetch"
+      ]
+    },
+    {
+      "name": "mapCase",
+      "file": "map-case.mjs",
+      "originalLine": 18,
+      "captures": [],
+      "sharedLocals": []
+    },
+    {
+      "name": "loadComponent",
+      "file": "load-component.mjs",
+      "originalLine": 37,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "pdaComponent",
+      "file": "pda-component.mjs",
+      "originalLine": 44,
+      "captures": [],
+      "sharedLocals": []
+    },
+    {
+      "name": "pubComponent",
+      "file": "pub-component.mjs",
+      "originalLine": 46,
+      "captures": [],
+      "sharedLocals": []
+    },
+    {
+      "name": "hComponent",
+      "file": "h-component.mjs",
+      "originalLine": 50,
+      "captures": [],
+      "sharedLocals": []
+    },
+    {
+      "name": "fromCase",
+      "file": "from-case.mjs",
+      "originalLine": 54,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "filterCase",
+      "file": "filter-case.mjs",
+      "originalLine": 61,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "filterCase12",
+      "file": "filter-case12.mjs",
+      "originalLine": 61,
+      "captures": [],
+      "sharedLocals": [
+        "k"
+      ]
+    },
+    {
+      "name": "findIndexCase",
+      "file": "find-index-case.mjs",
+      "originalLine": 61,
+      "captures": [
+        "filterCase12Context"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "mapCase14",
+      "file": "map-case14.mjs",
+      "originalLine": 63,
+      "captures": [],
+      "sharedLocals": []
+    },
+    {
+      "name": "idxComponent",
+      "file": "idx-component.mjs",
+      "originalLine": 65,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": [
+        "k"
+      ]
+    },
+    {
+      "name": "findIndexCase16",
+      "file": "find-index-case16.mjs",
+      "originalLine": 65,
+      "captures": [
+        "idxComponentContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "publicKeyBytes",
+      "file": "public-key-bytes.mjs",
+      "originalLine": 66,
+      "captures": [],
+      "sharedLocals": [],
+      "originalName": "mapCase17",
+      "reused": true
+    },
+    {
+      "name": "throwsCase",
+      "file": "throws-case.mjs",
+      "originalLine": 74,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "throwsCase19",
+      "file": "throws-case19.mjs",
+      "originalLine": 77,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "throwsCase20",
+      "file": "throws-case20.mjs",
+      "originalLine": 78,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "throwsCase21",
+      "file": "throws-case21.mjs",
+      "originalLine": 79,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "throwsCase22",
+      "file": "throws-case22.mjs",
+      "originalLine": 80,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "scalarComponent",
+      "file": "scalar-component.mjs",
+      "originalLine": 83,
+      "captures": [],
+      "sharedLocals": []
+    },
+    {
+      "name": "mapCase24",
+      "file": "map-case24.mjs",
+      "originalLine": 88,
+      "captures": [],
+      "sharedLocals": []
+    },
+    {
+      "name": "filterCase25",
+      "file": "filter-case25.mjs",
+      "originalLine": 92,
+      "captures": [],
+      "sharedLocals": [
+        "k"
+      ]
+    },
+    {
+      "name": "findIndexCase26",
+      "file": "find-index-case26.mjs",
+      "originalLine": 92,
+      "captures": [
+        "filterCase25Context"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "indexComponent",
+      "file": "index-component.mjs",
+      "originalLine": 92,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": [
+        "k"
+      ]
+    },
+    {
+      "name": "findIndexCase28",
+      "file": "find-index-case28.mjs",
+      "originalLine": 92,
+      "captures": [
+        "indexComponentContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "makeReceiptComponent",
+      "file": "make-receipt-component.mjs",
+      "originalLine": 93,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "publicKeyBytes",
+      "file": "public-key-bytes.mjs",
+      "originalLine": 93,
+      "captures": [],
+      "sharedLocals": [],
+      "originalName": "mapCase30",
+      "reused": true
+    },
+    {
+      "name": "throwsCase31",
+      "file": "throws-case31.mjs",
+      "originalLine": 98,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "throwsCase32",
+      "file": "throws-case32.mjs",
+      "originalLine": 100,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "fixtureCallback",
+      "file": "fixture-callback.mjs",
+      "originalLine": 104,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "requestComponent",
+      "file": "request-component.mjs",
+      "originalLine": 110,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": [
+        "body"
+      ]
+    },
+    {
+      "name": "json",
+      "file": "json.mjs",
+      "originalLine": 110,
+      "captures": [
+        "requestComponentContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "runTransactionCase",
+      "file": "run-transaction-case.mjs",
+      "originalLine": 127,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "expiredCrankerReportTime",
+      "file": "expired-cranker-report-time.mjs",
+      "originalLine": 133,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": [],
+      "originalName": "fixtureCallback37",
+      "reused": true
+    },
+    {
+      "name": "resetComponent",
+      "file": "reset-component.mjs",
+      "originalLine": 143,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": [
+        "value"
+      ]
+    },
+    {
+      "name": "runTransactionCase39",
+      "file": "run-transaction-case39.mjs",
+      "originalLine": 143,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext",
+        "resetComponentContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "reportRequestComponent",
+      "file": "report-request-component.mjs",
+      "originalLine": 145,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": [
+        "body"
+      ]
+    },
+    {
+      "name": "text",
+      "file": "text.mjs",
+      "originalLine": 145,
+      "captures": [
+        "reportRequestComponentContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "expiredCrankerReportTime",
+      "file": "expired-cranker-report-time.mjs",
+      "originalLine": 160,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": [],
+      "originalName": "fixtureCallback42",
+      "reused": true
+    },
+    {
+      "name": "fixtureCallback43",
+      "file": "fixture-callback43.mjs",
+      "originalLine": 174,
+      "captures": [],
+      "sharedLocals": []
+    },
+    {
+      "name": "fixtureCallback44",
+      "file": "fixture-callback44.mjs",
+      "originalLine": 188,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": []
+    },
+    {
+      "name": "fixtureCallback45",
+      "file": "fixture-callback45.mjs",
+      "originalLine": 204,
+      "captures": [
+        "verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext"
+      ],
+      "sharedLocals": []
+    }
+  ],
+  "implementationFiles": 43
+}

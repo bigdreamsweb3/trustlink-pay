@@ -1,62 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireService } from "../../../../../lib/auth";
-import { getWorkForNode, leaseForNode, renewNodeLease, transition } from "../../../../../lib/store";
+/** Stable Next route facade; implementations are bound at this request boundary. */
 export const runtime = "nodejs";
-
-export async function POST(request: NextRequest) {
-  try {
-    requireService(request, "node");
-    const body = await request.json() as { nodeId?: string; supportedKinds?: Parameters<typeof leaseForNode>[1] };
-    if (!body.nodeId) throw new Error("nodeId is required");
-    return NextResponse.json({ work: await leaseForNode(body.nodeId, body.supportedKinds) });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "ERROR";
-    const status = message === "UNAUTHORIZED_SERVICE" ? 401 : message.includes("required") ? 400 : 500;
-    console.error("[receiver] node work request failed", message);
-    return NextResponse.json({ error: message }, { status });
-  }
-}
-
-export async function GET(request: NextRequest) {
-  try {
-    requireService(request, "node");
-    const id = request.nextUrl.searchParams.get("id");
-    if (!id) throw new Error("id is required");
-    const work = await getWorkForNode(id);
-    return work ? NextResponse.json({ work }) : NextResponse.json({ error: "WORK_NOT_FOUND" }, { status: 404 });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "ERROR";
-    const status = message === "UNAUTHORIZED_SERVICE" ? 401 : message.includes("required") ? 400 : 500;
-    console.error("[receiver] node work lookup failed", message);
-    return NextResponse.json({ error: message }, { status });
-  }
-}
-
-export async function PATCH(request: NextRequest) {
-  try {
-    requireService(request, "node");
-    const body = await request.json() as Parameters<typeof transition>[0];
-    return NextResponse.json(await transition({ ...body, actor: "node" }));
-  } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "ERROR" }, { status: 409 });
-  }
-}
-
-export async function PUT(request: NextRequest) {
-  try {
-    requireService(request, "node");
-    const body = await request.json() as Partial<Parameters<typeof renewNodeLease>[0]>;
-    if (typeof body.id !== "string" || !body.id.trim()
-        || typeof body.owner !== "string" || !body.owner.trim()
-        || typeof body.leaseId !== "string" || !body.leaseId.trim()
-        || !Number.isSafeInteger(body.expectedVersion) || Number(body.expectedVersion) < 1
-        || !Number.isSafeInteger(body.leaseVersion) || Number(body.leaseVersion) < 1) {
-      return NextResponse.json({ error: "id, owner, leaseId and positive integer versions are required" }, { status: 400 });
-    }
-    return NextResponse.json(await renewNodeLease(body as Parameters<typeof renewNodeLease>[0]));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "ERROR";
-    const status = message === "UNAUTHORIZED_SERVICE" ? 401 : message === "WORK_NOT_FOUND" ? 404 : 409;
-    return NextResponse.json({ error: message }, { status });
-  }
-}
+import { dependencies } from "../../../../../lib/http/api/internal/node/work/runtime";
+import { POST as POSTComponent } from "../../../../../lib/http/api/internal/node/work/POST";
+export const POST = POSTComponent.bind(null, dependencies);
+import { GET as GETComponent } from "../../../../../lib/http/api/internal/node/work/GET";
+export const GET = GETComponent.bind(null, dependencies);
+import { PATCH as PATCHComponent } from "../../../../../lib/http/api/internal/node/work/PATCH";
+export const PATCH = PATCHComponent.bind(null, dependencies);
+import { PUT as PUTComponent } from "../../../../../lib/http/api/internal/node/work/PUT";
+export const PUT = PUTComponent.bind(null, dependencies);

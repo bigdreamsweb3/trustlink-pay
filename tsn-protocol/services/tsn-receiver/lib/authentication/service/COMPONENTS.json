@@ -1,0 +1,22 @@
+{
+  "facade": "../../auth.ts",
+  "responsibility": "Node service authentication",
+  "components": [
+    {
+      "name": "equal",
+      "file": "equal.ts",
+      "imports": [
+        "node:crypto"
+      ]
+    },
+    {
+      "name": "requireService",
+      "file": "require-service.ts",
+      "imports": [
+        "./dependencies",
+        "next/server",
+        "./equal"
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # MCES candidate assessment
 
-**Status: CURRENT source assessment, November 17, 2026.** The recommendation and extraction boundaries are PROPOSED. This task assesses the existing services; it does not refactor them, change their configurations or establish live service availability. Read the [ranking](candidate-ranking.md) for the comparative decision and the [implementation plan](next-refactoring-plan.md) for the proposed next task.
+**Status: retained pre-refactor source assessment, November 17, 2026.** The recommendation and extraction boundaries below record the original assessment-only task. The user subsequently approved Receiver implementation and TCAP-epoch local work sorting; [Receiver architecture](../../services/tsn-receiver/docs/architecture.md) and [verification](../../services/tsn-receiver/docs/verification.md) record that separate work. Read the [ranking](candidate-ranking.md) for the comparative selection and the [implementation plan](next-refactoring-plan.md) for its original sequence.
 
 ## Scope and discovery
 

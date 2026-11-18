@@ -34,7 +34,7 @@ async def _verify_and_report_receiver_work(node: Dependencies, client: httpx.Asy
         try:
             evidence = await node._verify_receiver_work(work)
             evidence = {**evidence, "receiverLease": lease_context}
-            status = "VERIFIED"
+            status = "FUNDING_READY" if evidence.get("verificationType") == "TSN_FUNDING_AUTHORIZATION_READY" else "VERIFIED"
             break
         except PrivateCreditWait as exc:
             response = await node.receiver_request(client, "POST", "/api/internal/node/coordination", headers=headers, json={

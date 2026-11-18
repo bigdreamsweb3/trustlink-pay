@@ -82,3 +82,32 @@ test("Gateway does not treat a program rejection as provider lag", async () => {
     assert.equal(result.calls.length, 1);
   }
 });
+
+test("Gateway retries malformed JSON-RPC envelopes using the unchanged request", async () => {
+  for (const malformed of [null, [], [passed], 1, "not-an-envelope", {}, { jsonrpc: "2.0", id: 42 },
+    { jsonrpc: "2.0", id: 42, error: "not-an-error-object" },
+    { jsonrpc: "2.0", id: 42, error: {} },
+    { jsonrpc: "2.0", id: 42, result: { value: { err: null } }, error: { code: -32002, message: "synthetic mixed envelope" } },
+  ]) {
+    const result = await requestWith([malformed, passed]);
+    assert.deepEqual(result.body, passed);
+    assert.equal(result.calls.length, 2);
+    assert.equal(result.status.providers.reduce((total, provider) => total + provider.stats.failures, 0), 1);
+  }
+});
+
+test("Gateway preserves legitimate null and scalar result envelopes", async () => {
+  for (const [method, value] of [["getAccountInfo", null], ["getBlockHeight", 123], ["getHealth", "ok"]]) {
+    const expected = { jsonrpc: "2.0", id: 42, result: value };
+    const result = await requestWith([expected], method);
+    assert.deepEqual(result.body, expected);
+    assert.equal(result.calls.length, 1);
+  }
+});
+
+test("Gateway reports availability when every provider returns a malformed envelope", async () => {
+  const result = await requestWith([null, { jsonrpc: "2.0", id: 42 }]);
+  assert.equal(result.calls.length, 2);
+  assert.equal(result.body.error.code, -32000);
+  assert.equal(result.body.result, undefined);
+});

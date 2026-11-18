@@ -8,6 +8,7 @@ from .hgetall import hgetall
 from .hlen import hlen
 from .hset import hset
 from .consume_once import consume_once
+from storage.common.claim_once import claim_once
 from .delete import delete
 from .aclose import aclose
 
@@ -23,5 +24,6 @@ class FileStore:
     hlen = hlen
     hset = hset
     consume_once = consume_once
+    claim_once = claim_once
     delete = delete
     aclose = aclose

@@ -53,23 +53,24 @@ flowchart TB
         direction TB
         A["Review recipient identity<br/>TIN, display name and resolved owner commitment"]
         B["Create private funding note; approve payment<br/>TIN, asset, amount, fee, nonce, expiry and note commitment"]
-        C["Refresh blockhash after amount approval<br/>Sign exact TCAP reserve deposit<br/>deposit_private_funding_v1; wallet-signed wire"]
-        A --> B --> C
+        C["After Node readiness: explicitly approve funding<br/>Fresh blockhash and exact TCAP deposit signature"]
+        A --> B
     end
 
     subgraph INGRESS["2. TSN Receiver — durable ingress and leases"]
         direction TB
-        D["Node POST /intents forwards ingress<br/>Authorization and signed deposit"]
-        E["Create AUTHORIZED_FUNDING: RECEIVED<br/>Pre-create linked SETTLEMENT: RECEIVED"]
+        D["Node POST /intents forwards message-only ingress"]
+        E["Create AUTHORIZED_FUNDING: AUTHORIZATION<br/>No settlement or Cranker eligibility yet"]
         F["Node leases funding verification<br/>Versioned work and authenticated payload"]
         D --> E --> F
     end
 
     subgraph NODE["3. TSN Node — funding verification"]
         direction TB
-        G["Verify signed message and recipient binding<br/>Registered asset, decimals, exact deposit and simulation"]
-        H["Return signed VERIFIED projection<br/>Cranker receives permitted execution fields"]
-        G --> H
+        G["Verify signed intent, recipient and asset<br/>Read advisory wallet balance; sign FUNDING_READY"]
+        GD["Attach same-intent signed deposit atomically<br/>Create settlement; verify unchanged deposit"]
+        H["Return final signed VERIFIED projection<br/>Cranker receives permitted execution fields"]
+        G --> C --> GD --> H
     end
 
     subgraph FUNDING["4. First Solana transaction — reserve funding"]
@@ -116,7 +117,7 @@ flowchart TB
         V --> W
     end
 
-    C -->|"Signed request"| D
+    B -->|"Signed message-only request"| D
     F --> G
     H --> I
     K -->|"Funding confirmation gates proving"| L
@@ -126,7 +127,8 @@ flowchart TB
     U --> AA["Grouped accepted-credit openings<br/>Node proves complete 2–64-credit epoch"]
     AA --> AB["Receiver verifies and leases accounting work<br/>Cranker obtains Mother signature and submits"]
     AB --> AC["TCAP and separate GPRU epoch verifier<br/>One authenticated liability reclassification"]
-    G -->|"Invalid authorization or deposit"| X["Reject funding work<br/>No verified Cranker execution"]
+    G -->|"Invalid authorization"| X["Reject funding work<br/>No verified Cranker execution"]
+    GD -->|"Invalid signed deposit"| X
     M -->|"Missing snapshots, artifacts or account prerequisites"| Y["Fail closed; resolve prerequisites<br/>Reverify before settlement submission"]
     T -->|"Invalid proof or binding"| Z["Credit transaction fails atomically<br/>Earlier confirmed funding remains separate"]
 
@@ -138,7 +140,7 @@ flowchart TB
     classDef evidence fill:#fbf6e9,stroke:#8b7131,color:#30240d;
     class A,B,C device;
     class D,E,F,K receiver;
-    class G,H,L,M,N node;
+    class G,GD,H,L,M,N node;
     class I,O,P,Q funding;
     class J,R,S,T,U chain;
     class V,W,X,Y,Z evidence;
@@ -149,7 +151,8 @@ flowchart TB
 
 The first transaction transfers sender assets into the TCAP reserve; the
 second advances confidential state after independent settlement verification.
-Receiver pre-creates settlement work at ingress but gates verification on
+Receiver verifies a message-only intent before explicit funding approval and
+creates settlement work at signed deposit attachment, gating its verification on
 confirmed funding. Credit does not pay a recipient wallet. If settlement fails,
 its state mutations roll back; the earlier confirmed deposit remains separate.
 An expired owner-signed funding wire requires fresh wallet approval and a

@@ -4,6 +4,7 @@ import { sha256 } from "@noble/hashes/sha2";
 import { utf8ToBytes } from "@noble/hashes/utils";
 import { Buffer } from "buffer";
 import { canonicalFundingFieldHex } from "./gpru/funding-note.js";
+import { assertSenderFundingBlockhashContext, type SenderFundingBlockhashContext } from "./contracts.js";
 
 export const GPRU_TCAP_PROGRAM_ID = new PublicKey("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
 const TCAP_ID = GPRU_TCAP_PROGRAM_ID;
@@ -96,9 +97,13 @@ export async function resolveTcapGpruDepositAccounts(connection: Connection, fie
   return { depositor: fields.depositor, tcapProgramId: programId, config, registry, assetEntry, assetEntryAccount: entryAccount, reserveState, reserveAuthority, source, vault, mint: fields.mint, tokenProgram: fields.tokenProgram, fundingRootAccount, tokenId, decimals };
 }
 
+/** Address projection used for one sender-approved reserve deposit. */
+export type TcapGpruDepositAccounts = Pick<Awaited<ReturnType<typeof resolveTcapGpruDepositAccounts>>,
+  "depositor" | "tcapProgramId" | "config" | "assetEntry" | "reserveState" | "source" | "vault" | "mint" | "tokenProgram" | "fundingRootAccount">;
+
 /** Builds only the sender-signed reserve deposit. TIP settlement is Node-owned. */
 export function buildTcapGpruWalletDepositTransaction(fields: {
-  accounts: Awaited<ReturnType<typeof resolveTcapGpruDepositAccounts>>;
+  accounts: TcapGpruDepositAccounts;
   amountBaseUnits: bigint;
   fundingNoteCommitment: string;
 }) {
@@ -125,11 +130,13 @@ export function buildTcapGpruWalletDepositTransaction(fields: {
 
 export { Transaction as TcapGpruTransaction };
 
-/** Check the wallet's signed bytes before ingress, without rewriting its approval. */
+/** Check the wallet's signed deposit before attachment to the same intent, without rewriting its approved bytes. */
 export function assertSignedTcapGpruWalletDepositTransaction(
   wire: Uint8Array,
   fields: Parameters<typeof buildTcapGpruWalletDepositTransaction>[0],
+  blockhashContext: SenderFundingBlockhashContext,
 ): void {
+  const context = assertSenderFundingBlockhashContext(blockhashContext);
   if (wire.length === 0 || wire.length > 4096) throw new Error("TCAP_SIGNED_DEPOSIT_WIRE_INVALID");
   let transaction: Transaction;
   try { transaction = Transaction.from(wire); }
@@ -141,6 +148,7 @@ export function assertSignedTcapGpruWalletDepositTransaction(
     throw new Error("TCAP_SIGNED_DEPOSIT_OWNER_SIGNATURE_INVALID");
   }
   if (!Buffer.from(wire).equals(transaction.serialize())) throw new Error("TCAP_SIGNED_DEPOSIT_WIRE_INVALID");
+  if (transaction.recentBlockhash !== context.blockhash) throw new Error("TCAP_SIGNED_DEPOSIT_BLOCKHASH_DIFFERS_FROM_ISSUANCE");
   const expected = buildTcapGpruWalletDepositTransaction(fields).instructions[0]!;
   const deposits = transaction.instructions.filter(ix => ix.programId.equals(expected.programId));
   if (deposits.length !== 1) throw new Error("TCAP_SIGNED_DEPOSIT_COUNT_INVALID");

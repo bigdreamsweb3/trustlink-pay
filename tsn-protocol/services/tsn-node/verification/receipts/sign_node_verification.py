@@ -31,9 +31,9 @@ def _sign_node_verification(node: Dependencies,
         allowed = {
             # Keep this projection in sync with Receiver's crankerExecutionPayload:
             # funding execution only needs the immutable owner-signed deposit
-            # and its declared funding mode. The other verified payment fields
+            # and its funding mode and validated RPC routing context. Other payment fields
             # are evidence, not Cranker execution inputs.
-            "AUTHORIZED_FUNDING": {"senderSignedFundingTransaction", "senderFundingMode"},
+            "AUTHORIZED_FUNDING": {"senderSignedFundingTransaction", "senderFundingMode", "senderFundingBlockhashContext"},
             "SETTLEMENT": {"tcapCreditTransition"},
             "TCAP_EPOCH_ACCOUNTING": {"tcapEpochAccounting"},
             "TIN_OPERATION": {

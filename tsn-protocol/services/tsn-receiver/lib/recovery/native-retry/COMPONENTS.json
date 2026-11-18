@@ -1,0 +1,17 @@
+{
+  "facade": "../../native-work-retry.ts",
+  "responsibility": "Unsigned native work retry",
+  "components": [
+    {
+      "name": "nativeWorkRetryPatch",
+      "file": "native-work-retry-patch.ts",
+      "imports": [
+        "./dependencies",
+        "../../work-contract",
+        "../../work-contract",
+        "../../settlement-retry",
+        "../../settlement-retry"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+export function resetFilesystemState(state,failures = []) { state.openFailures = [...failures]; state.opens=[]; state.stats=[]; state.unlinks=[]; state.recordRenames=0; state.failRecordRenameAt=0; state.failManifestRename=false; state.failJournalRename=false; }

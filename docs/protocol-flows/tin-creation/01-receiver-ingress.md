@@ -110,10 +110,7 @@ Cranker endpoint reconstructs the verified view for its allowlisted execution
 projection, and the Node can reconstruct confirmed funding context from the
 delta. Legacy records with a full `verification.verifiedPayload` remain readable.
 
-The local JSON Receiver compacts existing work records with the legacy shape
-when its storage module starts. This migration changes only the duplicate
-verification payload; work status, leases, result, authorization, timestamps,
-and durable payload remain intact.
+The local JSON Receiver performs existing legacy verification compaction on its first actual storage operation; importing the module touches no files. The November 17 storage change first preserves exact original bytes, imports all rows into an ordered manifest with individual epoch/type work files, then applies that existing compaction. Status, leases, result, authorization, timestamps and durable payload remain intact. Funding/TIN work stays unassigned, while settlement placement follows an authoritative stored TCAP accounting epoch. See [storage contracts](../../../tsn-protocol/services/tsn-receiver/lib/storage/local/README.md) for the separate one-time import and journal recovery boundaries.
 
 ## Current Wiring
 

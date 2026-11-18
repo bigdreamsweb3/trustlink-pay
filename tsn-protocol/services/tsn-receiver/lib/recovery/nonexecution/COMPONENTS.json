@@ -1,0 +1,86 @@
+{
+  "facade": "../../failed-settlement-resolution.ts",
+  "responsibility": "Expired signed nonexecution disposition",
+  "components": [
+    {
+      "name": "assertEligible",
+      "file": "assert-eligible.ts",
+      "imports": [
+        "./dependencies",
+        "node:crypto",
+        "@solana/web3.js",
+        "../../work-contract",
+        "../../work-contract",
+        "../../work-contract",
+        "./fail",
+        "./u64",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "assertUnchangedRoot",
+      "file": "assert-unchanged-root.ts",
+      "imports": [
+        "./bank-slot",
+        "./u64",
+        "./fail",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "bankSlot",
+      "file": "bank-slot.ts",
+      "imports": [
+        "./fail"
+      ]
+    },
+    {
+      "name": "fail",
+      "file": "fail.ts",
+      "imports": []
+    },
+    {
+      "name": "recordNonexecutionResolution",
+      "file": "record-nonexecution-resolution.ts",
+      "imports": [
+        "../../storage/ports",
+        "./dependencies",
+        "../../work-contract",
+        "../../work-contract",
+        "../../work-contract",
+        "./assert-eligible"
+      ]
+    },
+    {
+      "name": "resolveFailedSettlement",
+      "file": "resolve-failed-settlement.ts",
+      "imports": [
+        "./dependencies",
+        "../../work-contract",
+        "./fail",
+        "./assert-eligible",
+        "./assert-unchanged-root",
+        "./rpc",
+        "./bank-slot",
+        "./u64",
+        "./record-nonexecution-resolution",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "rpc",
+      "file": "rpc.ts",
+      "imports": [
+        "./dependencies",
+        "./fail"
+      ]
+    },
+    {
+      "name": "u64",
+      "file": "u64.ts",
+      "imports": [
+        "./fail"
+      ]
+    }
+  ]
+}

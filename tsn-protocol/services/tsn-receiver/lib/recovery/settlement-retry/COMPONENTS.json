@@ -1,0 +1,46 @@
+{
+  "facade": "../../settlement-retry.ts",
+  "responsibility": "Funded settlement retry guards",
+  "components": [
+    {
+      "name": "assertFundingLineage",
+      "file": "assert-funding-lineage.ts",
+      "imports": [
+        "node:crypto",
+        "../../work-contract",
+        "../../work-contract"
+      ]
+    },
+    {
+      "name": "fundedRootRetryPatch",
+      "file": "funded-root-retry-patch.ts",
+      "imports": [
+        "./dependencies",
+        "../../work-contract",
+        "../../work-contract",
+        "./assert-funding-lineage",
+        "./requeue-patch",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "requeuePatch",
+      "file": "requeue-patch.ts",
+      "imports": [
+        "./dependencies",
+        "../../work-contract"
+      ]
+    },
+    {
+      "name": "snapshotRetryPatch",
+      "file": "snapshot-retry-patch.ts",
+      "imports": [
+        "./dependencies",
+        "../../work-contract",
+        "./assert-funding-lineage",
+        "./requeue-patch",
+        "./configuration"
+      ]
+    }
+  ]
+}

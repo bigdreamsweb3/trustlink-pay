@@ -1,0 +1,65 @@
+import assert from "node:assert/strict";
+import { readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { createPerformanceFixture } from "./create-performance-fixture.mjs";
+import { resetPerformanceState } from "./reset-performance-state.mjs";
+import { cleanupStorageFixture } from "../storage/cleanup-storage-fixture.mjs";
+
+export async function selectiveDocumentReadTest() {
+  const fixture = await createPerformanceFixture(48, 8);
+  try {
+    const manifest = JSON.parse(await readFile(fixture.file, "utf8"));
+    const selected = path.join(fixture.file + ".d", ...manifest.collections.tsn_receiver_work["work-000"].split("/"));
+    const unrelated = path.join(fixture.file + ".d", ...manifest.collections.tsn_receiver_work["work-001"].split("/"));
+    const metadata = path.join(fixture.file + ".d", ...manifest.collections.metadata["state-7"].split("/"));
+    const work = fixture.db.collection("tsn_receiver_work");
+    const first = work.doc("work-000");
+    assert.deepEqual((await first.get()).data(), fixture.initial.tsn_receiver_work["work-000"]);
+    assert.equal(fixture.state.recordReads, 1);
+    assert.deepEqual(fixture.state.recordPaths, [selected]);
+    resetPerformanceState(fixture.state);
+    assert.equal((await work.doc("missing").get()).exists, false);
+    assert.equal(fixture.state.recordReads, 0);
+    resetPerformanceState(fixture.state);
+    assert.deepEqual((await fixture.db.collection("metadata").doc("state-7").get()).data(), fixture.initial.metadata["state-7"]);
+    assert.equal(fixture.state.recordReads, 1);
+    assert.deepEqual(fixture.state.recordPaths, [metadata]);
+    const changed = { ...fixture.initial.tsn_receiver_work["work-000"], stateVersion: 777 };
+    await writeFile(selected, JSON.stringify(changed, null, 2));
+    await writeFile(unrelated, "{damaged other work");
+    await writeFile(metadata, "{damaged unrelated metadata");
+    resetPerformanceState(fixture.state);
+    assert.deepEqual((await first.get()).data(), changed);
+    assert.equal(fixture.state.recordReads, 1);
+    assert.deepEqual(fixture.state.recordPaths, [selected]);
+    resetPerformanceState(fixture.state);
+    await assert.rejects(work.doc("work-001").get(), /LOCAL_RECORD_INVALID/);
+    assert.equal(fixture.state.recordReads, 1);
+    assert.deepEqual(fixture.state.recordPaths, [unrelated]);
+    resetPerformanceState(fixture.state);
+    await assert.rejects(fixture.db.collection("metadata").doc("state-7").get(), /LOCAL_RECORD_INVALID/);
+    assert.equal(fixture.state.recordReads, 1);
+    assert.deepEqual(fixture.state.recordPaths, [metadata]);
+    resetPerformanceState(fixture.state);
+    await assert.rejects(work.limit(1).get(), /LOCAL_RECORD_INVALID/);
+    assert.equal(fixture.state.recordReads, 16);
+    assert.equal(fixture.state.recordPaths.includes(metadata), false);
+    assert.equal(fixture.state.active, 0);
+    assert.equal(fixture.state.readsAfterUnlock, 0);
+    assert.equal(await readFile(unrelated, "utf8"), "{damaged other work");
+    assert.equal(await readFile(metadata, "utf8"), "{damaged unrelated metadata");
+    await writeFile(selected, JSON.stringify({ ...changed, kind: "TIN_OPERATION" }, null, 2));
+    resetPerformanceState(fixture.state);
+    await assert.rejects(first.get(), /LOCAL_RECORD_INVALID/);
+    assert.equal(fixture.state.recordReads, 1);
+    await writeFile(selected, JSON.stringify(changed, null, 2));
+    const invalidIndex = structuredClone(manifest);
+    invalidIndex.collections.metadata["state-7"] = "../../outside.json";
+    const invalidIndexBytes = JSON.stringify(invalidIndex);
+    await writeFile(fixture.file, invalidIndexBytes);
+    resetPerformanceState(fixture.state);
+    await assert.rejects(first.get(), /LOCAL_RECORD_PATH_INVALID/);
+    assert.equal(fixture.state.recordReads, 0);
+    assert.equal(await readFile(fixture.file, "utf8"), invalidIndexBytes);
+  } finally { await cleanupStorageFixture(fixture); }
+}

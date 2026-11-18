@@ -1992,5 +1992,160 @@
       "captures": [],
       "mutableCaptures": []
     }
-  ]
+  ],
+  "newComponents": [
+    {
+      "component": "cases/deposit_rpc/functions/f008_setUp.py",
+      "name": "setUp",
+      "definitionLine": 6,
+      "async": false,
+      "kind": "fixture-or-support",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/deposit_rpc/functions/f009_test_unavailable_hash_before_reported_deadline_is_retryable.py",
+      "name": "test_unavailable_hash_before_reported_deadline_is_retryable",
+      "definitionLine": 4,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/deposit_rpc/functions/f010_test_invalid_bank_context_and_unknown_height_remain_retryable.py",
+      "name": "test_invalid_bank_context_and_unknown_height_remain_retryable",
+      "definitionLine": 5,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/deposit_rpc/functions/f011_test_changed_or_malformed_context_is_rejected_without_rpc.py",
+      "name": "test_changed_or_malformed_context_is_rejected_without_rpc",
+      "definitionLine": 6,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/deposit_rpc/functions/f012_test_recent_hash_requires_exact_context_and_valid_rpc_envelope.py",
+      "name": "test_recent_hash_requires_exact_context_and_valid_rpc_envelope",
+      "definitionLine": 6,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/deposit_rpc/functions/f013_test_malformed_common_rpc_falls_through_without_raw_diagnostics.py",
+      "name": "test_malformed_common_rpc_falls_through_without_raw_diagnostics",
+      "definitionLine": 9,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/deposit_rpc/functions/f014_transport_envelope.py",
+      "name": "transport_envelope",
+      "definitionLine": 5,
+      "async": true,
+      "kind": "fixture-or-support",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/epoch_prover_dependencies/authorize_component.py",
+      "name": "test_authorization_uses_injected_prover_and_current_lease",
+      "definitionLine": 12,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/epoch_prover_dependencies/verify_component.py",
+      "name": "test_verification_uses_injected_epoch_prover",
+      "definitionLine": 12,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/staged_funding/functions/test_authorization_readiness.py",
+      "name": "test_authorization_readiness",
+      "definitionLine": 6,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/staged_funding/functions/test_completion_retry_and_fences.py",
+      "name": "test_completion_retry_and_fences",
+      "definitionLine": 9,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/staged_funding/functions/test_deposit_account_preflight.py",
+      "name": "test_deposit_account_preflight",
+      "definitionLine": 10,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/staged_funding/functions/test_funding_route_privacy.py",
+      "name": "test_funding_route_privacy",
+      "definitionLine": 5,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/staged_funding/functions/test_initial_schema.py",
+      "name": "test_initial_schema",
+      "definitionLine": 4,
+      "async": false,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/staged_funding/functions/test_nonce_binding.py",
+      "name": "test_nonce_binding",
+      "definitionLine": 11,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/staged_funding/functions/test_owner_readiness.py",
+      "name": "test_owner_readiness",
+      "definitionLine": 8,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/staged_funding/functions/test_readiness_integrity.py",
+      "name": "test_readiness_integrity",
+      "definitionLine": 7,
+      "async": false,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/wallet_funding_transaction/functions/f017_test_changed_context_is_refused_before_authorization.py",
+      "name": "test_changed_context_is_refused_before_authorization",
+      "definitionLine": 6,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "component": "cases/wallet_funding_transaction/functions/f018_test_confirmed_lineage_needs_receipt_not_expired_context.py",
+      "name": "test_confirmed_lineage_needs_receipt_not_expired_context",
+      "definitionLine": 7,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    }
+  ],
+  "mappingBoundary": "Original 231 components and originalTests hashes retain their extraction provenance. newComponents separately records later authored test and fixture functions; source references do not measure execution or branch coverage."
 }

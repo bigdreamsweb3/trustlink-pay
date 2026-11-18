@@ -1,0 +1,6 @@
+
+
+export async function runTransactionCase39(captures, tx) {
+    await tx.get(captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.workCollection.doc(captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.id));
+    tx.set(captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.workCollection.doc(captures.verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.id), captures.resetComponentContext.value);
+}

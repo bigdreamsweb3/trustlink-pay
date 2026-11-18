@@ -1,7 +1,6 @@
-import { NextRequest } from "next/server";
-import { proxyNode } from "../../../lib/node-proxy";
+/** Stable Next route facade; implementations are bound at this request boundary. */
 export const runtime = "nodejs";
-type Context = { params: Promise<{ path: string[] }> };
-export const GET = async (request: NextRequest, context: Context) =>
-  proxyNode(request, `network/${(await context.params).path.join("/")}`);
+import { dependencies } from "../../../lib/http/network/proxy/runtime";
+import { GET as GETComponent } from "../../../lib/http/network/proxy/GET";
+export const GET = GETComponent.bind(null, dependencies);
 export const POST = GET;

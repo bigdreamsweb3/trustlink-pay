@@ -1,5 +1,6 @@
 import { getRpcGatewayConfig, redactRpcUrlForDisplay } from "./config.mjs";
 import { createProviderPool } from "./provider-pool.mjs";
+import { rpcBlockhashDiagnostics } from "./blockhash-diagnostics.mjs";
 
 function jsonResponse(body, status = 200, headers = {}) {
   return new Response(JSON.stringify(body, null, 2), {
@@ -323,6 +324,18 @@ async function fetchRpcPayload(provider, payload, timeoutMs) {
     });
   }
 
+  const objectResponse = isJsonObject(parsed);
+  const hasResult = objectResponse && Object.hasOwn(parsed, "result");
+  const hasError = objectResponse && isJsonObject(parsed.error) && Number.isInteger(parsed.error.code);
+  if (!objectResponse || (!hasResult && !hasError)
+      || (parsed.error != null && !hasError)
+      || (hasResult && parsed.result != null && hasError)) {
+    throw Object.assign(new Error(`Upstream ${provider.label} returned an invalid JSON-RPC envelope`), {
+      latencyMs,
+      retryable: true,
+    });
+  }
+
   if (!response.ok && response.status >= 500) {
     throw Object.assign(new Error(`Upstream ${provider.label} returned ${response.status}`), {
       latencyMs,
@@ -371,6 +384,7 @@ async function fetchRpcPayload(provider, payload, timeoutMs) {
 
 async function proxySinglePayload(pool, config, payload) {
   const rankedProviders = pool.getRankedProviders(payload.method);
+  const requestDiagnostics = config.logLevel === "silent" ? {} : await rpcBlockhashDiagnostics(payload);
   let lastError = null;
   let blockhashRejection = null;
 
@@ -379,19 +393,27 @@ async function proxySinglePayload(pool, config, payload) {
       logGatewayEvent(config, "debug", "upstream request", {
         ...Object.fromEntries(requestLabel(payload).split(" ").map((entry) => entry.split("="))),
         provider: provider.label,
+        ...requestDiagnostics,
       });
       const result = await fetchRpcPayload(provider, payload, config.timeoutMs);
+      const diagnostics = config.logLevel === "silent" ? {} : await rpcBlockhashDiagnostics(payload, result.body);
       if (isBlockhashRejection(payload, result.body)) {
         blockhashRejection = { body: result.body, provider };
         logGatewayEvent(config, "info", "blockhash unavailable; trying next provider", {
-          method: payload.method, provider: provider.label,
+          method: payload.method, id: payload.id ?? "null", provider: provider.label,
+          latencyMs: Math.round(result.latencyMs), ...diagnostics,
         });
         continue;
       }
-      logGatewayEvent(config, "info", "upstream success", {
+      const rpcError = result.body?.error;
+      const simulationError = payload.method === "simulateTransaction" ? result.body?.result?.value?.err : null;
+      logGatewayEvent(config, rpcError || simulationError ? "warn" : "info",
+        rpcError ? "upstream RPC error" : simulationError ? "simulation rejected" : "upstream success", {
         ...Object.fromEntries(requestLabel(payload).split(" ").map((entry) => entry.split("="))),
         provider: provider.label,
         latencyMs: Math.round(result.latencyMs),
+        rpcErrorCode: rpcError?.code,
+        ...diagnostics,
       });
       pool.recordOutcome(provider.url, {
         type: "success",
@@ -408,6 +430,7 @@ async function proxySinglePayload(pool, config, payload) {
         provider: provider.label,
         retryable: Boolean(error?.retryable),
         error: message.replace(/\s+/g, " "),
+        ...requestDiagnostics,
       });
       pool.recordOutcome(provider.url, {
         type: "failure",

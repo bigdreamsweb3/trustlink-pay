@@ -1,0 +1,109 @@
+---
+title: "funding-authorization API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/funding-authorization.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## assertTsnFundingReadiness
+
+Validate owner-authenticated Node preparation against the unchanged signed authorization.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 37](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/funding-authorization.ts#L37).
+
+```ts
+assertTsnFundingReadiness(value: unknown, request: CreateIntentRequest, workId: string, tcapProgramId?: PublicKey): TsnFundingReadiness
+```
+
+Direct failure expressions:
+
+```text
+new Error("TSN_FUNDING_READINESS_INVALID")
+new Error("TSN_FUNDING_READINESS_DIFFERS_FROM_AUTHORIZATION")
+new Error("TSN_FUNDING_ACCOUNTS_INVALID")
+new Error()
+new Error("TSN_FUNDING_ACCOUNTS_DIFFERS_FROM_AUTHORIZATION")
+```
+
+## buildCompleteTsnFundingRequest
+
+Attach one exact wallet-approved deposit to its original ready work; never creates an intent.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 71](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/funding-authorization.ts#L71).
+
+```ts
+buildCompleteTsnFundingRequest(params: { request: CreateIntentRequest; readiness: TsnFundingReadiness; workId: string; senderFundingDepositTxB64: string; senderFundingBlockhashContext: SenderFundingBlockhashContext; tcapProgramId?: PublicKey; }): CompleteTsnFundingRequest
+```
+
+Direct failure expressions:
+
+```text
+new Error("TCAP_SIGNED_DEPOSIT_WIRE_INVALID")
+```
+
+## CompleteTsnFundingRequest
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 26](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/funding-authorization.ts#L26).
+
+```ts
+export type CompleteTsnFundingRequest = {
+  workId: string;
+  senderPubkey: string;
+  authorizationSignature: string;
+  expectedStateVersion: number;
+  authorizationPayloadCommitment: string;
+  senderFundingDepositTxB64: string;
+  senderFundingBlockhashContext: SenderFundingBlockhashContext;
+};
+```
+
+## TsnFundingReadiness
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 8](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/funding-authorization.ts#L8).
+
+```ts
+export type TsnFundingReadiness = {
+  workId: string;
+  stateVersion: number;
+  authorizationPayloadCommitment: string;
+  expiresAt: string;
+  amountBaseUnits: string;
+  depositAccounts: Record<keyof TcapGpruDepositAccounts, string>;
+};
+```
+
+## TsnFundingStatus
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 17](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/funding-authorization.ts#L17).
+
+```ts
+export type TsnFundingStatus = {
+  operationId: string;
+  status: string;
+  stateVersion: number;
+  fundingPhase: "AUTHORIZATION" | "SIGNED_DEPOSIT";
+  fundingReady: boolean;
+  fundingReadiness?: { expiresAt: string; authorizationPayloadCommitment: string } | null;
+};
+```
+
+## waitForTsnFundingReadiness
+
+Wait for Receiver-verified readiness; aborting never signs or submits funding.
+
+Import from `@trustlink/tsn-sdk`. [Implementation, line 95](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/funding-authorization.ts#L95).
+
+```ts
+waitForTsnFundingReadiness(params: { workId: string; getStatus: () => Promise<TsnFundingStatus>; signal?: AbortSignal; pollIntervalMs?: number; timeoutMs?: number; }): Promise<TsnFundingStatus>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TSN_FUNDING_POLL_OPTIONS_INVALID")
+new Error("TSN_FUNDING_AUTHORIZATION_WAIT_EXPIRED")
+new Error("TSN_FUNDING_STATUS_OPERATION_MISMATCH")
+new Error(`TSN_FUNDING_AUTHORIZATION_ENDED:${status.status}`)
+```

@@ -23,23 +23,24 @@ flowchart TB
         direction TB
         A["Review recipient identity<br/>TIN, display name and resolved owner commitment"]
         B["Create private funding note; approve payment<br/>TIN, asset, amount, fee, nonce, expiry and note commitment"]
-        C["Refresh blockhash after amount approval<br/>Sign exact TCAP reserve deposit<br/>deposit_private_funding_v1; wallet-signed wire"]
-        A --> B --> C
+        C["After Node readiness: explicitly approve funding<br/>Fresh blockhash and exact TCAP deposit signature"]
+        A --> B
     end
 
     subgraph INGRESS["2. TSN Receiver — durable ingress and leases"]
         direction TB
-        D["Node POST /intents forwards ingress<br/>Authorization and signed deposit"]
-        E["Create AUTHORIZED_FUNDING: RECEIVED<br/>Pre-create linked SETTLEMENT: RECEIVED"]
+        D["Node POST /intents forwards message-only ingress"]
+        E["Create AUTHORIZED_FUNDING: AUTHORIZATION<br/>No settlement or Cranker eligibility yet"]
         F["Node leases funding verification<br/>Versioned work and authenticated payload"]
         D --> E --> F
     end
 
     subgraph NODE["3. TSN Node — funding verification"]
         direction TB
-        G["Verify signed message and recipient binding<br/>Registered asset, decimals, exact deposit and simulation"]
-        H["Return signed VERIFIED projection<br/>Cranker receives permitted execution fields"]
-        G --> H
+        G["Verify signed intent, recipient and asset<br/>Read advisory wallet balance; sign FUNDING_READY"]
+        GD["Attach same-intent signed deposit atomically<br/>Create settlement; verify unchanged deposit"]
+        H["Return final signed VERIFIED projection<br/>Cranker receives permitted execution fields"]
+        G --> C --> GD --> H
     end
 
     subgraph FUNDING["4. First Solana transaction — reserve funding"]
@@ -86,7 +87,7 @@ flowchart TB
         V --> W
     end
 
-    C -->|"Signed request"| D
+    B -->|"Signed message-only request"| D
     F --> G
     H --> I
     K -->|"Funding confirmation gates proving"| L
@@ -96,7 +97,8 @@ flowchart TB
     U --> AA["Eligible accepted-credit epoch<br/>Node proves every ordered opening"]
     AA --> AB["Receiver verifies and leases accounting work<br/>Cranker obtains Mother signature and submits"]
     AB --> AC["GPRU verifies the complete epoch proof<br/>TCAP reclassifies aggregate liabilities once"]
-    G -->|"Invalid authorization or deposit"| X["Reject funding work<br/>No verified Cranker execution"]
+    G -->|"Invalid authorization"| X["Reject funding work<br/>No verified Cranker execution"]
+    GD -->|"Invalid signed deposit"| X
     M -->|"Missing snapshots, artifacts or account prerequisites"| Y["Fail closed; resolve prerequisites<br/>Reverify before settlement submission"]
     T -->|"Invalid proof or binding"| Z["Credit transaction fails atomically<br/>Earlier confirmed funding remains separate"]
 
@@ -108,7 +110,7 @@ flowchart TB
     classDef evidence fill:#fbf6e9,stroke:#8b7131,color:#30240d;
     class A,B,C device;
     class D,E,F,K receiver;
-    class G,H,L,M,N node;
+    class G,GD,H,L,M,N node;
     class I,O,P,Q funding;
     class J,R,S,T,U chain;
     class V,W,X,Y,Z evidence;
@@ -122,8 +124,9 @@ identity and owner commitment; credentials are not invented message fields.
 Its reserve-deposit wire binds depositor, config, asset entry, reserve state,
 source, vault, mint, token program, global funding root and note commitment. Node validates the actual message,
 signature, registered decimals, amount/accounts and simulation before a
-Cranker can submit that unchanged wire. Receiver pre-creates the linked
-settlement reference at ingress, and confirmed funding gates Node's settlement
+Cranker can submit that unchanged wire. Message-only ingress first reaches signed
+Node readiness; explicit funding approval obtains a fresh hash and completes the
+same intent. Receiver creates the linked settlement reference at attachment, and confirmed funding gates Node's settlement
 verification lease.
 
 Settlement preparation rechecks confirmed funding, TIP/current private state and a current or retained authenticated funding root in the canonical global TCAP account. Node binds an encrypted owner record and freshly blinded amount commitment, proves locally and returns the attested public execution. Cranker obtains lease-bound Mother signing and submits `tsn_register_tcap_credit_authorization_v3` followed by Memo. TSNP → TCAP → GPRU advances root/epoch transcript, with readonly reserve and no individual liability reclassification. TCAP owns the separate aggregate accounting; GPRU verifies its complete 2–64-credit proof. No pool capture or two-depositor wait remains. See [ABI](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/credit-abi.md).

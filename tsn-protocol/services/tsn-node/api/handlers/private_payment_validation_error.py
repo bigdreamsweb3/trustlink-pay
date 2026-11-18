@@ -13,7 +13,7 @@ from typing import Any, Callable, Protocol
 
 
 async def private_payment_validation_error(request: Request, exc: RequestValidationError):
-    if request.url.path == "/intents":
+    if request.url.path in {"/intents", "/network/funding/readiness", "/network/funding/complete"}:
         # Pydantic's default missing-field errors may include the entire input,
         # including a valid private note alongside the invalid/missing field.
         return JSONResponse(status_code=422, content={"detail": "Invalid payment request fields"})

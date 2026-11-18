@@ -11,6 +11,7 @@ export * from "./settlement-economics.js";
 export * from "./program.js";
 export * from "./token-registry.js";
 export * from "./payment-authorization.js";
+export * from "./funding-authorization.js";
 export * from "./payment-authorization-server.js";
 export * from "./payment-jobs.js";
 export * from "./tsn-exit.js";

@@ -1,0 +1,34 @@
+{
+  "facade": "../../node-envelope.ts",
+  "responsibility": "Restricted Node payload envelope",
+  "components": [
+    {
+      "name": "decryptPayloadForNode",
+      "file": "decrypt-payload-for-node.ts",
+      "imports": [
+        "./dependencies",
+        "node:crypto",
+        "./key",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "encryptPayloadForNode",
+      "file": "encrypt-payload-for-node.ts",
+      "imports": [
+        "./dependencies",
+        "node:crypto",
+        "node:crypto",
+        "./key",
+        "./configuration"
+      ]
+    },
+    {
+      "name": "key",
+      "file": "key.ts",
+      "imports": [
+        "./dependencies"
+      ]
+    }
+  ]
+}

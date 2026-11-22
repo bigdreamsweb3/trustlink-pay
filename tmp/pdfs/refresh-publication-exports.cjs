@@ -18,6 +18,7 @@ const {chromium} = require('C:/Users/codepara/.cache/codex-runtimes/codex-primar
   const slides=await page.locator('.slide').evaluateAll(nodes=>nodes.map(node=>node.id));
   const results=[];
   for(let i=0;i<slides.length;i++){
+    if(process.argv.includes('--repair') && i!==13)continue;
     await page.locator('.dot-btn').nth(i).evaluate(node=>node.click());
     await page.evaluate(()=>{
       for(const node of document.querySelectorAll('[data-count]'))node.textContent=node.getAttribute('data-count');

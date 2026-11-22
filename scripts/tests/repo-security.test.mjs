@@ -4,7 +4,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync,
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
-import { checkPrivateTracking, checkRepository, commitPushAll, commitPushOptions, commitPushStaged, commitStagedSnapshot, configuration, defaultCommitMessage, fetchArguments, gitEnvironment, gitExecutable, gitFailureMessage, hardenRepository, main, normalizeKey, pushArguments, pushCurrent, requireReviewedHash, stageAllChanges, stagedCommitSnapshot, trustedRemotes, validateRemote, workspace } from "../repo-security.mjs";
+import { checkPrivateTracking, checkRepository, commitPushAll, commitPushOptions, commitPushStaged, commitStagedSnapshot, configuration, defaultCommitMessage, fetchArguments, gitEnvironment, gitExecutable, gitFailureMessage, hardenRepository, main, normalizeKey, pushArguments, pushCurrent, pushReviewed, pushTimeoutMilliseconds, requireReviewedHash, stageAllChanges, stagedCommitSnapshot, trustedRemotes, validateRemote, workspace } from "../repo-security.mjs";
 
 function fixture() {
   const directory = mkdtempSync(join(tmpdir(), "trustlink-git-policy-test-"));
@@ -50,6 +50,64 @@ test("exact approved repository destinations, branches, and push destinations ar
   assert.throws(() => validateRemote(new Map([...config, ["remote.origin.pushurl", ["https://github.com/attacker/repo.git"]]]), "workspace", "origin", "main"));
   for (const branch of ["--upload-pack=evil", "main:other", "../main", "a//b", "refs/a.lock", "main\nother", "main;command"]) assert.throws(() => validateRemote(config, "workspace", "origin", branch));
   for (const pair of [["other", "origin"], ["__proto__", "origin"], ["workspace", "constructor"], ["protocol", "tsn-protocol"]]) assert.throws(() => validateRemote(config, ...pair, "main"));
+});
+
+test("pitch publication accepts only the independent deck destination", () => {
+  const expected = "https://github.com/Trustlink-Labs/TSN-Pitch-Deck.git";
+  const config = new Map([["remote.origin.url", [expected]]]);
+  assert.equal(validateRemote(config, "pitch-deck", "origin", "main"), expected);
+  for (const url of [trustedRemotes.workspace.origin, trustedRemotes.protocol.origin, "https://github.com/attacker/deck.git"]) {
+    assert.throws(() => validateRemote(new Map([["remote.origin.url", [url]]]), "pitch-deck", "origin", "main"));
+  }
+  assert.throws(() => validateRemote(config, "pitch-deck", "tsn-protocol", "main"));
+});
+
+test("push timeout allows slow uploads and rejects invalid settings before publication", () => {
+  assert.equal(pushTimeoutMilliseconds({}), 900000);
+  for (const value of ["30000", "1200000", "3600000"]) {
+    assert.equal(pushTimeoutMilliseconds({ TRUSTLINK_GIT_PUSH_TIMEOUT_MS: value }), Number(value));
+  }
+  for (const value of ["", "0", "29999", "3600001", "Infinity", "-1", "1e6", "30000.5", "synthetic-secret"]) {
+    assert.throws(() => pushTimeoutMilliseconds({ TRUSTLINK_GIT_PUSH_TIMEOUT_MS: value }), /integer from 30000 to 3600000/);
+  }
+  const previous = process.env.TRUSTLINK_GIT_PUSH_TIMEOUT_MS;
+  try {
+    process.env.TRUSTLINK_GIT_PUSH_TIMEOUT_MS = "0";
+    // The nonexistent selection cannot reach Git; timeout validation must happen first.
+    assert.throws(() => main(["commit-push-all", "nonexistent", "origin", "main"]), /TRUSTLINK_GIT_PUSH_TIMEOUT_MS/);
+  } finally {
+    if (previous === undefined) delete process.env.TRUSTLINK_GIT_PUSH_TIMEOUT_MS;
+    else process.env.TRUSTLINK_GIT_PUSH_TIMEOUT_MS = previous;
+  }
+});
+
+test("a timed-out push retains the captured commit and reports a safe retry", () => {
+  const f = fixture();
+  try {
+    const head = f.initialCommit();
+    const repo = { name: "synthetic", gitDir: f.gitDir };
+    const index = readFileSync(join(f.gitDir, "index"));
+    let invocation;
+    const run = (executable, args, options) => {
+      invocation = { executable, args, options };
+      return { error: { code: "ETIMEDOUT" }, stderr: "https://synthetic-user:synthetic-secret@fixture.invalid" };
+    };
+    assert.throws(() => pushReviewed(repo, trustedRemotes.workspace.origin, "main", head, run, {
+      TRUSTLINK_GIT_PUSH_TIMEOUT_MS: "1200000", GIT_TRACE: "1", GCM_TRACE_SECRETS: "true",
+    }), error => {
+      assert.match(error.message, /push time limit/);
+      assert.match(error.message, /local commit is retained; retry git:push:current/);
+      assert.doesNotMatch(error.message, /synthetic-user|synthetic-secret|fixture\.invalid/);
+      return true;
+    });
+    assert.equal(invocation.executable, gitExecutable);
+    assert.equal(invocation.options.timeout, 1200000);
+    assert.equal(invocation.options.env.GIT_TRACE, undefined);
+    assert.equal(invocation.options.env.GCM_TRACE_SECRETS, "false");
+    assert.deepEqual(invocation.args.slice(-3), ["--", trustedRemotes.workspace.origin, `${head}:refs/heads/main`]);
+    assert.equal(f.git(["rev-parse", "HEAD"]), head);
+    assert.deepEqual(readFileSync(join(f.gitDir, "index")), index);
+  } finally { f.dispose(); }
 });
 
 test("URL rewrite and ambient Git injection cannot redirect the reviewed fetch", () => {

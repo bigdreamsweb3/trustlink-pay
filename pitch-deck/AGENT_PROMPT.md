@@ -101,10 +101,10 @@ npm run push
 It runs:
 
 ```bash
-git add . && git commit -m "Update pitch deck" && git push origin main
+node ../scripts/repo-security.mjs commit-push-all pitch-deck origin main
 ```
 
-Use it only from inside `pitch-deck/`. It stages all changes in the standalone deck repository, commits them, and pushes `main`, which triggers GitHub Pages deployment.
+Use it only when the user explicitly requests publication. It uses the parent workspace's guarded Git helper, so that tooling checkout must be present. It stages nonignored changes in the standalone deck repository, captures the tree and parent, commits the captured changes and pushes the exact commit to the approved deck remote on `main`, which triggers GitHub Pages deployment. An empty-change retry pushes the existing commit. The helper allows 15 minutes for packing and upload; `TRUSTLINK_GIT_PUSH_TIMEOUT_MS` accepts `30000` to `3600000` milliseconds for a different limit.
 
 ## Safe Editing Rules
 
@@ -140,9 +140,9 @@ After editing:
    - The live demo and counter animations work.
    - The layout remains usable on mobile widths.
    - The browser console has no JavaScript errors.
-6. Run `npm run push` from `pitch-deck/`.
-7. Check the GitHub Actions Pages workflow.
-8. Verify `https://trustlink-labs.github.io/TSN-Pitch-Deck/` returns HTTP 200 and renders the deck.
+6. When publication is explicitly requested, run `npm run push` from `pitch-deck/`.
+7. After a successful push, check the GitHub Actions Pages workflow.
+8. Verify `https://trustlink-labs.github.io/TSN-Pitch-Deck/` returns HTTP 200 and renders the deck before claiming deployment success.
 
 ## Expected Response After Changes
 

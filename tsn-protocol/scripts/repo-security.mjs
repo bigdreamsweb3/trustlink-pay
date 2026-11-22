@@ -14,6 +14,7 @@ export const gitExecutable = process.platform === "win32" ? "C:\\Program Files\\
 export const trustedRemotes = Object.freeze({
   workspace: Object.freeze({ origin: "https://github.com/bigdreamsweb3/trustlink-pay.git", "tsn-protocol": "https://github.com/Trustlink-Labs/TSN-Protocol.git" }),
   protocol: Object.freeze({ origin: "https://github.com/Trustlink-Labs/TSN-Protocol.git" }),
+  "pitch-deck": Object.freeze({ origin: "https://github.com/Trustlink-Labs/TSN-Pitch-Deck.git" }),
 });
 
 export function gitEnvironment(source = process.env) {
@@ -25,7 +26,8 @@ export function gitFailureMessage(result, operation) {
   // Match diagnostics privately and return only fixed categories, never their values.
   const diagnostics = `${result.stderr ?? ""}\n${result.stdout ?? ""}`;
   const code = result.error?.code;
-  const reason = code === "ETIMEDOUT" ? "Git timed out; another task or a slow filesystem may be delaying it."
+  const reason = code === "ETIMEDOUT" && operation === "Approved push" ? "Git exceeded the push time limit while packing or uploading. The local commit is retained; retry git:push:current or increase TRUSTLINK_GIT_PUSH_TIMEOUT_MS."
+    : code === "ETIMEDOUT" ? "Git timed out; another task or a slow filesystem may be delaying it."
     : code === "ENOBUFS" ? "Git output exceeded the capture buffer."
     : code === "ENOENT" ? "The configured Git executable is unavailable."
     : /(?:index|config|packed-refs|HEAD|refs[^\n]*)\.lock[^\n]*(?:File exists|already exists)|another git process/i.test(diagnostics) ? "Another Git operation holds a repository lock; let it finish before retrying."
@@ -160,8 +162,8 @@ export function hardenRepository(gitDir, backupPath) {
 export function repositories(root = workspace) {
   const entries = compositeCheckout ? [ { name: "workspace", gitDir: join(root, ".git") } ] : [ { name: "protocol", gitDir: join(root, ".git") } ];
   if (compositeCheckout && existsSync(join(root, "tsn-protocol", ".git", "config"))) entries.push({ name: "protocol", gitDir: join(root, "tsn-protocol", ".git") });
-  // These independent local repositories have no approved network operation in
-  // this helper. Preserve their files/remotes while denying their transports.
+  // The deck has its own explicitly approved destination. Research remains
+  // local-only; preserve its files/remotes while denying its transports.
   for (const [name, path] of [["pitch-deck", "pitch-deck"], ["research", "research/Trustlink-Research"]]) {
     const gitDir = join(root, path, ".git");
     if (existsSync(join(gitDir, "config"))) entries.push({ name, gitDir });
@@ -285,7 +287,7 @@ export function pushArguments(gitDir, url, branch, reviewedHead) {
 
 function approvedRepository(repoName, remoteName, branch) {
   const repo = repositories().find(entry => entry.name === repoName);
-  if (!repo || !Object.hasOwn(trustedRemotes, repoName)) throw new Error("Select an available workspace or protocol repository explicitly.");
+  if (!repo || !Object.hasOwn(trustedRemotes, repoName)) throw new Error("Select an available workspace, protocol or pitch-deck repository explicitly.");
   const config = checkRepository(repo.gitDir, repoName);
   checkPrivateTracking(repo.gitDir);
   const url = validateRemote(config, repoName, remoteName, branch);
@@ -309,11 +311,22 @@ export function pushCurrent(repo, url, branch, push = pushReviewed) {
   return head;
 }
 
-function pushReviewed(repo, url, branch, expectedHead) {
+export function pushTimeoutMilliseconds(source = process.env) {
+  const value = source.TRUSTLINK_GIT_PUSH_TIMEOUT_MS;
+  if (value === undefined) return 900000;
+  if (!/^\d+$/.test(value) || Number(value) < 30000 || Number(value) > 3600000) {
+    throw new Error("TRUSTLINK_GIT_PUSH_TIMEOUT_MS must be an integer from 30000 to 3600000 milliseconds.");
+  }
+  return Number(value);
+}
+
+export function pushReviewed(repo, url, branch, expectedHead, run = spawnSync, source = process.env) {
+  const timeout = pushTimeoutMilliseconds(source);
   requireReviewedHash(expectedHead, currentHead(repo, branch));
   checkPrivateTracking(repo.gitDir, expectedHead);
-  const result = spawnSync(gitExecutable, pushArguments(repo.gitDir, url, branch, expectedHead), {
-    env: { ...gitEnvironment(), GCM_INTERACTIVE: "Never", GCM_CREDENTIAL_STORE: "wincredman", GCM_TRACE: "false", GCM_TRACE_SECRETS: "false" }, encoding: "utf8", windowsHide: true, timeout: 120000,
+  console.log(`Pushing captured ${repo.name} commit ${expectedHead}; packing and upload have a ${timeout / 1000}-second time limit.`);
+  const result = run(gitExecutable, pushArguments(repo.gitDir, url, branch, expectedHead), {
+    env: { ...gitEnvironment(source), GCM_INTERACTIVE: "Never", GCM_CREDENTIAL_STORE: "wincredman", GCM_TRACE: "false", GCM_TRACE_SECRETS: "false" }, encoding: "utf8", windowsHide: true, timeout,
   });
   if (result.error || result.status !== 0) {
     throw new Error(gitFailureMessage(result, "Approved push"));
@@ -323,6 +336,8 @@ function pushReviewed(repo, url, branch, expectedHead) {
 
 export function main(args) {
   const [command, repoName, remoteName, branch] = args;
+  // Reject an invalid timeout before a commit-all command stages or commits work.
+  if (["push", "push-current", "commit-push", "commit-push-all"].includes(command)) pushTimeoutMilliseconds();
   if (command === "check" && args.length === 1) {
     const entries = repositories();
     for (const repo of entries) {

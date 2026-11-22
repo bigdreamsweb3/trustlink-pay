@@ -176,6 +176,9 @@ tools/
 /tools/optimize_blogger_publication.py
 /tools/validate_blogger_publication.py
 
+# TMP
+tmp/
+
 
 protocol-test-runs/
 protocol-tests/*

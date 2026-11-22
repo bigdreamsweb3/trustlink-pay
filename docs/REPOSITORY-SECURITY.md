@@ -8,10 +8,11 @@ The reviewed helper accepts these exact source URLs:
 
 - `https://github.com/bigdreamsweb3/trustlink-pay.git`
 - `https://github.com/Trustlink-Labs/TSN-Protocol.git`
+- `https://github.com/Trustlink-Labs/TSN-Pitch-Deck.git` for the independent `pitch-deck` checkout
 
 [repo-security.mjs](../scripts/repo-security.mjs) hardens root/protocol Git, the independent local pitch/research repositories where present, and retained root submodule metadata. Seven configurations were hardened here. Hooks point at an empty directory; fsmonitor and recursive submodule work are disabled; Git transports are denied by default; object/TLS checks are enabled; implicit pushes are refused. Existing submodule URLs remain metadata, with update mode `none` and locally denied transports. History and files are retained.
 
-The project Git npm scripts use a real guarded helper. Fetch retrieves approved code without applying it; push requires the exact reviewed commit hash. The root `git:commit:push:all` explicitly stages the whole workspace, honoring Git ignores, then captures its tree and parent and pushes that exact commit. Root `git:commit:push:staged` retains selective staged-only behavior. Protocol/service `git:commit:push:all` aliases still select only the protocol repository and its staged changes. Generic pitch-deck/research imports and the former third-repository docs importer remain blocked. Versioned editor settings disable task/npm detection, Git autofetch and smart commits and enable sync/force-push confirmations. They cannot prevent a deliberately launched task or every extension; VS Code's application-only automatic-task preference was not added as a misleading workspace setting. Two later sidebar commits were observed waiting on commit-message editors; they ended without changing either HEAD. The original repeated npm task's trigger remains unverified.
+The project Git npm scripts use a real guarded helper. Fetch retrieves approved code without applying it; push requires the exact reviewed commit hash. The root `git:commit:push:all` explicitly stages the whole workspace, honoring Git ignores, then captures its tree and parent and pushes that exact commit. Root `git:commit:push:staged` retains selective staged-only behavior. Protocol/service `git:commit:push:all` aliases stage only the full protocol repository. The pitch-deck `push` helper stages only its independent checkout and targets its approved remote. Research imports and the former third-repository docs importer remain blocked. Versioned editor settings disable task/npm detection, Git autofetch and smart commits and enable sync/force-push confirmations. They cannot prevent a deliberately launched task or every extension; VS Code's application-only automatic-task preference was not added as a misleading workspace setting. Two later sidebar commits were observed waiting on commit-message editors; they ended without changing either HEAD. The original repeated npm task's trigger remains unverified.
 
 Run the offline checks from the root:
 
@@ -62,6 +63,23 @@ npm --prefix "C:\Users\codepara\Desktop\trust-link\tsn-protocol" run git:commit:
 ```
 
 Both stage and commit the full nonignored protocol checkout before pushing its exact commit to `https://github.com/Trustlink-Labs/TSN-Protocol.git` on `main`. Protocol `git:push:all` and the Node/Receiver/gateway `git:commit:push:all` aliases use the same whole-protocol scope, regardless of the launching directory. Root-only files are excluded from the Labs repository. For selective protocol publication, stage reviewed paths and run its `git:commit:push:staged`; for an existing commit only, use its `git:push:current`.
+
+For the explicitly requested pitch-deck publication, review its pending changes and run:
+
+```powershell
+npm --prefix "C:\Users\codepara\Desktop\trust-link\pitch-deck" run push
+```
+
+This alias uses the parent workspace's guarded helper with `commit-push-all pitch-deck origin main`. The parent tooling checkout must be present. It captures only the deck repository, preserves the checked-out branch and pushes the exact commit to `https://github.com/Trustlink-Labs/TSN-Pitch-Deck.git`; a successful push to `main` triggers that repository's Pages workflow. Pages deployment requires separate workflow/site verification.
+
+Pushes now allow 15 minutes for packing and upload instead of the previous two-minute cutoff. `TRUSTLINK_GIT_PUSH_TIMEOUT_MS` accepts an integer from `30000` to `3600000` milliseconds and is validated before staging or committing. For a slower connection, set a longer limit in the PowerShell session before retrying the existing root commit:
+
+```powershell
+$env:TRUSTLINK_GIT_PUSH_TIMEOUT_MS = '1800000'
+npm --prefix "C:\Users\codepara\Desktop\trust-link" run git:push:current
+```
+
+A timed-out push retains its local commit, and the remote result must be checked separately. `git:push:current` retries the captured HEAD without adding the new helper/documentation edits to another commit. Use `git:commit:push:all` only when those pending changes should also be captured. For an existing deck commit, the equivalent retry is `node scripts/repo-security.mjs push-current pitch-deck origin main` from the parent workspace.
 
 Run one publication task at a time for each repository. Failed staging, commit, fetch and push operations report fixed categories for timeout, lock, permissions, disk space, capture-buffer overflow, unsupported paths, embedded repositories without a commit, authentication, connection or remote reconciliation. Raw diagnostics and configuration values remain withheld. A timeout alone does not prove a lock or permission problem; let an active task finish and retry rather than deleting locks or terminating unrelated processes.
 

@@ -40,6 +40,11 @@ const routes = new Map([
     "git:force:push": "node ../../scripts/repo-security.mjs push protocol origin main",
   }],
 ]);
+if (existsSync(join(root, "pitch-deck/package.json"))) {
+  routes.set("pitch-deck/package.json", {
+    "push": "node ../scripts/repo-security.mjs commit-push-all pitch-deck origin main",
+  });
+}
 
 function noAutomaticHooks(manifest, name, label) {
   assert.equal(manifest.scripts[`pre${name}`], undefined, `${label}: pre-script bypass`);
@@ -93,12 +98,12 @@ for (const [relativePath, commands] of routes) {
       assert.equal(tokens.length, 6, "Routes supply repository, remote and branch; push-current captures HEAD, push requires a hash, and commit routes capture their selected scope");
       assert.equal(tokens[0], "node");
       assert.ok(["fetch", "push", "push-current", "commit-push", "commit-push-all"].includes(tokens[2]));
-      assert.ok(["workspace", "protocol"].includes(tokens[3]));
+      assert.ok(["workspace", "protocol", "pitch-deck"].includes(tokens[3]));
       assert.equal(tokens[4], "origin");
       assert.equal(tokens[5], "main");
       assert.doesNotMatch(command, /--(?:force(?:-with-lease)?|no-verify|allow-empty)\b|\s-M\b/);
       const helper = resolve(dirname(manifestPath), tokens[1]);
-      assert.equal(helper, resolve(root, relativePath === "package.json" ? "scripts/repo-security.mjs" : "tsn-protocol/scripts/repo-security.mjs"));
+      assert.equal(helper, resolve(root, relativePath === "package.json" || relativePath === "pitch-deck/package.json" ? "scripts/repo-security.mjs" : "tsn-protocol/scripts/repo-security.mjs"));
       assert.ok(existsSync(helper), "Guarded helper must exist at the package-relative route");
       // Routing checks never execute Git operations, npm lifecycle scripts, or the helper.
     });

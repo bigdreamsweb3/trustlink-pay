@@ -4,7 +4,7 @@ This folder is the working research cluster for establishing TSN as an emerging 
 
 ## Category statement
 
-Transfer Settlement Network (TSN) is a privacy-first decentralized settlement network designed as identity-based stablecoin payment infrastructure.
+Transfer Settlement Network (TSN) is hybrid decentralized settlement protocol infrastructure for the Internet of Value, designed around ten-digit payment identities, exact authorization and confidential asset accounting.
 
 This is a category-positioning statement, not a claim that TSN is a universally adopted or fully deployed public network. Technical capabilities must be described as implemented, tested, research, or future architecture according to the evidence available for each component.
 
@@ -42,4 +42,4 @@ The pillar should make these relationships explicit without keyword stuffing:
 
 `blockchain settlement` -> `stablecoin value` -> `identity and authorization` -> `private routing and confidential state` -> `privacy-first decentralized settlement network` -> `TSN`
 
-The conclusion should repeat the category definition in natural language and link readers to the technical architecture article once that article has been researched and published.
+The closing section should link the technical architecture article and identify unresolved evidence without repeating the category definition.

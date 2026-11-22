@@ -34,7 +34,7 @@ export async function caseNativeCrankerLeasesCoverBothAuthorizationPassesAndExpi
         for (const [kind, type, duration] of [
             ["TCAP_EPOCH_ACCOUNTING", "TSN_TCAP_EPOCH_ACCOUNTING_V1", 180000],
             ["SETTLEMENT", "TSN_TCAP_GPRU_HIDDEN_HEAD_V1", 180000],
-            ["SETTLEMENT", "TSN_CREDITCOIN", 60000], ["AUTHORIZED_FUNDING", "funding", 60000], ["TIN_OPERATION", "tin", 60000]
+            ["SETTLEMENT", "TSN_UNSUPPORTED_EXTERNAL", 60000], ["AUTHORIZED_FUNDING", "funding", 60000], ["TIN_OPERATION", "tin", 60000]
         ]) {
             const work = { ...createReceivedWork({ id: kind + type, kind, payload: kind === "SETTLEMENT" ? { intentId: funding.id } : {} }), status: "VERIFIED", verification: { verificationType: type } };
             await workCollection.doc(work.id).create(work);

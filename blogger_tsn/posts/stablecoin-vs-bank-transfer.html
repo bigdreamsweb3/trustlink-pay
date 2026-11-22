@@ -199,20 +199,11 @@
         href="https://tsn-protocol.blogspot.com/2026/07/stablecoins-replace-wire-transfers-b2b-payments.html">Can
         Stablecoins Replace Wire Transfers for B2B Payments?</a></p>
 
-<h2>Where TSN fits</h2>
-
-<p>The reason stablecoins haven't made this an easy choice for everyone yet is that they still ask too much of the
-    user: wallet addresses, private keys, public ledgers, irreversible mistakes.</p>
-
-<p>TSN's answer is to build the missing layers — <strong>identity</strong> (pay a person, not a 44-character string),
-    <strong>privacy</strong> (settle confidentially, not on a public ledger), and <strong>intent</strong> (say what you
-    want to happen; the infrastructure handles how). The goal is simple: <strong>the safety and ease of a bank transfer,
-        with the speed and cost of a stablecoin.</strong> Learn how that works in <a
-        href="https://tsn-protocol.blogspot.com/2026/08/blockchain-payment-infrastructure.html">Blockchain Payment
-        Infrastructure</a> and <a
-        href="https://tsn-protocol.blogspot.com/2026/08/intent-based-settlement-blockchain-payments.html">Intent-Based
-        Settlement for Blockchain Payments</a>.</p>
-
+<h2>TSN: Experimental Identity-Addressed Settlement</h2>
+<p>Applications can address a recipient using a ten-digit Transfer Identity Number. TSN is hybrid decentralized settlement protocol infrastructure for the Internet of Value: off-chain Receiver, Node and Cranker services coordinate work, while TIP, TSNP, TCAP and GPRU enforce identity, authorization, private-credit proofs and reserve accounting on Solana.</p>
+<p>The current experimental wallet-to-TIN flow separates canonical intent approval, exact sender-wallet funding approval, confirmed deposit verification and private settlement proving. Node resolves the recipient route and prepares the witness and encrypted Memo; Mother authorizes TSNP; Cranker submits permitted work; TCAP invokes GPRU before changing shared state. A separate complete aggregate proof performs liability reclassification.</p>
+<p>Wallet funding, token, roots, ciphertext, accounts, timing and aggregate totals remain public, and Node handles sensitive witnesses. The retained November 16 Devnet checkpoint verifies two private credits and complete accounting, with owner recovery, confidential spending and general unlinkability remaining separate checks. Planned Base, Arbitrum and Polygon PoS routes have fees and require their own finality, value delivery, authentication and recovery evidence. Optional verified credentials remain proposed.</p>
+<p><a href="/p/tsn-flow.html">Current native-credit sequence</a> &middot; <a href="/p/tsn-protocol-whitepaper.html">Whitepaper and implementation status</a></p>
 <h2>Final explanation</h2>
 
 <blockquote>

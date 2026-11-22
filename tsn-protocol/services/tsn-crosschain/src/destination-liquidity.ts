@@ -1,6 +1,7 @@
+/** Research-only validators; these target labels do not enable network support. */
 import { id } from "ethers";
 
-export type SupportedDestinationEvm = "base" | "ethereum";
+export type SupportedDestinationEvm = "base" | "arbitrum" | "polygon";
 
 export interface DestinationLiquidityRoute {
   routeId: `0x${string}`;
@@ -65,7 +66,7 @@ export function validateVerifiedLiquidityObservation(
 
 /**
  * A fast RPC read can reject an obviously unfunded route before Solana debit;
- * the Creditcoin ASC remains the cryptographic acceptance boundary.
+ * this local read does not establish cryptographic destination acceptance.
  */
 export interface DestinationLiquidityPreflight {
   route: DestinationLiquidityRoute;
@@ -80,7 +81,7 @@ export function assertDestinationLiquidityPreflight(
   nowSeconds: bigint = BigInt(Math.floor(Date.now() / 1000)),
 ): void {
   validateDestinationLiquidityRoute(preflight.route);
-  if (!preflight.verified) throw new Error("destination route is not Attestcoin-verified");
+  if (!preflight.verified) throw new Error("destination liquidity has not been verified");
   if (preflight.availableAmount < preflight.requestedAmount) {
     throw new Error("destination liquidity preflight failed");
   }

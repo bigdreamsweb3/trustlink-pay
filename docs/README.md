@@ -128,7 +128,7 @@ Each run entry should include:
 8. **Next action** — the smallest corrective or follow-up step.
 
 For other chains, also record the address model, gas asset, stablecoin or
-liquidity asset, finality behavior, explorer pair, supported Attestcoin role,
+liquidity asset, finality behavior, explorer pair, selected proof or messaging role,
 route configuration, executor boundary, and the chain-specific failure modes.
 This keeps TSN documentation grounded in settlement routing and
 privacy-aware settlement coordination while preserving the distinction that

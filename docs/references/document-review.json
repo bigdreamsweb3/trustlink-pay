@@ -30,15 +30,17 @@
     ]
   },
   "README.md": {
-    "status": "UNVERIFIED",
-    "reason": "Current native-credit prose/diagram source-reconciled; preserved historical events and external resources are not re-executed or independently refreshed. Current-flow claims have bounded source scope.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
       "docs/laboratory/architecture-map.md",
       "docs/laboratory/credit-abi.md",
-      "docs/laboratory/cryptography.md",
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/store.ts",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "terminal-dev.md": {
@@ -88,14 +90,16 @@
   },
   ".agents/architecture-terminology.md": {
     "status": "CURRENT",
-    "reason": "First-release experimental v1 convention and exact internal ABI boundary reviewed November 14; source behavior, tests, deployment and payment remain separate.",
+    "reason": "Current naming/engineering guidance and explicit user-directed retirement scope, not execution evidence.",
     "evidence": [
       "docs/laboratory/architecture-map.md",
       "docs/laboratory/credit-abi.md",
-      "docs/laboratory/cryptography.md",
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/store.ts",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   ".agents/documentation-sync-policy.md": {
@@ -120,14 +124,16 @@
   },
   ".agents/protocol-cleanup-index.md": {
     "status": "CURRENT",
-    "reason": "Source-bound instruction/reference alignment and maintenance procedure reviewed 2026-11-02; configuration and live-flow limits are explicit. Does not certify deployment, independent audit or complete payment.",
+    "reason": "Current naming/engineering guidance and explicit user-directed retirement scope, not execution evidence.",
     "evidence": [
       "docs/laboratory/architecture-map.md",
       "docs/laboratory/credit-abi.md",
-      "docs/laboratory/cryptography.md",
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/store.ts",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   ".agents/pull-docs.md": {
@@ -153,16 +159,30 @@
   },
   "docs/CROSS-NETWORK-PAYMENTS-BUILD-PLAN.md": {
     "status": "PROPOSED",
-    "reason": "Design/build instructions or external workspace proposal; not adopted native-credit runtime evidence.",
+    "reason": "Current stated integration priorities or optional credential requirements; no adapter, issuer verifier, deployment, partnership or completed route is implied.",
     "evidence": [
-      "docs/laboratory/architecture-map.md"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "docs/CROSS-NETWORK-PAYMENTS-RESEARCH.md": {
-    "status": "EXPERIMENTAL",
-    "reason": "Research/governance direction with explicit implementation limits; not evidence of a live generalized route.",
+    "status": "HISTORICAL",
+    "reason": "Preserves retired-route contract, receipt, token and failure findings under an explicit historical boundary; old observations are not refreshed or admitted as current routes.",
     "evidence": [
-      "docs/laboratory/components.md"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "docs/CURRENT-ARCHITECTURE.md": {
@@ -243,15 +263,17 @@
     "evidence": []
   },
   "docs/README.md": {
-    "status": "CURRENT",
-    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs",
-      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "docs/RPC-GATEWAY.md": {
@@ -346,9 +368,18 @@
     ]
   },
   "docs/TSN-WHITEPAPER.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
   },
   "docs/WINDOWS-TSN-COMMANDS.md": {
     "status": "UNVERIFIED",
@@ -378,15 +409,17 @@
     ]
   },
   "docs/identity-and-tin.md": {
-    "status": "CURRENT",
-    "reason": "Current native-credit contracts reconciled with inspected source. Local observations are explicitly dated; deployment, complete settlement and independent privacy review are not inferred. This classification is not a claim that every described operation passed a live test.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs",
-      "docs/laboratory/experiments/EXP-20261102-hidden-head.md"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "docs/lit-protocol-in-tsn.md": {
@@ -492,9 +525,18 @@
     ]
   },
   "docs/tsn_docs_dip_deposit_ingress_protocol.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
   },
   "docs/buidl/dial-buidl.md": {
     "status": "UNVERIFIED",
@@ -533,9 +575,18 @@
     ]
   },
   "docs/expo/ARC_INTEGRATION/PROTOCOL.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
+    "status": "HISTORICAL",
+    "reason": "Preserved earlier proposal/privacy findings with explicit supersession; removed executor actions are not current operating instructions.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
   },
   "docs/expo/ARC_INTEGRATION/Starter_ARC_AGENTS.md": {
     "status": "PROPOSED",
@@ -588,10 +639,17 @@
     "evidence": []
   },
   "docs/team/README.md": {
-    "status": "CURRENT",
-    "reason": "Navigation/category index retained under existing conventions; linked records have their own classification.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "docs/laboratory/README.md"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "docs/team/architecture/README.md": {
@@ -602,58 +660,102 @@
     ]
   },
   "docs/team/community/README.md": {
-    "status": "CURRENT",
-    "reason": "Navigation/category index retained under existing conventions; linked records have their own classification.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "docs/laboratory/README.md"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "docs/team/cross-chain/README.md": {
     "status": "CURRENT",
-    "reason": "Navigation/category index retained under existing conventions; linked records have their own classification.",
+    "reason": "Source-matched disabled cross-network admission and retained discovery boundary; historical observations are locally qualified.",
     "evidence": [
-      "docs/laboratory/README.md"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
-  "docs/team/cross-chain/creditcoin-cranker-adapter.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
-  },
-  "docs/team/cross-chain/creditcoin-direct-settlement.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
-  },
-  "docs/team/cross-chain/creditcoin-navigation.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
-  },
   "docs/team/cross-chain/sdk-cross-chain-facade.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
+    "status": "CURRENT",
+    "reason": "Source-matched disabled cross-network admission and retained discovery boundary; historical observations are locally qualified.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
   },
   "docs/team/cross-chain/sdk-ui-test.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
+    "status": "CURRENT",
+    "reason": "Source-matched disabled cross-network admission and retained discovery boundary; historical observations are locally qualified.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
   },
   "docs/team/cross-chain/single-cranker-runtime.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
+    "status": "CURRENT",
+    "reason": "Source-matched disabled cross-network admission and retained discovery boundary; historical observations are locally qualified.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
   },
   "docs/team/cross-chain/usdset-deployment.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
+    "status": "HISTORICAL",
+    "reason": "Preserves retired-route contract, receipt, token and failure findings under an explicit historical boundary; old observations are not refreshed or admitted as current routes.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
   },
   "docs/team/cross-chain/verified-addresses.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
+    "status": "HISTORICAL",
+    "reason": "Preserves retired-route contract, receipt, token and failure findings under an explicit historical boundary; old observations are not refreshed or admitted as current routes.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
   },
   "docs/team/operations/README.md": {
     "status": "CURRENT",
@@ -687,10 +789,17 @@
     ]
   },
   "docs/team/testing/README.md": {
-    "status": "CURRENT",
-    "reason": "Navigation/category index retained under existing conventions; linked records have their own classification.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "docs/laboratory/README.md"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "docs/team/testing/prototype-sdk-boundary.md": {
@@ -796,15 +905,17 @@
     ]
   },
   "tsn-protocol/README.md": {
-    "status": "CURRENT",
-    "reason": "Native-credit flow and data boundaries source-reconciled, with distinct retained capabilities, explicit configuration/live-evidence limits and corrected local references.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
       "docs/laboratory/architecture-map.md",
       "docs/laboratory/credit-abi.md",
-      "docs/laboratory/cryptography.md",
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/store.ts",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/programs/gpru/README.md": {
@@ -858,44 +969,60 @@
     "evidence": []
   },
   "tsn-protocol/services/tsn-cranker-op-daemon/README.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
   },
   "tsn-protocol/services/tsn-crosschain/contracts/adapters/_template/README.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
   },
   "tsn-protocol/services/tsn-crosschain/docs/README.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
   },
   "tsn-protocol/services/tsn-crosschain/docs/architecture.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
-  },
-  "tsn-protocol/services/tsn-crosschain/docs/attestation-protocol.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
-  },
-  "tsn-protocol/services/tsn-crosschain/docs/attestcoin-sdk-extension.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
-  },
-  "tsn-protocol/services/tsn-crosschain/docs/creditcoin-first-settlement.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
-  },
-  "tsn-protocol/services/tsn-crosschain/docs/creditcoin-integration.md": {
-    "status": "UNVERIFIED",
-    "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
   },
   "tsn-protocol/services/tsn-node/README.md": {
     "status": "UNVERIFIED",
@@ -943,11 +1070,16 @@
   },
   "tsn-protocol/tsn-docs/about/current-technology.mdx": {
     "status": "EXPERIMENTAL",
-    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
+      "docs/laboratory/architecture-map.md",
       "docs/laboratory/credit-abi.md",
-      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
-      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/tsn-docs/about/engineering-principles.mdx": {
@@ -961,31 +1093,44 @@
   },
   "tsn-protocol/tsn-docs/about/trustlink-labs.mdx": {
     "status": "EXPERIMENTAL",
-    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
+      "docs/laboratory/architecture-map.md",
       "docs/laboratory/credit-abi.md",
-      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
-      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/tsn-docs/about/what-were-building.mdx": {
-    "status": "CURRENT",
-    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
       "docs/laboratory/architecture-map.md",
-      "docs/laboratory/components.md",
-      "docs/laboratory/cryptography.md"
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/tsn-docs/api-reference/sdk/tsn-sdk.mdx": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/tsn-docs/api-reference/sdk/tins/createTinV1IdentityEnvelope.mdx": {
@@ -1038,12 +1183,17 @@
     ]
   },
   "tsn-protocol/tsn-docs/developers/network-status.mdx": {
-    "status": "CURRENT",
-    "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
       "docs/laboratory/architecture-map.md",
-      "docs/laboratory/components.md",
-      "docs/laboratory/cryptography.md"
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/tsn-docs/developers/payment-intent-lifecycle.mdx": {
@@ -1074,14 +1224,17 @@
     ]
   },
   "tsn-protocol/tsn-docs/get-started/faq.mdx": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/tsn-docs/layers/dip.mdx": {
@@ -1113,14 +1266,17 @@
     ]
   },
   "tsn-protocol/tsn-docs/layers/tin.mdx": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/tsn-docs/layers/tsnp.mdx": {
@@ -1133,13 +1289,17 @@
     ]
   },
   "tsn-protocol/tsn-docs/operators/tsn-cranker.mdx": {
-    "status": "CURRENT",
-    "reason": "Current daemon branches and source authorization mismatch reconciled; TIN execution has dated independent evidence, while native credit, V1 cluster support and destination payout remain unverified.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/store.ts",
-      "docs/laboratory/experiments/EXP-20261102-tin-staged-finalization.md"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/tsn-docs/operators/tsn-node.mdx": {
@@ -1155,31 +1315,44 @@
   },
   "tsn-protocol/tsn-docs/overview/architecture.mdx": {
     "status": "EXPERIMENTAL",
-    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
+      "docs/laboratory/architecture-map.md",
       "docs/laboratory/credit-abi.md",
-      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
-      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/tsn-docs/overview/how-it-works.mdx": {
     "status": "EXPERIMENTAL",
-    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
+      "docs/laboratory/architecture-map.md",
       "docs/laboratory/credit-abi.md",
-      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
-      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/tsn-docs/overview/introduction.mdx": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/tsn-docs/overview/separation-of-concerns.mdx": {
@@ -1270,14 +1443,17 @@
     ]
   },
   "docs/laboratory/components.md": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "docs/laboratory/credit-abi.md": {
@@ -1366,14 +1542,17 @@
     ]
   },
   "docs/laboratory/technology-reference.md": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "docs/laboratory/decisions/ADR-001-authority-and-work.md": {
@@ -1465,14 +1644,17 @@
     ]
   },
   "docs/historical-archive/README.md": {
-    "status": "CURRENT",
-    "reason": "Current archival index. Linked historical publications retain their original content and status; this index does not promote them as runtime specifications.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/tsn-docs/glossary/index.mdx": {
@@ -1487,14 +1669,17 @@
     ]
   },
   "tsn-protocol/tsn-docs/sdk/api-reference.mdx": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/tsn-docs/sdk/configuration.mdx": {
@@ -1520,14 +1705,17 @@
     ]
   },
   "tsn-protocol/tsn-docs/sdk/integrations.mdx": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "tsn-protocol/services/tsn-node/server.py",
-      "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
-      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/tsn-docs/sdk/payment-guide.mdx": {
@@ -1679,12 +1867,17 @@
     ]
   },
   "tsn-protocol/tsn-docs/api-reference/sdk/modules/cross-chain.mdx": {
-    "status": "CURRENT",
-    "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "tsn-protocol/sdks/tsn-sdk/src/index.ts",
-      "tsn-protocol/sdks/tsn-sdk/package.json",
-      "docs/references/sdk-api-inventory.json"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "tsn-protocol/tsn-docs/api-reference/sdk/modules/device-key-fingerprints.mdx": {
@@ -2074,19 +2267,31 @@
     ]
   },
   "docs/laboratory/reconciliation-register.md": {
-    "status": "CURRENT",
-    "reason": "Documentation coverage, bounded test observations and review/continuation policy; no unobserved live execution claimed.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
       "docs/laboratory/architecture-map.md",
-      "docs/references/claim-review.json"
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "docs/DOCUMENTATION_STATUS.md": {
-    "status": "CURRENT",
-    "reason": "Documentation coverage, bounded test observations and review/continuation policy; no unobserved live execution claimed.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
       "docs/laboratory/architecture-map.md",
-      "docs/references/claim-review.json"
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "docs/references/README.md": {
@@ -2155,11 +2360,16 @@
   },
   "docs/laboratory/cranker-transaction-map.md": {
     "status": "EXPERIMENTAL",
-    "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
+      "docs/laboratory/architecture-map.md",
       "docs/laboratory/credit-abi.md",
-      "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
-      "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "docs/laboratory/experiments/EXP-20261102-tin-staged-finalization.md": {
@@ -2193,13 +2403,16 @@
   },
   "docs/RUN-YOUR-OWN-TSN.md": {
     "status": "EXPERIMENTAL",
-    "reason": "Internal first-release v1 operation guidance includes clean forced SDK/browser builds and exact-one-deposit/ComputeBudget recovery boundaries. Clean-machine replay, production ceremony, service reload and live funded credit remain unverified.",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "package.json",
-      "scripts/hidden-head-setup.mjs",
-      "protocol-tests/ui/server.mjs",
-      "tsn-protocol/services/tsn-node/server.py",
-      "docs/references/TSN-OPERATOR-GUIDE-20261105.md"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   ".agents/tsn-operator-guide-policy.md": {
@@ -2214,14 +2427,17 @@
     ]
   },
   "docs/references/TSN-OPERATOR-GUIDE-20261105.md": {
-    "status": "CURRENT",
-    "reason": "Source-backed installation/operation and bounded verification procedure; independent fresh-network replay, production ceremony and live funded-note completion explicitly unverified.",
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [
-      "package.json",
-      "scripts/hidden-head-setup.mjs",
-      "protocol-tests/ui/server.mjs",
-      "tsn-protocol/services/tsn-node/server.py",
-      "docs/references/TSN-OPERATOR-GUIDE-20261105.md"
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   },
   "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md": {
@@ -2255,6 +2471,216 @@
       "tsn-protocol/services/tsn-node/server.py",
       "docs/laboratory/credit-abi.md",
       "docs/laboratory/cryptography.md"
+    ]
+  },
+  "docs/team/cross-chain/retired-evm-cranker-adapter.md": {
+    "status": "HISTORICAL",
+    "reason": "Preserves retired-route contract, receipt, token and failure findings under an explicit historical boundary; old observations are not refreshed or admitted as current routes.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "docs/team/cross-chain/retired-evm-direct-settlement.md": {
+    "status": "HISTORICAL",
+    "reason": "Preserves retired-route contract, receipt, token and failure findings under an explicit historical boundary; old observations are not refreshed or admitted as current routes.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "docs/team/cross-chain/retired-evm-navigation.md": {
+    "status": "HISTORICAL",
+    "reason": "Preserves retired-route contract, receipt, token and failure findings under an explicit historical boundary; old observations are not refreshed or admitted as current routes.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "tsn-protocol/docs/mces/candidate-assessment.md": {
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "tsn-protocol/services/tsn-node/api/handlers/README.md": {
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "tsn-protocol/services/tsn-node/app/README.md": {
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "tsn-protocol/services/tsn-node/app/networking/cross_chain/README.md": {
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "tsn-protocol/services/tsn-node/docs/architecture.md": {
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "tsn-protocol/services/tsn-node/docs/original-assessment.md": {
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "tsn-protocol/services/tsn-node/docs/verification.md": {
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "tsn-protocol/tsn-docs/overview/cross-network-roadmap.mdx": {
+    "status": "PROPOSED",
+    "reason": "Current stated integration priorities or optional credential requirements; no adapter, issuer verifier, deployment, partnership or completed route is implied.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "tsn-protocol/tsn-docs/overview/identity-attestations.mdx": {
+    "status": "PROPOSED",
+    "reason": "Current stated integration priorities or optional credential requirements; no adapter, issuer verifier, deployment, partnership or completed route is implied.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "tsn-protocol/tsn-docs/overview/payment-solutions.mdx": {
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "tsn-protocol/tsn-docs/overview/solana-integration.mdx": {
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "docs/references/TSN-POSITIONING-20261122.md": {
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
     ]
   }
 }

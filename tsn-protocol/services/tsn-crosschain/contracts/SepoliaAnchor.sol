@@ -3,7 +3,8 @@ pragma solidity ^0.8.28;
 
 /// @title SepoliaAnchor
 /// @notice Records the public evidence tuple for one TSN exit on an EVM source chain.
-/// @dev This is an evidence anchor, not a custody bridge. It stores no TIN plaintext,
+/// @dev Historical research only, with no enabled Ethereum L1 integration.
+///      This is an evidence anchor, not a custody bridge. It stores no TIN plaintext,
 ///      device key, private balance, or Solana account state.
 contract SepoliaAnchor {
     struct Anchor {

@@ -45,6 +45,10 @@
             "group": "Overview",
             "pages": [
               "overview/introduction",
+              "overview/payment-solutions",
+              "overview/solana-integration",
+              "overview/cross-network-roadmap",
+              "overview/identity-attestations",
               "overview/how-it-works",
               "overview/architecture",
               "overview/separation-of-concerns",

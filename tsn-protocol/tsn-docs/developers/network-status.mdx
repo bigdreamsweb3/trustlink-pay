@@ -28,6 +28,8 @@ console.log(status.selected);
 
 `readyForNativeTransactions` reports successful reachability probes for the configured dependencies. It does not inspect the verifier, asset flags, recipient schema or witness snapshots required for native credit. It does not authorize a payment, guarantee that a Cranker will accept work, or confirm a Solana transaction. Cross-chain readiness is a separate capability and should not be used as a gate for native transfers.
 
+For the implemented chain integration and bounded Devnet execution record, read [Transfer Settlement Network Solana integration](/overview/solana-integration). Planned EVM destinations have [separate availability requirements](/overview/cross-network-roadmap).
+
 Refresh status when it matters to the user experience, such as before asking for a signature. Environment variables belong to the application; the SDK does not read the application's `.env` file itself.
 
 For service configuration and operations, see the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

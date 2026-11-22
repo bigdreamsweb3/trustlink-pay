@@ -1,30 +1,38 @@
 ---
-title: "TSN: Private, Identity-Aware Settlement for Stablecoins on Solana"
-description: "Hybrid Internet of Value infrastructure for private, identity-aware stablecoin settlement on Solana."
+title: "Transfer Settlement Network: Hybrid Settlement Infrastructure"
+description: "TSN combines ten-digit transfer identities, off-chain verification and Solana settlement enforcement for the Internet of Value."
 ---
 
-TrustLink Labs is building foundational infrastructure for the **Internet of Value** through **TSN (Transfer Settlement Network)**, a hybrid settlement network for identity-aware, privacy-preserving value transfer. TSN is designed to make value transfer interoperable across applications and blockchain networks. Its architecture combines off-chain coordination and verification with on-chain authorization and settlement enforcement; cross-network interoperability is a design direction, not a claim that every route is live. Built on Solana by [TrustLink Labs](/about/trustlink-labs), TSN coordinates settlement infrastructure. The project is still developing its experimental first release, **v1**, with a mobile money experience as its goal. **TSNP (Transfer Settlement Network Protocol)** names the on-chain settlement protocol within the wider TSN infrastructure. The design separates payment authorization, identity resolution, transaction verification, and submission so an operator cannot change what the sender signed.
+**TSN (Transfer Settlement Network)** is being built to let payment applications address value to a ten-digit recipient identity, obtain wallet approval and settle under on-chain rules. It is hybrid infrastructure organized around a decentralized settlement protocol for the **Internet of Value**: identity resolution, verification and work coordination run off chain, while Solana programs enforce authorization, asset and state-transition checks. [TrustLink Labs](/about/trustlink-labs) is developing the experimental first release, **v1**, with a mobile money experience as its goal.
+
+The current application flow is wallet-to-TIN credit on Solana. A sender resolves the recipient's owner-provided name, reviews the payment, signs its message and separately approves the wallet deposit. Confirmed funding then supports the recipient's private credit. [Solana integration](/overview/solana-integration) explains this flow and its bounded Devnet evidence; [the integration roadmap](/overview/cross-network-roadmap) covers planned lower-fee EVM destinations.
 
 The protocol separates identity, private-state verification, and asset governance. **TIP (Transfer Identity Protocol)** manages transfer identities, including the 10-digit **TIN (Transfer Identity Number)**. **GPRU (Guarded Privacy Routing Unit)** guards the integrity and privacy of the user's private state presented to TCAP for a balance-changing action. **TCAP (Transfer Confidential Asset Protocol)** governs accepted assets, reserves, and liquidity, then applies authorized transitions atomically. A GPRU proof alone cannot move custody or authorize a payment.
 
-In TSN's settlement model, the Mother Node verifies and reserves authorized work, TSNP enforces the applicable authorization and reimbursement rules on chain, and independent Crankers pay Solana fees to submit the exact authorized transactions. The sender authorizes a payment against a portable identity rather than relying on a raw public key as the recipient-facing identifier.
+**TSNP (Transfer Settlement Network Protocol)** is TSN's on-chain authorization program. Receiver coordinates durable work and leases; Node resolves the recipient and verifies authorization, funding and proofs; Cranker submits permitted transactions. Mother authority co-signs inspected native settlement and is distinct from Node's decision-signing role.
 
 ## How the layers work together
 
 ```mermaid
 flowchart LR
-    A[Application and wallet] -->|intent and authorization| B[TSN services]
-    B -->|resolve identity| C[TIP: TIN and route]
-    B -->|private-state proof| D[GPRU: guard the transition]
-    D -->|verified state transition| E[TCAP: govern assets and apply]
-    E -->|confirmed settlement| F[Solana]
+    A[Application and wallet] --> N[Node verification]
+    N --> R[Receiver coordination]
+    N --> I[TIP identity and route]
+    R --> K[Cranker submission]
+    K --> P[Mother-authorized TSNP call]
+    P --> T[TCAP asset and transition checks]
+    T --> G[GPRU proof verification]
+    G --> T
+    T --> S[Atomic shared-state update on Solana]
 ```
 
-GPRU's proof is designed to establish that the hidden user state is current and that the proposed transition follows from it, without making GPRU a custodian. TCAP remains responsible for the funds and the atomic balance-changing action.
+This diagram summarizes the native settlement checks. The [complete lifecycle](/developers/payment-intent-lifecycle) adds wallet funding, confirmation and aggregate accounting to this program-level view.
 
-## Use the SDK
+## Build a payment experience
 
-The TypeScript SDK gives applications helpers for checking configured network services, working with TIN identity, preparing wallet-authorized payment intents, and following their status. Start with [Build with the TSN SDK](/sdk/index), then follow the [payment lifecycle](/developers/payment-intent-lifecycle).
+Payment-app developers can use the TypeScript SDK to resolve a TIN, prepare the sender's approved request, check configured services and reconcile funding and settlement status. Begin with [SDK setup](/sdk/getting-started), then use [the payment guide](/sdk/payment-guide) and [the complete lifecycle](/developers/payment-intent-lifecycle) to connect wallet callbacks and confirmation handling.
+
+Identity providers can review [TIP and TIN](/layers/tin) and the proposed [credential-attestation extension](/overview/identity-attestations). The current display name is owner-provided; an optional verified personal or business name needs an implemented issuer-verification and consent policy. Builders evaluating cross-network payouts can use [the EVM roadmap](/overview/cross-network-roadmap) to assess asset, liquidity, finality and receipt requirements before implementing a route.
 
 ## Current capability boundary
 

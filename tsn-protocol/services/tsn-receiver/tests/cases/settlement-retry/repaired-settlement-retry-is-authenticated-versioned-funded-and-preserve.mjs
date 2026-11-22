@@ -169,7 +169,7 @@ export async function caseRepairedSettlementRetryIsAuthenticatedVersionedFundedA
             { ...leased, nodeLease: { owner: "another-node", expiresAt: new Date(Date.now() + 60000).toISOString() } },
             { ...leased, result: { signature: "durable-possibly-broadcast-signature" } },
             { ...leased, result: { reason: "ambiguous-execution" } },
-            { ...leased, verification: { verificationType: "TSN_CREDITCOIN_PAYOUT", verifiedPayload: { tcapCreditTransition: transition } } },
+            { ...leased, verification: { verificationType: "TSN_UNSUPPORTED_EXTERNAL_PAYOUT", verifiedPayload: { tcapCreditTransition: transition } } },
             { ...leased, verification: { verificationType: "TSN_TCAP_GPRU_HIDDEN_HEAD_V1", verifiedPayload: { tcapCreditTransition: { ...transition, fundingRootAccount: undefined } } } },
             { ...leased, verification: { verificationType: "TSN_TCAP_GPRU_HIDDEN_HEAD_V1", verifiedPayload: { tcapCreditTransition: { ...transition, proof: { publicInputs: Array(12) } } } } },
             { ...leased, payload: { ...leased.payload, intentId: "another-funding" } },

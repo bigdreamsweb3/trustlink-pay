@@ -7,10 +7,10 @@ share the TIN and confirm the resolved display name before authorizing a
 transfer. Solana transactions still use public keys, token accounts, program
 accounts, and PDAs at the settlement boundary.
 
-**GPRU (Guarded Privacy Routing Unit)** is being developed as a separate
-protocol for unique transaction DNA and proof-verified confidential state
-transitions. It is not merely a static authorization scope or another name
-for TIN.
+**GPRU (Guarded Privacy Routing Unit)** verifies proof-bound confidential state
+transitions. TIP resolves identity and route membership; TCAP governs assets
+and accounting. These responsibilities remain distinct in TSN's hybrid
+settlement infrastructure.
 
 ## Ownership and private registry
 
@@ -26,8 +26,8 @@ flow. Receiver work and Cranker execution carry the commitment and ciphertext,
 not the plaintext TIN or lookup secret. The Node needs the secret to verify
 issuer proofs and resolve an identity when explicitly asked to do so.
 
-The program also creates an owner-indexed recovery PDA containing only the
-wallet-encrypted recovery envelope, and enforces one active TIN per owner.
+The program also creates an owner-indexed recovery PDA containing the owner's
+public key and wallet-encrypted TIN recovery envelope, and enforces one active TIN per owner.
 After reconnecting, the owner can locate that PDA and decrypt the TIN locally
 with the authorized recovery envelope workflow. No plaintext wallet-to-TIN index is needed.
 
@@ -47,36 +47,45 @@ with the authorized recovery envelope workflow. No plaintext wallet-to-TIN index
    resolves the current TIP route, validates the request, and constructs the
    recipient transition; the sender SDK does not resolve recipient TIP state.
 
+## Display names and planned credential attestations
+
+Current SDK and Node identity resolution return an owner-provided display name and an empty verified-credential list. Canonical payment messages can bind credential-shaped metadata, but that schema does not verify an issuer, government identity or business registration. A wallet signature proves approval/control of the signing key for the checked request, not legal identity by itself.
+
+Optional issuer-backed attestations are planned for a TIN. A verified integration would need trusted issuer authentication, subject/wallet/TIN binding, credential expiry and revocation, explicit consent and a policy for what a sender can resolve. Solana attestation services or other network providers are evaluation possibilities; no provider partnership or completed credential verifier is claimed. See [SDK identity resolution](../tsn-protocol/sdks/tsn-sdk/src/tins.ts) and [Node identity resolution](../tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py).
+
 ## Current GPRU design status
 
-TIP V1 stores a versioned GPRU ElGamal scan public key and its integrity
-commitment, with separate TIP route and policy commitments. The source now
-contains a GPRU derivation primitive: Node can derive a unique per-transaction
-DNA and one-time ElGamal public key, while the owner later derives the
-matching private key locally from owner-held secret material. The current source connects Node witness/prover preparation and Memo creation to the TSNP/TCAP credit ABI and GPRU verifier CPI. Local proofs/builds are verified separately; matching deployment/configuration and confirmed execution remain required.
+TIP V1 stores versioned GPRU encryption and balance-scan public keys, their
+integrity bindings and separate route/policy commitments. Node prepares the
+private witness, proof and encrypted owner Memo for native credit. Mother
+authority authorizes TSNP, which invokes TCAP; TCAP checks the funding and
+state context and invokes GPRU before advancing the shared state and credit
+transcript atomically. Individual credit changes no reserve liability counters;
+TCAP applies complete aggregate accounting through a separate proof-verified
+action. See the [current credit ABI](laboratory/credit-abi.md).
 
-The target credit flow has Node resolve TIP and construct the transition,
-Receiver accept and store signed ingress, and Cranker submit immutable Node
-authorized work. For a debit, an on-chain GPRU proof must establish that the
-encrypted prior balance covers the debit and that the successor is correct.
-For a TIN-to-TIN transfer, the proof must establish value conservation while
-keeping both DNA outputs unique. TCAP changes reserve liabilities only after
-GPRU validation succeeds atomically. Debit and exit remain unavailable until
-the source program implements and verifies that contract.
+The [November 16 Devnet checkpoint](laboratory/experiments/EXP-20261116-private-credit-epoch.md)
+establishes two finalized native private credits and complete accounting of
+their shared epoch. Retained debit, exit and Epoch Treasury instructions exist
+in source, but this result does not establish a current end-to-end confidential
+debit, TIN-to-TIN transfer or exit. Those capabilities require their own actor,
+account, proof, conservation and execution review; source presence and native
+credit evidence must not be substituted for it.
 
-The owner recovery PDA is separate from the commitment-derived identity PDA:
-it lets the connected wallet locate its encrypted recovery envelope without a
-public `wallet -> TIN` mapping. Newly created records use V4 recovery envelopes;
-the SDK retains read-only V2/V3 decryption for existing records. Neither lookup
-choice by itself reveals a settlement transaction graph. Transaction
-visibility depends on the transfer and settlement path, independently of TIN
-resolution.
+The owner recovery PDA is separate from the commitment-derived identity PDA
+and lets the connected wallet locate its encrypted recovery envelope. Newly
+created records use V4 recovery envelopes; the SDK retains read-only V2/V3
+decryption for existing records. The ten-digit TIN remains encrypted, while
+registration publicly associates the registry with its owner key through the
+unsalted owner commitment, recovery account and creation history. This limits
+unlinkability independently of encrypted identity contents; see the
+[cryptography visibility boundary](laboratory/cryptography.md#visibility-and-trust).
 
 ## Data boundaries
 
 | Data | Boundary |
 | --- | --- |
-| Program ID and commitment-derived PDA | Public protocol metadata; does not expose a wallet-to-TIN index |
+| Program ID, commitment-derived PDA and registration owner binding | Public metadata; the ten-digit TIN is encrypted, but the owner key can be associated with its registry |
 | Owner authorization and route commitments | Integrity metadata; not the plaintext TIN |
 | TIN, display name, and master-seed envelope | Encrypted in the TIN V1 registry |
 | Lookup secret | Trusted issuer and Node configuration; never browser, Receiver, or Cranker input |

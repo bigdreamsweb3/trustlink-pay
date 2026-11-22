@@ -1,1 +1,1 @@
-"""Explicit test component package."""
+"""External settlement admission regression components."""

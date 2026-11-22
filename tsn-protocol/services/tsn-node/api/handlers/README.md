@@ -30,7 +30,7 @@ Inputs, outputs, dependency types and raised exceptions are recorded per compone
 - [list_pending_intent_work](list_pending_intent_work.py): Pending payment-intent submissions for crankers to create on chain.
 - [get_metrics](get_metrics.py): Get metrics. See the named validation/return operations in its dedicated implementation.
 - [post_cranker_heartbeat](post_cranker_heartbeat.py): Post cranker heartbeat. See the named validation/return operations in its dedicated implementation.
-- [get_settlement_networks](get_settlement_networks.py): Return only destination routes ready for Creditcoin settlement.
+- [get_settlement_networks](get_settlement_networks.py): Return the admitted external routes; none are enabled in the current runtime.
 - [get_network_overview](get_network_overview.py): Get network overview. See the named validation/return operations in its dedicated implementation.
 - [get_epoch_status](get_epoch_status.py): Get epoch status. See the named validation/return operations in its dedicated implementation.
 - [close_epoch](close_epoch.py): Manually close the current epoch, archive it, and roll unresolved work forward.

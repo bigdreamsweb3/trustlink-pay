@@ -38,7 +38,7 @@ test("only unsigned native work is eligible for a fresh Node decision", () => {
     assert.equal(nativeWorkRetryReason(work, reasons[2]), null);
   }
   for (const kind of ["AUTHORIZED_FUNDING", "TIN_OPERATION", "TCAP_FUNDING_POOL", "other"]) assert.equal(nativeWorkRetryReason({ kind }, new Error(reasons[2])), null);
-  assert.equal(nativeWorkRetryReason({ kind: "SETTLEMENT", verification: { verificationType: "TSN_CREDITCOIN" } }, new Error(reasons[2])), null);
+  assert.equal(nativeWorkRetryReason({ kind: "SETTLEMENT", verification: { verificationType: "TSN_UNSUPPORTED_EXTERNAL" } }, new Error(reasons[2])), null);
   assert.equal(nativeWorkRetryReason({ kind: "SETTLEMENT" }, new Error(reasons[2])), null);
 });
 

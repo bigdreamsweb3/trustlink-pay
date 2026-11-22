@@ -6,8 +6,12 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "scripts/**/*.ts"]
+  "include": [
+    "src/**/*.ts"
+  ]
 }

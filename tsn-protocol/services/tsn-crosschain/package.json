@@ -3,22 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit",
-    "deploy": "tsx scripts/deploy.ts --scope creditcoin-core",
-    "deploy:devnet": "tsx scripts/deploy.ts --scope creditcoin-core --network creditcoin-cc3-testnet",
-    "deploy:creditcoin": "tsx scripts/deploy.ts --scope creditcoin-core --network creditcoin-cc3-testnet",
-    "deploy:creditcoin-direct": "tsx scripts/deploy-creditcoin-direct.ts",
-    "deploy:usdset": "tsx scripts/deploy-usdset.ts",
-    "deploy:registry": "tsx scripts/deploy.ts --registry-only --network creditcoin-cc3-testnet",
-    "deploy:destination": "tsx scripts/deploy-destination.ts",
-    "configure:route": "tsx scripts/configure-route.ts",
-    "attest:liquidity": "tsx worker/destination-liquidity-attest-worker.ts"
+    "build": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@gluwa/asc-contracts": "^0.2.1",
-    "@gluwa/usc-sdk": "^0.18.0",
-    "dotenv": "^16.4.7",
-    "ethers": "^6.15.0"
+    "ethers": "^6.15.0",
+    "@openzeppelin/contracts": "5.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",

@@ -1,275 +1,104 @@
-# TSN Infrastructure and TSNP Protocol
+# TSN: Hybrid Settlement Infrastructure for the Internet of Value
 
-## Private, identity-aware settlement infrastructure for stablecoin transfers
+**Status: EXPERIMENTAL first-release v1 infrastructure; publication revised 2026-11-22.** Current descriptions follow the [architecture map](./laboratory/architecture-map.md), [private-credit ABI](./laboratory/credit-abi.md) and [cryptographic boundaries](./laboratory/cryptography.md). The retained [November 16 Devnet checkpoint](./laboratory/experiments/EXP-20261116-private-credit-epoch.md) establishes two finalized private credits and their complete aggregate accounting. That evidence does not establish production readiness, general unlinkability, complete owner recovery, confidential debit or cross-network delivery.
 
-### Abstract
+## Abstract
 
-TrustLink Labs is building foundational infrastructure for the **Internet of Value** through **TSN (Transfer Settlement Network)**, a hybrid settlement network designed to make value transfer interoperable, identity-aware, and privacy-preserving across applications and blockchain networks. TSN combines off-chain coordination and verification with on-chain authorization and asset settlement. **TSNP (Transfer Settlement Network Protocol)** is the on-chain settlement protocol within TSN. **TIP** manages transfer identities. **GPRU (Guarded Privacy Routing Unit)** is designed to guard the integrity and privacy of the user's private state presented to **TCAP**. TCAP governs accepted assets, authorization, reserve liquidity, and atomic application of valid transitions; **DIP** defines deposit ingress. Circle's **CCTP** is a separate cross-chain transfer protocol used by supported integrations. The native-credit proof hides the recipient TIN route and private predecessor witness from the on-chain statement. The owner retains private recovery/history material. However, Node derives the published nullifier from the public deposit signature and TCAP program ID, so an observer can compute the funding-to-credit link without a secret. Amount, asset, shared roots, successor point, ciphertext, accounts and timing are also visible, and the authorized Node handles private resolution/witnesses. Direct wallet transfers expose their endpoints; confidential debit and exit require separate execution evidence. The implemented source does not establish general unlinkability, owner-only knowledge or completed live settlement. Required artifact/witness settings and matching chain/verifier state remain runtime gates; see the [canonical privacy record](./laboratory/cryptography.md).
+Applications can address digital value through a ten-digit payment identity while the owner authorizes the exact transfer. TrustLink Labs is building **Transfer Settlement Network (TSN)** as hybrid, decentralized settlement protocol infrastructure for the **Internet of Value (IoV)**. Its purpose is to route value using payment identities and exact authorizations while keeping identity, coordination, cryptographic verification and asset accounting distinct. Hybrid describes the combination of off-chain Receiver, Node and Cranker services with on-chain authorization, proof verification and reserve accounting. TSN relies on the underlying blockchain's consensus and on explicit service and governance trust boundaries.
 
-The current source accounting domain is Solana. The repository also contains the Creditcoin-first EVM settlement boundary, Attestcoin route verification, destination vault/executor contracts, and deployment helpers. These source components are not the same as a live production deployment: testnet deployment and real transaction evidence are required before claiming the cross-chain path is operational.
+**TIP (Transfer Identity Protocol)** manages a **TIN (Transfer Identity Number)**, a ten-digit payment identity. **TSNP (Transfer Settlement Network Protocol)** authorizes settlement on chain. **TCAP (Transfer Confidential Asset Protocol)** governs approved assets, custody reserves, funding records and confidential liabilities. **GPRU (Guarded Privacy Routing Unit)** verifies hidden route and balance transitions; it does not hold reserve tokens. **DIP (Deposit Ingress Protocol)** names a separate ingress boundary, and Circle's **CCTP (Cross-Chain Transfer Protocol)** is an external integration whose availability must be established for each route.
 
-## 1. Protocol model
+The current experimental settlement domain is Solana. Planned EVM expansion prioritizes lower-fee networks such as Base, Arbitrum and Polygon PoS, subject to route-specific implementation and security evidence. Base and Arbitrum are Ethereum Layer 2 networks; Polygon PoS is an EVM sidechain with different security assumptions. These networks have transaction fees, and a sponsored user experience still has an underlying cost. Ethereum Layer 1 integration is outside the current priority because its fee model is unsuitable for the intended low-cost payment experience. No live TSN payout route on these EVM targets is established by this paper.
 
-A payment is a state transition authorized by the sender, not an instruction assembled by a relay. The sender signs the payment details and reserve-funding authorization. Receiver accepts and stores ingress, while Node independently resolves the recipient TIN through TIP, validates the route and asset, and constructs recipient transition data. The sender device does not resolve the recipient's TIP state or create the recipient's GPRU transition.
+## 1. Identity and the Internet of Value
 
-The proof-shaped credit route in source is:
+A TIN separates the identifier a sender enters from the blockchain accounts used for execution. TIP maintains identity registration, owner recovery records and authenticated route membership. A TIN is neither a private key nor a public token balance account. The sender authorizes the recipient TIN, asset, amount, fee and validity window; the Node resolves the permitted recipient route and verifies its relationship to current TIP state.
 
-```text
-Sender authorization and funding
-    → Receiver ingress acceptance
-    → Node TIP resolution and verification
-    → Groth16 proof generation (implemented local adapter; explicit configuration required)
-    → Cranker submission of authorized work
-    → TSNP passes proof to TCAP
-    → GPRU verifies hidden-head transition and Memo binding
-    → TCAP atomically advances shared root and reserve liabilities
-```
+The IoV direction is a payment identity that applications can use to coordinate value across supported settlement environments. Portability is a design goal, not evidence that every network currently accepts the identity. Each new environment requires its own asset, authorization, liquidity, finality, execution and recovery contract.
 
-TIP is the Transfer Identity Protocol; TIN is one 10-digit identity within
-TIP. GPRU (Guarded Privacy Routing Unit) is a standalone program with one-time
-ElGamal DNA-key verification and a Groth16 hidden-head verifier. The TSNP/TCAP
-credit ABI carries its proof. TCAP (Transfer Confidential Asset Protocol)
-governs approved assets and reserves, and updates one global commitment root
-atomically with reserve liabilities. Node currently has no configured proof
-service, so the path is not operational.
+Optional credential attestations are a proposed extension. An owner could associate a provider-verified personal or business name with a TIN and selectively present that credential during recipient confirmation. Integration requires a supported issuer, schema, owner-consent flow, binding to the intended TIN, revocation and expiry handling, and a policy for disclosure. No integrated Solana Attestation Service or Sumsub identity-verification flow is established by the inspected TSN implementation. Wallet control, a registered name and a government-verified identity remain different claims.
+
+## 1A. Application and developer workflows
+
+Wallet and payment applications can use the current experimental Solana SDK flow to prepare a TIN-targeted intent, request owner funding approval and track the separate funding and settlement outcomes. Applications must surface failures accurately and reconcile successful settlement with chain evidence before presenting a private credit as complete.
+
+Merchant recipient confirmation is a future credential use case: an opted-in verified business name could help a sender assess the intended TIN, subject to issuer, validity and disclosure policy. It is not a deployed TSN verification service. Developers integrating new networks must establish the route-specific value, finality, authorization and recovery contracts before offering payments on that network.
 
 ## 2. Participants and authority
 
-The owner device holds signing and private recovery material. Receiver accepts and stores authenticated ingress. Node verifies the signed request and resolves TIP. Mother and TSN authorize settlement within their current program contract. Cranker submits the exact authorized transaction and cannot alter its bound fields. The credit ABI carries a proof that GPRU verifies before TCAP advances the shared root. The local Node witness/prover adapters are implemented, and the November 2 experiment verified the matching November 1 development setup, local proofs and four SBF builds. Runtime configuration, deployed verifier/root state and confirmed settlement are separate gates; see [the dated readiness record](./laboratory/experiments/EXP-20261102-hidden-head.md).
+The owner wallet signs the canonical payment intent and separately approves the exact funding transaction. The SDK prepares these approvals and requests. Receiver stores restricted ingress and manages versioned decisions and leases. Acceptance by Receiver records work; it does not settle value.
 
-No coordination role grants a spending key or unilateral authority to redirect value.
+Node verifies signatures, recipient route, asset policy, funding evidence and the private transition. It intentionally handles sensitive routes, witnesses and amount openings. Mother authority co-signs the inspected settlement within TSNP's authorization boundary. A Node decision signature and Mother authorization have distinct roles.
 
-## 2A. Community route governance
+Cranker claims leased work, checks the Node's execution projection and submits permitted transactions. It submits the owner's funding wire unchanged and cannot replace its fields or sign on the owner's behalf. For native settlement, its fee-payer signature follows Mother authorization. Chain execution enforces the bound accounts, validity window, current state and proof; an operator response alone does not establish chain acceptance.
 
-TSN treats network expansion as a settlement-infrastructure decision, not as a
-simple chain-list update. A proposed destination changes the asset contract,
-executor, liquidity source, finality assumptions, gas model, message route,
-monitoring requirements, and failure recovery procedure. The community can
-propose, review, and vote on those changes through an evidence-based route
-admission process.
+## 3. Solana wallet deposit to TIN credit
 
-The intended lifecycle is:
+The active private-credit flow has separate funding and settlement transactions:
 
-```text
-route proposal
-    → deployment and liquidity evidence
-    → technical and security review
-    → public discussion and vote
-    → timelocked registry activation
-    → Node live-liquidity gate
-    → authorized settlement
-```
+1. The sender reviews and signs a canonical TIN-targeted intent. Node verifies message-only authorization and Receiver records funding readiness.
+2. The owner explicitly approves the exact TCAP deposit with a fresh blockhash and wallet signature. Receiver links funding and settlement work; Cranker submits that signed deposit unchanged.
+3. TCAP verifies the actual SPL token transfer into its reserve vault, records pending liabilities and appends an asset-and-amount-bound funded leaf atomically. Node requires confirmed funding before preparing the credit.
+4. Node selects authenticated funding membership, reconstructs current TIP and TCAP witnesses, constructs the encrypted owner Memo and proves the private amount transition. Mother authorizes the inspected TSNP transaction.
+5. Cranker submits the authorized TSNP call followed by its bound Memo. TSNP invokes TCAP, and TCAP invokes GPRU. Proof success advances the shared head/nullifier root and appends the blinded credit commitment to the asset epoch atomically.
+6. Separate complete aggregate accounting verifies the accepted epoch transcript and reclassifies its authenticated total from pending to settled confidential liabilities. Owner history and balance recovery require their own validation.
 
-Community approval does not create value, override a sender-signed intent,
-replace Attestcoin proof verification, or give a Cranker payout authority. The
-Node still validates the route and exact authorization, the Cranker submits
-only the leased transaction, and the destination vault remains the source of
-stablecoin liquidity. Verified source and settlement signatures identify who
-submitted a proposal or vote; they do not by themselves prove that a contract,
-token, or liquidity provider is safe.
+A single genuine confirmed deposit can support an individual credit. There is no funding-pool creation, source-count wait or capture transaction in this runtime. Individual credit transfers no reserve tokens and makes no public per-credit liability reclassification. The TCAP accounting epoch is distinct from the retained TSNP Epoch Treasury, AcceptedIntent, payout and refund instruction family.
 
-Before the on-chain registry is deployed, the team must define quorum, voter
-eligibility, duplicate-vote prevention, sybil resistance, proposal expiry,
-timelocks, emergency pause, conflict disclosure, and route retirement. The
-current repository documents this governance design but does not claim that a
-community registry or live route vote is deployed.
+## 4. Funding membership, private state and proof
 
-## Immutable On-Chain Destination Registry (Community-Governed)
+TCAP's global funding account authenticates current and up to 128 retained root/count pairs. A proof-selected root must remain in that history, while spending uses the latest shared head/nullifier state. Historical funding membership cannot restore a spent note. An evicted funding root or changed shared state requires fresh unsigned verification; signed attempts require exact receipt reconciliation.
 
-`DestinationRegistry.sol` is the proposed append-only admission layer for
-future settlement routes. It does not replace
-`DestinationLiquidityRegistry.sol`: the governance registry records a route
-proposal and its community decision, while the operational registry records
-proof-backed liquidity observations and reservations used by the Creditcoin
-Settlement Hub.
+The current private-credit statement has thirteen public inputs: predecessor and successor shared roots, Memo and action commitments, nullifier, TIP route root, successor portfolio root, successor balance point coordinates, encrypted blinding delta, ephemeral point coordinates and authenticated funding root. Private witnesses establish recipient route/head membership, the selected asset's balance opening, exact funded amount and amount-commitment blinding.
 
-A route proposal binds a destination chain, destination network, executor,
-stablecoin, and a digest of the Solana evidence validated by the TSN Node. A
-configured Creditcoin route attestor signs the complete proposal using EIP-712.
-Community voters can vote once per route; quorum and a timelock are required
-before activation. An emergency guardian can deactivate a route without being
-able to rewrite its immutable route fields.
+The spend nullifier derives from a private funding-note secret, rather than a public deposit signature. Fresh blinding hides the individual amount commitment. GPRU verifies the Groth16 statement and binds the following Memo's bytes and prefix fields to it. Its circuit-specific development proving key, verifier key and initialized accounts must match the running ABI; compilation or a decryptable Memo does not independently establish a valid settlement.
 
-The registry is a governance control, not a liquidity source or a payout
-contract. The Attestcoin ASC continues to verify destination liquidity, the
-Creditcoin Hub consumes the authorized commitment and publishes the
-authenticated message, and the destination executor releases stablecoins from
-its prefunded vault. The Node verifies the original Solana signature and
-commitment before producing the evidence digest; the registry does not claim
-that Solidity natively verifies a Solana signature.
+The owner-encrypted action record is transaction instruction data, not a persistent public balance account. Owner-held scan material recovers the proof-bound blinding delta. Recovery must validate commitment openings, authorization, sequence and predecessor linkage against the actual settled statement. Complete owner recovery remains a separate unverified outcome in the cited checkpoint.
 
-This contract and governance design are included as integration code and
-technical documentation. `DestinationRegistry` is deployed on CC3 Testnet at
-[`0xd8DD919B3Cf8C365Bb0dc82Dd3D06Cf5B8f41ba0`](https://creditcoin-testnet.blockscout.com/address/0xd8DD919B3Cf8C365Bb0dc82Dd3D06Cf5B8f41ba0)
-under transaction
-[`0xe34fd69dc1e8b39e308e13493918b8238a5a69f9bc327d7ea57daeaef659bf52`](https://creditcoin-testnet.blockscout.com/tx/0xe34fd69dc1e8b39e308e13493918b8238a5a69f9bc327d7ea57daeaef659bf52).
-The registry is therefore live as code, but no route is live until proposal,
-voting, activation, liquidity, and payout receipts are observed.
+## 5. Reserve and aggregate liability accounting
 
-## 3A. Payment routes
+TCAP holds approved reserve assets and tracks funded obligations. Each successful private credit contributes a blinded commitment and nullifier to an ordered asset-specific transcript. Node reconstructs every accepted credit and uses its restricted amount-opening journal to prepare the separate aggregate proof. Receiver serializes this work around the shared private root; Cranker submits the account operation.
 
-The repository contains the following route categories. The wallet-to-TIN credit ABI carries the hidden-head proof, but its circuit and prover path are not operational. Debit and exit are not established as enabled:
+The aggregate circuit requires the complete ordered set of 2–64 credits. TCAP verifies that proof through GPRU before moving the authenticated total from pending to settled confidential liabilities, advancing the accounting epoch and marking the prior epoch accounted. Custody assets, total liabilities and uncredited pending funding are unchanged. A singleton credit can remain in its open accounting epoch indefinitely; the batch minimum is not a requirement for crediting an individual deposit.
 
-| Route | Settlement behavior |
-| --- | --- |
-| Wallet deposit → wallet exit | Public wallet transfer boundary; verify the exact program route and deployment. |
-| Wallet deposit → TIN credit | Proof-shaped TSNP/TCAP source path; Node fails closed until Groth16 proving is configured. |
-| TIN debit → TIN credit | Not established as operational; requires verified debit, credit, and conservation proofs. |
-| TIN debit → wallet exit | Not established as operational; requires verified affordability, destination binding, and reserve solvency. |
-| Solana → Creditcoin or another supported EVM network | Cross-chain source/deployment status is separate; see its own testnet evidence before treating it as operational. |
+Current scheduling queues accounting at 64 credits, or after 120 slots for a batch of 2–63. Those are Node scheduling rules; the on-chain proof check has no 120-slot expiry. Accounted epoch accounts remain on chain, and automatic timeout refunds or rent reclamation are not implemented by this path. Mixed debit, transfer and exit accounting remains proposed work.
 
-The cross-chain route extends the settlement boundary; it does not replace the native Solana paths.
+## 6. Cross-network settlement direction
 
-## 3. Solana credit source path
+A settlement domain has its own consensus, finality, asset contracts and transaction rules. Future domain adapters must map a verified authorization into the selected environment while preserving exact recipient, token, amount, fee, nonce and validity bindings. Base, Arbitrum and Polygon PoS are candidate lower-fee EVM targets, not enabled routes or a guaranteed deployment order.
 
-The TSN source instruction `register_tcap_credit_authorization_v2` validates
-the Mother authorization and passes a hidden-head Groth16 proof to TCAP
-`credit_gpru_memo_v1`. TCAP checks the approved asset, authorization signer,
-validity window, current root and sequence, pending liability, and reserve
-solvency, then invokes GPRU `verify_hidden_head_transition_v1`. A valid proof
-allows TCAP to advance the shared root and reserve liabilities atomically. The
-encrypted Memo remains transaction instruction data.
+Cross-network implementation must establish source finality and verifiable evidence, destination message authentication, replay rejection, execution authority and recovery after partial progress. The team must select and validate the connection mechanism for each route; this whitepaper does not prescribe an unimplemented bridge, universal attestation provider or chain-native verifier.
 
-The proof is intended to establish that the private per-TIN/asset head is
-current and insert a nullifier while the shared root advances. This path does
-not create a per-TIN TCAP PDA. The Node returns
-`GPRU_GROTH16_PROVER_NOT_CONFIGURED`, so it does not currently produce an
-authorization for this proof path.
+A proof or message is not a payment asset. Destination settlement also needs an actual supported value-transfer mechanism or prefunded liquidity in the registered token and vault. Native network tokens pay gas; stablecoins are the intended payment asset. A liquidity observation, source receipt or accepted message must not be presented as the final recipient payout.
 
-## 4. State and commitments
+## 7. Route admission and governance
 
-The current credit instruction uses a shared `TcapCommitmentRootStateV1`
-account. It checks and advances the global root/sequence and emits an opaque
-transition digest. It does not create or update the legacy `TCapTinTipV1`
-account. The Memo commitment binds instruction bytes; it does not prove that
-those bytes represent a valid encrypted balance by itself.
+Community route governance is a proposed admission process. A proposal must identify the destination network, chain identifier, executor, token, liquidity model, finality assumptions, source-evidence mechanism, gas costs, monitoring and failure recovery. Technical and security review precede any decision to activate a route. Community approval cannot create liquidity or override a sender-signed authorization.
 
-The updated Circom source defines twelve public inputs: old/new global roots,
-Memo and action commitments, nullifier, TIP route root, successor portfolio
-root and selected-token successor Pedersen point X/Y, plus a one-time encrypted
-blinding delta and its ephemeral point X/Y. Private witnesses hold route/head
-membership, sequence, nested token-map paths, balance openings, and the
-ciphertext opening. The circuit constrains that ciphertext to encrypt the exact
-delta used in the Pedersen transition. The owner-encrypted Memo body omits the
-delta; the owner recovers it using the TIP-registered scan secret. R1CS
-generation has succeeded, but the circuit has not been independently reviewed.
-No trusted setup artifacts, validated key converter, prover service, witness
-provider, initialized verifier, or end-to-end proof evidence is established.
-The ABI exposes action kind, token ID, and amount. The shared root is a common
-account referenced by every update, so it exposes global sequencing and
-protocol-level linkage.
+Before operational governance can be claimed, the team must establish voter eligibility, quorum, duplicate-vote and sybil controls, proposal expiry, timelocks, conflict disclosures, emergency pause and retirement. Any future registry must separate route admission from live liquidity verification and payout custody. A deployed registry alone would not prove that a route was activated or that a payment completed.
 
-## 5. Security invariants and limits
+## 8. Security and privacy boundaries
 
-The source checks authorization, asset, expiry, proof, Memo binding, and
-global-root sequence. Receiver acceptance, Node verification, Cranker
-submission, funding confirmation, and TCAP transition confirmation are
-distinct lifecycle events. A confirmed funding transaction does not prove
-the later TCAP transition succeeded.
+The native-credit contracts enforce approved assets, authorization, slot validity, authenticated funding membership, current roots, amount-commitment binding, nullifier consumption, reserve solvency and proof-bound Memo data. Failed settlement mutations roll back atomically, but the earlier confirmed deposit is a separate transaction. Receiver acceptance, funding confirmation, submission and settlement confirmation are distinct lifecycle observations.
 
-Confidential debit, exit, and TIN-to-TIN conservation require compiled and
-reviewed proofs of balance sufficiency, exact subtraction, range,
-destination binding, and reserve solvency, plus connected service paths.
-These capabilities are not established as operational. The shared root is
-publicly linkable across all transactions using that instruction, and wallet
-funding/exits expose their normal public transaction metadata.
+Privacy targets confidential TIN activity and public-observer unlinkability. Wallet funding amounts and endpoints remain public. Token identifiers, roots, nullifiers, successor points, ciphertext, accounts, timing and aggregate totals also remain observable. Sparse funding histories, known epoch amounts, persistent recipient/head material and public registration-owner binding can limit unlinkability. Node access to routes and openings is an intentional trust boundary, and independent cryptographic review is not established by the retained evidence.
 
-## 6. Settlement domains and attestations
+Threats include compromised or unavailable services, bad RPC data, stale witnesses, invalid proofs, replay, state races, substituted destinations, insufficient liquidity and source/destination consensus failure. Chain constraints and exact authorization must fail closed; service availability and recovery still determine liveness. Confidential debit, TIN-to-TIN conservation, wallet exit and cross-network delivery require their own reviewed proof and runtime evidence.
 
-A settlement domain is a blockchain-specific execution environment with its own assets, finality and transaction rules. TSN keeps identity and intent semantics stable while a domain adapter maps a verified authorization into that environment.
+## 9. Evidence, implementation status and scope
 
-Attestation is TSN's cross-domain connection mechanism. An attestation binds source and destination domains, settlement identifier, assets, amount, accepted intent, recipient, sequence or nonce, validity window and the settlement commitment. The destination verifies the cryptographic source fact before executing its own transaction. A transaction hash, API response or operator statement is not sufficient.
+The November 16 record contains finalized Solana Devnet evidence for two private credits and one complete aggregate-accounting operation. This paper was reconciled to that record and current source; it did not repeat those chain operations or inspect today's deployed state. Build evidence, deployment evidence, payment evidence, owner recovery and production readiness must be reported separately.
 
-## 7. Creditcoin-first EVM domain
-
-The first additional settlement domain is Creditcoin. The source repository contains the Creditcoin route, liquidity, executor, and message boundaries, but deployment and real testnet evidence are still required before calling the path live:
-
-```text
-Solana debit intent
-    → Node validation and destination liquidity preflight
-    → Solana debit commitment
-    → Creditcoin Hub authorization
-    → Attestcoin authenticated message
-    → Creditcoin or selected EVM executor
-    → prefunded stablecoin vault → recipient
-```
-
-The destination must reject a message whose domain, asset, amount, recipient, settlement identifier, finality, route, or validity window does not match the source authorization. This adapter does not replace TSN authorization or TCAP accounting. Creditcoin is the first funded EVM settlement domain and the source for onward supported-EVM payout messages.
-
-## 8. Liquidity and value model
-
-A message is not a payment asset. The value path is:
-
-    Liquidity provider or treasury
-        → prefunded stablecoin vault on the payout network
-        → registered destination executor
-        → recipient wallet
-
-Creditcoin CTC pays Creditcoin gas. The destination network's native token pays destination gas. Stablecoins are the payout asset. Attestcoin proof and message infrastructure verifies and connects a route; it does not create liquidity. A route is not eligible without a configured executor, token, destination network, and current liquidity observation.
-
-The direct Creditcoin route and an onward Base/Ethereum-style route use the same principle: the network that pays the recipient must have the stablecoin available in its own configured vault. The Hub reserves verified route capacity before publishing the payout message.
-
-## 9. Contract and software boundaries
-
-| Component | Responsibility | Value custody |
-| --- | --- | --- |
-| CreditcoinSettlementHub.sol | Verify authorization, reject replay, reserve route capacity, publish payout message | No destination payout balance |
-| DestinationLiquidityASC.sol | Verify source liquidity evidence through Attestcoin readability | None |
-| DestinationLiquidityRegistry.sol | Store route configuration, observations, and reservations | None |
-| TSNSettlementExecutor.sol | Validate authenticated destination message and invoke local payout | Uses vault boundary |
-| TSNERCLiquidityVault.sol | Hold and release destination stablecoins | Yes, destination liquidity |
-| TinExitAttestedASC.sol | Record a proved exit receipt | No payout liquidity |
-| TSN Node | Orchestrate, validate, authorize, and track | No user payout custody |
-| Cranker | Submit exact authorized transactions and pay gas | No user payout custody |
-
-Solana-native programs remain outside the cross-chain layer. The cross-chain layer must not rewrite sealed TIP, the two-phase exit commitment, Path 1/2 wiring, one-vault behavior, liability PDAs, or GPRU-only authorization.
-
-## 10. Threat model
-
-Security depends on source and destination consensus, cryptographic signatures, attestation verification, TSN authorization rules and the correctness of each domain adapter. Liveness depends on Receiver, Node, Cranker and destination liquidity. A failure may delay or revert a transition; it must not create value, bypass a nullifier, or redirect an authorized payment.
-
-The threat model includes compromised or unavailable Receiver, Node, Cranker, relayer, liquidity provider, source RPC, and destination RPC. Availability failure may delay settlement; it must not authorize a new value transfer, bypass a nullifier, redirect a recipient, or convert an invalid message into a payout.
-
-The current Creditcoin Hub authorization proves a Node-signed commitment payload on Creditcoin. It does not claim that Creditcoin independently verifies a Solana transaction through Block Prover. Solana source facts remain validated by the Node and existing Solana program boundaries until a supported cryptographic source-proof path is deployed.
-
-No raw TIN, private balance, device key, plaintext receiving root, or snapshot secret is written to Creditcoin or another secondary EVM network.
-
-ZK-PRU was an earlier experiment and is retired. It is not part of the receiving, balance or spending architecture described here.
-
-## 11. Implementation and deployment status
-
-The repository contains the cross-chain contracts, Node route validation, TSN-only SDK façade, Attestcoin integration helpers, and testnet deployment scripts. Source compilation is not the same as a live deployment.
-
-Before claiming the happy path is live, the team must:
-
-1. configure a funded Creditcoin CC3 Testnet EVM signer;
-2. provide the real CC3 Attestcoin token and protocol route addresses;
-3. deploy the Creditcoin contracts on CC3 Testnet;
-4. configure a supported destination route and prefund its stablecoin vault;
-5. submit a real Solana debit transaction;
-6. submit the resulting authorized Creditcoin settlement transaction; and
-7. record real explorer links and emitted events.
-
-No contract address, liquidity balance, receipt event, or transaction hash should be published until it is observed on the relevant testnet explorer.
-
-## 12. Scope and non-goals
-
-This paper covers identity-aware settlement coordination, Solana source accounting, Creditcoin-first EVM settlement, Attestcoin liquidity verification and message delivery, destination stablecoin liquidity, and the Node/Cranker execution boundary.
-
-It does not claim that a proof or message is itself a stablecoin, that Creditcoin pays every destination from one universal vault, that Solana is currently supported by Creditcoin's native Block Prover, that a Cranker generates proofs or makes payout decisions, or that source-chain verification is live before testnet deployment evidence exists.
+TSN remains an experimental first release. Planned low-fee EVM integration and optional verified credentials are future work. The protocol is not described as a regulated financial service or a completed universal network. ZK-PRU is a retired historical experiment; current integrations follow TIP, TSNP, TCAP and GPRU's actual contracts.
 
 ## References
 
-- [Creditcoin Attestcoin Protocol](https://docs.creditcoin.org/attestcoin-protocol)
-- [Creditcoin Attestation](https://docs.creditcoin.org/usc/creditcoin-oracle-subsystems/attestation)
-- [Creditcoin Testnet](https://docs.creditcoin.org/environments/testnet)
-- [Solana Documentation](https://solana.com/docs)
-- [Creditcoin](https://creditcoin.org/)
-- [Creditcoin Deploy / Attestcoin overview](https://creditcoin.org/Deploy)
-- [Creditcoin CC3 Testnet RPC](https://rpc.cc3-testnet.creditcoin.network/)
-- [Creditcoin CC3 Testnet explorer](https://creditcoin3-testnet.subscan.io/)
-- [Attestcoin Protocol](https://docs.attestcoin.org/attestcoin-protocol)
-- [Attestcoin architecture](https://docs.attestcoin.org/attestcoin-protocol/architecture)
-- [Attestcoin dApp builder infrastructure](https://docs.attestcoin.org/attestcoin-protocol/dapp-builder-infrastructure)
-- [Attestcoin USC SDK](https://docs.attestcoin.org/attestcoin-protocol/dapp-builder-infrastructure/attestcoin-sdk-usc-sdk)
-- [TSN-Protocol repository](https://github.com/Trustlink-Labs/TSN-Protocol)
+- [Canonical implementation map](./laboratory/architecture-map.md)
+- [Native private-credit ABI and accounting](./laboratory/credit-abi.md)
+- [Cryptographic mechanisms and privacy boundaries](./laboratory/cryptography.md)
+- [November 16 private-credit and epoch evidence](./laboratory/experiments/EXP-20261116-private-credit-epoch.md)
+- [TSN SDK credit implementation](../tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-credit.ts)
+- [Solana documentation](https://solana.com/docs)
+- [Base documentation](https://docs.base.org/)
+- [Arbitrum documentation](https://docs.arbitrum.io/)
+- [Polygon documentation](https://docs.polygon.technology/)

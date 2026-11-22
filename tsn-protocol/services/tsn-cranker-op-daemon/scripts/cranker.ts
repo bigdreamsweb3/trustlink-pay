@@ -17,7 +17,6 @@ import {
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
-import { CreditcoinCranker } from "../../tsn-crosschain/src/creditcoin-cranker.js";
 import {
   tsnFetchMotherEscrowOnChain,
   getTsnCrankerPda,
@@ -203,36 +202,6 @@ async function confirmSignatureViaRpc(connection: Connection, signature: string,
   }
   throw new Error(`${label} was not confirmed within ${timeoutMs}ms; signature=${signature}`);
 }
-
-const creditcoinCranker = () => {
-  const keypairFile = process.env.CREDITCOIN_CRANKER_KEYPAIR_FILE?.trim();
-  const privateKey = keypairFile
-    ? (
-        JSON.parse(readFileSync(resolve(keypairFile), "utf8")) as {
-          privateKey?: string;
-        }
-      ).privateKey?.trim()
-    : undefined;
-  const rpcUrl = process.env.CREDITCOIN_RPC_URL?.trim();
-  const hub = process.env.CREDITCOIN_SETTLEMENT_HUB?.trim();
-  const registry = process.env.CREDITCOIN_LIQUIDITY_REGISTRY?.trim();
-  const routeId = process.env.CREDITCOIN_ROUTE_ID?.trim();
-  if (!privateKey || !rpcUrl || !hub || !registry || !routeId) {
-    throw new Error(
-      "Creditcoin Cranker requires CREDITCOIN_RPC_URL, CREDITCOIN_CRANKER_KEYPAIR_FILE, CREDITCOIN_SETTLEMENT_HUB, CREDITCOIN_LIQUIDITY_REGISTRY, and CREDITCOIN_ROUTE_ID",
-    );
-  }
-  return new CreditcoinCranker({
-    rpcUrl,
-    hub: hub as `0x${string}`,
-    signerPrivateKey: privateKey,
-    route: {
-      rpcUrl,
-      registry: registry as `0x${string}`,
-      routeId: routeId as `0x${string}`,
-    },
-  });
-};
 
 let activeReceiverUrl: string | null = null;
 const receiver = () => activeReceiverUrl ?? (
@@ -582,31 +551,6 @@ async function processPrivateCoordination(signer: Keypair, work: Work, rpcUrl: s
 
 async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
   const auth = work.authorization;
-  if (auth?.kind === "TSN_CREDITCOIN_PAYOUT_AUTHORIZATION") {
-    const authorization = auth.authorization;
-    const signature = auth.signature ?? auth.authorizationSignature;
-    if (
-      !authorization ||
-      typeof authorization !== "object" ||
-      typeof signature !== "string"
-    ) {
-      throw new Error(
-        "Creditcoin settlement work is missing authorization or signature",
-      );
-    }
-    crankerLog(`Creditcoin settlement start id=${work.id}`);
-    const result = await creditcoinCranker().submit(
-      authorization as never,
-      signature,
-    );
-    crankerLog(`Creditcoin settlement submitted id=${work.id} tx=${result.transactionHash}`);
-    await report(signer, work, "CONFIRMED", {
-      stage: "CREDITCOIN_SETTLEMENT_SUBMITTED",
-      creditcoinTxHash: result.transactionHash,
-      attestcoinMessageId: result.messageId,
-    });
-    return;
-  }
   if (!auth || auth.kind !== "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3")
     throw new Error("Settlement has no verified TCAP GPRU credit authorization");
   const transition = auth.transition as Record<string, unknown> | undefined;

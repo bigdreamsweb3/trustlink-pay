@@ -20,7 +20,7 @@ Receiver exposes thirteen proof inputs for settlement, with the authenticated fu
 
 The [November 2 TIN record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261102-tin-staged-finalization.md) verified six finalized transactions: initializer, four encrypted uploads and finalizer. Its account allocations and stage closure occurred within the final transaction. It did not test native credit, owner recovery or the installed DBrix V1 transport.
 
-The retained Creditcoin settlement branch submits an EVM hub call from its configured executor wallet and waits for a successful receipt and publication event. Receiver's `CONFIRMED` result describes that hub transaction; destination payout requires separate evidence. Epoch payout/refund/reimbursement and verifier/root setup are separate instruction families, outside this daemon's normal dispatcher.
+No EVM submission route is enabled by the current native settlement guide. Base, Arbitrum and Polygon are planned destinations with separate implementation and source/destination evidence requirements; see [the cross-network roadmap](/overview/cross-network-roadmap). Epoch payout/refund/reimbursement and verifier/root setup are separate instruction families, outside this daemon's normal dispatcher.
 
 Operators need the configured wallet/registration policy, service access, RPC context and fee funding for the transactions they submit. A worker cannot refresh an owner-signed blockhash or replace a verified recipient transition. After an uncertain submission, reconcile its signature before repeating the work; matching terminal reports are treated idempotently by Receiver under its contract.
 

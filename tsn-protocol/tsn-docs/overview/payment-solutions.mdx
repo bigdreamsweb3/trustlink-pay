@@ -1,0 +1,29 @@
+---
+title: "TSN Payment Applications and Identity-Based Settlement"
+sidebarTitle: "Payment Applications"
+description: "Build a TIN-addressed payment experience with TSN's experimental Solana credit flow, and understand planned merchant-identity and cross-network extensions."
+---
+
+Transfer Settlement Network is hybrid infrastructure for applications that use a portable identity to address value. A ten-digit TIN gives the sender a recipient to resolve and review, while wallet signatures and on-chain checks govern the payment. TSN separates the application experience from verification, work coordination and settlement so each actor has an explicit responsibility.
+
+## Wallet-to-TIN payment applications
+
+The current experimental Solana flow supports a wallet deposit followed by private credit to a TIN. An application presents the resolved recipient, accepted asset, amount, fee and expiry; obtains the signed payment message and exact deposit approval; and follows funding and settlement through their separate confirmations. This gives a developer a concrete integration path for a reference mobile money experience without treating a pending request as a completed payment.
+
+The [payment guide](/sdk/payment-guide) explains SDK preparation, and [the lifecycle](/developers/payment-intent-lifecycle) covers authorization and confirmation. [Solana integration](/overview/solana-integration) links the dated Devnet evidence and privacy limits. Applications must account for public wallet funding and Node access to verification material when explaining the experience to users.
+
+## Merchant and recipient identity
+
+A merchant application can use a TIN as the recipient-facing identity and keep its order reference separate from settlement evidence. An owner-provided display name helps the sender review the recipient; it does not verify a legal person or registered business. Current TIN resolution supplies no issuer-verified credentials.
+
+Optional attested business or personal claims are a proposed way to give the sender more context. An implementation would need issuer authentication, binding to the TIN owner, expiry and revocation checks, and consent-aware disclosure. See [identity attestations](/overview/identity-attestations) for the boundary between signed display metadata and an authenticated credential.
+
+## Cross-network payout applications
+
+Base, Arbitrum and Polygon are planned lower-fee EVM destinations. A future payout route would need a source action, exact destination asset and recipient, authorized liquidity, replay protection and evidence of the destination result. These targets do not yet establish an available TSN payout service; Ethereum mainnet is outside the present integration scope.
+
+Use [the cross-network roadmap](/overview/cross-network-roadmap) to evaluate the route requirements. Preserve source and destination receipts separately rather than using an SDK response or source confirmation as proof of delivery.
+
+## Starting with the current implementation
+
+Developers can begin with [SDK setup](/sdk/getting-started), [TIN issuance](/developers/private-tin-issuance) and [network-readiness checks](/developers/network-status). TSN XP is the reference application for the evolving protocol; [current capabilities](/about/current-technology) and [the FAQ](/get-started/faq) explain documented availability for readers looking for an app download or free trial.

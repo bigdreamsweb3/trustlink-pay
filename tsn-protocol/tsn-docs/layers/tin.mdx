@@ -18,4 +18,6 @@ The native-credit ABI does not encode a plaintext recipient TIN or private prede
 
 An application can use the TSN SDK to resolve the TIN's owner-provided display name and prepare a payment authorization. The display name is a recipient confirmation aid; it is not legal identity verification. The sending wallet still reviews and signs the payment authorization.
 
+Current resolution returns no issuer-verified credentials. Optional personal and business attestations are a proposed extension with issuer, binding, consent and revocation requirements; see [TIN identity attestations](/overview/identity-attestations).
+
 Native credit uses authenticated TIP route membership in its private proof. The [current capability record](/about/current-technology) links bounded Devnet execution evidence without making registry/head unlinkability or owner-history completeness claims. See the [SDK identity guide](/developers/private-tin-issuance) for application-level usage. Issuer operations and the registry's exact data contract belong in the [repository documentation](https://github.com/bigdreamsweb3/trustlink-pay/tree/main/docs).

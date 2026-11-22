@@ -1,8 +1,10 @@
 # Transfer Settlement Network
 
-This subtree contains Solana programs, TSN SDKs, Receiver and Node services,
+TSN lets applications address value with a ten-digit Transfer Identity Number
+(TIN), obtain wallet approval and track funding separately from private credit.
+The current experimental integration is on Solana. This subtree contains Solana programs, TSN SDKs, Receiver and Node services,
 RPC gateway, Cranker operators and the public documentation handbook. TSN is
-the complete infrastructure; TSNP is its on-chain settlement authorization
+hybrid, decentralized settlement infrastructure for the Internet of Value (IoV); TSNP is its on-chain settlement authorization
 program. TIP, GPRU, TCAP and DIP have distinct roles, while Circle CCTP is an
 external integration. Solana provides execution, ordering, consensus and
 finality. The project is still developing its experimental first release,
@@ -14,6 +16,8 @@ coordinates work and leases, Node verifies funding and prepares the proof,
 Cranker submits permitted transactions, and Mother authority co-signs
 settlement. The diagram describes current source, with configuration and live
 evidence limits below.
+
+Planned lower-fee EVM evaluation prioritizes Base, Arbitrum and Polygon; gas still applies, Ethereum Layer 1 is outside the current scope, and no enabled cross-network destination is claimed. Resolved TIN names are owner-provided; issuer-backed attestations remain planned. See the [public integration guidance](tsn-docs/sdk/integrations.mdx) and [canonical integration plan](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/CROSS-NETWORK-PAYMENTS-BUILD-PLAN.md).
 
 ## Wallet-to-TIN credit flow and data boundaries
 

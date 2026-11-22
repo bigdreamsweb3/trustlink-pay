@@ -211,25 +211,15 @@ A privacy-first decentralized settlement network connects stablecoin value with 
     implemented verification path: the proof system, the verifier, the state model, and the tests that are operating
     together.</p>
 
-<h2>How TSN approaches the architecture</h2>
-
-<p><strong>Transfer Settlement Network (TSN) is an emerging privacy-first decentralized settlement network designed as
-        identity-based stablecoin payment infrastructure.</strong> This positioning describes the protocol architecture
-    and category ambition of <strong>TrustLink Labs</strong> — a research design, not an industry-standard
-    capability.</p>
-
-<p>In the TrustLink Labs research model, TIN supplies a human-facing payment identity, GPRU represents protected routing
-    coordination, TCap defines policy-bound confidential asset state, the TSN Node coordinates verified work, Crankers
-    submit authorized transactions, and the TSN Program enforces settlement rules on Solana.</p>
-
-<p>The architecture separates responsibilities deliberately. The authorized device resolves a recipient and constructs
-    an exact payment intent. Coordination services verify bounded fields and prevent replay. Execution operators receive
-    only the capability required for their work. The on-chain program enforces the state transition and produces
-    settlement evidence.</p>
-
-<p>Individual components should still be evaluated against their implementation and test evidence. TSN should not be
-    presented as universally adopted, as regulatory infrastructure, or as a complete replacement for existing payment
-    rails without independent evidence supporting those claims.</p>
+<h2>How TSN Applies Hybrid Settlement Infrastructure</h2>
+<p>Applications can address digital value through a ten-digit Transfer Identity Number (TIN). Transfer Settlement Network (TSN) is hybrid decentralized settlement protocol infrastructure for the Internet of Value, combining off-chain verification and work coordination with on-chain authorization, private-credit proof verification and reserve accounting. Solana is the current experimental domain.</p>
+<h3>Identity and exact approval</h3>
+<p>TIP manages registration, authenticated recipient-route membership and owner recovery. The sender signs a TIN-targeted intent; Node resolves the permitted route and validates current state. The owner separately approves the exact TCAP wallet deposit. A TIN is not a private key, public balance account or proof of legal identity.</p>
+<h3>Verification and confidential accounting</h3>
+<p>Receiver coordinates restricted work and leases; Node verifies confirmed funding and constructs the private witness and encrypted owner Memo. Mother authorizes TSNP, Cranker submits the permitted transaction, and TCAP invokes GPRU before advancing the shared head/nullifier root and blinded credit transcript. TCAP owns reserve custody; GPRU verifies proof relations without holding reserve tokens. Complete aggregate accounting is separate from individual credit.</p>
+<h3>Evidence and future integration</h3>
+<p>The retained November 16 Solana Devnet checkpoint verifies two private credits and complete aggregate accounting. Wallet funding, roots, token, ciphertext, accounts, timing and aggregate totals remain public; Node handles sensitive routes and openings. General unlinkability, owner recovery, confidential spending and cross-network delivery require separate evidence. Base, Arbitrum and Polygon PoS are planned lower-fee targets with distinct security assumptions; they have transaction fees. Optional verified TIN credentials are proposed work.</p>
+<p><a href="/p/tsn-flow.html">Read the current native-credit flow</a> &middot; <a href="/p/tsn-protocol-whitepaper.html">Read the whitepaper and implementation limits</a></p>
 
 <h2>Use cases and tradeoffs</h2>
 

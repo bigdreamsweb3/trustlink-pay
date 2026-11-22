@@ -5,10 +5,9 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /// @title DestinationRegistry
 /// @notice Append-only, community-voted destination route admission.
-/// @dev The registry does not custody stablecoins and does not replace the
-///      Attestcoin liquidity ASC or CreditcoinSettlementHub. The TSN Node
-///      verifies the Solana evidence off-chain; the configured Creditcoin
-///      attestor signs that verification digest for on-chain admission.
+/// @dev Retained governance research only. A configured attestor records an
+///      admission digest; no current TSN runtime consumes this registry and
+///      signature admission does not prove source-chain or destination settlement.
 contract DestinationRegistry {
     using ECDSA for bytes32;
 

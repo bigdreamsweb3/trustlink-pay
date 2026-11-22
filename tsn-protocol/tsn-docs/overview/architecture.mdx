@@ -1,11 +1,11 @@
 ---
-title: "TSN Protocol Architecture"
-description: "How TIP, GPRU, TCAP, and TSNP divide identity, private-state protection, and settlement authority."
+title: "TSN Hybrid Settlement Architecture"
+description: "How TSN's hybrid Internet of Value infrastructure divides identity, off-chain verification and on-chain settlement authority."
 ---
 
 TSN separates the identity used to address a transfer from the private state used to validate a balance change and the assets governed by settlement. This separation gives each protocol layer a distinct responsibility.
 
-As hybrid infrastructure for the **Internet of Value**, TSN coordinates identity, requests, and verification through off-chain services, then relies on on-chain programs to enforce authorization and settlement rules. The architecture is designed for interoperable value transfer across applications and blockchain networks; each route's live status depends on its deployment and verification evidence.
+As hybrid infrastructure organized around a decentralized settlement protocol for the **Internet of Value**, TSN coordinates identity, requests and verification through off-chain services, then relies on on-chain programs to enforce authorization and settlement rules. The architecture is designed for interoperable value transfer across applications and blockchain networks; [the roadmap](/overview/cross-network-roadmap) records current integration priorities and route-evidence requirements.
 
 ```mermaid
 flowchart TD

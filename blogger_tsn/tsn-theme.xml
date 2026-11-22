@@ -47,27 +47,27 @@
       <!-- Legacy duplicate metadata; intentionally not rendered. -->
       <b:if cond='data:view.isPost or data:view.isPage'>
         <meta
-          expr:content='data:blog.metaDescription ?: &quot;Transfer Settlement Network (TSN) — a privacy-first identity-based stablecoin payment protocol built on Solana.&quot;'
+          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid settlement infrastructure for the Internet of Value, with ten-digit TIN identities, experimental Solana credit and planned lower-fee EVM integration.&quot;'
           name='description' />
         <meta expr:content='data:blog.pageTitle' property='og:title' />
         <meta
-          expr:content='data:blog.metaDescription ?: &quot;Transfer Settlement Network (TSN) — a privacy-first identity-based stablecoin payment protocol built on Solana.&quot;'
+          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid settlement infrastructure for the Internet of Value, with ten-digit TIN identities, experimental Solana credit and planned lower-fee EVM integration.&quot;'
           property='og:description' />
         <meta expr:content='data:blog.pageTitle' name='twitter:title' />
         <meta
-          expr:content='data:blog.metaDescription ?: &quot;Transfer Settlement Network (TSN) — a privacy-first identity-based stablecoin payment protocol built on Solana.&quot;'
+          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid settlement infrastructure for the Internet of Value, with ten-digit TIN identities, experimental Solana credit and planned lower-fee EVM integration.&quot;'
           name='twitter:description' />
         <b:else />
         <meta
-          expr:content='data:blog.metaDescription ?: &quot;Transfer Settlement Network (TSN) — a privacy-first identity-based stablecoin payment protocol built on Solana.&quot;'
+          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid settlement infrastructure for the Internet of Value, with ten-digit TIN identities, experimental Solana credit and planned lower-fee EVM integration.&quot;'
           name='description' />
         <meta expr:content='data:blog.pageTitle' property='og:title' />
         <meta
-          expr:content='data:blog.metaDescription ?: &quot;Transfer Settlement Network (TSN) — a privacy-first identity-based stablecoin payment protocol built on Solana.&quot;'
+          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid settlement infrastructure for the Internet of Value, with ten-digit TIN identities, experimental Solana credit and planned lower-fee EVM integration.&quot;'
           property='og:description' />
         <meta expr:content='data:blog.pageTitle' name='twitter:title' />
         <meta
-          expr:content='data:blog.metaDescription ?: &quot;Transfer Settlement Network (TSN) — a privacy-first identity-based stablecoin payment protocol built on Solana.&quot;'
+          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid settlement infrastructure for the Internet of Value, with ten-digit TIN identities, experimental Solana credit and planned lower-fee EVM integration.&quot;'
           name='twitter:description' />
       </b:if>
     </b:if>
@@ -75,19 +75,19 @@
     <!-- Page-aware standard and Twitter metadata. -->
     <b:if cond='data:view.isPost or data:view.isPage'>
       <meta
-        expr:content='data:view.description ?: data:blog.metaDescription ?: &quot;Transfer Settlement Network (TSN) — identity-aware payment infrastructure built on Solana.&quot;'
+        expr:content='data:view.description ?: data:blog.metaDescription ?: &quot;TSN: hybrid Internet of Value infrastructure for identity-addressed settlement and experimental Solana private credit.&quot;'
         name='description' />
       <meta expr:content='data:view.title + &quot; | TSN Protocol&quot;' name='twitter:title' />
       <meta
-        expr:content='data:view.description ?: data:blog.metaDescription ?: &quot;Transfer Settlement Network (TSN) — identity-aware payment infrastructure built on Solana.&quot;'
+        expr:content='data:view.description ?: data:blog.metaDescription ?: &quot;TSN: hybrid Internet of Value infrastructure for identity-addressed settlement and experimental Solana private credit.&quot;'
         name='twitter:description' />
       <b:else />
       <meta
-        expr:content='data:blog.metaDescription ?: &quot;Transfer Settlement Network (TSN) — identity-aware payment infrastructure built on Solana.&quot;'
+        expr:content='data:blog.metaDescription ?: &quot;TSN: hybrid Internet of Value infrastructure for identity-addressed settlement and experimental Solana private credit.&quot;'
         name='description' />
       <meta content='Transfer Settlement Network | TSN Protocol' name='twitter:title' />
       <meta
-        expr:content='data:blog.metaDescription ?: &quot;Transfer Settlement Network (TSN) — identity-aware payment infrastructure built on Solana.&quot;'
+        expr:content='data:blog.metaDescription ?: &quot;TSN: hybrid Internet of Value infrastructure for identity-addressed settlement and experimental Solana private credit.&quot;'
         name='twitter:description' />
     </b:if>
 
@@ -162,7 +162,7 @@
               &quot;name&quot;: &quot;What is a Transfer Settlement Network?&quot;,
               &quot;acceptedAnswer&quot;: {
                 &quot;@type&quot;: &quot;Answer&quot;,
-                &quot;text&quot;: &quot;TSN is identity-aware payment coordination and settlement infrastructure built on Solana. It includes TIN identity, GPRU authorization, local SDK signing, encrypted Node commitments, Mother-rooted DNA, TCap private balances, epoch treasury funding, Cranker submission, and receipts.&quot;
+                &quot;text&quot;: &quot;TSN is hybrid decentralized settlement protocol infrastructure for the Internet of Value. It combines ten-digit TIN identities and off-chain coordination with on-chain authorization, private-credit proof verification and reserve accounting. Solana is the current experimental domain.&quot;
               }
             },
             {
@@ -170,7 +170,7 @@
               &quot;name&quot;: &quot;How do TIN, GPRU, and TCap relate to TSN?&quot;,
               &quot;acceptedAnswer&quot;: {
                 &quot;@type&quot;: &quot;Answer&quot;,
-                &quot;text&quot;: &quot;TIN is TSN&#39;s 10-digit payment identity. GPRU provides routing and authorization, while TCap provides policy-bound private balance tips and encrypted snapshots. They are components of TSN, not separate settlement networks.&quot;
+                &quot;text&quot;: &quot;TIP manages the ten-digit TIN identity and authenticated route membership. GPRU verifies the private route and balance proof; TCAP governs accepted assets, reserve custody and shared private-state accounting.&quot;
               }
             },
             {
@@ -178,7 +178,7 @@
               &quot;name&quot;: &quot;What do the TSN Node and Crankers do?&quot;,
               &quot;acceptedAnswer&quot;: {
                 &quot;@type&quot;: &quot;Answer&quot;,
-                &quot;text&quot;: &quot;The TSN Node verifies signed plans, reserves epoch liability, prevents replay, creates Mother-attested settlement authorizations, and tracks status. Crankers pay Solana fees and submit exact DNA-bound transactions without receiving user private keys or payment-specific accounts.&quot;
+                &quot;text&quot;: &quot;Node verifies authorization, confirmed funding and current witnesses, constructs the proof-bound owner Memo and prepares settlement. Mother authorizes the inspected TSNP call. Cranker submits exact permitted transactions; owner-signed funding remains unchanged.&quot;
               }
             },
             {
@@ -186,7 +186,7 @@
               &quot;name&quot;: &quot;Is TCAP the current TSN settlement system?&quot;,
               &quot;acceptedAnswer&quot;: {
                 &quot;@type&quot;: &quot;Answer&quot;,
-                &quot;text&quot;: &quot;Yes. TSN settlement uses the TSN Program, Mother-rooted one-time DNA, opaque deterministic slots, epoch treasury accounting, and TCap encrypted balance commitments for private account state.&quot;
+                &quot;text&quot;: &quot;Current experimental private credit uses TSNP authorization, TCAP funding and shared-state accounting, and GPRU proof verification. Complete aggregate accounting is a separate operation; retained Epoch Treasury and payout APIs are a distinct family.&quot;
               }
             },
             {
@@ -194,7 +194,7 @@
               &quot;name&quot;: &quot;How does TSN protect private payment data?&quot;,
               &quot;acceptedAnswer&quot;: {
                 &quot;@type&quot;: &quot;Answer&quot;,
-                &quot;text&quot;: &quot;TSN uses encrypted commitments, GPRU-scoped authorization, Mother-rooted Settlement DNA, and owner-local TCap balance snapshots. Public observers see only the coordination data required for settlement.&quot;
+                &quot;text&quot;: &quot;The private-credit amount is committed privately and the owner Memo is encrypted. Wallet funding, roots, token, ciphertext, accounts, timing and aggregate totals remain public; Node handles sensitive witnesses. General unlinkability and complete owner recovery remain separate checks.&quot;
               }
             },
             {
@@ -471,10 +471,9 @@ h1,h2,h3,.post-title,.page-shell .post-title,.page-shell h1,.update-result h2,.u
         <section aria-labelledby='home-title'>
           <div class='home-kicker'>TrustLink Labs &#183; settlement infrastructure</div>
           <h1 id='home-title'>The settlement layer for stablecoin payments.</h1>
-          <p class='dek'>TrustLink Labs is developing TSN, a Transfer Settlement Network designed
-            around the Decentralized Settlement Protocol (DESP) category. TSN coordinates payment
-            intent, authorization, routing, liquidity, privacy-aware settlement, and execution
-            across the participants responsible for completing a payment obligation.</p>
+          <p class='dek'>Address digital value through a ten-digit payment identity. TrustLink Labs is developing TSN as
+            hybrid decentralized settlement protocol infrastructure for the Internet of Value, combining
+            off-chain verification and coordination with on-chain authorization and asset accounting.</p>
           <div class='home-actions'>
             <a href='/p/tsn-protocol-whitepaper.html'>Read the whitepaper</a>
             <a href='/p/updates.html'>View updates</a>
@@ -485,8 +484,8 @@ h1,h2,h3,.post-title,.page-shell .post-title,.page-shell h1,.update-result h2,.u
         <section aria-label='Current system data' class='home-data'>
           <article class='home-data-card'>
             <small>Architecture</small>
-            <strong>DESP-oriented</strong>
-            <p>Decentralized settlement infrastructure, distinct from DeFi applications.</p>
+            <strong>Hybrid infrastructure</strong>
+            <p>Off-chain coordination with on-chain authorization, verification and accounting.</p>
           </article>
           <article class='home-data-card'>
             <small>Implementation</small>
@@ -500,8 +499,8 @@ h1,h2,h3,.post-title,.page-shell .post-title,.page-shell h1,.update-result h2,.u
           </article>
           <article class='home-data-card'>
             <small>EVM expansion</small>
-            <strong>Creditcoin</strong>
-            <p>Leader settlement boundary for authenticated messages to supported EVM routes.</p>
+            <strong>Base / Arbitrum / Polygon PoS</strong>
+            <p>Planned lower-fee EVM targets; no live TSN payout integration is claimed.</p>
           </article>
         </section>
         <section aria-labelledby='home-updates-title' class='home-updates'>
@@ -511,8 +510,8 @@ h1,h2,h3,.post-title,.page-shell .post-title,.page-shell h1,.update-result h2,.u
             <p>TSN is being validated in stages. Architecture and contracts are documented
               separately from confirmed Devnet/Testnet evidence, and deployment status is never
               represented by a placeholder transaction.</p>
-            <p class='home-footer-note'>DeFi decentralizes financial services; DESP decentralizes
-              settlement infrastructure.</p>
+            <p class='home-footer-note'>Current Solana private-credit evidence and future network integration are
+              documented separately.</p>
           </div>
           <div class='home-update-list' aria-label='Latest project updates'>
             <a class='home-update-item' href='/p/updates.html'>
@@ -2442,279 +2441,18 @@ h1,h2,h3,.post-title,.page-shell .post-title,.page-shell h1,.update-result h2,.u
               and accounting trail. The point of TSN is not to remove the transfer. It is to make
               the transfer usable as commerce.</p>
             <h2 id='the-trustlink-labs-model'>The TrustLink Labs Model</h2>
-            <p><strong>TSN is the network</strong>, not one product placed beside several other
-              products. The Transfer Settlement Network spans the authorized user device, the
-              10-digit <strong>TIN</strong> payment identity, GPRU authorization, TCap private
-              balance state, the TSN SDK, the TSN Node, Crankers, the TSN Program,
-              program-controlled settlement accounts, receipts, and Solana finality. TrustLink Pay
-              is an application experience built on that infrastructure.</p>
-            <blockquote><strong>Research scope:</strong> This publication defines a protocol
-              architecture, its responsibilities, interfaces, privacy model, and security
-              principles. It does not claim regulatory approval, universal adoption, or equivalence
-              to regulated payment rails; implementation evidence belongs in the linked technical
-              repositories and specifications.</blockquote>
-            <p>A <strong>TIN</strong>, or <strong>Transfer Identity Number</strong>, is the portable
-              10-digit payment identity inside TSN. A person can type, scan, or share it instead of
-              beginning with a normal wallet address. TIN resolution supplies identity and integrity
-              metadata that the TSN SDK can bind into an exact payment route; the TIN is not itself
-              a wallet, token account, private key, or legal-identity credential.</p>
-            <h3 id='how-tin-identity-assurance-actually-works'>How TIN Identity and Assurance
-              Actually Work</h3>
-            <p>The TIN registry separates public discovery fields, integrity commitments, encrypted
-              private material, and optional assurance references. The public TIN and display name
-              support payment discovery. Owner and route commitments bind the identity without
-              publishing root authority or private balance material as ordinary profile data.
-              Optional verification-platform proofs or Solana Attestation Service credentials can
-              add legal-name, business-name, or personhood assurance, but they remain separate from
-              payment authorization and settlement.</p>
-            <p>A TIN is <strong>not proof of legal identity by itself</strong>. Every valid TIN
-              remains payment-capable without a KYC, legal-name, business-name, or personhood
-              credential. Identity assurance is optional and separate from settlement. When
-              assurance is present, registered verification platforms sign proofs for identity
-              links, and the Solana Attestation Service is the designated credential framework for
-              trusted legal-name, business-name, and personhood evidence. The credential supplies
-              evidence about the identity associated with a TIN; it does not become the TIN and it
-              does not enter TSN settlement as the payment destination.</p>
-            <p>TIN ownership is established cryptographically. The registry stores a commitment to
-              the owner wallet public key instead of presenting the wallet as the user&#39;s payment
-              identity. The owner proves control with the required Ed25519 authorization. TIN
-              operations enter the <strong>TSN Node</strong>, which verifies and queues authorized
-              work; a Cranker pays the Solana fee and submits the exact authorized operation. The
-              Node is not a user-key holder and the Cranker does not become the TIN owner.</p>
-            <p>The on-chain TIN account intentionally separates public, committed, and encrypted
-              information. The TIN number and chosen display name are public for payment discovery.
-              The owner-wallet relationship, registration metadata, GPRU scope, and TCap balance
-              transitions are represented through commitments. Private root material is random
-              authorization material, not a
-              wallet signature and not a server-issued secret. The current architecture requires a
-              threshold-encrypted device envelope that can be unlocked only after the main wallet
-              authorizes the current device session. Decryption and child derivation occur locally
-              in the authorized device. The application backend, TSN Node, and Cranker must never
-              receive plaintext root material or a private child key.</p>
-            <p>The TIN does not store an authorized-device list, device fingerprint, or per-device
-              secret. Device authorization remains a separate system controlled by the main wallet.
-              The same TIN also carries a separately encrypted <strong>public-route envelope</strong>
-              for the TSN Node. That envelope carries only the public coordination fields required
-              by GPRU for recipient routing; it never contains a master seed, balance plaintext, or
-              spending key.</p>
-            <blockquote><strong>Production privacy rule:</strong> TIN discovery is public where
-              payment routing requires it; commitments, encrypted snapshots, and authorization
-              material remain protected by the owner, Node, and Mother boundaries.</blockquote>
-            <h3 id='exactly-where-tin-data-lives'>Exactly Where TIN Data Lives</h3>
-            <p>&#8220;Sensitive data stays off-chain&#8221; is not a precise description. TSN
-              encrypts sensitive values <strong>before</strong> registry storage, which means
-              encryption occurs off-chain but ciphertext may be stored on-chain. The correct
-              field-level model is:</p>
-            <div class='table-scroll'>
-              <table>
-                <thead>
-                  <tr>
-                    <th scope='col'>Data class</th>
-                    <th scope='col'>Location and representation</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>TIN number and user-chosen display name</td>
-                    <td>Public and readable in the on-chain TIN account for payment discovery</td>
-                  </tr>
-                  <tr>
-                    <td>Owner-wallet binding</td>
-                    <td>A one-way SHA-256 owner public-key commitment is stored on-chain; the TIN
-                      account does not store the raw wallet address as a readable authority field</td>
-                  </tr>
-                  <tr>
-                    <td>Registration metadata</td>
-                    <td>A one-way metadata commitment is stored on-chain; it can cover inputs such
-                      as a hashed phone number, display name, and registration details without
-                      revealing the plaintext metadata</td>
-                  </tr>
-                  <tr>
-                    <td>TIN Master Seed</td>
-                    <td>A threshold-encrypted device envelope is associated with the TIN. Its
-                      plaintext is available only temporarily inside an authorized user device; the
-                      seed, child private keys, wallet signatures, and device secrets are not stored
-                      as readable registry fields</td>
-                  </tr>
-                  <tr>
-                    <td>Social identity links</td>
-                    <td>WhatsApp, email, X, and similar values are encrypted off-chain; their
-                      ciphertext, nonce, metadata, verifier key reference, and proof hash may be
-                      stored in the registry</td>
-                  </tr>
-                  <tr>
-                    <td>Strongly sensitive fields</td>
-                    <td>Private identity or KYC-related values are encrypted off-chain with TIN plus
-                      explicit user-signature material; only ciphertext and bounded authorization
-                      metadata are
-                      stored, and decryption requires fresh user authorization</td>
-                  </tr>
-                  <tr>
-                    <td>Verification evidence</td>
-                    <td>Registered verification platforms sign identity proofs off-chain; the TIN
-                      registry stores
-                      the authorized platform-key context and proof hash or reference needed to
-                      reject unknown, invalid, or stale issuers</td>
-                  </tr>
-                  <tr>
-                    <td>SAS credentials</td>
-                    <td>Optional legal-name, business-name, or personhood credentials remain an
-                      assurance layer outside TSN settlement; TSN settles to the TIN, not to the
-                      credential</td>
-                  </tr>
-                  <tr>
-                    <td>Privacy-receiving root and GPRU route</td>
-                    <td>The TIN stores a privacy-receiving root commitment. A separate Node-readable
-                      encrypted coordination envelope contains only public route fields, GPRU scope,
-                      route version, and commitment for recipient routing</td>
-                  </tr>
-                  <tr>
-                    <td>Private balance and root material</td>
-                    <td>Private roots, encrypted TCap snapshots, token balances, and balance history
-                      are never stored as readable fields in the TIN registry</td>
-                  </tr>
-                  <tr>
-                    <td>Authorization material</td>
-                    <td>Main-wallet authorizations, scoped GPRU signatures, plan commitments,
-                      nonces,
-                      state versions, and expiries are bounded to exact operations; they are not
-                      reusable private keys or public identity fields</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p>This separation means &#8220;off-chain&#8221; does not automatically mean
-              &#8220;stored in a TrustLink database.&#8221; Some plaintext exists only temporarily
-              on the user device or inside an authorized verification/encryption flow; some
-              ciphertext is durably on-chain; some route state is protected in the TSN layer; and
-              some external credential evidence remains with the issuer or attestation system. The
-              stable protocol rule is that the TIN registry does not publish private identity data,
-              raw owner-wallet bindings, private routes, root secrets, balances, or payment history
-              as
-              readable identity fields.</p>
-            <h3 id='what-hfipay-inspired-and-what-it-did-not'>What HFIPay Inspired&#8212;and What It
-              Did Not</h3>
-            <p>HFIPay is related external research showing that a person can be paid through a
-              human-friendly identifier without publishing that identifier or a reusable recipient
-              tag on-chain. It supports the broader product thesis that payment identity can be
-              separated from a raw wallet address. That is the relevant conceptual comparison. <sup
-                class='citations'>[<a aria-label='Source 8' href='#source-8'>8</a>]</sup></p>
-            <p>HFIPay did <strong>not</strong> define TIN&#39;s implemented identity verification,
-              and the TrustLink specification documents no HFIPay-derived &#8220;thresholding&#8221;
-              mechanism. HFIPay&#8217;s per-intent blinded binding is not used as the TIN ownership
-              proof. TIN instead uses the on-chain registry, owner public-key commitments, Ed25519
-              wallet authorization, registered verification-platform keys and off-chain signed
-              proofs, optional SAS credentials, encrypted identity fields, and committed GPRU
-              routing. TSN then coordinates settlement to the resolved and authorized TIN route.</p>
-            <p><strong>TSN</strong>, or <strong>Transfer Settlement Network</strong>, is the
-              complete payment infrastructure. The authorized device and TSN SDK resolve the
-              recipient, inspect user-controlled sources, construct the immutable payment plan,
-              calculate amount, fees, tranche and change, and collect scoped signatures. The TSN
-              Node verifies canonical commitments and signatures, reserves state, prevents replay,
-              and exposes deterministic settlement work. Crankers poll that work, pay Solana
-              transaction fees, and submit the exact authorized instructions. The TSN Program
-              enforces signatures, commitments, nonces, delegates, allowances, expiry, and
-              settlement state.</p>
-            <p>A <strong>payment intent</strong> is therefore richer than a token transfer. It binds
-              who is authorizing, which source is selected, what mint and token program are valid,
-              the amount, recipient, fees, change route, state version, nonce, expiry, cluster, and
-              program. The Node may verify and reserve that plan, but it cannot decrypt user seed
-              material, derive child keys, choose different sources, or rewrite the route.</p>
-            <p><strong>TCAP</strong>, or <strong>Token Control and Authorization Protocol</strong>,
-              is the private balance and asset-accounting layer of the TSN architecture. It owns
-              token policy, TCap TIN tips, one-time credit authorization, and encrypted balance
-              snapshots. TSN owns payment coordination, epoch treasury accounting, Mother DNA, and
-              settlement execution. This separation gives institutions a clear authorization
-              boundary while keeping private balances out of public account state.</p>
-            <p><strong>GPRU</strong> is the routing and authorization layer. It never holds funds
-              and never replaces the TCap balance layer. The device signs the payment intent, the
-              Node verifies the commitment, Mother vouches for settlement DNA, and the Cranker
-              receives only the capability required to submit the authorized transaction.</p>
-            <p>The current implementation uses encryption, commitments, protected routing, and
-              scoped Ed25519 authorizations. Commitments bind hidden data to an exact operation, but
-              a commitment alone is not a general-purpose zero-knowledge proof. TSN must not claim
-              active SNARK/STARK privacy or complete transaction unlinkability until a proof system
-              and its on-chain verification path are implemented and tested.</p>
-            <p>Below is a simple lifecycle for a TSN-style payment flow:</p>
-            <figure aria-labelledby='process-caption' class='process'>
-              <ol>
-                <li>
-                  <span>01</span>
-                  <div>
-                    <strong>TIN resolution</strong>
-                    <small>The 10-digit payment identity resolves an active committed route</small>
-                  </div>
-                </li>
-                <li>
-                  <span>02</span>
-                  <div>
-                    <strong>SDK plan</strong>
-                    <small>The authorized device builds one immutable source, amount, fee, change,
-                      and destination plan</small>
-                  </div>
-                </li>
-                <li>
-                  <span>03</span>
-                  <div>
-                    <strong>Device authorization</strong>
-                    <small>The main wallet and scoped GPRU authorization sign the same plan
-                      commitment</small>
-                  </div>
-                </li>
-                <li>
-                  <span>04</span>
-                  <div>
-                    <strong>Node verification</strong>
-                    <small>The TSN Node verifies the device-signed authorization, prevents replay,
-                      and stores the private payment binding encrypted</small>
-                  </div>
-                </li>
-                <li>
-                  <span>05</span>
-                  <div>
-                    <strong>Authorized funding</strong>
-                    <small>A Cranker pays the network fee and submits the exact sender-signed
-                      funding transaction to the epoch treasury</small>
-                  </div>
-                </li>
-                <li>
-                  <span>06</span>
-                  <div>
-                    <strong>DNA settlement</strong>
-                    <small>After funding confirms, Mother DNA authorizes one Cranker; TSN consumes
-                      it,
-                      settles the opaque slot, reimburses that exact vault, and records the receipt</small>
-                  </div>
-                </li>
-              </ol>
-              <figcaption id='process-caption'>The TSN payment lifecycle: from identity resolution
-                to a reusable settlement receipt.</figcaption>
-              <details class='diagram-source'>
-                <summary>View the original Mermaid definition</summary>
-                <pre><code>flowchart TD
-    A[User enters a 10-digit TIN] --&gt; B[TIN route resolves]
-    B --&gt; C[TSN SDK builds immutable payment plan]
-    C --&gt; D[Main wallet signs the GPRU commitment]
-    D --&gt; E[TSN Node verifies and encrypts the private payment binding]
-    E --&gt; F[Cranker submits the exact sender-signed epoch funding transaction]
-    F --&gt; G[Funding confirms and Mother creates one-time DNA]
-    G --&gt; H[Cranker submits the exact DNA-bound settlement]
-    H --&gt; I[TSN Program consumes DNA and marks the opaque slot settled]
-    I --&gt; J[Epoch treasury reimburses the exact settled vault]
-    I --&gt; J[Private receipt and public transaction evidence recorded]</code></pre>
-              </details>
-            </figure>
-            <p>This model also clarifies a common confusion. Identity-first does <strong>not</strong>
-              mean the whole system must be fully public or fully onchain in a naive way. Real
-              systems may split responsibilities. Some information belongs onchain because it
-              benefits from shared verification. Other information belongs offchain because it is
-              personal, regulated, or operationally sensitive. HFIPay resolves identifiers offchain
-              but anchors blinded payment binding onchain. Hinkal uses smart contracts, commitments,
-              and relayers while separating KYC providers from wallet-level information. Canton
-              emphasizes synchronized data sharing without giving every participant the entire
-              ledger view. A workable TSN should be equally pragmatic. <sup class='citations'>[<a
-                  aria-label='Source 8' href='#source-8'>8</a>,<a aria-label='Source 10'
-                  href='#source-10'>10</a>,<a aria-label='Source 14' href='#source-14'>14</a>]</sup></p>
+            <p>Applications can address digital value through a ten-digit Transfer Identity Number. TSN is hybrid decentralized settlement protocol infrastructure for the Internet of Value: Receiver, Node and Cranker coordinate verified work off chain, while TIP, TSNP, TCAP and GPRU enforce identity, authorization, private transition proofs and reserve accounting on Solana.</p>
+            <h3 id='how-tin-identity-assurance-actually-works'>TIN Identity and Optional Assurance</h3>
+            <p>TIP manages TIN registration, authenticated route membership and owner recovery. The sender approves a canonical TIN-targeted intent; the Node resolves the permitted recipient route from current TIP state. The owner separately signs the exact TCAP deposit. A registered identity is not a private key, public balance account or proof of legal identity.</p>
+            <p>Optional issuer-verified personal or business credentials remain proposed work. An integration would require owner consent, a supported issuer and schema, exact TIN binding, revocation and expiry checks, and selective disclosure. No integrated Solana Attestation Service or Sumsub credential flow is established by the current TSN implementation.</p>
+            <h3 id='exactly-where-tin-data-lives'>Identity, Proof and Data Boundaries</h3>
+            <p>The current SDK uses encrypted identity envelopes and separate wallet-authorized owner recovery material. Protected lookup material remains with the trusted issuer and Node. Node intentionally handles recipient routes, amount openings and private witnesses; services are not described as blind to that context.</p>
+            <p>TCAP holds accepted reserve assets, records genuine deposits in its global funding tree, and maintains shared private-state and asset-epoch accounting. GPRU verifies hidden route membership, the exact funded amount and balance transition, secret-derived nullifier and proof-bound Memo. It never holds reserve tokens.</p>
+            <p>After confirmed funding, Node constructs the private witness and encrypted owner Memo; Mother authorizes the inspected TSNP call; Cranker submits the permitted transaction; TCAP invokes GPRU before advancing shared state and the blinded credit transcript atomically. Complete aggregate accounting is a separate proof over 2&#8211;64 accepted credits. One confirmed deposit can support an individual credit.</p>
+            <p>The current thirteen-input proof and circuit-specific development keys must match the initialized verifier and running ABI. The owner-encrypted Memo is transaction instruction data. Owner recovery must validate recovered openings, authorization, sequence and predecessor linkage against the settled statement.</p>
+            <p>Wallet funding, token identifiers, roots, nullifiers, ciphertext, accounts, timing and aggregate totals remain observable. Sparse or known-amount histories and public registration-owner binding can limit unlinkability. The November 16 retained Devnet checkpoint verifies two private credits and complete aggregate accounting; complete owner recovery, confidential spending, general unlinkability and production readiness remain separate checks.</p>
+            <p>Base, Arbitrum and Polygon PoS are planned lower-fee EVM targets with distinct security assumptions. They have transaction fees; Ethereum Layer 1 is outside the current integration priority. New routes need actual value delivery, source finality, destination authentication and partial-failure recovery before activation.</p>
+            <p><a href='/p/tsn-flow.html'>Current Solana credit flow</a> &#183; <a href='/p/tsn-protocol-whitepaper.html'>Whitepaper and evidence boundaries</a></p>
             <h2 id='wallet-first-privacy-and-identity-first-settlement'>Wallet-First Privacy and
               Identity-First Settlement</h2>
             <p>The best way to understand TSN is to compare it with the most visible live pattern in
@@ -2897,14 +2635,7 @@ h1,h2,h3,.post-title,.page-shell .post-title,.page-shell h1,.update-result h2,.u
               payroll slices, merchant purchases, and small recurring debits, not only for large
               treasury transfers. <sup class='citations'>[<a aria-label='Source 12'
                   href='#source-12'>12</a>]</sup></p>
-            <p>The fifth choice is <strong>how settlement is advanced</strong>. TSN separates user
-              authorization, Node coordination, and Solana submission. The payer authorizes an exact
-              intent through the SDK. The TSN Node verifies canonical fields and signatures,
-              reserves epoch liability, prevents replay, and exposes DNA-bound settlement work. A <strong>
-              Cranker</strong> polls the Node, validates the immutable work item, pays the network
-              fee, and submits it to Solana. The Cranker cannot replan the payment, change its
-              amount or recipient, derive a user key, or sign as a private balance authority. Solana
-              validators execute and confirm the submitted TSN Program transaction.</p>
+            <p>Settlement advancement needs explicit actor and retry boundaries. The current native-credit flow separates wallet-signed funding from private settlement proving and exact authorized submission; signed attempts require receipt reconciliation before replacement.</p>
             <p>The sixth choice is <strong>what a receipt is</strong>. In a TSN, a receipt should be
               more than a transaction hash. At minimum it should include payer and payee references
               as they are meant to be displayed inside the application, a settlement status,
@@ -2950,12 +2681,7 @@ h1,h2,h3,.post-title,.page-shell .post-title,.page-shell h1,.update-result h2,.u
               useful mental model here because it shows that privacy-preserving identifier
               resolution does not require dumping human identity directly onto the chain. <sup
                 class='citations'>[<a aria-label='Source 8' href='#source-8'>8</a>]</sup></p>
-            <p>In the protocol-centered model, TSN is the complete network. TIN supplies payment
-              identity and protected identity metadata. GPRU supplies route authorization, while
-              TCap supplies policy-bound private balance tips and encrypted snapshots. The SDK
-              signs locally; the Node verifies and coordinates; Crankers submit; Mother DNA and
-              the TSN Program enforce the one-time settlement lifecycle. The application is one
-              client of TSN rather than the system itself.</p>
+            <p>TIP provides ten-digit identity and authenticated routes; Node verifies funding and constructs the private witness; Mother authorizes TSNP; TCAP invokes GPRU before applying shared-state changes. Receiver coordinates leases and Cranker submits exact permitted work.</p>
             <p>The TrustLink Labs protocol specification emphasizes these design priorities:</p>
             <ol>
               <li>A formal TSN object model with explicit roles and state transitions.</li>
@@ -2985,17 +2711,7 @@ h1,h2,h3,.post-title,.page-shell .post-title,.page-shell h1,.update-result h2,.u
               implementation and governance boundaries.</p>
             <ol>
               <li>
-                <p><strong>Chain coverage.</strong> TSN is designed as a Solana-native settlement
-                  and authorization network with multi-chain reach, so payment teams do not have to
-                  stitch separate rails together for every chain they support. Its cross-chain
-                  connection mechanism is an attestation: a verifiable statement, anchored by an
-                  approved contract, that a specified event occurred on another chain. The
-                  attestation binds the source transaction, asset, amount, destination, finality
-                  reference and replay protection. Verified attestation contracts and governed
-                  liquidity connect TSN to the required chains and approved liquidity venues, while
-                  Solana remains the coordination environment for identity-aware authorization,
-                  epoch settlement and finality. Every external connection is explicitly verified,
-                  policy-bound and tied to a declared liquidity route.</p>
+                <p><strong>Chain coverage.</strong> Solana is the current experimental private-credit domain. Base, Arbitrum and Polygon PoS are candidate lower-fee EVM targets. Each new route needs reviewed source evidence, destination authentication, actual value delivery and recovery; no universal attestation mechanism or live EVM payout is established.</p>
               </li>
               <li>
                 <p><strong>Asset coverage.</strong> The asset graph matters as much as the chain
@@ -3073,16 +2789,7 @@ h1,h2,h3,.post-title,.page-shell .post-title,.page-shell h1,.update-result h2,.u
                   href='#source-12'>12</a>,<a aria-label='Source 11' href='#source-11'>11</a>,<a
                   aria-label='Source 8' href='#source-8'>8</a>]</sup></p>
 
-            <p>That is why TSN is a useful term. It gives builders, researchers, and even
-              non-technical readers a way to name the missing middle layer between asset movement
-              and completed payment. In the TrustLink Labs model, TSN is that infrastructure: TIN
-              provides human-friendly payment identity, GPRU authorizes protected routing, TCap
-              maintains encrypted private balance snapshots, the TSN Node coordinates verified
-              work, Crankers submit, and the TSN Program enforces settlement. Whether or not those
-              exact names become industry standards, the
-              underlying idea is durable:
-              blockchain gave us programmable money; the next step is programmable payment
-              infrastructure.</p>
+            
             <section aria-labelledby='sources-title' class='sources'>
               <h2 id='sources-title'>Primary sources and evidence</h2>
               <p>These institutional, protocol, and academic sources support the definitions,
@@ -3288,17 +2995,11 @@ h1,h2,h3,.post-title,.page-shell .post-title,.page-shell h1,.update-result h2,.u
           </details>
           <details>
             <summary>How do TIN, GPRU, and TCap relate to TSN?</summary>
-            <p>TSN is the complete payment network. TIN is its 10-digit payment identity. GPRU is
-              the routing and authorization layer, and TCap is the policy-bound private balance
-              layer. The SDK, Node, Crankers, TSN Program, and Mother DNA authorize, coordinate,
-              submit, and enforce the settlement path.</p>
+            <p>TSN includes TIP identity, TSNP authorization, TCAP asset accounting, GPRU proof verification and separate Receiver, Node and Cranker services. TrustLink Pay is a reference application using that infrastructure.</p>
           </details>
           <details>
             <summary>Does a TIN prove a person&#39;s legal identity?</summary>
-            <p>No. A TIN is a public 10-digit payment identifier and is not legal-identity proof by
-              itself. Optional assurance comes from registered verification-platform proofs and
-              Solana Attestation Service credentials, while wallet control is proven
-              cryptographically against the owner commitment stored in the TIN registry.</p>
+            <p>A TIN and a chosen name do not prove legal identity. Optional issuer-verified credentials remain proposed work requiring owner consent, exact identity binding, revocation and selective disclosure.</p>
           </details>
           <details>
             <summary>Which TIN identity data stays protected?</summary>

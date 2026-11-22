@@ -69,10 +69,7 @@
   infrastructure layers.</p>
 
 <h3>Identity and Routing</h3>
-<p>Banks and users expect to send money to people or accounts, not anonymous addresses. TrustLink's Transfer Settlement
-  Network introduces 10-digit <strong>TINs</strong>, or Transfer Identity Numbers, instead of requiring raw keys to
-  serve as user-facing identity. Routing identities such as GPRUs can separate payment routing from a user's underlying
-  identity.</p>
+<p>GPRU, the Guarded Privacy Routing Unit, verifies the hidden route, private balance transition, nullifier and proof-bound Memo in the current experimental credit flow. TIP manages TIN identity and route membership; TCAP holds reserve assets and applies accounting. GPRU does not act as a receiving wallet or hold reserve tokens.</p>
 
 <h3>Authorization and Policy</h3>
 <p>Enterprises require approval workflows and transaction policies. Institutional networks can identify counterparties
@@ -99,39 +96,15 @@
   privacy, compliance, liquidity, and final accounting. It is a payment rail for digital money, not merely a token
   transfer.</p>
 
-<h2>Transfer Settlement Network and Identity-First Payments</h2>
-
-<p>TrustLink Labs' <strong>Transfer Settlement Network (TSN)</strong> is designed as a blockchain-native infrastructure
-  layer that coordinates identity, authorization, settlement execution, confidentiality, and final ownership updates for
-  digital value transfers.</p>
-
-<h3>TINs and GPRUs</h3>
-<p>Users interact through a short Transfer Identity Number rather than a raw wallet address. During settlement, TSN can
-  use temporary <strong>GPRUs</strong>, or Guard Privacy Routing Units, as one-time routing identities. These units hold
-  encrypted commitment data without exposing a user's public payment history as the user-facing destination.</p>
-
-<h3>Payment Intents</h3>
-<p>A sender's device composes a signed intent containing fields such as amount, recipient TIN, and expiry. The intent is
-  sent to TSN coordination nodes. Only a valid intent can create settlement work, ensuring that each transfer is
-  explicitly authorized.</p>
-
-<h3>Epoch Treasury and TCap</h3>
-<p>TSN operates in epochs, or defined time intervals. Each epoch coordinates incoming funds and settlement obligations.
-  TCap supplies the private balance and asset-accounting layer, allowing balance transitions to be represented through
-  encrypted state and commitments rather than exposing a readable balance at a routing unit.</p>
-
-<h3>Crankers and Validation</h3>
-<p>Crankers lease verified settlement work and submit the corresponding onchain transactions. The TSN program checks
-  that the submitted transaction matches the pre-authorized intent and can enforce one-time execution, replay
-  protection, and settlement state transitions.</p>
-
-<p>This architecture treats settlement infrastructure as a lifecycle: identity, authorization, funding, final delivery,
-  replay protection, receipts, and recovery all need defined responsibilities.</p>
-
-<blockquote>
-  <p>Stablecoins changed how value can move. The next infrastructure layer must change how business payments are
-    authorized, coordinated, and settled.</p>
-</blockquote>
+<h2>TSN and Identity-Addressed Settlement</h2>
+<p>Applications can address digital value through a ten-digit Transfer Identity Number (TIN). Transfer Settlement Network (TSN) is hybrid decentralized settlement protocol infrastructure for the Internet of Value, combining off-chain verification and work coordination with on-chain authorization, private-credit proof verification and reserve accounting. Solana is the current experimental domain.</p>
+<h3>Identity and exact approval</h3>
+<p>TIP manages registration, authenticated recipient-route membership and owner recovery. The sender signs a TIN-targeted intent; Node resolves the permitted route and validates current state. The owner separately approves the exact TCAP wallet deposit. A TIN is not a private key, public balance account or proof of legal identity.</p>
+<h3>Verification and confidential accounting</h3>
+<p>Receiver coordinates restricted work and leases; Node verifies confirmed funding and constructs the private witness and encrypted owner Memo. Mother authorizes TSNP, Cranker submits the permitted transaction, and TCAP invokes GPRU before advancing the shared head/nullifier root and blinded credit transcript. TCAP owns reserve custody; GPRU verifies proof relations without holding reserve tokens. Complete aggregate accounting is separate from individual credit.</p>
+<h3>Evidence and future integration</h3>
+<p>The retained November 16 Solana Devnet checkpoint verifies two private credits and complete aggregate accounting. Wallet funding, roots, token, ciphertext, accounts, timing and aggregate totals remain public; Node handles sensitive routes and openings. General unlinkability, owner recovery, confidential spending and cross-network delivery require separate evidence. Base, Arbitrum and Polygon PoS are planned lower-fee targets with distinct security assumptions; they have transaction fees. Optional verified TIN credentials are proposed work.</p>
+<p><a href="/p/tsn-flow.html">Read the current native-credit flow</a> &middot; <a href="/p/tsn-protocol-whitepaper.html">Read the whitepaper and implementation limits</a></p>
 
 <h2>The Big Picture</h2>
 

@@ -42,7 +42,7 @@ DBrix packages in the SDK/Cranker transport encode large Solana V1 transactions 
 
 ## External integrations and research
 
-The SDK includes `lit` web components and separately pinned `@lit-protocol/* 7.4.0` packages. Lit UI lifecycle behavior and Lit Protocol threshold authorization are different roles. A configured provider/action and its test evidence are needed before claiming threshold execution is available. The cross-chain tree contains EVM Solidity contracts, ethers-based adapters and Attestcoin/CCTP integration material; each route requires its own deployed addresses, liquidity, authorization and destination evidence.
+The SDK includes `lit` web components and separately pinned `@lit-protocol/* 7.4.0` packages. Lit UI lifecycle behavior and Lit Protocol threshold authorization are different roles. A configured provider/action and its test evidence are needed before claiming threshold execution is available. The cross-chain tree retains generic EVM registry, liquidity and anchor research primitives after retirement of the previous destination/proof middleware. Node discovery exposes no enabled destination route. Base, Arbitrum and Polygon are planned lower-fee targets; each requires a reviewed adapter, deployed contracts, liquidity, authorization and source/destination evidence. CCTP ingress remains a distinct integration scope.
 
 ## Test and documentation tooling
 

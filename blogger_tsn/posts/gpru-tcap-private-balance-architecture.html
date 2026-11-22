@@ -6,7 +6,7 @@
   <meta content="GPRU and TCAP: The Authorization and Private Balance Architecture of TSN" itemprop="headline">
   </meta>
   <meta
-    content="A technical research paper explaining how GPRU authorization, Mother Settlement DNA, epoch treasury coordination, and TCAP encrypted balance snapshots form a production payment architecture."
+    content="A technical research paper explaining how GPRU authorization, Mother Settlement DNA, epoch treasury coordination, and TCAP encrypted balance snapshots form experimental hybrid settlement infrastructure."
     itemprop="description">
   </meta>
 
@@ -23,37 +23,20 @@
   <div><br /></div>
   <p class="dek" itemprop="description">Modern payment networks need two protections at once: a verifiable authorization
     path and a private balance path. TrustLink Labs separates those responsibilities across GPRU, TSN, and TCAP.</p>
-  <h2>Abstract</h2>
-  <p>GPRU provides authorization and routing without custody. TCAP provides policy-bound private balance state through
-    commitment-linked encrypted snapshots. The TSN Program coordinates epoch treasury obligations and consumes
-    Mother-rooted Settlement DNA exactly once. Together, these layers create a payment system in which the operator can
-    submit an authorized transaction without receiving the sender’s keys, private commitment, or payment-specific
-    account history.</p>
-  <h2>1. The authorization problem</h2>
-  <p>A payment authorization is stronger than a destination address. It must bind the amount, mint, recipient, fees,
-    route, expiry, nonce, and settlement commitment. GPRU canonicalizes those fields and lets the Node reject any
-    mutation before a Cranker receives work.</p>
-  <h2>2. Mother-rooted Settlement DNA</h2>
-  <p>Mother creates a one-time DNA voucher for a specific authorized CrankerVault and lease. The permit carries the
-    opaque commitment, public settlement coordinates, nullifier, and expiry. On success the TSN Program consumes the DNA
-    permanently. A second Cranker cannot reuse or redirect it.</p>
-  <h2>3. The private balance path</h2>
-  <p>TCAP stores a public tip commitment and sequence, not a plaintext balance. After a valid credit, the owner stores
-    an encrypted snapshot keyed by the new commitment. A private read fetches the tip, loads the matching ciphertext,
-    verifies its hash and sequence, and decrypts locally. The protocol never needs to publish the balance to coordinate
-    the transition.</p>
-  <h2>4. Epoch treasury coordination</h2>
-  <p>Funding enters an epoch treasury rather than a payment-specific escrow object. The epoch ledger tracks aggregate
-    obligations and opaque claim state. Settlement and refund are mutually exclusive: the first valid operation writes
-    the claim outcome, and finalization requires that pending liability reaches zero.</p>
-  <h2>5. Operator and privacy boundaries</h2>
-  <p>Crankers pay fees and submit transactions, but they do not receive sender keys, TIN master material, private
-    commitment plaintext, escrow accounts, or PrivateEscrowRecord PDAs. The Node and Mother retain encrypted private
-    context; the chain enforces the one-time authorization capability.</p>
-  <h2>Conclusion</h2>
-  <p>GPRU makes authorization portable, TCAP makes private balance state usable, and TSN makes settlement accountable.
-    The result is a protocol architecture for identity-aware, privacy-preserving payment infrastructure rather than a
-    thin transfer wrapper.</p>
-  <p><a href="/p/identity-and-tin.html">TIN identity</a> · <a href="/p/gpru.html">GPRU documentation</a> · <a
-      href="/p/tcap.html">TCAP documentation</a> · <a href="/p/tsn-flow.html">TSN settlement flow</a></p>
+  <meta itemprop="dateModified" content="2026-11-22">
+  <h2>Current architecture checkpoint</h2>
+  <p>This August research article was reconciled on November 22 with the current experimental private-credit contract. Earlier per-TIN tip, Settlement DNA and Epoch Treasury descriptions belong to a distinct retained family; they do not describe native shared-root credit.</p>
+<p>Applications can address digital value through a ten-digit Transfer Identity Number (TIN). Transfer Settlement Network (TSN) is hybrid decentralized settlement protocol infrastructure for the Internet of Value, combining off-chain verification and work coordination with on-chain authorization, private-credit proof verification and reserve accounting. Solana is the current experimental domain.</p>
+<h3>Identity and exact approval</h3>
+<p>TIP manages registration, authenticated recipient-route membership and owner recovery. The sender signs a TIN-targeted intent; Node resolves the permitted route and validates current state. The owner separately approves the exact TCAP wallet deposit. A TIN is not a private key, public balance account or proof of legal identity.</p>
+<h3>Verification and confidential accounting</h3>
+<p>Receiver coordinates restricted work and leases; Node verifies confirmed funding and constructs the private witness and encrypted owner Memo. Mother authorizes TSNP, Cranker submits the permitted transaction, and TCAP invokes GPRU before advancing the shared head/nullifier root and blinded credit transcript. TCAP owns reserve custody; GPRU verifies proof relations without holding reserve tokens. Complete aggregate accounting is separate from individual credit.</p>
+<h3>Evidence and future integration</h3>
+<p>The retained November 16 Solana Devnet checkpoint verifies two private credits and complete aggregate accounting. Wallet funding, roots, token, ciphertext, accounts, timing and aggregate totals remain public; Node handles sensitive routes and openings. General unlinkability, owner recovery, confidential spending and cross-network delivery require separate evidence. Base, Arbitrum and Polygon PoS are planned lower-fee targets with distinct security assumptions; they have transaction fees. Optional verified TIN credentials are proposed work.</p>
+<p><a href="/p/tsn-flow.html">Read the current native-credit flow</a> &middot; <a href="/p/tsn-protocol-whitepaper.html">Read the whitepaper and implementation limits</a></p>
+<h2>Private state and owner recovery</h2>
+<p>Current private credit proves exact funded-note membership and amount, consumes a secret-derived nullifier and binds the encrypted owner Memo to the successor balance. Its thirteen-input statement authenticates current shared state and TIP route membership. Owner-held scan material can recover the proof-bound blinding delta; complete history recovery must validate openings, authorization, sequence and predecessor linkage against settled transactions.</p>
+<h2>Separate aggregate accounting</h2>
+<p>Individual credit advances shared state and the blinded asset-epoch transcript without moving reserve tokens or reclassifying public per-credit liabilities. A separate proof covers the complete ordered set of 2&ndash;64 accepted credits before TCAP reclassifies their total. One confirmed deposit can support an individual credit; the batch minimum applies to accounting.</p>
+<p><a href="https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/credit-abi.md">Read the current native-credit ABI</a> &middot; <a href="https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/cryptography.md">Read the proof and privacy record</a></p>
 </article>

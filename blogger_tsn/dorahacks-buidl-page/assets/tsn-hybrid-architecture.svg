@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 920" role="img" aria-labelledby="title desc">
+<title id="title">TSN hybrid settlement infrastructure</title>
+<desc id="desc">Experimental Solana native wallet funding to private TIN credit, with off-chain coordination, on-chain checks and separate aggregate accounting. Lower-fee EVM routes and verified credentials are planned.</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#c9d2ff"/></marker></defs>
+<rect width="1600" height="920" fill="#0b1010"/>
+<g font-family="Arial,Helvetica,sans-serif" fill="#f5f7ff">
+<text x="80" y="95" font-size="38" font-weight="800">TSN: HYBRID INTERNET OF VALUE INFRASTRUCTURE</text>
+<text x="80" y="145" font-size="24" fill="#c9d2ff">Current experimental Solana credit flow - reviewed 2026-11-22</text>
+<text x="80" y="215" font-size="19" fill="#bfc9c7">OWNER APPROVAL</text>
+<rect x="80" y="240" width="420" height="150" rx="14" fill="#193a31"/>
+<text x="110" y="280" font-size="25" font-weight="700">Ten-digit TIN recipient</text>
+<text x="110" y="320" font-size="21">Canonical signed intent</text>
+<text x="110" y="355" font-size="21">Separate exact deposit approval</text>
+<text x="590" y="215" font-size="19" fill="#bfc9c7">OFF-CHAIN COORDINATION</text>
+<rect x="590" y="240" width="420" height="150" rx="14" fill="#25313f"/>
+<text x="620" y="280" font-size="25" font-weight="700">Receiver and Node</text>
+<text x="620" y="320" font-size="21">Confirmed funding + route witness</text>
+<text x="620" y="355" font-size="21">Private transition proof + Memo</text>
+<text x="1100" y="215" font-size="19" fill="#bfc9c7">EXACT SUBMISSION</text>
+<rect x="1100" y="240" width="420" height="150" rx="14" fill="#193a31"/>
+<text x="1130" y="280" font-size="25" font-weight="700">Mother and Cranker</text>
+<text x="1130" y="320" font-size="21">Inspected TSNP authorization</text>
+<text x="1130" y="355" font-size="21">Leased permitted transaction</text>
+<path d="M500 315 H575 M1010 315 H1085 M1310 390 V445 H800 V480" fill="none" stroke="#c9d2ff" stroke-width="3" marker-end="url(#arrow)"/>
+<rect x="80" y="495" width="1440" height="150" rx="14" fill="#25313f"/>
+<text x="115" y="540" font-size="25" font-weight="700">ON CHAIN: TSNP -&gt; TCAP -&gt; GPRU</text>
+<text x="115" y="580" font-size="22">Verify authorization, genuine funding, current state, secret-derived nullifier and bound Memo.</text>
+<text x="115" y="615" font-size="22">Advance shared root + blinded credit epoch; account the complete total in a separate proof.</text>
+<text x="80" y="715" font-size="24" font-weight="700">PLANNED: BASE / ARBITRUM / POLYGON PoS + OPTIONAL CREDENTIAL ATTESTATIONS</text>
+<text x="80" y="765" font-size="21" fill="#c9d2ff">No enabled EVM payout or credential-provider integration is established by this diagram.</text>
+<text x="80" y="810" font-size="21" fill="#c9d2ff">Wallet funding, roots, accounts, timing and aggregate totals remain observable.</text>
+<text x="80" y="855" font-size="21" fill="#c9d2ff">Node handles sensitive witnesses; owner recovery and general unlinkability need separate verification.</text>
+</g></svg>

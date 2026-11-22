@@ -1,6 +1,6 @@
 # TrustLink naming and protocol boundaries
 
-**Status: CURRENT, reconciled 2026-11-14.** Use these names in code, documentation and technical explanations. This vocabulary identifies responsibilities; the [architecture map](../docs/laboratory/architecture-map.md), [credit ABI](../docs/laboratory/credit-abi.md) and executable contracts establish route-specific behavior.
+**Status: CURRENT, positioning updated 2026-11-22; technical boundaries reconciled 2026-11-14.** Use these names in code, documentation and technical explanations. This vocabulary identifies responsibilities; the [architecture map](../docs/laboratory/architecture-map.md), [credit ABI](../docs/laboratory/credit-abi.md) and executable contracts establish route-specific behavior.
 
 | Name | Meaning | Boundary |
 | --- | --- | --- |
@@ -20,6 +20,14 @@
 | **CCTP** | Circle Cross-Chain Transfer Protocol | External Circle integration, distinct from TrustLink protocol layers. |
 | **DBrix Memo** | Serialized encrypted owner action record in transaction data | Memo is instruction data, not a persistent balance account or independent proof of correct arithmetic. |
 | **TSN SDK / TSN XP** | Developer client library / application experience | SDK prepares documented approvals and requests; XP presents the user flow. Neither supplies deployment or settlement proof by displaying success. |
+
+## Public positioning and integration scope
+
+TSN is **hybrid, decentralized settlement infrastructure for the Internet of Value (IoV)**: an identity-aware network organized around settlement protocols, with off-chain verification and coordination and on-chain authorization and accounting. “Hybrid” describes that division of responsibility; Solana supplies execution, ordering, consensus and finality. “Decentralized” describes the infrastructure direction and protocol enforcement, not evidence that every service or governance role is already permissionless.
+
+The current experimental implementation centers on Solana wallet-to-TIN credit. Planned EVM evaluation prioritizes lower-fee networks such as Base, Arbitrum and Polygon; Base and Arbitrum are Ethereum Layer 2 networks, while Polygon PoS is an EVM sidechain. Gas fees still apply. Ethereum Layer 1 integration is outside the current scope because of transaction costs. A named candidate is not an implemented adapter, funded route or completed cross-network payment.
+
+Use **TIN**, not CIN, for the ten-digit Transfer Identity Number. Resolved display names are owner-provided today. Signed credential-shaped metadata is a binding surface, not issuer verification. Optional issuer-backed names, business credentials and wallet-ownership attestations are planned; provider authentication, subject/TIN binding, expiry, revocation, consent and disclosure policy require an implemented verifier before claims can be labeled verified.
 
 ## First release and internal identifiers
 

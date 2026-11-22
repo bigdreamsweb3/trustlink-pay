@@ -58,9 +58,7 @@ solana program show TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V --url devnet
 If the Windows toolchain is incomplete, run the same guarded sequence in the
 WSL environment that owns the funded Devnet signer. Record the resulting
 deployment signature and program-data state before creating a debit intent.
-The next cross-chain gate remains separate: Creditcoin's
-`latestObservation(routeId)` must also be current before the Node exposes the
-destination route.
+Cross-network admission is disabled after retirement of the former EVM integration. Planned destinations need separate adapter, liquidity and complete receipt evidence before activation.
 
 ## TIN program deployment gate
 

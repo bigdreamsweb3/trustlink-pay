@@ -1,0 +1,21 @@
+<!-- TITLE: TSN Cross-Network Integration: Base, Arbitrum and Polygon PoS -->
+<!-- SEARCH DESCRIPTION: TSN plans lower-fee EVM settlement integration with Base, Arbitrum and Polygon PoS. Learn the current Solana boundary and the evidence required for each future route. -->
+<!-- LABELS: TSN, Cross-Network Settlement, Base, Arbitrum, Polygon, Internet of Value -->
+<!-- DRAFT: revised 2026-11-22; set canonical URL only after publishing. -->
+<article class="tsn-research-post" itemscope itemtype="https://schema.org/TechArticle">
+<meta itemprop="author" content="TrustLink Labs Research">
+<meta itemprop="dateModified" content="2026-11-22">
+<meta itemprop="description" content="TSN plans lower-fee EVM settlement integration with Base, Arbitrum and Polygon PoS. Learn the current Solana boundary and the evidence required for each future route.">
+<h1 itemprop="headline">TSN Cross-Network Integration: Base, Arbitrum and Polygon PoS</h1>
+<p>TSN's cross-network direction is to make a ten-digit payment identity useful across supported settlement environments. Current experimental private credit runs on Solana. Planned EVM work prioritizes Base, Arbitrum and Polygon PoS because the intended payment experience needs lower transaction costs. No completed TSN payout route on these targets is established by this roadmap.</p>
+<h2>Network targets and fee assumptions</h2>
+<p>Base and Arbitrum are Ethereum Layer 2 networks. Polygon PoS is an EVM sidechain with different security and finality assumptions. All have transaction fees; application sponsorship can cover a user's gas without eliminating the underlying network cost. Ethereum Layer 1 integration is outside the current priority. These targets are candidates, not a guaranteed deployment order.</p>
+<h2>Hybrid settlement infrastructure</h2>
+<p>Transfer Settlement Network is hybrid decentralized settlement protocol infrastructure for the Internet of Value. Its Receiver, Node and Cranker coordinate verified work off chain, while chain-specific programs enforce authorization and asset accounting. A common TIN identifier does not make different chains share balances, finality or liquidity automatically.</p>
+<h2>Requirements for a new settlement route</h2>
+<ul><li><strong>Source evidence:</strong> establish finality and a validated mechanism for authenticating the source authorization and asset effect.</li><li><strong>Exact destination binding:</strong> bind network, recipient, token, amount, fee, nonce and validity, then reject altered or replayed messages.</li><li><strong>Actual value delivery:</strong> implement supported asset transfer or prefunded destination liquidity. A proof or message cannot create the recipient's payment asset.</li><li><strong>Operational recovery:</strong> define route admission, monitoring, RPC failure handling and recovery after source progress without destination completion.</li><li><strong>Verification:</strong> retain reviewed contract and real source-to-destination transaction evidence before offering a live route.</li></ul>
+<h2>What the roadmap does not establish</h2>
+<p>No universal bridge, chain-native verifier, credential provider or fee model is selected by this article. Route-specific engineering and security review must settle those contracts. The retained Solana Devnet private-credit checkpoint is useful source-domain evidence; it is not proof of a Base, Arbitrum or Polygon payout.</p>
+<h2>Further reading</h2>
+<ul><li><a href="/p/tsn-protocol-whitepaper.html">TSN whitepaper and planned domain boundaries</a></li><li><a href="https://docs.base.org/">Base documentation</a></li><li><a href="https://docs.arbitrum.io/">Arbitrum documentation</a></li><li><a href="https://docs.polygon.technology/">Polygon documentation</a></li></ul>
+</article>

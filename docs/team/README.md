@@ -8,7 +8,7 @@ user material belongs under `tsn-protocol/tsn-docs/`.
 
 - [Architecture](./architecture/README.md) — canonical system boundaries and terminology.
 - [Protocol](./protocol/README.md) — TIN, TCap, GPRU, TSNP programs, and settlement rules.
-- [Cross-chain](./cross-chain/README.md) — Creditcoin, Attestcoin, destination liquidity, and EVM routes.
+- [Cross-chain](./cross-chain/README.md) — planned lower-fee EVM integrations and retired destination evidence.
 - [Operations](./operations/README.md) — Receiver, TSN Nodes, Crankers, environments, and service operation.
 - [Testing and releases](./testing/README.md) — Devnet evidence, deployment gates, and release review.
 - [Security](./security/README.md) — key handling, privacy-aware settlement coordination, and failure boundaries.

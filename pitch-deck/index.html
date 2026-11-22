@@ -1463,17 +1463,15 @@
               <circle cx="60" cy="60" r="8" fill="#0A0E0C" stroke="currentColor" stroke-width="1.6" />
             </svg></div>
           <h1 class="disp huge" class="rv" style="--d:0.2s">The Transfer<br>Settlement Network</h1>
-          <p class="tag" class="rv" style="--d:0.3s">Type 10 digits. Pay anyone. No address.</p>
-          <p class="lede" class="rv" style="--d:0.4s">Identity-first, privacy-preserving settlement on Solana — with
-            TIN, wallet, and cross-chain corridor routes. Rules settled since day one; the old trust, running on new
-            rails.</p>
+          <p class="tag" class="rv" style="--d:0.3s">Address digital value with a ten-digit identity.</p>
+          <p class="lede" class="rv" style="--d:0.4s">Hybrid decentralized settlement infrastructure for the Internet of Value. Experimental Solana private
+            credit today; lower-fee EVM integration and optional identity attestations are future work.</p>
           <div class="chips" class="rv" style="--d:0.5s">
-            <span>Wallet → Wallet</span><span>Wallet → TIN credit</span><span>TIN → TIN</span><span>TIN → Wallet
-              exit</span><span class="chip-gold">+ Cross-Chain Corridors</span>
+            <span>TIP identity</span><span>Wallet → TIN credit</span><span>Private amount proof</span><span>Aggregate accounting</span><span class="chip-gold">Planned low-fee EVM routes</span>
           </div>
           <div class="dateline" class="rv" style="--d:0.6s">TRUSTLINK LABS &nbsp;·&nbsp; IDENTITY-FIRST SETTLEMENT
-            &nbsp;·&nbsp; THE FUTURE OF MONEY, PRESERVED</div>
-          <div class="stamp" class="rv" style="--d:0.7s">MARKET<br>OPEN</div>
+            &nbsp;·&nbsp; INTERNET OF VALUE</div>
+          <div class="stamp" class="rv" style="--d:0.7s">EXPERIMENTAL<br>v1</div>
         </div>
       </div>
     </section>
@@ -1482,14 +1480,14 @@
         <div class="two-col">
           <div class="col-a">
             <p class="overline" class="rv" style="--d:0.05s">BULLETIN 02 — THE PROBLEM</p>
-            <h2 class="disp" class="rv" style="--d:0.12s">Payments have no identity.</h2>
-            <p class="lead" class="rv" style="--d:0.22s">Crypto made money programmable — but paying someone still means
-              copying a 40-character address and hoping it is right.</p>
-            <p class="body" class="rv" style="--d:0.3s">There is no portable identity, no privacy boundary, no liability
-              standard. Every payment leaks who paid, who received, and how much.</p>
+            <h2 class="disp" class="rv" style="--d:0.12s">Payments need clearer recipient identity.</h2>
+            <p class="lead" class="rv" style="--d:0.22s">Wallet payments often require copying a long address. Recipient confirmation, exact approval and
+              settlement evidence remain separate application responsibilities.</p>
+            <p class="body" class="rv" style="--d:0.3s">Public transfers can reveal counterparties and amounts. Network-specific asset and fee rules
+              complicate payment routing and recovery.</p>
             <div class="rules-line" class="rv" style="--d:0.38s"></div>
-            <p class="body sm muted" class="rv" style="--d:0.44s">The rules of money were settled over centuries:
-              identity, privacy, settlement. Crypto re-opened the question and answered it with a string of characters.
+            <p class="body sm muted" class="rv" style="--d:0.44s">TSN addresses the coordination layer: ten-digit payment identity, exact authorization, private-credit
+              proof verification and reserve accounting.
             </p>
           </div>
           <div class="col-b">
@@ -1497,10 +1495,10 @@
                 Address poisoning steals from wallets every year.</span></div>
             <div class="pain" class="rv" style="--d:0.28s"><b>Lost privacy</b><span>Sender, recipient and balance
                 metadata sit on-chain for anyone to read.</span></div>
-            <div class="pain" class="rv" style="--d:0.36s"><b>Lost time</b><span>No labels, no routing, no safety net —
-                every payment is copy, paste, and pray.</span></div>
-            <div class="pain" class="rv" style="--d:0.44s"><b>Missed mainstream</b><span>Normal users will not send
-                money to a random string of characters.</span></div>
+            <div class="pain" class="rv" style="--d:0.36s"><b>Lost time</b><span>Network, fee and transaction-state
+                differences complicate recipient confirmation and recovery.</span></div>
+            <div class="pain" class="rv" style="--d:0.44s"><b>Missed mainstream</b><span>Recipient identity and clear
+                approvals can improve the payment experience.</span></div>
             <div class="swap" class="rv" style="--d:0.55s">
               <div class="swap-bad">7xKXtg2CW87d97TXJSD pbD5jBkheTqA83TZRuJosqAsU<span class="no">✕ copy · paste ·
                   pray</span></div>
@@ -1516,115 +1514,94 @@
         <div class="center-col">
           <p class="overline" class="rv" style="--d:0.05s">BULLETIN 03 — THE OFFER</p>
           <h2 class="disp huge2" class="rv" style="--d:0.12s">A 10-digit identity<br>for money.</h2>
-          <p class="lede" class="rv" style="--d:0.24s">Like a phone number for your value. Resolve it. Authorize it.
-            Settle it privately.</p>
+          <p class="lede" class="rv" style="--d:0.24s">A human-facing recipient identifier that stays separate from settlement accounts. The owner signs
+            the intent and separately approves wallet funding.</p>
           <div class="tri" class="rv" style="--d:0.36s">
-            <div class="tri-item"><b>TIN</b><span>portable identity — a number you keep for life</span></div>
-            <div class="tri-item"><b>GPRU</b><span>scoped authorization — what a number may do</span></div>
-            <div class="tri-item"><b>TCAP</b><span>private balance — value that stays yours</span></div>
+            <div class="tri-item"><b>TIN</b><span>ten-digit identity with owner recovery</span></div>
+            <div class="tri-item"><b>GPRU</b><span>hidden route and balance proof verification</span></div>
+            <div class="tri-item"><b>TCAP</b><span>governed reserves and confidential accounting</span></div>
           </div>
           <div class="credo" class="rv" style="--d:0.5s">
             <span class="credo-mark">“</span>
-            <p>Old money earned trust with fixed, conservative rules — finalized from day one. We kept that principle.
-              TSN&apos;s rules were settled before the first line of code: identity, privacy, liability. The old vibe
-              you trust &mdash; running on modern cryptography.</p>
+            <p>TSN separates identity, intent verification, settlement authorization and asset accounting.
+              Its hybrid model makes each participant&apos;s responsibility explicit while retaining the underlying
+              blockchain&apos;s consensus and documented trust boundaries.</p>
           </div>
         </div>
       </div>
     </section>
     <section class="slide bg-paper" id="how" aria-hidden="true">
       <div class="pad">
-        <p class="overline" class="rv" style="--d:0.05s">BULLETIN 04 — HOW IT WORKS</p>
-        <h2 class="disp" class="rv" style="--d:0.1s">One protocol, four routes.</h2>
-        <div class="g2" class="rv" style="--d:0.2s">
-          <div class="route"><b>Wallet deposit → Wallet exit</b><span>The compatibility flow: pay from any wallet to any
-              wallet under the same intent, verification and settlement boundaries.</span></div>
-          <div class="route"><b>Wallet deposit → TIN credit</b><span>Fund a TIN from any wallet. The balance lands as a
-              private TCAP credit — the ledger records a commitment, not an amount.</span></div>
-          <div class="route"><b>TIN debit → TIN credit</b><span>Native identity-to-identity transfer. No wallet address
-              leaves either device; both sides record private credits.</span></div>
-          <div class="route"><b>TIN debit → Wallet exit</b><span>Cash a TIN debit to any wallet — a public exit
-              authorized by a Mother-rooted DNA permit, paid from a cranker vault.</span></div>
+        <p class="overline rv">BULLETIN 04 — CURRENT EXPERIMENTAL FLOW</p>
+        <h2 class="disp rv">Wallet deposit to private TIN credit.</h2>
+        <div class="g2 rv">
+          <div class="route"><b>Owner authorization</b><span>Sign the TIN-targeted intent, then separately approve the exact TCAP reserve deposit.</span></div>
+          <div class="route"><b>Confirmed funding</b><span>Cranker submits the signed deposit unchanged; Node verifies the genuine asset-and-amount-bound funded leaf.</span></div>
+          <div class="route"><b>Private credit</b><span>Node prepares the hidden transition and Memo; Mother authorizes TSNP, and TCAP invokes GPRU before updating shared state.</span></div>
+          <div class="route"><b>Aggregate accounting</b><span>A separate proof covers 2&ndash;64 accepted credits and reclassifies their complete total. One confirmed deposit can support an individual credit.</span></div>
         </div>
-        <div class="flow" class="rv" style="--d:0.34s">
-          <div class="fstep" style="animation-delay:.0s"><b>INTENT</b><span>sign the plan</span></div><i
-            class="farr">→</i>
-          <div class="fstep" style="animation-delay:.25s"><b>VERIFY</b><span>node checks</span></div><i
-            class="farr">→</i>
-          <div class="fstep" style="animation-delay:.5s"><b>LEASE</b><span>cranker picks</span></div><i
-            class="farr">→</i>
-          <div class="fstep" style="animation-delay:.75s"><b>COMMIT</b><span>on-chain</span></div><i class="farr">→</i>
-          <div class="fstep" style="animation-delay:1s"><b>SETTLE</b><span>payout + credit</span></div>
+        <div class="flow rv">
+          <div class="fstep"><b>APPROVE</b><span>intent + deposit</span></div><i class="farr">→</i>
+          <div class="fstep"><b>FUND</b><span>confirm transfer</span></div><i class="farr">→</i>
+          <div class="fstep"><b>PROVE</b><span>Node witness</span></div><i class="farr">→</i>
+          <div class="fstep"><b>CREDIT</b><span>TSNP / TCAP / GPRU</span></div><i class="farr">→</i>
+          <div class="fstep"><b>ACCOUNT</b><span>complete epoch</span></div>
         </div>
-        <p class="body sm muted center" class="rv" style="--d:0.42s">Every route runs the same pipeline. Adding a
-          corridor does not change the protocol.</p>
+        <p class="body sm muted center rv">Confidential debit, TIN-to-TIN conservation and wallet exit require separate proof and runtime evidence.</p>
       </div>
     </section>
     <section class="slide bg-paper" id="crosschain" aria-hidden="true">
       <div class="pad">
-        <p class="overline" class="rv" style="--d:0.05s">BULLETIN 05 — CROSS-CHAIN SETTLEMENT</p>
-        <h2 class="disp" class="rv" style="--d:0.1s">One protocol. Every chain.<br><span class="accent">Corridors, not
-            fiats.</span></h2>
-        <div class="board" class="rv" style="--d:0.2s">
-          <div class="board-head"><span>SOURCE LEDGER</span><i>→</i><span>SETTLEMENT CORRIDORS</span></div>
+        <p class="overline rv">BULLETIN 05 — PLANNED EVM INTEGRATION</p>
+        <h2 class="disp rv">Lower-fee networks.<br><span class="accent">Evidence before activation.</span></h2>
+        <div class="board rv">
+          <div class="board-head"><span>CURRENT EXPERIMENT</span><i>→</i><span>CANDIDATE SETTLEMENT NETWORKS</span></div>
           <div class="board-row">
-            <div class="cell src"><b>SOLANA</b><span class="mono">debit commitments · TIN registry · TCAP credits</span>
-            </div>
-            <div class="cell cor live"><b>CREDITCOIN</b><span class="mono">corridor 01 — live today · owned payout
-                vault</span><span class="chip">LIVE</span></div>
-            <div class="cell cor next"><b>BASE</b><span class="mono">corridor 02 — drafted · payout vault in
-                review</span><span class="chip gold">NEXT</span></div>
-            <div class="cell cor future"><b>YOUR CHAIN</b><span class="mono">any EVM · register via
-                DestinationLiquidityRegistry</span><span class="chip">OPEN</span></div>
+            <div class="cell src"><b>SOLANA</b><span class="mono">TIP identity · private TIN credit · reserve accounting</span></div>
+            <div class="cell cor next"><b>BASE</b><span class="mono">Ethereum Layer 2 · candidate low-fee route</span><span class="chip gold">PLANNED</span></div>
+            <div class="cell cor next"><b>ARBITRUM</b><span class="mono">Ethereum Layer 2 · candidate low-fee route</span><span class="chip gold">PLANNED</span></div>
+            <div class="cell cor future"><b>POLYGON PoS</b><span class="mono">EVM sidechain · distinct security model</span><span class="chip">PLANNED</span></div>
           </div>
         </div>
-        <div class="band" class="rv" style="--d:0.32s"><b>No bridges · no wrapped tokens · no cross-chain message
-            relay.</b> Each corridor settles from its own pre-funded stablecoin vault, authorized by proof-backed
-          Attestcoin verification on the destination chain.</div>
-        <div class="g3" class="rv" style="--d:0.42s">
-          <div class="route"><b>Corridor = a rule, not a rewrite</b><span>A corridor is a pair — credit ledger plus
-              destination chain — backed by vault liquidity. Onboarding a chain is a registry entry, not a protocol
-              change.</span></div>
-          <div class="route"><b>Creditcoin, first</b><span>Settlement to Creditcoin is corridor one, live today. The
-              same node, SDK and intents settle every corridor.</span></div>
-          <div class="route"><b>Built to change</b><span>As corridors multiply — Base, then more — TIN, GPRU, intent and
-              TCAP boundaries stay identical. The deck you read today describes the architecture, not an event.</span>
-          </div>
+        <div class="band rv"><b>These targets have transaction fees.</b> Fee sponsorship can cover a user&apos;s gas, but integration must still account for network and liquidity costs. Ethereum Layer 1 is outside the current priority.</div>
+        <div class="g3 rv">
+          <div class="route"><b>Route-specific verification</b><span>Establish source finality, authenticated evidence, exact destination binding and replay rejection.</span></div>
+          <div class="route"><b>Actual value delivery</b><span>Implement a supported transfer mechanism or funded destination liquidity; a message does not create funds.</span></div>
+          <div class="route"><b>Admission and recovery</b><span>Review contracts, activation controls, gas, monitoring and partial-failure recovery before enabling a route.</span></div>
         </div>
-        <p class="body sm muted center" class="rv" style="--d:0.5s">TSN is a cross-chain settlement protocol by design —
-          no single chain, sponsor, or hack defines it.</p>
+        <p class="body sm muted center rv">No completed TSN payout route on these EVM targets is claimed; the list is a direction, not a deployment order.</p>
       </div>
     </section>
     <section class="slide bg-felt" id="demo" aria-hidden="true">
       <div class="pad">
-        <p class="overline" class="rv" style="--d:0.05s">BULLETIN 06 — LIVE DEMO</p>
-        <h2 class="disp" class="rv" style="--d:0.1s">Pay a TIN in three taps.</h2>
+        <p class="overline" class="rv" style="--d:0.05s">BULLETIN 06 — FLOW ILLUSTRATION</p>
+        <h2 class="disp" class="rv" style="--d:0.1s">A TIN credit, step by step.</h2>
         <div class="demo-row" class="rv" style="--d:0.2s">
           <div class="terminal">
             <div class="term-bar"><span class="t-dot"></span><span class="t-dot"></span><span
                 class="t-dot"></span>TRUSTLINK PAY — SETTLEMENT CONSOLE</div>
             <div class="term-body">
-              <p class="mono out">TRANSFER SETTLEMENT NETWORK · SOLANA</p>
+              <p class="mono out">TSN · SOLANA · ILLUSTRATIVE EXAMPLE</p>
               <p class="mono out">PRIVATE · IDENTITY-FIRST · CONFIDENTIAL SETTLEMENT</p>
               <p class="mono out2">&gt; recipient TIN:</p>
               <p class="mono type-line"><span id="typed"></span><span class="cursor"></span></p>
               <p class="mono out" id="receipt" hidden>
-                <span class="ok">✓ TIN 081-234-5678 VERIFIED (Mother-signed permit)</span><br>
-                <span class="ok">✓ INTENT SEALED · CRANKER LEASE CONFIRMED</span><br>
-                <span class="ok">✓ SETTLED — TCAP CREDIT PRIVATE · ON-CHAIN COMMIT ONLY</span>
+                <span class="ok">TIN 081-234-5678 · EXAMPLE RECIPIENT</span><br>
+                <span class="ok">INTENT + WALLET DEPOSIT APPROVAL</span><br>
+                <span class="ok">PRIVATE CREDIT REQUIRES CONFIRMED CHAIN EVIDENCE</span>
               </p>
             </div>
           </div>
           <div class="demo-side">
-            <p class="lead" class="rv" style="--d:0.3s">TrustLink Pay — live on Solana Devnet.</p>
+            <p class="lead" class="rv" style="--d:0.3s">TrustLink Pay — experimental Solana experience.</p>
             <ul class="ticks" class="rv" style="--d:0.4s">
-              <li>Pay with a phone number or 10-digit TIN — never an address</li>
-              <li>WhatsApp handles authentication, business verification, notifications</li>
-              <li>Private balances via TCAP encrypted snapshots</li>
-              <li>Epoch treasury funding · Cranker execution · cryptographic verification</li>
+              <li>Use a ten-digit TIN as the recipient identifier</li>
+              <li>Owner wallet approves the intent and exact deposit</li>
+              <li>Proof-bound private credit and encrypted owner Memo</li>
+              <li>Demo video 2 direction: wallet deposit → TIN credit</li>
             </ul>
             <div class="demo-links" class="rv" style="--d:0.5s">
-              <div><b>Try it now</b><span>trustlink-pay.vercel.app</span></div>
+              <div><b>Reference app</b><span>trustlink-pay.vercel.app</span></div>
               <div><b>Docs</b><span>trust-link-tsn.mintlify.site</span></div>
             </div>
           </div>
@@ -1633,29 +1610,21 @@
     </section>
     <section class="slide bg-paper" id="attest" aria-hidden="true">
       <div class="pad">
-        <p class="overline" class="rv" style="--d:0.05s">BULLETIN 07 — CROSS-CHAIN PROTOCOL</p>
-        <h2 class="disp" class="rv" style="--d:0.1s">Attestcoin: proof-verified<br>settlement.</h2>
-        <p class="lead slim" class="rv" style="--d:0.2s">TSN&apos;s corridors are secured by Attestcoin proof
-          verification. TSN deploys an Attestcoin Smart Contract (ASC) on each destination chain. Before any cross-chain
-          payout is authorized, the ASC verifies proof-backed liquidity events using the chain&apos;s native Block
-          Prover precompile — Creditcoin is corridor one; every future EVM corridor uses the same path.</p>
-        <div class="flow gold" class="rv" style="--d:0.3s">
-          <div class="fstep" style="animation-delay:.0s"><b>ATTEST</b><span>source-chain block</span></div><i
-            class="farr">→</i>
-          <div class="fstep" style="animation-delay:.2s"><b>PROVE</b><span>Merkle + continuity · USC SDK</span></div><i
-            class="farr">→</i>
-          <div class="fstep" style="animation-delay:.4s"><b>VERIFY</b><span>BlockProver.verifySingle ·
-              destination</span></div><i class="farr">→</i>
-          <div class="fstep" style="animation-delay:.6s"><b>SUBSCRIBE</b><span>ASC records observation</span></div>
+        <p class="overline rv">BULLETIN 07 — PROPOSED IDENTITY ATTESTATIONS</p>
+        <h2 class="disp rv">Verified credentials<br>with owner consent.</h2>
+        <p class="lead slim rv">A future extension could associate a provider-verified personal or business name with a TIN. Recipient confirmation would check the issuer, identity binding, validity and revocation while limiting disclosure.</p>
+        <div class="flow gold rv">
+          <div class="fstep"><b>ISSUE</b><span>trusted provider</span></div><i class="farr">→</i>
+          <div class="fstep"><b>CONSENT</b><span>owner approval</span></div><i class="farr">→</i>
+          <div class="fstep"><b>BIND</b><span>intended TIN</span></div><i class="farr">→</i>
+          <div class="fstep"><b>CHECK</b><span>validity + disclosure</span></div>
         </div>
-        <div class="check-card" class="rv" style="--d:0.42s">
-          <b class="check-title">The ASC records an observation only when —</b>
+        <div class="check-card rv">
+          <b class="check-title">Integration requirements</b>
           <div class="check-list">
-            <span>Registered source chain &amp; liquidity emitter</span><span>Route &amp; token match the destination
-              payout vault</span>
-            <span>Amount within available stablecoin liquidity</span><span>Nonce unused (replay-proof) &amp; not
-              expired</span>
-            <span class="wide">LiquidityAvailable event: route · token · amount · nonce · expiry</span>
+            <span>Supported issuer and credential schema</span><span>Owner consent and correct TIN binding</span>
+            <span>Expiry and revocation handling</span><span>Selective disclosure and recipient policy</span>
+            <span class="wide">Wallet control and a registered name do not by themselves prove legal identity. No TSN Solana Attestation Service or Sumsub integration is claimed.</span>
           </div>
         </div>
       </div>
@@ -1663,11 +1632,11 @@
     <section class="slide bg-paper" id="arch" aria-hidden="true">
       <div class="pad">
         <p class="overline" class="rv" style="--d:0.05s">BULLETIN 08 — ARCHITECTURE</p>
-        <h2 class="disp" class="rv" style="--d:0.1s">Five layers, one payment path.</h2>
+        <h2 class="disp" class="rv" style="--d:0.1s">Hybrid infrastructure, distinct responsibilities.</h2>
         <div class="arch-row" class="rv" style="--d:0.2s">
           <div class="layers">
             <div class="layer"><span class="lnum">01</span>
-              <div><b>Identity</b><span class="mono">TIN · TIP · GPRU</span><em>Portable numbers and scoped routing
+              <div><b>Identity</b><span class="mono">TIN · TIP</span><em>Portable numbers and scoped routing
                   commitments</em></div>
             </div>
             <div class="layer"><span class="lnum">02</span>
@@ -1675,142 +1644,99 @@
                   window — bound off-chain</em></div>
             </div>
             <div class="layer"><span class="lnum">03</span>
-              <div><b>Authorization</b><span class="mono">Mother Escrow · DNA</span><em>Root authority, permit signing,
-                  epoch control</em></div>
+              <div><b>Authorization</b><span class="mono">Mother authority · TSNP</span><em>Inspected settlement co-signing and
+                  on-chain authorization</em></div>
             </div>
             <div class="layer"><span class="lnum">04</span>
               <div><b>Transport</b><span class="mono">Node · Receiver · Cranker</span><em>Verification, durable ingress,
                   exact submission</em></div>
             </div>
             <div class="layer"><span class="lnum">05</span>
-              <div><b>Settlement</b><span class="mono">Epoch Treasury · TCAP</span><em>Liability accounting,
-                  confidential balance transitions</em></div>
+              <div><b>Settlement</b><span class="mono">TCAP · GPRU</span><em>Reserves, private transition proof
+                  and aggregate accounting</em></div>
             </div>
           </div>
           <div class="flow-panel">
-            <p class="mono panel-title">CROSS-CHAIN EXIT FLOW — SVM → EVM</p>
-            <div class="fstep dark" style="animation-delay:.0s"><b>01 DEBIT INTENT (SVM)</b><span>user &amp; device sign
-                the intent</span></div>
-            <div class="fstep dark" style="animation-delay:.15s"><b>02 ATTESTCOIN LIQUIDITY CHECK</b><span>proof flow
-                verifies destination vault</span></div>
-            <div class="fstep dark" style="animation-delay:.3s"><b>03 NODE VALIDATION + AUTH</b><span>policy, amount,
-                destination, nonce, expiry</span></div>
-            <div class="fstep dark ok" style="animation-delay:.45s"><b>04 CRANKER SUBMITS → SETTLES</b><span>destination
-                hub pays from its vault</span></div>
-            <p class="mono panel-note">The chain sees only commitments. Route metadata, private roots, and balances stay
-              off-chain.</p>
+            <p class="mono panel-title">CURRENT SOLANA PRIVATE-CREDIT FLOW</p>
+            <div class="fstep dark"><b>01 OWNER INTENT + DEPOSIT</b><span>canonical approval and exact signed funding</span></div>
+            <div class="fstep dark"><b>02 NODE VERIFICATION</b><span>confirmed funding, current route and witness</span></div>
+            <div class="fstep dark"><b>03 MOTHER AUTHORIZATION</b><span>inspected TSNP settlement and bound Memo</span></div>
+            <div class="fstep dark ok"><b>04 TCAP → GPRU CHECKS</b><span>advance shared root and credit epoch</span></div>
+            <p class="mono panel-note">Funding, roots, token, ciphertext, accounts, timing and epoch totals are public. Node handles private witnesses; general unlinkability remains unverified.</p>
           </div>
         </div>
       </div>
     </section>
     <section class="slide bg-paper" id="market" aria-hidden="true">
       <div class="pad">
-        <p class="overline" class="rv" style="--d:0.05s">BULLETIN 09 — MARKET</p>
-        <h2 class="disp" class="rv" style="--d:0.1s">Who pays this way.</h2>
-        <div class="g3" class="rv" style="--d:0.2s">
-          <div class="route"><b>Walletless payments</b><span>1.4B+ adults are unbanked yet own a mobile phone (World
-              Bank Findex). A 10-digit identity removes the wallet barrier entirely.</span></div>
-          <div class="route"><b>Money over chat</b><span>Billions already send money through WhatsApp. TrustLink Pay
-              makes crypto settlement feel exactly like that.</span></div>
-          <div class="route"><b>Stablecoin settlement</b><span>Stablecoin volume keeps compounding on Solana. TSN turns
-              that volume into private, identity-bound settlement.</span></div>
+        <p class="overline rv">BULLETIN 09 — APPLICATION WORKFLOWS</p>
+        <h2 class="disp rv">Who can build with TSN.</h2>
+        <div class="g3 rv">
+          <div class="route"><b>Wallet developers</b><span>Prepare a TIN-targeted intent, request separate deposit approval and track the experimental Solana credit lifecycle.</span></div>
+          <div class="route"><b>Payment applications</b><span>Present clear recipient identity and transaction outcomes; reconcile private credit with chain evidence before showing completion.</span></div>
+          <div class="route"><b>Merchant identity: proposed</b><span>Future issuer-verified business credentials could improve recipient confirmation with owner consent, revocation and selective disclosure.</span></div>
         </div>
-        <div class="verdict" class="rv" style="--d:0.34s"><b>Demand exists — demand is blocked.</b> People want to pay
-          by phone number; wallets and address strings block them.</div>
-        <div class="g3 small-stats" class="rv" style="--d:0.44s">
-          <div><b>1.4B+</b><span>unbanked, phone-owning adults</span></div>
-          <div><b>$ trillions</b><span>moving through chat apps every year</span></div>
-          <div><b>Solana</b><span>the rails where stablecoins compound</span></div>
-        </div>
+        <div class="verdict rv"><b>Identity helps address value; proof and accounting establish the authorized transition.</b></div>
+        <div class="channels rv"><span class="channel">Current Solana SDK flow</span><span class="channel">Reference app</span><span class="channel gold">Future verified credentials</span></div>
       </div>
     </section>
     <section class="slide bg-paper" id="business" aria-hidden="true">
       <div class="pad">
-        <p class="overline" class="rv" style="--d:0.05s">BULLETIN 10 — BUSINESS</p>
-        <h2 class="disp" class="rv" style="--d:0.1s">How the network earns.</h2>
-        <div class="g3" class="rv" style="--d:0.2s">
-          <div class="route"><b>Per-settlement fee</b><span>Every TSN payment carries a small fee to the fee recipient
-              in the same transaction — already in the settlement path.</span></div>
-          <div class="route"><b>Operator economics</b><span>Crankers earn per-submission fees for liquidity and
-              execution; vault operators earn for participation.</span></div>
-          <div class="route"><b>Institutional rails</b><span>Banks, PSPs and stablecoin issuers plug in through CEIP —
-              licensed settlement for partners.</span></div>
+        <p class="overline rv">BULLETIN 10 — PROPOSED OPERATING ECONOMICS</p>
+        <h2 class="disp rv">Costs and incentives follow the route.</h2>
+        <div class="g3 rv">
+          <div class="route"><b>Network cost</b><span>Wallet funding and settlement have chain fees. Sponsorship can cover a user&apos;s gas while retaining an actual operator cost.</span></div>
+          <div class="route"><b>Verification and operations</b><span>Proof preparation, durable coordination, monitoring and recovery need an evidenced operating and incentive model.</span></div>
+          <div class="route"><b>Future destination liquidity</b><span>Each EVM route must establish actual value delivery and any liquidity costs before offering a complete quote.</span></div>
         </div>
-        <div class="money-line" class="rv" style="--d:0.34s">
-          <div class="m"><b>SENDER</b><span>approves the intent</span></div><i>→</i>
-          <div class="m"><b>TSN RAIL</b><span>settles the payment</span></div><i>→</i>
-          <div class="m"><b>RECIPIENT</b><span>gets the value</span></div>
-        </div>
-        <p class="body sm muted center" class="rv" style="--d:0.44s">+ small settlement fee — paid in the same
-          transaction to crankers · vault operators · protocol fund</p>
+        <div class="money-line rv"><div class="m"><b>SENDER</b><span>approves exact terms</span></div><i>→</i><div class="m"><b>TSN ROUTE</b><span>verifies and executes</span></div><i>→</i><div class="m"><b>RECIPIENT</b><span>requires final evidence</span></div></div>
+        <p class="body sm muted center rv">No deployed universal fee schedule, operator revenue or institutional partnership is claimed.</p>
       </div>
     </section>
     <section class="slide bg-ink" id="traction" aria-hidden="true">
       <div class="pad">
-        <p class="overline" class="rv" style="--d:0.05s">BULLETIN 11 — TRACTION</p>
-        <h2 class="disp" class="rv" style="--d:0.1s">Shipped, not promised.</h2>
-        <div class="stats" class="rv" style="--d:0.2s">
-          <div class="stat"><b class="num" data-count="4">0</b><span>payment routes live on Devnet</span></div>
-          <div class="stat"><b class="num" data-count="1">0</b><span>cross-chain corridor live — Creditcoin</span></div>
-          <div class="stat"><b class="inf">∞</b><span>future corridors — registry, not rewrite</span></div>
+        <p class="overline rv">BULLETIN 11 — BOUNDED DEVELOPMENT EVIDENCE</p>
+        <h2 class="disp rv">Recorded Solana Devnet results.</h2>
+        <div class="stats rv">
+          <div class="stat"><b class="num" data-count="2">0</b><span>finalized private credits in the November 16 checkpoint</span></div>
+          <div class="stat"><b class="num" data-count="1">0</b><span>complete aggregate-accounting operation in that checkpoint</span></div>
+          <div class="stat"><b class="num" data-count="3">0</b><span>candidate lower-fee EVM networks; integration is planned</span></div>
         </div>
-        <div class="chips paper-chips" class="rv" style="--d:0.34s">
-          <span class="chip">TIN registry · live</span><span class="chip">GPRU authorization · live</span>
-          <span class="chip">TCAP credit · live</span><span class="chip">Creditcoin corridor · live</span>
-          <span class="chip gold">ASC + proof workers · deployed</span>
+        <div class="chips paper-chips rv">
+          <span class="chip">Solana · experimental</span><span class="chip">Private credit · bounded evidence</span>
+          <span class="chip">Owner recovery · separate check</span><span class="chip">EVM routes · planned</span>
+          <span class="chip gold">Independent review · required</span>
         </div>
-        <div class="g3" class="rv" style="--d:0.44s">
-          <div class="route"><b>Open monorepo</b><span>Contracts, node services, cranker SDK, RPC gateway, docs —
-              github.com/TrustlinkLabs/TSN-Protocol.</span></div>
-          <div class="route"><b>Reference app</b><span>TrustLink Pay proves every route in production-like flows on
-              Solana Devnet.</span></div>
-          <div class="route"><b>Corridor ready</b><span>DestinationLiquidityRegistry accepts the next EVM chain the day
-              you fund it.</span></div>
+        <div class="g3 rv">
+          <div class="route"><b>Open source</b><span>Programs, SDK, Receiver, Node, Cranker and documentation: github.com/Trustlink-Labs/TSN-Protocol.</span></div>
+          <div class="route"><b>Reference experience</b><span>TrustLink Pay presents the experimental flow. UI success must be reconciled with transaction and account evidence.</span></div>
+          <div class="route"><b>Evidence scope</b><span>These retained results do not establish today's deployed state, general unlinkability, confidential exit or production readiness.</span></div>
         </div>
       </div>
     </section>
     <section class="slide bg-paper" id="growth" aria-hidden="true">
       <div class="pad">
-        <p class="overline" class="rv" style="--d:0.05s">BULLETIN 12 — GROWTH</p>
-        <h2 class="disp" class="rv" style="--d:0.1s">How we scale.</h2>
-        <div class="g3" class="rv" style="--d:0.2s">
-          <div class="route"><b>Solana ecosystems</b><span>Ecosystem grants and developer programs put TSN in front of
-              builders who distribute the SDK and run nodes.</span></div>
-          <div class="route"><b>WhatsApp distribution</b><span>Authentication, business verification, and notifications
-              ride WhatsApp — the interface billions already use.</span></div>
-          <div class="route"><b>CEIP partner network</b><span>Banks, PSPs and stablecoin issuers integrate settlement
-              through one protocol interface.</span></div>
+        <p class="overline rv">BULLETIN 12 — DEVELOPER ADOPTION DIRECTION</p>
+        <h2 class="disp rv">Make integration understandable.</h2>
+        <div class="g3 rv">
+          <div class="route"><b>Source-backed documentation</b><span>Current actor order, SDK contracts, network status and privacy limits help builders assess the integration.</span></div>
+          <div class="route"><b>Demonstrated lifecycle</b><span>Demo video 2 will focus on wallet deposit to TIN credit, with funding and settlement evidence separated.</span></div>
+          <div class="route"><b>Route review</b><span>Lower-fee EVM targets need implementation, security review, liquidity and complete source-to-destination receipts before activation.</span></div>
         </div>
-        <div class="channels" class="rv" style="--d:0.34s">
-          <span class="channel">Solana ecosystems</span><span class="channel">WhatsApp distribution</span>
-          <span class="channel">CEIP partners</span><i class="farr big">→</i><span class="channel gold">TSN users &amp;
-            corridors</span>
-        </div>
-        <p class="body sm muted center" class="rv" style="--d:0.44s">Three channels, one network — every corridor
-          extends the same flywheel.</p>
+        <div class="channels rv"><span class="channel">SDK guidance</span><span class="channel">Solana reference flow</span><span class="channel gold">Planned network review</span></div>
+        <p class="body sm muted center rv">This is an adoption direction, with no fabricated user metrics, partner commitments or launch dates.</p>
       </div>
     </section>
     <section class="slide bg-paper" id="roadmap" aria-hidden="true">
       <div class="pad">
-        <p class="overline" class="rv" style="--d:0.05s">BULLETIN 13 — ROADMAP</p>
-        <h2 class="disp" class="rv" style="--d:0.1s">What ships next.</h2>
-        <div class="g3" class="rv" style="--d:0.2s">
-          <div class="route now"><b>NOW</b>
-            <span>Mainnet funding &amp; corridor liquidity bootstrap on Creditcoin</span>
-            <span>Corridor 02 — Base payout vault drafted</span>
-          </div>
-          <div class="route next"><b>NEXT</b>
-            <span>TCAP confidential debit &amp; exit enablement</span>
-            <span>Independent cryptographic verification of Solana commitments</span>
-          </div>
-          <div class="route later"><b>LATER</b>
-            <span>Wider Attestcoin message-route payout matrix</span>
-            <span>Institutional controls &amp; liability tooling</span>
-            <span>Partner network integrations via CEIP</span>
-          </div>
+        <p class="overline rv">BULLETIN 13 — DEVELOPMENT DIRECTION</p>
+        <h2 class="disp rv">Next verification and integration work.</h2>
+        <div class="g3 rv">
+          <div class="route now"><b>CURRENT FOCUS</b><span>Solana private-credit and owner-history validation</span><span>Demo video 2: wallet deposit to TIN credit</span></div>
+          <div class="route next"><b>PLANNED EVM TARGETS</b><span>Base, Arbitrum and Polygon PoS route design</span><span>Finality, liquidity, execution and recovery review</span></div>
+          <div class="route later"><b>FUTURE CAPABILITIES</b><span>Confidential debit and exit proofs</span><span>Optional issuer-verified TIN credentials</span><span>Governance and operational readiness</span></div>
         </div>
-        <div class="band" class="rv" style="--d:0.34s"><b>The corridor list is a direction, not a ceiling.</b> The
-          architecture is built so the list can change without the protocol moving.</div>
+        <div class="band rv"><b>Activation follows evidence.</b> Network targets and credential features have no promised launch date. Ethereum Layer 1 is outside the current low-fee priority.</div>
       </div>
     </section>
     <section class="slide bg-paper" id="team" aria-hidden="true">
@@ -1837,13 +1763,13 @@
             </svg></div>
           <div class="team-copy">
             <p class="overline" class="rv" style="--d:0.05s">BULLETIN 14 — TEAM</p>
-            <h2 class="disp" class="rv" style="--d:0.12s">The team that shipped it.</h2>
+            <h2 class="disp" class="rv" style="--d:0.12s">TrustLink Labs development.</h2>
             <p class="lead" class="rv" style="--d:0.22s">TrustLink Labs — an AI-native blockchain lab building open
               financial infrastructure: privacy, identity, and payment protocols.</p>
             <ul class="ticks" class="rv" style="--d:0.32s">
               <li>Open monorepo with SDKs, node services, cross-chain contracts &amp; docs</li>
-              <li>Owner: Big Dreams Web3 — one-member team, full autonomy, zero blockers</li>
-              <li>TrustLink Pay is the reference app proving the routes end-to-end</li>
+              <li>Owner: Big Dreams Web3 — independent protocol development</li>
+              <li>TrustLink Pay presents the experimental Solana reference flow</li>
             </ul>
             <div class="links" class="rv" style="--d:0.44s">
               <span>github.com/Trustlink-Labs/TSN-Protocol</span>
@@ -1877,17 +1803,17 @@
               <circle cx="17" cy="35" r="4.5" fill="currentColor" />
               <circle cx="60" cy="60" r="8" fill="#0A0E0C" stroke="currentColor" stroke-width="1.6" />
             </svg></div>
-          <h2 class="disp huge2" class="rv" style="--d:0.18s">Payments that settle like institutions — <span
-              class="accent">without the institutions.</span></h2>
-          <p class="lede" class="rv" style="--d:0.3s">Type a 10-digit TIN. Pay anyone. No address.</p>
+          <h2 class="disp huge2" class="rv" style="--d:0.18s">Build identity-addressed payments with <span
+              class="accent">explicit settlement evidence.</span></h2>
+          <p class="lede" class="rv" style="--d:0.3s">Explore experimental Solana credit and the hybrid Internet of Value architecture.</p>
           <div class="chips" class="rv" style="--d:0.42s">
             <span>Try it — trustlink-pay.vercel.app</span>
             <span>Star it — github.com/Trustlink-Labs/TSN-Protocol</span>
             <span>Read — trust-link-tsn.mintlify.site</span>
           </div>
-          <div class="dateline" class="rv" style="--d:0.52s">TSN &nbsp;·&nbsp; TRUSTLINK PAY &nbsp;·&nbsp; SETTLED FOR
-            THE REAL WORLD</div>
-          <div class="stamp gold" class="rv" style="--d:0.62s">SETTLEMENT<br>OPENS</div>
+          <div class="dateline" class="rv" style="--d:0.52s">TSN &nbsp;·&nbsp; TRUSTLINK PAY &nbsp;·&nbsp; EXPERIMENTAL
+            FIRST RELEASE</div>
+          <div class="stamp gold" class="rv" style="--d:0.62s">BUILD AND<br>VERIFY</div>
         </div>
       </div>
     </section>
@@ -1897,18 +1823,18 @@
   <div class="dots" id="dots"></div>
 
   <div class="tape" role="presentation">
-    <div class="tape-live"><span class="dot"></span>LIVE&nbsp;·&nbsp;TSN TAPE</div>
+    <div class="tape-live"><span class="dot"></span>UPDATE&nbsp;·&nbsp;TSN TAPE</div>
     <div class="tape-scroll">
-      <div class="tape-inner"><span>TYPE 10 DIGITS — PAY ANYONE &nbsp;◆&nbsp;</span><span>NO WALLET ADDRESS REQUIRED
+      <div class="tape-inner"><span>TEN-DIGIT PAYMENT IDENTITY &nbsp;◆&nbsp;</span><span>EXACT OWNER APPROVAL
           &nbsp;◆&nbsp;</span><span>PRIVATE BY DESIGN — TCAP CREDITS &nbsp;◆&nbsp;</span><span>SOLANA NATIVE
-          &nbsp;◆&nbsp;</span><span>CROSS-CHAIN BY ARCHITECTURE &nbsp;◆&nbsp;</span><span>CREDITCOIN CORRIDOR — LIVE
-          &nbsp;◆&nbsp;</span><span>ANY EVM CHAIN REGISTRABLE &nbsp;◆&nbsp;</span><span>NO BRIDGES — NO WRAPPED TOKENS
-          &nbsp;◆&nbsp;</span><span>ATTESTCOIN PROOF VERIFICATION &nbsp;◆&nbsp;</span><span>RULES SETTLED SINCE DAY ONE
-          &nbsp;◆&nbsp;</span><span>TYPE 10 DIGITS — PAY ANYONE &nbsp;◆&nbsp;</span><span>NO WALLET ADDRESS REQUIRED
+          &nbsp;◆&nbsp;</span><span>HYBRID INTERNET OF VALUE INFRASTRUCTURE &nbsp;◆&nbsp;</span><span>BASE · ARBITRUM · POLYGON PoS — PLANNED
+          &nbsp;◆&nbsp;</span><span>ROUTE-SPECIFIC INTEGRATION REVIEW &nbsp;◆&nbsp;</span><span>VALUE DELIVERY REQUIRES EVIDENCE
+          &nbsp;◆&nbsp;</span><span>OPTIONAL CREDENTIAL ATTESTATIONS — PROPOSED &nbsp;◆&nbsp;</span><span>EXPERIMENTAL FIRST RELEASE
+          &nbsp;◆&nbsp;</span><span>TEN-DIGIT PAYMENT IDENTITY &nbsp;◆&nbsp;</span><span>EXACT OWNER APPROVAL
           &nbsp;◆&nbsp;</span><span>PRIVATE BY DESIGN — TCAP CREDITS &nbsp;◆&nbsp;</span><span>SOLANA NATIVE
-          &nbsp;◆&nbsp;</span><span>CROSS-CHAIN BY ARCHITECTURE &nbsp;◆&nbsp;</span><span>CREDITCOIN CORRIDOR — LIVE
-          &nbsp;◆&nbsp;</span><span>ANY EVM CHAIN REGISTRABLE &nbsp;◆&nbsp;</span><span>NO BRIDGES — NO WRAPPED TOKENS
-          &nbsp;◆&nbsp;</span><span>ATTESTCOIN PROOF VERIFICATION &nbsp;◆&nbsp;</span><span>RULES SETTLED SINCE DAY ONE
+          &nbsp;◆&nbsp;</span><span>HYBRID INTERNET OF VALUE INFRASTRUCTURE &nbsp;◆&nbsp;</span><span>BASE · ARBITRUM · POLYGON PoS — PLANNED
+          &nbsp;◆&nbsp;</span><span>ROUTE-SPECIFIC INTEGRATION REVIEW &nbsp;◆&nbsp;</span><span>VALUE DELIVERY REQUIRES EVIDENCE
+          &nbsp;◆&nbsp;</span><span>OPTIONAL CREDENTIAL ATTESTATIONS — PROPOSED &nbsp;◆&nbsp;</span><span>EXPERIMENTAL FIRST RELEASE
           &nbsp;◆&nbsp;</span></div>
     </div>
   </div>
@@ -1919,7 +1845,7 @@
       var prev = document.getElementById('prevBtn'), next = document.getElementById('nextBtn');
       var bull = document.getElementById('bull');
       var cur = 0, total = slides.length;
-      var labels = ['COVER', 'THE PROBLEM', 'THE OFFER', 'HOW IT WORKS', 'CROSS-CHAIN SETTLEMENT', 'LIVE DEMO', 'CROSS-CHAIN PROTOCOL', 'ARCHITECTURE', 'MARKET', 'BUSINESS', 'TRACTION', 'GROWTH', 'ROADMAP', 'TEAM', 'CLOSING'];
+      var labels = ['COVER', 'THE PROBLEM', 'THE OFFER', 'HOW IT WORKS', 'CROSS-CHAIN SETTLEMENT', 'FLOW ILLUSTRATION', 'IDENTITY ATTESTATIONS', 'ARCHITECTURE', 'MARKET', 'BUSINESS', 'TRACTION', 'GROWTH', 'ROADMAP', 'TEAM', 'CLOSING'];
       slides.forEach(function (s, i) {
         var d = document.createElement('button');
         d.className = 'dot-btn'; d.setAttribute('aria-label', 'Go to slide ' + (i + 1));

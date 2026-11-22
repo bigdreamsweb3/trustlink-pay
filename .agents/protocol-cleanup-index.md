@@ -183,9 +183,7 @@ Cranker vault/treasury funding, private settlement DNA, private payout/refund,
 fees, verifier-lamport administration, TCAP authorization CPIs, and exit /
 one-time credit bridges. These have distinct accounts, authority checks, and
 economic behavior; they are not automatically replaced by the hidden-head
-credit ABI. The Node and Cranker also contain cross-chain route validation and
-Creditcoin/Attestcoin adapters. Retain each capability until its actual
-callers, configuration, and supported product scope are classified.
+credit ABI. The former EVM destination and proof-middleware integration was explicitly retired on 2026-11-22. Node cross-network admission is disabled, and Cranker has no EVM payout handler. Generic retained EVM contracts are research, not replacement network adapters. Distinct Solana capabilities still require caller/configuration review before removal.
 
 Source: [TSN entrypoints](../tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs),
 [TSN instruction modules](../tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/),

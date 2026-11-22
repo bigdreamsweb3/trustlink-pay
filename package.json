@@ -124,7 +124,6 @@
     "tsn:cranker:register": "npm --prefix tsn-protocol/services/tsn-cranker-op-daemon run register",
     "tsn:cranker:setup": "npm --prefix tsn-protocol/services/tsn-cranker-op-daemon run setup",
     "tsn:cranker:start": "npm --prefix tsn-protocol/services/tsn-cranker-op-daemon run crank:start",
-    "test:real-integration": "npm --prefix tsn-protocol/services/tsn-crosschain run test:real-integration",
     "tsn:cranker:help": "npm --prefix tsn-protocol/services/tsn-cranker-op-daemon run help",
     "// === SDKs ===": "Build and refresh local SDKs after protocol or generated-code changes.",
     "tsn:sdk:build": "npm --prefix tsn-protocol/sdks/tsn-sdk run build",

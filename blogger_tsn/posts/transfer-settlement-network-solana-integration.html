@@ -1,0 +1,21 @@
+<!-- TITLE: Transfer Settlement Network Solana Integration: Wallet Deposit to TIN Credit -->
+<!-- SEARCH DESCRIPTION: How TSN integrates with Solana: ten-digit payment identity, separate wallet funding approval, proof-verified private credit and complete aggregate accounting. -->
+<!-- LABELS: Solana, TSN, TIN Credit, Settlement, Internet of Value -->
+<!-- DRAFT: revised 2026-11-22; set canonical URL only after publishing. -->
+<article class="tsn-research-post" itemscope itemtype="https://schema.org/TechArticle">
+<meta itemprop="author" content="TrustLink Labs Research">
+<meta itemprop="dateModified" content="2026-11-22">
+<meta itemprop="description" content="How TSN integrates with Solana: ten-digit payment identity, separate wallet funding approval, proof-verified private credit and complete aggregate accounting.">
+<h1 itemprop="headline">Transfer Settlement Network Solana Integration: Wallet Deposit to TIN Credit</h1>
+<p>Transfer Settlement Network (TSN) integrates with Solana through programs, an SDK and separate coordination services. Applications can address a recipient using a ten-digit Transfer Identity Number (TIN), while the owner approves the exact payment and wallet deposit. TSN is hybrid decentralized settlement protocol infrastructure for the Internet of Value: off-chain services prepare and coordinate work, and on-chain programs enforce authorization, proofs and reserve accounting.</p>
+<h2>What the current integration does</h2>
+<p>The experimental first-release flow credits a recipient TIN from a genuine wallet-funded TCAP note. TIP supplies authenticated identity-route membership; TSNP authorizes settlement; TCAP governs accepted assets and reserves; GPRU verifies the hidden route, exact private amount, balance transition, nullifier and Memo. A TIN is not a wallet key or public balance account.</p>
+<h2>From wallet approval to settlement</h2>
+<ol><li>The sender reviews and signs a TIN-targeted intent. Node verifies message-only authorization and Receiver records funding readiness.</li><li>The owner separately signs the exact TCAP deposit with a fresh blockhash. Cranker submits that signed wire unchanged.</li><li>TCAP verifies the token transfer and appends an asset-and-amount-bound funded leaf. Node requires funding confirmation before constructing the private witness and Memo.</li><li>Mother authorizes the inspected TSNP call. Cranker submits it; TCAP invokes GPRU before advancing the shared head/nullifier root and blinded credit transcript.</li><li>Separate complete aggregate accounting covers 2&ndash;64 accepted credits and reclassifies their total. One genuine confirmed deposit is sufficient for an individual credit.</li></ol>
+<h2>Developer integration responsibilities</h2>
+<p>Use current SDK methods and configuration from the handbook. Present intent approval and funding approval separately, track both transaction outcomes, and reconcile a successful credit with chain evidence. Receiver acceptance, funding confirmation and submitted settlement are different outcomes. Never use a placeholder proof or application success screen as evidence of final credit.</p>
+<h2>Evidence and privacy limits</h2>
+<p>The retained November 16 Solana Devnet checkpoint verifies two finalized private credits and complete aggregate accounting. It does not establish today's deployed state, confidential spending, complete owner recovery or production readiness. Wallet funding, roots, token identifiers, ciphertext, accounts, timing and aggregate totals remain public; Node handles sensitive witnesses. General unlinkability remains unverified.</p>
+<h2>Further reading</h2>
+<ul><li><a href="/p/tsn-flow.html">The current TSN private-credit sequence</a></li><li><a href="https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/credit-abi.md">Native-credit ABI and accounting contract</a></li><li><a href="https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261116-private-credit-epoch.md">The bounded Devnet checkpoint</a></li><li><a href="https://trust-link-tsn.mintlify.site/sdk/integrations">SDK integration guidance</a></li></ul>
+</article>

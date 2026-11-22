@@ -15,11 +15,9 @@ class Dependencies(Protocol):
 
 
 async def get_settlement_networks(node: Dependencies) -> list[dict[str, Any]]:
-    """Return only destination routes ready for Creditcoin settlement.
+    """Return admitted external routes; current implementation returns an empty list.
 
-    A chain ID or static configuration alone never makes a network active. The
-    endpoint performs the same live route and liquidity checks used at intent
-    admission; the exact requested amount is checked again for each intent.
+    Planned networks and stale environment entries cannot authorize settlement.
     """
     try:
         return await node.ready_destination_networks(int(datetime.now(timezone.utc).timestamp()))

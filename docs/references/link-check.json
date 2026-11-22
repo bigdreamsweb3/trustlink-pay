@@ -4,10 +4,6 @@
     {
       "file": "tsn-protocol/services/tsn-node/AGENTS.md",
       "kind": "premature operator-guide publication"
-    },
-    {
-      "file": "tsn-protocol/services/tsn-node/docs/verification.md",
-      "kind": "premature operator-guide publication"
     }
   ]
 }

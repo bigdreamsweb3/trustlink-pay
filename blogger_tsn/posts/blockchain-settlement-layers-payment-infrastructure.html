@@ -349,9 +349,8 @@ Blockchain finality</code></pre>
 <p>A concise canonical positioning is:</p>
 
 <blockquote>
-    <p><strong>Transfer Settlement Network (TSN) is an identity-first payment settlement infrastructure layer built on
-            blockchain settlement. It coordinates identity, payment intent, authorization, privacy-aware routing, and
-            settlement execution before valid state transitions reach the underlying blockchain.</strong></p>
+    <p>Applications can address digital value through a ten-digit Transfer Identity Number (TIN). Transfer Settlement Network (TSN) is hybrid decentralized settlement protocol infrastructure for the Internet of Value, combining off-chain verification and work coordination with on-chain authorization, private-credit proof verification and reserve accounting. Solana is the current experimental domain.</p>
+
 </blockquote>
 
 <pre><code>Application layer
@@ -361,15 +360,13 @@ Merchant, consumer, and API experiences
               v
 Payment infrastructure layer
 TIN identity -> payment intent -> authorization
-GPRU routing -> TSN coordination -> TCap private balance
+Node verification -> TSNP authorization -> TCAP / GPRU checks
               |
               v
 Blockchain settlement
 Solana execution, consensus, and ledger finality</code></pre>
 
-<p>In this model, TIN provides payment identity, GPRU provides guarded routing identity, TSN coordinates epoch lifecycle
-    and execution, and TCap provides confidential asset accounting and authorized balance transitions. The Solana layer
-    remains responsible for executing and finalizing the resulting onchain state.</p>
+<p>TIP manages TIN identity and route membership; Node verifies current funding and private witnesses; Mother authorizes TSNP; TCAP invokes GPRU before applying shared-state changes. The Solana ledger provides execution and finality. Future lower-fee EVM routes and optional identity credentials require their own implementation evidence.</p>
 
 <h2>Why Future Payment Infrastructure Will Be Layered</h2>
 

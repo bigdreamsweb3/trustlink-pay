@@ -1,23 +1,5 @@
-"""Creditcoin-backed destination route registry for cross-chain intents.
+"""Public route-discovery and admission boundary; no external route is enabled."""
+from app.networking.cross_chain.verify_destination_route import verify_destination_route
+from app.networking.cross_chain.ready_destination_networks import ready_destination_networks
 
-The Node never treats a chain name or chain ID as sufficient support. A route
-must be configured with its exact Creditcoin registry, executor, token, and
-route ID, and the registry must report an active route with an unexpired
-proof-backed liquidity observation."""
-
-from app.networking.cross_chain import (
-    _address,
-    _bytes32,
-    _word,
-    _word_address,
-    load_destination_routes,
-    _eth_call,
-    verify_destination_route,
-    configured_destination_networks,
-    ready_destination_networks,
-    DestinationRoute,
-    GET_ROUTE_SELECTOR,
-    LATEST_OBSERVATION_SELECTOR,
-)
-
-__all__ = ['_address', '_bytes32', '_word', '_word_address', 'load_destination_routes', '_eth_call', 'verify_destination_route', 'configured_destination_networks', 'ready_destination_networks', 'DestinationRoute', 'GET_ROUTE_SELECTOR', 'LATEST_OBSERVATION_SELECTOR']
+__all__ = ["verify_destination_route", "ready_destination_networks"]

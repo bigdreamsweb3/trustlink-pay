@@ -5,11 +5,11 @@
     {
       "id": "C-001",
       "path": "docs/laboratory/architecture-map.md",
-      "contains": "Pre-create internal RECEIVED settlement reference",
+      "contains": "Receiver creates the settlement reference at signed funding attachment",
       "status": "CURRENT",
-      "reason": "Diagram preserves actual work creation at ingress and funding-confirmation gating.",
+      "reason": "Receiver creates the linked settlement at exact signed funding attachment; readiness does not authorize execution and settlement verification separately requires confirmed funding.",
       "evidence": [
-        "tsn-protocol/services/tsn-receiver/lib/store.ts",
+        "tsn-protocol/services/tsn-receiver/lib/work/attach-signed-funding-transaction.ts",
         "docs/references/syntax-check.json"
       ]
     },

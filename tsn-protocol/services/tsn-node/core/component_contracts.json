@@ -5843,7 +5843,7 @@
     "originalLine": 3889,
     "async": true,
     "runtimeRequired": true,
-    "responsibility": "Return only destination routes ready for Creditcoin settlement.\n\nA chain ID or static configuration alone never makes a network active. The\nendpoint performs the same live route and liquidity checks used at intent\nadmission; the exact requested amount is checked again for each intent.",
+    "responsibility": "Return an empty external-route list; no destination is enabled.",
     "errors": [
       "HTTPException"
     ],
@@ -5851,11 +5851,18 @@
       "ready_destination_networks": "Any"
     },
     "verification": {
-      "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-      "testReferences": [],
-      "testProvenance": "tests/cases/COMPONENTS.json; new epoch-prover dependency cases retain their own test identities",
-      "suiteEvidence": "docs/verification.md",
-      "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
+      "status": "DIRECT_TEST_CALL_SOURCE_REFERENCES",
+      "testReferences": [
+        {
+          "source": "tests/cases/cross_chain_routes/functions/f003_test_public_discovery_reports_no_enabled_external_route.py",
+          "kind": "direct-call",
+          "expression": "get_settlement_networks",
+          "newComponentTest": {
+            "component": "cases/cross_chain_routes/functions/f003_test_public_discovery_reports_no_enabled_external_route.py",
+            "provenance": "November 22 external-route admission regression"
+          }
+        }
+      ]
     }
   },
   {

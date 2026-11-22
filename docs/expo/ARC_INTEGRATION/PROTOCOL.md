@@ -1,5 +1,7 @@
 # PROTOCOL.md — what Agent needs to know to direct Arc Builder
 
+**Status: HISTORICAL submission-context snapshot and PROPOSED DIP-Arc design; reviewed 2026-11-22.** The original work packet below preserves the earlier round's assumptions, gaps and acceptance criteria. Its standing rules, source descriptions, addresses and task commands are not current architecture or authorization. In particular, the hidden-head verifier is now wired into native credit, and the old outbound executor/proof middleware has been retired. Use the [current architecture map](../../laboratory/architecture-map.md), [credit ABI](../../laboratory/credit-abi.md) and [integration plan](../../CROSS-NETWORK-PAYMENTS-BUILD-PLAN.md) before any implementation; Arc/CCTP end-to-end delivery remains separately unverified.
+
 This file is the protocol context that Arc Builder does not have and cannot infer. Arc Builder writes
 onchain code well and knows nothing about TSN. Agent holds the protocol model, writes the specifications
 Arc Builder executes, and reviews what comes back.
@@ -64,13 +66,9 @@ Known limit, inherited by everything built on top: **there is no persistent per-
 The shared root prevents replay of a global transition but does not prove the supplied predecessor is the
 latest ciphertext for that TIN. Confidential debit and exit are proof-gated and not established end to end.
 
-### Cross-chain destination path (existing, EVM)
+### Historical outbound privacy finding
 
-`services/tsn-crosschain/` holds `CreditcoinSettlementHub`, `DestinationRegistry`, `DestinationLiquidityASC`,
-`DestinationLiquidityRegistry`, `TSNSettlementExecutor`, `TSNERCLiquidityVault`, and per-network adapters.
-Authenticity for a destination payout comes from Attestcoin/USC proofs over a Creditcoin-anchored event.
-`TSNSettlementExecutor.SettlementMessage` currently includes `tinHash` and `sealedTipHeadHash` and emits them
-in `SettlementExecuted`. **That is a privacy regression on the outbound path** — see §4.
+The removed EVM destination/proof-middleware prototype emitted `tinHash` and `sealedTipHeadHash` in its settlement message. That was a public identity/head disclosure, separate from the proposed inbound DIP-Arc design. The old executor is retired; future adapters must review every public field under the [current integration plan](../../CROSS-NETWORK-PAYMENTS-BUILD-PLAN.md). This finding preserves the original privacy concern and does not assert that a replacement outbound route exists.
 
 ### DIP — Deposit Ingress Protocol (new, this round)
 
@@ -153,14 +151,13 @@ then update the conformance register in §5.
 
 ## 4. Open protocol findings (decided, do not relitigate mid-round)
 
-**F-1 Outbound path leaks `tinHash`.** `TSNSettlementExecutor` includes `tinHash` and `sealedTipHeadHash`
-in `SettlementMessage` and emits them. Same for `SepoliaAnchor.recordTinExit`, which writes both to public
-EVM state and is callable by anyone. Decision: **defer.** This is a protocol change that crosses the Solana
-exit path, the anchor ABI, and the SDK's exit replay key. It cannot be validated before the submission
-deadline, and shipping a half-migrated exit path is worse than shipping a documented gap.
-Action: open `DIP-RFC-001 — commitment-only destination payload`, scope it as: drop `tinHash` and
-`sealedTipHeadHash` from the public payload, bind both inside the attestation digest, migrate the anchor
-and the SDK replay key, version the ABI. Do not start before the round closes.
+**F-1 Historical outbound identity/head disclosure.** The retired destination executor published
+`tinHash` and `sealedTipHeadHash` in its settlement message. The separate retained
+`SepoliaAnchor.recordTinExit` research contract also publishes these fields. This records the original
+privacy finding, rather than an active executor or an authorized migration task. Any future outbound
+adapter must review its public identity/head fields and authenticate the complete source action under
+the [current integration plan](../../CROSS-NETWORK-PAYMENTS-BUILD-PLAN.md); no commitment-only
+replacement route or confidentiality guarantee has been established.
 
 **F-2 No persistent per-TIN latest head.** Inherited, not introduced. DIP does not fix it and must not
 claim to.

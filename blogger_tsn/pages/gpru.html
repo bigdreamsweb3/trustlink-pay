@@ -1,32 +1,17 @@
 <article class="tsn-document" itemscope itemtype="https://schema.org/TechArticle">
-  <meta itemprop="author" content="TrustLink Labs Research">
-  <meta itemprop="headline" content="GPRU: Authorization and Routing for Private Payments">
-  <meta itemprop="description" content="How the Generalized Payment Routing Unit authenticates payment intent, protects private commitments, and gives Crankers exact settlement capabilities without exposing private data.">
-  <p class="eyebrow">TSN architecture · GPRU</p>
-  <div class="up-kicker">TSN architecture &middot; GPRU</div>
-  <h1 itemprop="headline">GPRU: Authorization and Routing for Private Payments</h1>
-  <p class="dek" itemprop="description">GPRU is the authorization and routing layer of the Transfer Settlement Network. It tells the network which payment may move, who may submit the next operation, and which public coordinates are valid—without holding funds or revealing a private commitment.</p>
-  <h2>What GPRU does</h2>
-  <p>GPRU turns a user-signed payment intent into a verifiable coordination capability. The device signs the intent, the Receiver accepts authenticated ingress, and the Node checks the canonical fields before creating work. Amount, mint, recipient, destination, fees, expiry, nonce, and commitment are bound together.</p>
-  <ul>
-    <li><strong>Authorization:</strong> verifies that the user approved this exact operation.</li>
-    <li><strong>Routing:</strong> selects the permitted epoch and execution route without exposing private identity data.</li>
-    <li><strong>Replay resistance:</strong> consumes nonces, nullifiers, and one-time work atomically.</li>
-    <li><strong>Operator control:</strong> gives a Cranker only the capability required for its current lease.</li>
-  </ul>
-  <h2>GPRU does not hold money</h2>
-  <p>GPRU never acts as a wallet, vault, or balance ledger. Token accounting belongs to the TSN epoch treasury and the TCAP private balance layer. This separation prevents a routing credential from becoming a custody credential.</p>
-  <h2>From intent to settlement</h2>
-  <ol>
-    <li>The user device signs a payment intent off-chain.</li>
-    <li>The Node verifies the signature, canonical message, nonce, policy, and commitment.</li>
-    <li>Mother creates one-time Settlement DNA for the authorized CrankerVault and lease.</li>
-    <li>The Cranker submits the DNA-bound TSN transaction and pays the network fee.</li>
-    <li>The TSN Program consumes the DNA once and records the opaque claim outcome.</li>
-  </ol>
-  <h2>What the public transaction reveals</h2>
-  <p>The chain receives the authorization commitment, nullifier, expiry, epoch coordination data, and settlement coordinates required for enforcement. Private receiving roots, encrypted balance snapshots, and owner authorization material remain outside public payloads.</p>
-  <h2>Privacy boundary</h2>
-  <p>Crankers receive a SettlementCommitment, public payout coordinates, a permit, and expiry data. They do not receive private commitment plaintext, sender keys, payment-specific escrow accounts, or PrivateEscrowRecord accounts.</p>
-  <p><a href="/p/tcap.html">Read the TCap private balance architecture →</a> · <a href="/p/identity-and-tin.html">Read about TIN identity →</a> · <a href="/p/tsn-flow.html">Read the TSN settlement flow →</a></p>
+<meta itemprop="author" content="TrustLink Labs Research">
+<meta itemprop="description" content="The Guarded Privacy Routing Unit verifies hidden route, balance, nullifier and Memo relations for TSN. TCAP retains custody and accounting responsibility.">
+<meta itemprop="dateModified" content="2026-11-22">
+<div class="up-kicker">TSN architecture &middot; Experimental first release</div>
+<h1 itemprop="headline">GPRU: Proof Verification for TSN Private Credit</h1>
+<p class="dek">The Guarded Privacy Routing Unit verifies hidden route, balance, nullifier and Memo relations for TSN. TCAP retains custody and accounting responsibility.</p>
+<h2>GPRU's responsibility</h2>
+<p>GPRU is a standalone on-chain verifier within TSN's hybrid settlement infrastructure. In the current experimental Solana credit flow, it verifies a Groth16 proof that binds authenticated recipient route membership, the current private balance head, exact funded amount, the secret-derived spend nullifier and the successor balance. It does not hold TCAP reserve tokens or act as the off-chain intent service.</p>
+<h2>Authorization and proof order</h2>
+<p>The owner authorizes the intent and exact reserve deposit. Receiver coordinates work and leases; Node verifies funding and constructs the private witness and owner Memo. Mother authorizes the inspected TSNP settlement. Cranker submits the permitted TSNP call, TCAP invokes GPRU, and proof success allows TCAP to advance the shared state and credit-epoch transcript atomically.</p>
+<h2>The public statement</h2>
+<p>The current circuit has thirteen public inputs, including shared roots, Memo and action commitments, a nullifier, TIP route root, successor portfolio and balance points, encrypted blinding delta, ephemeral points and authenticated funding root. The individual credit amount is private. GPRU binds the following Memo's bytes and prefix fields to that proof; an encrypted record alone is not proof of correct arithmetic.</p>
+<h2>Configuration and privacy limits</h2>
+<p>The running circuit, proving key, verifier key and initialized account must match. Wallet deposits, token identifiers, roots, nullifiers, ciphertext, accounts, timing and aggregate totals remain observable. Node handles private routes and openings. Independent cryptographic review, general unlinkability and confidential spending remain separate requirements.</p>
+<p><a href="/p/identity-and-tin.html">TIN identity</a> &middot; <a href="/p/gpru.html">GPRU proof verification</a> &middot; <a href="/p/tcap.html">TCAP private accounting</a> &middot; <a href="/p/tsn-flow.html">TSN credit flow</a> &middot; <a href="/p/tsn-protocol-whitepaper.html">Whitepaper</a></p>
 </article>

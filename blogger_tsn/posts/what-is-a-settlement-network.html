@@ -239,83 +239,11 @@
 
 <hr />
 
-<h2>Type 4 — Transfer Settlement Network (TSN)</h2>
-
-<p>Transfer Settlement Network (TSN) is a blockchain settlement protocol designed for identity-based, privacy-aware
-    stablecoin payments — where users transfer value through human-readable payment identities instead of exposing raw
-    wallet addresses.</p>
-
-<p>Every previous generation of settlement network solved a real problem. Global networks connected institutions across
-    borders. Blockchain networks made settlement programmable and continuous. Stablecoin networks introduced stable
-    digital value as the settlement asset. TSN addresses what all three still lack: trust, identity, and privacy as
-    protocol-level features — not afterthoughts.</p>
-
-<h3>Why the Wallet Address Model Is Broken</h3>
-
-<p>The current blockchain payment model combines too many responsibilities into a single object — the wallet address. A
-    single wallet address is simultaneously your identity, your payment destination, your account number, and your fully
-    public transaction history. This was never designed for human-scale financial interaction.</p>
-
-<p>People do not think "send money to 0x321c...689A." They think "pay J.P. Morgan" or "send to this business." The
-    wallet address was designed for cryptographic ownership, not human financial identity.</p>
-
-<p>Current blockchain payment model:</p>
-<p>Wallet Address = Identity + Payment Destination + Account + Public Transaction History</p>
-
-<p>TSN separates these responsibilities into a clean settlement flow:</p>
-<p>Human Identity (TIN) → Payment Intent → Authorization Layer → Private Settlement Routing → Blockchain Final
-    Settlement</p>
-
-<p>This separation allows blockchain payments to become easier for normal users while maintaining full cryptographic
-    security underneath.</p>
-
-<h3>The Four Core Differentiators of TSN</h3>
-
-<p><strong>1. Identity Instead of Wallet Addresses</strong></p>
-<p>TSN uses Transfer Identity Numbers (TIN) — human-readable payment identities that route to the correct destination
-    without exposing raw wallet addresses. Users interact with identities, not cryptographic strings. This makes
-    payments safer, simpler, and compatible with institutional KYC and AML compliance requirements at scale. The network
-    knows who is sending and who should receive before settlement executes.</p>
-
-<p><strong>2. Privacy-Aware Settlement</strong></p>
-<p>Public blockchains expose sender, receiver, amount, and full transaction history to anyone who looks. TSN introduces
-    a TIN identity layer and TCap confidential asset layer, allowing funds to remain confidential inside the settlement
-    environment while still being cryptographically verifiable on-chain. Businesses and individuals get privacy without
-    losing the benefits of blockchain verification.</p>
-
-<p><strong>3. Controlled Settlement Flow for Large Transactions</strong></p>
-<p>Rather than moving one billion dollars in a single exposed blockchain transaction, TSN routes large value through a
-    settlement queue of verified units. A one billion dollar settlement becomes a sequence of ten thousand dollar
-    settlement units, each verified in order. This reduces transaction exposure, improves liquidity management, allows
-    settlement operators called crankers to participate in processing, and creates scalable throughput for
-    institutional-scale value movement.</p>
-
-<p><strong>4. Non-Custodial Architecture</strong></p>
-<p>TSN coordinates settlement without ever holding user funds. Users maintain full control of their assets throughout
-    the process. The security model is: user authorization plus cryptographic verification equals completed transfer.
-    The network coordinates without becoming the custodian — eliminating custodial risk entirely.</p>
-
-<p>TSN is built on Solana — chosen for its sub-second transaction finality, high throughput capacity, and low network
-    fees, which make the controlled settlement queue model operationally viable at institutional scale.</p>
-
-<p><strong>Internal resources:</strong></p>
-<ul>
-    <li><a href="https://tsn-protocol.blogspot.com/2026/08/what-is-a-stablecoin-settlement-network.html">What Is a
-            Stablecoin Settlement Network? — TSN Protocol Research</a></li>
-    <li><a href="https://tsn-protocol.blogspot.com/2026/07/how-transfers-and-settlements-work.html">How Blockchain
-            Transfers and Settlements Work — TSN Protocol</a></li>
-    <li><a href="https://tsn-protocol.blogspot.com/2026/07/how-tsn-approaches-privacy-on-solana.html">How TSN Approaches
-            Privacy on Solana</a></li>
-    <li><a href="https://tsn-protocol.blogspot.com/p/identity-and-tin.html">Identity and TIN — Transfer Identity Number
-            explained</a></li>
-    <li><a href="https://tsn-protocol.blogspot.com/p/about-transfer-settlement-network-tsn.html">About the Transfer
-            Settlement Network — TSN Protocol</a></li>
-    <li><a href="https://tsn-protocol.blogspot.com/p/tsn-flow.html">TSN Protocol Flow — how a transfer executes end to
-            end</a></li>
-</ul>
-
-<hr />
-
+<h2>Type 4: TSN Hybrid Settlement Infrastructure</h2>
+<p>Applications can address a recipient using a ten-digit Transfer Identity Number. TSN is hybrid decentralized settlement protocol infrastructure for the Internet of Value: off-chain Receiver, Node and Cranker services coordinate work, while TIP, TSNP, TCAP and GPRU enforce identity, authorization, private-credit proofs and reserve accounting on Solana.</p>
+<p>The current experimental wallet-to-TIN flow separates canonical intent approval, exact sender-wallet funding approval, confirmed deposit verification and private settlement proving. Node resolves the recipient route and prepares the witness and encrypted Memo; Mother authorizes TSNP; Cranker submits permitted work; TCAP invokes GPRU before changing shared state. A separate complete aggregate proof performs liability reclassification.</p>
+<p>Wallet funding, token, roots, ciphertext, accounts, timing and aggregate totals remain public, and Node handles sensitive witnesses. The retained November 16 Devnet checkpoint verifies two private credits and complete accounting, with owner recovery, confidential spending and general unlinkability remaining separate checks. Planned Base, Arbitrum and Polygon PoS routes have fees and require their own finality, value delivery, authentication and recovery evidence. Optional verified credentials remain proposed.</p>
+<p><a href="/p/tsn-flow.html">Current native-credit sequence</a> &middot; <a href="/p/tsn-protocol-whitepaper.html">Whitepaper and implementation status</a></p>
 <h2>How Every Settlement Network Compares</h2>
 
 <p>Each generation of settlement infrastructure solved a different layer of the problem. The table below shows how they

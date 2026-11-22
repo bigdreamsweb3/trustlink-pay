@@ -1,29 +1,20 @@
 <article class="tsn-document" itemscope itemtype="https://schema.org/TechArticle">
-  <meta itemprop="author" content="TrustLink Labs Research">
-  <meta itemprop="headline" content="TCAP (Transfer Confidential Asset Protocol): Private Balance for TSN">
-  <meta itemprop="description" content="TCAP (Transfer Confidential Asset Protocol) provides policy-bound private balance tips, one-time credit authorization, and encrypted balance snapshots for the Transfer Settlement Network.">
-  <p class="eyebrow">TSN architecture · TCap</p>
-  <div class="up-kicker">TSN architecture &middot; TCAP</div>
-  <h1 itemprop="headline">TCAP (Transfer Confidential Asset Protocol): Private Balance for TSN</h1>
-  <p class="dek" itemprop="description">TCAP is the private balance and asset-accounting layer of TSN. It keeps balance details in encrypted owner-authorized snapshots while placing only commitments, sequence state, policy references, and replay protection at the protocol boundary.</p>
-  <h2>What TCAP owns</h2>
-  <ul>
-    <li>Token identity, registry policy, and governed asset acceptance.</li>
-    <li>TCAP TIN tips with monotonic sequence and commitment transitions.</li>
-    <li>One-time nullifiers and TSN settlement authorization receipts.</li>
-    <li>Encrypted balance snapshots that the owner decrypts locally.</li>
-  </ul>
-  <h2>How a private balance is read</h2>
-  <ol>
-    <li>The client fetches the public TCAP tip and its current commitment.</li>
-    <li>The owner loads one encrypted snapshot by opaque commitment locator.</li>
-    <li>The SDK verifies the snapshot hash and sequence against the tip.</li>
-    <li>The owner decrypts the snapshot locally and reads token balances.</li>
-  </ol>
-  <p>Observers see coordination commitments and state transitions, not plaintext balances, TIN secrets, wallet roots, or encrypted snapshot contents.</p>
-  <h2>TCAP and TSN separation</h2>
-  <p>TSN coordinates payment intents, epoch treasury obligations, Mother DNA, and settlement work. TCAP coordinates private balance credits and policy-bound token state. GPRU routes and authorizes; it never holds funds.</p>
-  <h2>Production security model</h2>
-  <p>Every credit binds the previous tip, new commitment, sequence, token policy, GPRU scope, nullifier, TSN settlement commitment, and expiry. A replayed or altered credit fails before state movement, preserving a deterministic private balance history.</p>
-  <p><a href="/p/gpru.html">Read the GPRU authorization and routing layer →</a> · <a href="/p/identity-and-tin.html">Read about TIN identity →</a> · <a href="/p/tsn-flow.html">Read the TSN settlement flow →</a></p>
+<meta itemprop="author" content="TrustLink Labs Research">
+<meta itemprop="description" content="Transfer Confidential Asset Protocol governs accepted assets, reserve funding and proof-verified private credit within TSN hybrid infrastructure.">
+<meta itemprop="dateModified" content="2026-11-22">
+<div class="up-kicker">TSN architecture &middot; Experimental first release</div>
+<h1 itemprop="headline">TCAP: Confidential Assets, Reserves and Private TIN Credits</h1>
+<p class="dek">Transfer Confidential Asset Protocol governs accepted assets, reserve funding and proof-verified private credit within TSN hybrid infrastructure.</p>
+<h2>What TCAP owns</h2>
+<p>TCAP governs asset acceptance, reserve vaults, funded obligations, an authenticated global funding tree, the shared private-state root and asset-specific credit accounting epochs. GPRU verifies the hidden route and balance proof; TSNP enforces settlement authorization. TCAP remains responsible for custody and atomic accounting.</p>
+<h2>Deposit and individual credit</h2>
+<p>A wallet-signed deposit transfers the approved SPL token into TCAP's reserve vault and appends a leaf bound to the genuine observed asset and amount. A single confirmed deposit can support a private TIN credit. The Node proves funded membership and the exact private amount, and a secret-derived nullifier prevents reuse of that note.</p>
+<p>Successful individual credit advances the shared head/nullifier root and appends a blinded commitment to the asset epoch. It transfers no reserve tokens and reclassifies no public per-credit liability counters. Current private credit does not create a public per-TIN TCAP tip account.</p>
+<h2>Complete aggregate accounting</h2>
+<p>A separate proof covers the complete ordered transcript of 2&ndash;64 accepted credits. TCAP verifies it through GPRU before moving the authenticated total from pending to settled confidential liabilities. Custody assets, total liabilities and uncredited funding remain unchanged. The batch minimum applies to accounting; it does not make an individual credit wait for another deposit.</p>
+<h2>Owner history and privacy</h2>
+<p>The encrypted owner action record travels in Memo instruction data. Owner recovery must validate the recovered commitment openings, authorization, sequence and predecessor relationship against the settled statement. Complete owner recovery remains a separate unverified outcome in the cited November 16 checkpoint. Public wallet funding, aggregate totals, roots, accounts and timing can still reveal information; Node access to private routes and openings is an intentional boundary.</p>
+<h2>Implementation status</h2>
+<p>TSN remains an experimental first release. The retained Devnet evidence verifies two private credits and complete aggregate accounting. Confidential debit, TIN-to-TIN conservation, wallet exit, mixed-action accounting and cross-network payouts need their own reviewed proof and runtime evidence.</p>
+<p><a href="/p/identity-and-tin.html">TIN identity</a> &middot; <a href="/p/gpru.html">GPRU proof verification</a> &middot; <a href="/p/tcap.html">TCAP private accounting</a> &middot; <a href="/p/tsn-flow.html">TSN credit flow</a> &middot; <a href="/p/tsn-protocol-whitepaper.html">Whitepaper</a></p>
 </article>

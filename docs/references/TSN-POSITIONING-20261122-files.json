@@ -1,0 +1,527 @@
+{
+  "date": "2026-11-22",
+  "scope": "Task current created/updated paths from the clean root/protocol baseline, plus regenerated internal HTTP records; hashes identify this local snapshot. Independent pre-existing pitch subcheckout changes are excluded. No private environment, keypair, store or witness contents.",
+  "currentFiles": [
+    {
+      "path": "$pro_recs$/ccctxs.md",
+      "sha256": "09c99bbb762d3e3ec619e7552610a6528294edb72d340313a3f1e1f5f78fe7d5"
+    },
+    {
+      "path": ".agents/architecture-terminology.md",
+      "sha256": "b27731110a79e2cee27820aa65a5ab6d6435fc32420814b178547c2a5fffbc5f"
+    },
+    {
+      "path": ".agents/protocol-cleanup-index.md",
+      "sha256": "b2c3022e1b1f2b15ae2f8c997069e31e01f8236c03cc700820655836a8c977e7"
+    },
+    {
+      "path": "README.md",
+      "sha256": "1ae185dab39198c355515282c6689adf90667ed62412f00705ca5a40092cbbdb"
+    },
+    {
+      "path": "blogger_tsn/dorahacks-buidl-page/assets/tsn-fees-and-liquidity.svg",
+      "sha256": "86742202feb027ef9253c277678b3a2e355da7f960bcf0b10e30a7e93d46ca7d"
+    },
+    {
+      "path": "blogger_tsn/dorahacks-buidl-page/assets/tsn-hybrid-architecture.svg",
+      "sha256": "1a4e12b76de423a495d2e53895163fba593d6752f9289d77355b38e7edb517f1"
+    },
+    {
+      "path": "blogger_tsn/dorahacks-buidl-page/assets/tsn_demo_storyboard.txt",
+      "sha256": "3a59fcaf3f11d5a03136e6cc1406f10fd46a23910ba68b8bf803e70bd7e1439d"
+    },
+    {
+      "path": "blogger_tsn/dorahacks-buidl-page/tsn-dorahacks-submission (1).md",
+      "sha256": "ae9a9ebf04efd93ea9437576cff31b8c1b182f4ee783a62015c6005b8464a997"
+    },
+    {
+      "path": "blogger_tsn/pages/about-transfer-settlement-network-tsn.html",
+      "sha256": "50120697ca8b09f87bc4d3a43977dd17068a548e7e52f4dbbffbda762a643a50"
+    },
+    {
+      "path": "blogger_tsn/pages/gpru.html",
+      "sha256": "93bd80b4f4f32ed82a917f5e8fe5221da0a54b75311d27163597dd0a3698e25b"
+    },
+    {
+      "path": "blogger_tsn/pages/identity-and-tin.html",
+      "sha256": "18342e319e4db55a935c18c61058c8740523c3a1192c939cc322b8933c519a6e"
+    },
+    {
+      "path": "blogger_tsn/pages/tcap.html",
+      "sha256": "cbb86858b2f013631ab591012a026239a85f7fd41ad02fdbdfb087a38030cb86"
+    },
+    {
+      "path": "blogger_tsn/pages/tsn-flow.html",
+      "sha256": "d5f44fee2762c27f2a8ef81836f398944ce0970a6aae41c4d4cbcff3879a52df"
+    },
+    {
+      "path": "blogger_tsn/pages/tsn-protocol-whitepaper.html",
+      "sha256": "0aa906ba3fea0b0d5bf6c50c3e496f7739f529a4f159ec057b86260a5288fb90"
+    },
+    {
+      "path": "blogger_tsn/posts/blockchain-payment-infrastructure.html",
+      "sha256": "4f93fecd9d29e8aef5ababf81a3c9f86823c891054e633a2cb992c504bfa1f25"
+    },
+    {
+      "path": "blogger_tsn/posts/blockchain-payment-systems-bps.html",
+      "sha256": "fd431e27ef36038100b3e2cf01f15e52d2869cec9dbef25e03d39e712f625c5c"
+    },
+    {
+      "path": "blogger_tsn/posts/blockchain-settlement-layers-payment-infrastructure.html",
+      "sha256": "101e9efb955ac9450b6ad175d80fb3d33adb8d918d42d65b596342af8b39ba81"
+    },
+    {
+      "path": "blogger_tsn/posts/global-settlement-networks-future-blockchain-payments.html",
+      "sha256": "d5f885e6a357f6b7319ed2460965f83901e0d2415468e9c337f8c4a4e8785d7a"
+    },
+    {
+      "path": "blogger_tsn/posts/gpru-tcap-private-balance-architecture.html",
+      "sha256": "3f322ffdda5d3af7e064895a3431afabfdf0640e02a915f7861ee74ca18cfe31"
+    },
+    {
+      "path": "blogger_tsn/posts/tin-identity-verified-credentials-internet-of-value.html",
+      "sha256": "d6585f7e462bf608eb7ca35da332597fe147572cf525bbd4f5d85f9137d312b1"
+    },
+    {
+      "path": "blogger_tsn/posts/transfer-settlement-network-low-fee-evm-integration.html",
+      "sha256": "8d2e12f4dd553fe3236634f53e26b9ff984aeff283541abe2ad07ab6ffd58550"
+    },
+    {
+      "path": "blogger_tsn/posts/transfer-settlement-network-solana-integration.html",
+      "sha256": "f47bd42e8986be9e6c4b6fb2bf5bb0fa72fbd537b858fef2eade6b258e8bcc33"
+    },
+    {
+      "path": "blogger_tsn/privacy-first-settlement-network-cluster/README.md",
+      "sha256": "fa8779d466b94e815d2e45087bc7b1cd4c31a33f35554961d88158b77ee8d227"
+    },
+    {
+      "path": "blogger_tsn/privacy-first-settlement-network-cluster/what-is-a-privacy-first-decentralized-settlement-network.html",
+      "sha256": "55ee2c3d0daa0135338b2fc41fc019c35c676c8423dc5c463fa7c50c8d9b3053"
+    },
+    {
+      "path": "blogger_tsn/tsn-theme.xml",
+      "sha256": "94719137fbe1cb92df78416012154efa93e18c90815f1671d571cf5c23b3360e"
+    },
+    {
+      "path": "docs/CROSS-NETWORK-PAYMENTS-BUILD-PLAN.md",
+      "sha256": "9a001f2eaab255e9cc2bcd43cfec4cca625b9516fdb85cadff8cc0f2ec5f9e97"
+    },
+    {
+      "path": "docs/CROSS-NETWORK-PAYMENTS-RESEARCH.md",
+      "sha256": "deaedae4e09068c7f9d4be8ce082f3d3be8c35cbd9a74b5db0f07be96aa7c3d8"
+    },
+    {
+      "path": "docs/DOCUMENTATION_STATUS.md",
+      "sha256": "be266f58e2a805c5d7cce63e3f0b8c1c1f0547bef238a3fe60133123a479e796"
+    },
+    {
+      "path": "docs/README.md",
+      "sha256": "20bc457d6e00e6f2273abfd2c6f2c2421c65dbe8c28454d65464a91d61060dc6"
+    },
+    {
+      "path": "docs/RUN-YOUR-OWN-TSN.md",
+      "sha256": "c95858d826497ebf7a3c34131dd86c67c5e79715d5eca5f7075046096e775fbf"
+    },
+    {
+      "path": "docs/TSN-WHITEPAPER.md",
+      "sha256": "6b2579b5baa0f39325d9070fa92ea34c082834d3353c078ea1ca6f66c73cf939"
+    },
+    {
+      "path": "docs/expo/ARC_INTEGRATION/PROTOCOL.md",
+      "sha256": "d82e1cf0efbff96d930ab06db65c8c892ca6ead3fbea4c61740ea408f34d9589"
+    },
+    {
+      "path": "docs/historical-archive/README.md",
+      "sha256": "6be27a09fb97f7dc42bd29bf59aec7e11b46c89dd8f05361602433aa3d611f6f"
+    },
+    {
+      "path": "docs/identity-and-tin.md",
+      "sha256": "ed867f7bd6190389b09a75ea3472dcbbf300fb9d662eedf2af2d50854f893c31"
+    },
+    {
+      "path": "docs/laboratory/components.md",
+      "sha256": "49cb9c549d2e894c5cfbe60f69abd5cd344b7f21fb6fed5a814d02fd5f9d3d3a"
+    },
+    {
+      "path": "docs/laboratory/cranker-transaction-map.md",
+      "sha256": "29f2dd4a41eae5402a485ee96737775a51d28545ad4d74747d13b5253ae6b9e0"
+    },
+    {
+      "path": "docs/laboratory/interface-reference.md",
+      "sha256": "ef2ff5b2fb01e283d8e45ad8d8effcba4c6e1c89ffd6359a265cdb1fabf14fb1"
+    },
+    {
+      "path": "docs/laboratory/reconciliation-register.md",
+      "sha256": "c09085048b4b89d42e8a4cf44e81517cff73faf73acce029ba163b0fd4a1d344"
+    },
+    {
+      "path": "docs/laboratory/technology-reference.md",
+      "sha256": "e0c98ee12e8092db2b596574fb1a008023edf2691f7b9f09147ee939961a0893"
+    },
+    {
+      "path": "docs/references/TSN-OPERATOR-GUIDE-20261105.md",
+      "sha256": "f221a464508f499e4ae2cdb926825d4b3c554fdcde42cf3441858c9106c09a26"
+    },
+    {
+      "path": "docs/references/TSN-POSITIONING-20261122.md",
+      "sha256": "ebccd4f2b2d8f70f3a0b1b44e55fac834fd5c2de1b350083eb6c2635c8c7137d"
+    },
+    {
+      "path": "docs/references/claim-review.json",
+      "sha256": "8342d15489f0774c3659c12088c1612339aec260e5b4c6625f9c5a4297a68dda"
+    },
+    {
+      "path": "docs/references/document-review.json",
+      "sha256": "237adc8e01d9fbd55619ef66fcea213767c9fac67f21845ba4c8e191ab38e07d"
+    },
+    {
+      "path": "docs/references/documentation-inventory.json",
+      "sha256": "382dcb83afdfae84ebe6742472923df0723222b45cf20925b480477969b4cb0c"
+    },
+    {
+      "path": "docs/references/http-interface-inventory.json",
+      "sha256": "f8760aad2441a52e399f95ac689b79a3c2df1ffdd3e9ab9e1db9bede1f6f25fd"
+    },
+    {
+      "path": "docs/references/link-check.json",
+      "sha256": "99282f31135de959060afe9cbcd2018c1cbf06104d634e8b68537c67388a3cf6"
+    },
+    {
+      "path": "docs/references/sdk-api-inventory.json",
+      "sha256": "e9536ed72f830bdcd6d3f8acd3e5721886f5d7e88e06e7067636a6419322bfb8"
+    },
+    {
+      "path": "docs/references/syntax-check.json",
+      "sha256": "58a0b98eccda658776f6935e4f0d765a3f439e2a7af8079718180b2276eda349"
+    },
+    {
+      "path": "docs/references/technical-claim-inventory.json",
+      "sha256": "86ee0470239402b07e266bd098061e8631f8e8a161ccce06afd79e71e6ddadc6"
+    },
+    {
+      "path": "docs/team/README.md",
+      "sha256": "606310a4e239e9a821c9a4ebcc81b6de2b73ec64afa91f4eda12abed894aaad3"
+    },
+    {
+      "path": "docs/team/community/README.md",
+      "sha256": "9f0d6aedbc2679b4b8e8b82e70d63c8cfa23a5c7968de93d7146717616790a24"
+    },
+    {
+      "path": "docs/team/cross-chain/README.md",
+      "sha256": "7f541b29a3d952ac28128cbf1fdd0a85b9e0f588ac92d087c92c16dd26becbe3"
+    },
+    {
+      "path": "docs/team/cross-chain/retired-evm-cranker-adapter.md",
+      "sha256": "c9fe0f1086fab999de71f26f3bbfa776ac60cd2dadf518a35f3aae1b02b3b0a6"
+    },
+    {
+      "path": "docs/team/cross-chain/retired-evm-direct-settlement.md",
+      "sha256": "98fa7d252cfae8b8aad70885a8352a35f535efeb2d3a0543d360f58a06975b5b"
+    },
+    {
+      "path": "docs/team/cross-chain/retired-evm-navigation.md",
+      "sha256": "8d9fc82506e68f63413a87338e8c4a5d09ceed5f1a26b5829118637d093b3f3e"
+    },
+    {
+      "path": "docs/team/cross-chain/sdk-cross-chain-facade.md",
+      "sha256": "5bf5693d9fe105ee31d748410e0ca4031ec19e85ec4402bf6c0a11f153235284"
+    },
+    {
+      "path": "docs/team/cross-chain/sdk-ui-test.md",
+      "sha256": "73f567d66c6818b6cf5942bdc0902b58dc9e7e7c3f354cc071f3fe1162bb0164"
+    },
+    {
+      "path": "docs/team/cross-chain/single-cranker-runtime.md",
+      "sha256": "fdcb349d7f18fabe58b5cc242e2408919ef0a6fa48effd2e8e3094d73fb33ff4"
+    },
+    {
+      "path": "docs/team/cross-chain/usdset-deployment.md",
+      "sha256": "4dc6bc5c72841b0f074bf9ba6ef4b809459bb2f82c74fde339fd447e606dfeeb"
+    },
+    {
+      "path": "docs/team/cross-chain/verified-addresses.md",
+      "sha256": "ae792b5c62aba8924ed5616c3029170f5844031bb878d4c54d17c013ff6a1f30"
+    },
+    {
+      "path": "docs/team/testing/README.md",
+      "sha256": "292b8e527c9b1d93102a042db5d534815fd613c7092a8a1bdb29d6c8a4230cf9"
+    },
+    {
+      "path": "docs/tsn_docs_dip_deposit_ingress_protocol.md",
+      "sha256": "0da66d7aa90dd781aa1fd23766f074e2aaf546a4000d7d178d10bcfabc38fac8"
+    },
+    {
+      "path": "founder_docs/What-TSN-Is.md",
+      "sha256": "516e39f0748170b705fa01b626a9e3487ae3f892e237cf6be6835917f2e4e4bf"
+    },
+    {
+      "path": "package.json",
+      "sha256": "05cb6634d67568de5a5b8e68265b6c5b9a75f207ab15f0d097ddffefd5b35812"
+    },
+    {
+      "path": "pitch-deck/index.html",
+      "sha256": "e991631fcf46d48dfe06db3b1be73aa26a2a28a3d5efa925a2dc9e201b22265d"
+    },
+    {
+      "path": "resume/daniel-matthew-resume-2026-updated.html",
+      "sha256": "2aad1d90e57f9a12e043435b90ddc156a2fb7e679d2ba617f83e8c62f500436f"
+    },
+    {
+      "path": "tmp/pdfs/refresh-publication-exports.cjs",
+      "sha256": "0e0d4e1d9cf87af1460ab93c4e711de85e5a34ebb84a0130ae772b11b9b73e78"
+    },
+    {
+      "path": "tsn-protocol/README.md",
+      "sha256": "f1200a0f799dc4504eeceb3496e6d49a2cd876605077d646c4d0946245acc60a"
+    },
+    {
+      "path": "tsn-protocol/docs/mces/candidate-assessment.md",
+      "sha256": "719f96ed433a68c06ce036804da1138f7a844c2ad68983b3003fb288fc4bffe3"
+    },
+    {
+      "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
+      "sha256": "e1348cc29073b534616dbd3ef68d6118db7a194df4c6433e9957827f9bf245b8"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-cranker-op-daemon/.env.example",
+      "sha256": "02927f46971813853debc9cb034037156e8e5d03416382ef4459d4cbfea6af49"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-cranker-op-daemon/README.md",
+      "sha256": "c51c6e6cdd952a5e7a7611fb431ad5c76d5d038a4ce205fcae34c0970bf5514d"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-cranker-op-daemon/package.json",
+      "sha256": "10850f84068bc6e8efacd702f31ab9bf4880d3940a66567376a755f024fa35bb"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "sha256": "68ca30bd2aec6b5a00fdd6558bbb957f8f37661cdb29446817bbb2c02ed4f3cc"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-cranker-op-daemon/tests/native-retry.test.ts",
+      "sha256": "b327afacda10abf3e98c8985570bf903e4617ecc96e0eb7207aaaad14e018879"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-crosschain/.env.example",
+      "sha256": "5327838a6558797f846cbbd226e9dd0f5f8b60ad6e15d7bc3416980425fd1f66"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-crosschain/contracts/DestinationLiquidityRegistry.sol",
+      "sha256": "48cdc35e0d144d1bc1838488c6c65a72b86192be3bc087a48de361c60c61079d"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-crosschain/contracts/DestinationRegistry.sol",
+      "sha256": "77644854eb75606ecf1ba3b458f95e73871f9510a24650fbba9d31c6a906c9e9"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-crosschain/contracts/SepoliaAnchor.sol",
+      "sha256": "17ea4506aa26e9bd45384e650d47a68242731731fc13896bd3d0c3269663ceaf"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-crosschain/contracts/adapters/_template/README.md",
+      "sha256": "56542ce27b7c399c7af0d08e77ee7dfd82b0c1d42c80d8f38ca7899604a21886"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-crosschain/contracts/tokens/USDSET.sol",
+      "sha256": "0eb31fc3ac52fd0e868892609de0ec6d998702aa01df5ae8e8061b49b952a072"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-crosschain/docs/README.md",
+      "sha256": "ee90ff3cf5eacaf1cff1ed98537afc727a5d70ad5cfe17d9c674e0178be94c3b"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-crosschain/docs/architecture.md",
+      "sha256": "f6d788e89a4b3b98b477a5ecf8aab7b7845e6c9caebf5c4ae49af39208990969"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-crosschain/package-lock.json",
+      "sha256": "62b45f2db87efcfa0d745e2549579cb2ef019565731f7e214ca640edb11579b6"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-crosschain/package.json",
+      "sha256": "324723f130c8a48a3e8ea63bffdeca360a0a49f50b927423b3d75494002c5454"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-crosschain/src/destination-liquidity.ts",
+      "sha256": "1d31463de1f0cc4d771d56c3ac8097a89d549a9cfd147dd438174b97a052ef31"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-crosschain/tsconfig.json",
+      "sha256": "e8b0bcb380d104fd6091885adf54e0cf3f5d607fc30164228dd2ca9f80731c7b"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/.env.example",
+      "sha256": "f99d962d61d46c77fecae534b651b4120227232827c2e202baea22c5ed0c4a24"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/api/handlers/README.md",
+      "sha256": "5ad03b9e6c717f5b6e435c3841b33ed7b671b5b05965566b5c1f2a2ebbce3258"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/api/handlers/get_settlement_networks.py",
+      "sha256": "5f38a908b93d733199c969f66b08e0b465f96598f7ac817f8c098650867681dc"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/app/README.md",
+      "sha256": "81da1ccd3edbd3a0cd3fa6f103cace253c942c397b5da43b7e5adf16b5cc3954"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/app/networking/cross_chain/README.md",
+      "sha256": "25c0c187836feae7a5c00fa7d80e39b873d93a9dbd4a78d44ead9a3d706cad55"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/app/networking/cross_chain/__init__.py",
+      "sha256": "4a7f9d3f5e897fbb69194a245aae7545da5fffd4d3e9c080c8a96adbb12d7a17"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "sha256": "c623853f76a075dcb78b5785f5bc869808e8c3940507cb45164b4f5ce53225d8"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "sha256": "8f09fe0bdb0f2c09eb4152f7b078bd9865603cb969c607a7bc8bcaa033e8c834"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/app/services/cross_chain_routes.py",
+      "sha256": "75890fab9d04247846862a42bca0945f35d6cc36c99ebd3e32aa4278b3f9e13b"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/core/component_contracts.json",
+      "sha256": "f69c0e6b606d03242ce14c434d6489eee54092ea1ff3e4289c12dd2dca46eff9"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/core/component_inventory.json",
+      "sha256": "c8f9f70b11020ee021b6309d280c0b4aeb87c48b40edc31fc87f4d2c90e9a27f"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/docs/architecture.md",
+      "sha256": "99bc89ca49864db2ab14b30f2ae6dffac10540daa378127b5a6102e442006039"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/docs/original-assessment.md",
+      "sha256": "37893057882e176bf6b50a9b7aede421b727992f67f06c4ee6c69ae098c75503"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/docs/verification.md",
+      "sha256": "5b28e64085bd22e8812a508602b00200f25522580e8e183bbd55145a42ec58d5"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/tests/cases/COMPONENTS.json",
+      "sha256": "a8bba133dd8a6791a216c0bb74f9a0c7e34a3df475c48c9cb5f79879c93dd469"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/tests/cases/cross_chain_routes/functions/__init__.py",
+      "sha256": "fb540c3634c69317e84886ef2ef59612536f24b6f20bb22ce8119abcbad0e970"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/tests/cases/cross_chain_routes/functions/f001_test_stale_configuration_cannot_enable_destination.py",
+      "sha256": "e0c8b64ecf07700d45fc67ca8d94345ff92f8767c86cd73b15c85f20436e4e79"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/tests/cases/cross_chain_routes/functions/f002_test_external_route_is_rejected_before_network_access.py",
+      "sha256": "8edc5056e8baa2028a3338465d43a7e9234b010f3cae537d4557a0831fa55eec"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/tests/cases/cross_chain_routes/functions/f003_test_public_discovery_reports_no_enabled_external_route.py",
+      "sha256": "2cea2e4185c59b7e3cc3ea81ec56f61fd080937fde9943f7eb211569e8b48ac4"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/tests/test_cross_chain_routes.py",
+      "sha256": "81605f99ede524508937ea7b562d903387754ce3158c6a09316a4aaaa078dec4"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-receiver/tests/cases/native-cranker-lease/native-cranker-leases-cover-both-authorization-passes-and-expire-without.mjs",
+      "sha256": "44c826b587873614d7ee316579bc294c1725a4761b2158377de02434f476923d"
+    },
+    {
+      "path": "tsn-protocol/services/tsn-receiver/tests/cases/settlement-retry/repaired-settlement-retry-is-authenticated-versioned-funded-and-preserve.mjs",
+      "sha256": "3c4d73069d4254aa0432ff46ba5f273b5d047520d47c58c4f95f7cf4578622b6"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/about/current-technology.mdx",
+      "sha256": "0ebf6e54c4d313e037d42a240960f4b4fc3693c89539bdb99d374f4167f3a0ba"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/about/trustlink-labs.mdx",
+      "sha256": "25cc1b7aba5716febca37c36b602ce2893737afd49ee4fb489936fc8c1d1318a"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/about/what-were-building.mdx",
+      "sha256": "e92ba7d7f22bf89a6cc3ea6ff522d4e758e0944926d8c73fc8c3d1805b1d3dfc"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/api-reference/sdk/modules/cross-chain.mdx",
+      "sha256": "4d6150e6c3b8c3431a27b6f47d1b36685d3706e447444092a5fd929b138b22ea"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/api-reference/sdk/tsn-sdk.mdx",
+      "sha256": "9d43aa37a32c74a528464c950d4ac9f12eb579e14b21e65037d0b8b865dbf41f"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/developers/network-status.mdx",
+      "sha256": "f7fe73a5466797a75fbd4fd841976f5e48d56806404b60d41d0c20d036200f69"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/docs.json",
+      "sha256": "6bfc8ffc2a9c16416840d0da14370f3b9b35d31a6bcaa238e0d658ce0e0f9d7e"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/get-started/faq.mdx",
+      "sha256": "1f869ff8f05aee2f7b88c3522c853632d0c8eabdf9362577bf154b61493cea03"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/layers/tin.mdx",
+      "sha256": "f963415afcf03bac437983448c4b7ca7bb22a9fe82c4a11bf1c9f1f78fd46469"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/operators/tsn-cranker.mdx",
+      "sha256": "7c7e0119e22ad1e9675153ad71c72e1962b7cf5cc1395414787ee3bfc06f4c7e"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/overview/architecture.mdx",
+      "sha256": "a766fee73cfdf6003374da43c89b0db129728928be40ffa7aed3914fa0d29e35"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/overview/cross-network-roadmap.mdx",
+      "sha256": "e97f858f9a0edfe1a4d6f3fb34969e7497ec228438f64179923108c1d8a5ff89"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/overview/how-it-works.mdx",
+      "sha256": "50c5c65b60fd308a3d7e1c833a380b72aebe14d1b83bc2a646bb04e16fee44fd"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/overview/identity-attestations.mdx",
+      "sha256": "005879d3a291cd4071b6fa496934506f50057b0c600e5dfdf0dfa23b259b3ce1"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/overview/introduction.mdx",
+      "sha256": "3e3f8ebcfae513c1f00e3fb228885cae6185f383654c672845826ba2e4bbaf52"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/overview/payment-solutions.mdx",
+      "sha256": "3876ac924a5f65cc2309dedb2d918b1eb50a6784bcdcc456710a4c6668914ca7"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/overview/solana-integration.mdx",
+      "sha256": "a1fed71f868f3ff143ce08f753f2c652801c4bf76703fa3dd9616ebdfba9e2dc"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/sdk/api-reference.mdx",
+      "sha256": "0397a9e4e5bb4ce1f7c65b96d6c192157e73ab395625b5aa09bbb3c04d60b6f0"
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/sdk/integrations.mdx",
+      "sha256": "7aabad423c2b861a09b8275ad6939c53f962ca13e2bb621e0cb795c263e7f51c"
+    }
+  ],
+  "removedFilesByArea": {
+    "Superseded publication diagram": 1,
+    "Three historical route pages moved to neutral retired-evm filenames": 3,
+    "Dedicated retired EVM key-funding helper": 1,
+    "Cross-network retired hub, executor, proof middleware, deployment commands and old guides": 21,
+    "Node retired destination models, registry helpers, proof workers and superseded tests": 42
+  },
+  "removedCount": 68,
+  "ignoredPublicationArtifacts": "See the publishing handoff for refreshed PDF/PNG exports; they are not inferred from Git tracking."
+}

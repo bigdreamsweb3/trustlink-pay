@@ -3128,837 +3128,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 140,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L140"
-          }
-        },
-        {
-          "name": "AttestationStatus",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [],
-          "constructors": [],
-          "methods": [],
-          "declaredType": "export type AttestationStatus =\n  | \"not_requested\"\n  | \"queued\"\n  | \"anchored\"\n  | \"verified\"\n  | \"failed\";",
-          "directThrowExpressions": [],
-          "directCalls": [],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 14,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L14"
-          }
-        },
-        {
-          "name": "ATTESTCOIN_BLOCK_PROVER_PRECOMPILE",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [],
-          "constructors": [],
-          "methods": [],
-          "declaredType": "\"0x0000000000000000000000000000000000000FD2\"",
-          "directThrowExpressions": [],
-          "directCalls": [],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 5,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L5"
-          }
-        },
-        {
-          "name": "createTinExitReplayKey",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [
-            "(input: Pick<TinExitAttestationInput, \"sealedTipHeadHash\" | \"amount\" | \"tinHash\" | \"exitCommitment\">): string"
-          ],
-          "constructors": [],
-          "methods": [],
-          "declaredType": null,
-          "directThrowExpressions": [],
-          "directCalls": [
-            "[\n    input.sealedTipHeadHash,\n    input.amount.toString(10),\n    input.tinHash,\n    input.exitCommitment,\n  ].join",
-            "input.amount.toString"
-          ],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 105,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L105"
-          }
-        },
-        {
-          "name": "CREDITCOIN_SETTLEMENT_NETWORK",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [],
-          "constructors": [],
-          "methods": [],
-          "declaredType": "\"creditcoin-testnet\"",
-          "directThrowExpressions": [],
-          "directCalls": [],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 21,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L21"
-          }
-        },
-        {
-          "name": "CreditcoinDestination",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [],
-          "constructors": [],
-          "methods": [
-            {
-              "name": "network",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "\"creditcoin-testnet\"",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 70,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L70"
-              }
-            },
-            {
-              "name": "address",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "`0x${string}`",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 71,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L71"
-              }
-            },
-            {
-              "name": "token",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 72,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L72"
-              }
-            }
-          ],
-          "declaredType": null,
-          "directThrowExpressions": [],
-          "directCalls": [],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 69,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L69"
-          }
-        },
-        {
-          "name": "CreditcoinLiquidityState",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [],
-          "constructors": [],
-          "methods": [
-            {
-              "name": "availableAmount",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "bigint",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 187,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L187"
-              }
-            },
-            {
-              "name": "sourceBlock",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "bigint",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 188,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L188"
-              }
-            },
-            {
-              "name": "observedAt",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "bigint",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 189,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L189"
-              }
-            },
-            {
-              "name": "validUntil",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "bigint",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 190,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L190"
-              }
-            },
-            {
-              "name": "nonce",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "bigint",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 191,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L191"
-              }
-            },
-            {
-              "name": "queryId",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "`0x${string}`",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 192,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L192"
-              }
-            },
-            {
-              "name": "isFresh",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "boolean",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 193,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L193"
-              }
-            }
-          ],
-          "declaredType": null,
-          "directThrowExpressions": [],
-          "directCalls": [],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 186,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L186"
-          }
-        },
-        {
-          "name": "CreditcoinPayoutAuthorization",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [],
-          "constructors": [],
-          "methods": [
-            {
-              "name": "settlementId",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 37,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L37"
-              }
-            },
-            {
-              "name": "sealedTipHeadHash",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 38,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L38"
-              }
-            },
-            {
-              "name": "tinHash",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 39,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L39"
-              }
-            },
-            {
-              "name": "exitCommitment",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 40,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L40"
-              }
-            },
-            {
-              "name": "destinationNetwork",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "\"creditcoin-testnet\"",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 41,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L41"
-              }
-            },
-            {
-              "name": "recipient",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "`0x${string}`",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 42,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L42"
-              }
-            },
-            {
-              "name": "amount",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "bigint",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 43,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L43"
-              }
-            },
-            {
-              "name": "nonce",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "bigint",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 44,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L44"
-              }
-            },
-            {
-              "name": "deadline",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "bigint",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 45,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L45"
-              }
-            },
-            {
-              "name": "merchantOverride",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "boolean",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 46,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L46"
-              }
-            }
-          ],
-          "declaredType": null,
-          "directThrowExpressions": [],
-          "directCalls": [],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 36,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L36"
-          }
-        },
-        {
-          "name": "CreditcoinRouteClient",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [],
-          "constructors": [
-            "(config: CreditcoinRouteClientConfig): CreditcoinRouteClient"
-          ],
-          "methods": [
-            {
-              "name": "readRoute",
-              "memberKind": "instance",
-              "signatures": [
-                "(): Promise<CreditcoinRouteState>"
-              ],
-              "type": null,
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 279,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L279"
-              }
-            },
-            {
-              "name": "readLiquidity",
-              "memberKind": "instance",
-              "signatures": [
-                "(): Promise<CreditcoinLiquidityState>"
-              ],
-              "type": null,
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 305,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L305"
-              }
-            },
-            {
-              "name": "readEvidence",
-              "memberKind": "instance",
-              "signatures": [
-                "(): Promise<CreditcoinRouteEvidence>"
-              ],
-              "type": null,
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 319,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L319"
-              }
-            }
-          ],
-          "declaredType": null,
-          "directThrowExpressions": [
-            "new Error(`Creditcoin RPC HTTP ${response.status}`)",
-            "new Error(body.error?.message ?? \"Creditcoin RPC returned no result\")",
-            "new Error(`expected Creditcoin chain ${this.config.expectedChainId}, received ${chainId}`)"
-          ],
-          "directCalls": [
-            "assertEvmAddress",
-            "assertBytes32",
-            "fetch",
-            "JSON.stringify",
-            "response.json",
-            "this.rpc",
-            "BigInt",
-            "this.call",
-            "this.config.routeId.slice",
-            "wordAddress",
-            "Promise.all",
-            "this.call(token, ERC20_NAME).then",
-            "this.call(token, ERC20_SYMBOL).then",
-            "this.call(token, ERC20_DECIMALS).then",
-            "Number",
-            "word",
-            "wordBytes32",
-            "Math.floor",
-            "Date.now",
-            "this.readRoute",
-            "this.readLiquidity",
-            "logs.push",
-            "liquidity.availableAmount.toString",
-            "String"
-          ],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 250,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L250"
-          }
-        },
-        {
-          "name": "CreditcoinRouteClientConfig",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "Live Creditcoin route evidence for terminal runners and the TSN test UI.\n\nThe Node may mirror route identity for fast admission, but this client reads\nthe route registry and liquidity observation directly from Creditcoin. It\nnever accepts a token or executor address as runtime authority from UI data.",
-          "signatures": [],
-          "constructors": [],
-          "methods": [
-            {
-              "name": "rpcUrl",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 164,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L164"
-              }
-            },
-            {
-              "name": "registry",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "`0x${string}`",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 165,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L165"
-              }
-            },
-            {
-              "name": "routeId",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "`0x${string}`",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 166,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L166"
-              }
-            },
-            {
-              "name": "expectedChainId",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "bigint | undefined",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 167,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L167"
-              }
-            },
-            {
-              "name": "explorerBaseUrl",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string | undefined",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 168,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L168"
-              }
-            }
-          ],
-          "declaredType": null,
-          "directThrowExpressions": [],
-          "directCalls": [],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 163,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L163"
-          }
-        },
-        {
-          "name": "CreditcoinRouteEvidence",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [],
-          "constructors": [],
-          "methods": [
-            {
-              "name": "status",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "\"ready\" | \"blocked\"",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 197,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L197"
-              }
-            },
-            {
-              "name": "route",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "CreditcoinRouteState",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 198,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L198"
-              }
-            },
-            {
-              "name": "liquidity",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "CreditcoinLiquidityState",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 199,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L199"
-              }
-            },
-            {
-              "name": "logs",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string[]",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 200,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L200"
-              }
-            },
-            {
-              "name": "explorerLinks",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "{ registry: string; token: string; vault: string; }",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 201,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L201"
-              }
-            },
-            {
-              "name": "failure",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string | undefined",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 202,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L202"
-              }
-            }
-          ],
-          "declaredType": null,
-          "directThrowExpressions": [],
-          "directCalls": [],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 196,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L196"
-          }
-        },
-        {
-          "name": "CreditcoinRouteState",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [],
-          "constructors": [],
-          "methods": [
-            {
-              "name": "chainId",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "bigint",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 172,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L172"
-              }
-            },
-            {
-              "name": "routeId",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "`0x${string}`",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 173,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L173"
-              }
-            },
-            {
-              "name": "enabled",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "boolean",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 174,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L174"
-              }
-            },
-            {
-              "name": "payoutVault",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "`0x${string}`",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 175,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L175"
-              }
-            },
-            {
-              "name": "settlementToken",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "`0x${string}`",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 176,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L176"
-              }
-            },
-            {
-              "name": "destinationNetwork",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "`0x${string}`",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 177,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L177"
-              }
-            },
-            {
-              "name": "destinationChainId",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "bigint",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 178,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L178"
-              }
-            },
-            {
-              "name": "destinationExecutor",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "`0x${string}`",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 179,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L179"
-              }
-            },
-            {
-              "name": "outbox",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "`0x${string}`",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 180,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L180"
-              }
-            },
-            {
-              "name": "tokenName",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string | undefined",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 181,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L181"
-              }
-            },
-            {
-              "name": "tokenSymbol",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string | undefined",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 182,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L182"
-              }
-            },
-            {
-              "name": "tokenDecimals",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "number | undefined",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 183,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L183"
-              }
-            }
-          ],
-          "declaredType": null,
-          "directThrowExpressions": [],
-          "directCalls": [],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 171,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L171"
-          }
-        },
-        {
-          "name": "CrossChainNetwork",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [],
-          "constructors": [],
-          "methods": [],
-          "declaredType": "export type CrossChainNetwork =\n  | \"solana-devnet\"\n  | \"creditcoin-testnet\"\n  | \"base-sepolia\"\n  | \"ethereum-sepolia\";",
-          "directThrowExpressions": [],
-          "directCalls": [],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 8,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L8"
+            "line": 38,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L38"
           }
         },
         {
@@ -3976,76 +3147,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 23,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L23"
-          }
-        },
-        {
-          "name": "CrossChainUiSnapshot",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [],
-          "constructors": [],
-          "methods": [
-            {
-              "name": "status",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "\"ready\" | \"blocked\"",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 366,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L366"
-              }
-            },
-            {
-              "name": "logs",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string[]",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 367,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L367"
-              }
-            },
-            {
-              "name": "nodeRoutes",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "unknown[]",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 368,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L368"
-              }
-            },
-            {
-              "name": "creditcoin",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "CreditcoinRouteEvidence",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 369,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L369"
-              }
-            }
-          ],
-          "declaredType": null,
-          "directThrowExpressions": [],
-          "directCalls": [],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 365,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L365"
+            "line": 4,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L4"
           }
         },
         {
@@ -4066,8 +3169,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 122,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L122"
+                "line": 20,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L20"
               }
             },
             {
@@ -4078,8 +3181,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 123,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L123"
+                "line": 21,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L21"
               }
             },
             {
@@ -4090,8 +3193,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 124,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L124"
+                "line": 22,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L22"
               }
             },
             {
@@ -4102,8 +3205,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 125,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L125"
+                "line": 23,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L23"
               }
             },
             {
@@ -4114,8 +3217,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 126,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L126"
+                "line": 24,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L24"
               }
             },
             {
@@ -4126,8 +3229,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 127,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L127"
+                "line": 25,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L25"
               }
             },
             {
@@ -4138,8 +3241,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 128,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L128"
+                "line": 26,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L26"
               }
             }
           ],
@@ -4148,223 +3251,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 121,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L121"
-          }
-        },
-        {
-          "name": "loadCrossChainUiSnapshot",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "One UI-facing preflight that mirrors the terminal order:\nNode route gate first, then live Creditcoin registry/liquidity evidence.",
-          "signatures": [
-            "(input: { nodeUrl: string; route: CreditcoinRouteClientConfig; }): Promise<CrossChainUiSnapshot>"
-          ],
-          "constructors": [],
-          "methods": [],
-          "declaredType": null,
-          "directThrowExpressions": [
-            "new Error(`Node route gate HTTP ${response.status}`)"
-          ],
-          "directCalls": [
-            "fetch",
-            "input.nodeUrl.replace",
-            "response.json",
-            "Array.isArray",
-            "logs.push",
-            "String",
-            "new CreditcoinRouteClient(input.route).readEvidence"
-          ],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 376,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L376"
-          }
-        },
-        {
-          "name": "TinExitAttestationInput",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [],
-          "constructors": [],
-          "methods": [
-            {
-              "name": "settlementId",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 76,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L76"
-              }
-            },
-            {
-              "name": "sourceNetwork",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "\"solana-devnet\"",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 77,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L77"
-              }
-            },
-            {
-              "name": "destinationNetwork",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "\"creditcoin-testnet\"",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 78,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L78"
-              }
-            },
-            {
-              "name": "sealedTipHeadHash",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 79,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L79"
-              }
-            },
-            {
-              "name": "amount",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "bigint",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 80,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L80"
-              }
-            },
-            {
-              "name": "tinHash",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 81,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L81"
-              }
-            },
-            {
-              "name": "exitCommitment",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 82,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L82"
-              }
-            }
-          ],
-          "declaredType": null,
-          "directThrowExpressions": [],
-          "directCalls": [],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 75,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L75"
-          }
-        },
-        {
-          "name": "TinExitAttestationReceipt",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [],
-          "constructors": [],
-          "methods": [
-            {
-              "name": "status",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "AttestationStatus",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 86,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L86"
-              }
-            },
-            {
-              "name": "settlementId",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 87,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L87"
-              }
-            },
-            {
-              "name": "destinationNetwork",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "\"creditcoin-testnet\"",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 88,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L88"
-              }
-            },
-            {
-              "name": "creditcoinTransaction",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string | undefined",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 89,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L89"
-              }
-            },
-            {
-              "name": "sourceAnchorTransaction",
-              "memberKind": "instance",
-              "signatures": [],
-              "type": "string | undefined",
-              "docs": "",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 90,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L90"
-              }
-            }
-          ],
-          "declaredType": null,
-          "directThrowExpressions": [],
-          "directCalls": [],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 85,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L85"
+            "line": 19,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L19"
           }
         },
         {
@@ -4373,10 +3261,10 @@
             "@trustlink/tsn-sdk",
             "@trustlink/tsn-sdk/cross-chain"
           ],
-          "docs": "Application-facing TSN cross-chain façade.\n\nThis class coordinates calls to the existing Node and registry reader. It\ndeliberately does not sign Solana transactions, submit EVM transactions,\ngenerate Attestcoin proofs, or choose an executor. Those responsibilities\nremain with the Solana programs, Node, Attestcoin contracts, and Crankers.",
+          "docs": "Reads Node-admitted routes; route discovery does not authorize settlement.",
           "signatures": [],
           "constructors": [
-            "(input: { nodeUrl: string; route: CreditcoinRouteClientConfig; apiKey?: string | null; fetchImpl?: typeof fetch; }): TsnCrossChainClient"
+            "(input: { nodeUrl: string; apiKey?: string | null; fetchImpl?: typeof fetch; }): TsnCrossChainClient"
           ],
           "methods": [
             {
@@ -4386,143 +3274,24 @@
                 "(): Promise<unknown>"
               ],
               "type": null,
-              "docs": "Returns only routes admitted by the running Node gate.",
+              "docs": "Current runtime has no enabled cross-network settlement route.",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 431,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L431"
-              }
-            },
-            {
-              "name": "preflight",
-              "memberKind": "instance",
-              "signatures": [
-                "(): Promise<CrossChainUiSnapshot>"
-              ],
-              "type": null,
-              "docs": "Runs the same Node-gate then Creditcoin-registry preflight used by the UI.",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 436,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L436"
-              }
-            },
-            {
-              "name": "submitDebitIntent",
-              "memberKind": "instance",
-              "signatures": [
-                "(request: CreateIntentRequest): Promise<TsnMempoolIntent>"
-              ],
-              "type": null,
-              "docs": "Submits an already signed TSN debit intent to the Node.",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 444,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L444"
-              }
-            },
-            {
-              "name": "readCreditcoinEvidence",
-              "memberKind": "instance",
-              "signatures": [
-                "(): Promise<CreditcoinRouteEvidence>"
-              ],
-              "type": null,
-              "docs": "Reads live Creditcoin route and liquidity evidence without submitting a transaction.",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 455,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L455"
-              }
-            },
-            {
-              "name": "createCrankerHandoff",
-              "memberKind": "instance",
-              "signatures": [
-                "(input: { authorization: CreditcoinPayoutAuthorization; signature: string; }): { network: typeof CREDITCOIN_SETTLEMENT_NETWORK; authorization: CreditcoinPayoutAuthorization; signature: string; }"
-              ],
-              "type": null,
-              "docs": "Produces the exact handoff object a Cranker may submit. The SDK never\nbroadcasts it; a Cranker must enforce its own network and signer policy.",
-              "source": {
-                "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 463,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L463"
+                "line": 81,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L81"
               }
             }
           ],
           "declaredType": null,
-          "directThrowExpressions": [
-            "new Error(\"cross-chain debit intent must target an enabled TSN destination\")",
-            "new Error(\"cross-chain debit intent requires registry-bound executor, token, and route ID\")"
-          ],
+          "directThrowExpressions": [],
           "directCalls": [
             "input.nodeUrl.replace",
-            "this.node.get",
-            "loadCrossChainUiSnapshot",
-            "this.node.postIntent",
-            "this.route.readEvidence",
-            "validateCreditcoinPayoutAuthorization"
+            "this.node.get"
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 408,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L408"
-          }
-        },
-        {
-          "name": "validateCreditcoinDestination",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [
-            "(destination: CreditcoinDestination): CreditcoinDestination"
-          ],
-          "constructors": [],
-          "methods": [],
-          "declaredType": null,
-          "directThrowExpressions": [
-            "new Error(\"Creditcoin destination must be a 20-byte EVM address\")",
-            "new Error(\"Creditcoin destination token is required\")"
-          ],
-          "directCalls": [
-            "/^0x[0-9a-fA-F]{40}$/.test",
-            "destination.token.trim"
-          ],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 93,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L93"
-          }
-        },
-        {
-          "name": "validateCreditcoinPayoutAuthorization",
-          "imports": [
-            "@trustlink/tsn-sdk",
-            "@trustlink/tsn-sdk/cross-chain"
-          ],
-          "docs": "",
-          "signatures": [
-            "(authorization: CreditcoinPayoutAuthorization): CreditcoinPayoutAuthorization"
-          ],
-          "constructors": [],
-          "methods": [],
-          "declaredType": null,
-          "directThrowExpressions": [
-            "new Error(\"Creditcoin payout recipient must be a 20-byte EVM address\")",
-            "new Error(`${field} must be a bytes32 value`)",
-            "new Error(\"only the Creditcoin settlement rail is enabled\")",
-            "new Error(\"payout amount and deadline must be positive\")"
-          ],
-          "directCalls": [
-            "/^0x[0-9a-fA-F]{40}$/.test",
-            "/^0x[0-9a-fA-F]{64}$/.test"
-          ],
-          "source": {
-            "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 49,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L49"
+            "line": 65,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L65"
           }
         },
         {
@@ -4545,8 +3314,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 27,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L27"
+            "line": 8,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L8"
           }
         },
         {
@@ -4559,13 +3328,13 @@
           "signatures": [],
           "constructors": [],
           "methods": [],
-          "declaredType": "export type VerifiedDestinationEvm = \"base\" | \"ethereum\";",
+          "declaredType": "export type VerifiedDestinationEvm = \"base\" | \"arbitrum\" | \"polygon\";",
           "directThrowExpressions": [],
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 119,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L119"
+            "line": 17,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L17"
           }
         },
         {
@@ -4586,8 +3355,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 132,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L132"
+                "line": 30,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L30"
               }
             },
             {
@@ -4598,8 +3367,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 133,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L133"
+                "line": 31,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L31"
               }
             },
             {
@@ -4610,8 +3379,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 134,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L134"
+                "line": 32,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L32"
               }
             },
             {
@@ -4622,8 +3391,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 135,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L135"
+                "line": 33,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L33"
               }
             },
             {
@@ -4634,8 +3403,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 136,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L136"
+                "line": 34,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L34"
               }
             },
             {
@@ -4646,8 +3415,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-                "line": 137,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L137"
+                "line": 35,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L35"
               }
             }
           ],
@@ -4656,8 +3425,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts",
-            "line": 131,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L131"
+            "line": 29,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/cross-chain.ts#L29"
           }
         }
       ]
@@ -14172,7 +12941,7 @@
   ],
   "counts": {
     "modules": 58,
-    "exports": 400,
-    "publicMembers": 285
+    "exports": 382,
+    "publicMembers": 219
   }
 }

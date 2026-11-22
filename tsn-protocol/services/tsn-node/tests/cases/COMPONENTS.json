@@ -34,30 +34,6 @@
       "mutableCaptures": []
     },
     {
-      "source": "test_cross_chain_routes.py",
-      "line": 15,
-      "name": "test_registry_is_authority_when_mirror_omits_executor_and_token",
-      "component": "cases/cross_chain_routes/functions/f001_test_registry_is_authority_when_mirror_omits_executor_and_token.py",
-      "captures": [],
-      "mutableCaptures": []
-    },
-    {
-      "source": "test_cross_chain_routes.py",
-      "line": 30,
-      "name": "test_route_config_requires_exact_executor_and_token_fields",
-      "component": "cases/cross_chain_routes/functions/f002_test_route_config_requires_exact_executor_and_token_fields.py",
-      "captures": [],
-      "mutableCaptures": []
-    },
-    {
-      "source": "test_cross_chain_routes.py",
-      "line": 48,
-      "name": "test_registry_words_decode_route_addresses",
-      "component": "cases/cross_chain_routes/functions/f003_test_registry_words_decode_route_addresses.py",
-      "captures": [],
-      "mutableCaptures": []
-    },
-    {
       "source": "test_deposit_rpc.py",
       "line": 14,
       "name": "handle",
@@ -2297,7 +2273,51 @@
       "async": true,
       "kind": "test",
       "provenance": "Added after the original extraction; current source location only, no original test hash or historical line is assigned."
+    },
+    {
+      "source": "test_cross_chain_routes.py",
+      "name": "test_stale_configuration_cannot_enable_destination",
+      "component": "cases/cross_chain_routes/functions/f001_test_stale_configuration_cannot_enable_destination.py",
+      "reason": "November 22 external route retirement admission/discovery guard"
+    },
+    {
+      "source": "test_cross_chain_routes.py",
+      "name": "test_external_route_is_rejected_before_network_access",
+      "component": "cases/cross_chain_routes/functions/f002_test_external_route_is_rejected_before_network_access.py",
+      "reason": "November 22 external route retirement admission/discovery guard"
+    },
+    {
+      "source": "test_cross_chain_routes.py",
+      "name": "test_public_discovery_reports_no_enabled_external_route",
+      "component": "cases/cross_chain_routes/functions/f003_test_public_discovery_reports_no_enabled_external_route.py",
+      "reason": "November 22 external route retirement admission/discovery guard"
     }
   ],
-  "mappingBoundary": "Original 231 components and originalTests hashes retain their extraction provenance. newComponents separately records later authored test and fixture functions; source references do not measure execution or branch coverage."
+  "mappingBoundary": "Original 231 components and originalTests hashes retain their extraction provenance. newComponents separately records later authored test and fixture functions; source references do not measure execution or branch coverage.",
+  "retiredComponents": [
+    {
+      "source": "test_cross_chain_routes.py",
+      "line": 15,
+      "name": "test_registry_is_authority_when_mirror_omits_executor_and_token",
+      "captures": [],
+      "mutableCaptures": [],
+      "disposition": "RETIRED November 22, 2026: former external registry contract removed"
+    },
+    {
+      "source": "test_cross_chain_routes.py",
+      "line": 30,
+      "name": "test_route_config_requires_exact_executor_and_token_fields",
+      "captures": [],
+      "mutableCaptures": [],
+      "disposition": "RETIRED November 22, 2026: former external registry contract removed"
+    },
+    {
+      "source": "test_cross_chain_routes.py",
+      "line": 48,
+      "name": "test_registry_words_decode_route_addresses",
+      "captures": [],
+      "mutableCaptures": [],
+      "disposition": "RETIRED November 22, 2026: former external registry contract removed"
+    }
+  ]
 }

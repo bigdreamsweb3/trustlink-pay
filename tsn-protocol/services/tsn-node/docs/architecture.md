@@ -8,9 +8,11 @@ The actual service directory is `tsn-protocol/services/tsn-node`. The older `tsn
 
 The [November 18 deadline correction](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/references/FUNDING-DEADLINE-20261118.md) adds a bounded signed-deposit priority claim followed by epoch coordination and ordinary work. Existing lease/decision guards and accounting ordering remain intact. Unsigned recent-blockhash issuance requires confirmed visibility and 100 remaining blocks across at most three candidate attempts; the returned tuple is unchanged and Cranker still requires its separate 20-block submission margin. This scheduling and issuance change does not alter program instructions or guarantee funding before expiry.
 
+The [November 22 retirement checkpoint](verification.md#external-route-retirement-november-22-2026) removes the former external registry, payout and receipt/proof worker. Route discovery is empty and external signed-intent admission rejects before RPC or authorization. Native Solana interfaces remain unchanged; the process-only regular-file stdin harness passed 165 available checks with four existing artifact skips.
+
 ## Directory ownership
 
-The tree below shows the present functional packages and their entry or contract files. Individual functions occupy their own modules below these directories. The [active-server map](../core/component_contracts.json) retains contracts for its 147 original functions; the November 17 [production inventory](../core/component_inventory.json) covers all 566 production Python source files, 390 authored functions, named imports, class method bindings and source-interface families. [Test components](../tests/cases/COMPONENTS.json) preserve the 231 original test/fixture mappings and separately record 11 later authored components, including the funding follow-up.
+The tree below shows the present functional packages and their entry or contract files. The [active-server map](../core/component_contracts.json) retains contracts for its 147 original functions. The November 22 [production inventory](../core/component_inventory.json) records 547 production Python files and 377 authored functions after external runtime retirement. [Test components](../tests/cases/COMPONENTS.json) retain 228 original mappings, mark three former registry tests as retired and record 41 later authored components separately. Source ownership and static test references do not measure executed branches.
 
 ```text
 tsn-node/
@@ -72,9 +74,8 @@ tsn-node/
 │   ├── configuration/                Original supporting app defaults
 │   ├── security/                     Base58, public keys, threshold and route signatures
 │   ├── storage/                      Receiver, test stores and encrypted snapshots
-│   ├── networking/                   Supporting Solana/registry reads and schemas
-│   ├── transactions/                 Retained TCAP/Creditcoin authorization models
-│   ├── nodes/attestcoin/              Optional injected Creditcoin receipt workflow
+│   ├── networking/                   Solana reads, disabled external admission, schemas
+│   ├── transactions/                 Retained TCAP authorization models
 │   └── ...                           Original app import/export facades
 ├── funding_note.py                   Original public import interface
 ├── funding_snapshot_sync.py          Original public import interface
@@ -86,7 +87,6 @@ tsn-node/
 ├── credit_amount.py                  Original public import interface
 ├── dbrix_transaction_record.py       Original public import interface
 ├── gpru_crypto.py                    Original public import interface
-├── attestcoin_worker.py              Original optional-worker import interface
 ├── testing/                          Portable offline runner and dedicated guards
 ├── tests/
 │   ├── test_*.py                     Discoverable class and fixture interfaces
@@ -97,7 +97,7 @@ tsn-node/
 └── docs/                             Architecture, assessment and verification
 ```
 
-The functional names follow actual source responsibilities. There is no newly invented debit runtime, node-discovery network or speculative protocol-version layer. Retained account/permit helpers and optional cross-chain adapters keep their own boundaries instead of being relabeled as stages of current native credit.
+The functional names follow actual source responsibilities. There is no newly invented debit runtime, node-discovery network or speculative protocol-version layer. Retained native account/permit helpers keep their distinct boundaries; external-route discovery and admission are disabled.
 
 ## Runtime composition and component interfaces
 
@@ -144,7 +144,7 @@ Existing test families cover nonce/store atomicity, threshold and route signatur
 
 ## External dependencies and preservation limits
 
-[requirements.txt](../requirements.txt) retains FastAPI, Uvicorn, HTTPX, Firebase Admin, python-dotenv, PyNaCl and cryptography. Additional runtime prerequisites are the configured GPRU native library, matching credit/epoch circuit artifacts and the existing local JavaScript proving/serialization helpers. Optional Attestcoin work uses its supplied cross-chain directory, helper runner, tracker and configured EVM Cranker. Package presence or an import does not establish availability of these external systems.
+[requirements.txt](../requirements.txt) retains FastAPI, Uvicorn, HTTPX, Firebase Admin, python-dotenv, PyNaCl and cryptography. Additional runtime prerequisites are the configured GPRU native library, matching credit/epoch circuit artifacts and the existing local JavaScript proving/serialization helpers. The former external proof worker and payout runtime are retired. External route discovery is empty and admission rejects destinations before RPC; retained EVM prototypes do not enable settlement.
 
 Configuration loading remains inherited environment, `.env.local`, then `.env`, without overriding an earlier value. Active defaults stay distinct from supporting `app.config`; environment files, keys, IDs and deployment bindings are preserved. Artifact/source resolution remains anchored to the protocol checkout, and relative JSON store paths retain their working-directory meaning. The retained audit establishes HTTP contract equality, while passing synthetic authorization, serialization and state fixtures establish their own scoped behavior; live execution and private owner recovery still require separate evidence.
 

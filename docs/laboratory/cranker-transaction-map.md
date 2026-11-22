@@ -23,22 +23,19 @@ flowchart TB
     F["AUTHORIZED_FUNDING<br/>Unchanged owner-signed deposit"]
     I["TIN_OPERATION<br/>Direct creation or staged uploads + finalize"]
     H["SETTLEMENT / native credit<br/>Requires complete current-lease authorization<br/>and Mother co-signature"]
-    E["SETTLEMENT / Creditcoin<br/>Requires route-specific signed authorization"]
     C --> F
     C --> I
     C --> H
     Q["TCAP_EPOCH_ACCOUNTING<br/>Verify complete aggregate and reclassify once"]
-    C --> E
     C --> Q
   end
   subgraph S4["4 Â· Chain execution"]
     PF["TCAP deposit_private_funding_v1<br/>Reserve receives assets; funded leaf appends"]
     PI["TIP creation<br/>Registry, recovery and shared route root"]
     PH["One native-credit transaction<br/>TSNP â†’ TCAP â†’ GPRU, followed by Memo<br/>Atomic root / blinded epoch transcript"]
-    PE["Creditcoin hub executeSettlement<br/>Successful receipt + publication event"]
   end
   subgraph S5["5 Â· Evidence and recovery"]
-    O["Cranker checks branch result<br/>Receiver records CONFIRMED or FAILED<br/>Owner recovery / destination payout checked separately"]
+    O["Cranker checks branch result<br/>Receiver records CONFIRMED or FAILED<br/>Owner recovery checked separately"]
     B["Native readiness gates<br/>Root-matching snapshots, verified proof<br/>and current lease authorization"]
   end
   A --> R
@@ -46,8 +43,6 @@ flowchart TB
   F --> PF --> O
   I --> PI --> O
   H --> PH --> O
-  E --> PE --> O
-  P --> O
   Q --> O
   B -. "required before native submission" .-> H
   classDef device fill:#edf3ec,stroke:#52634f,color:#253322;
@@ -59,12 +54,12 @@ flowchart TB
   class A device;
   class R receiver;
   class N node;
-  class C,F,I,H,E,P,Q submission;
-  class PF,PI,PH,PE program;
+  class C,F,I,H,Q submission;
+  class PF,PI,PH program;
   class O,B evidence;
 ```
 
-The settlement arrows describe the implemented submitter branches and their required inputs. The later finalized-credit checkpoint establishes target-cluster acceptance for that exact original V1 transaction; it does not establish live confirmation by the replacement HTTP sender or Creditcoin execution.
+The settlement arrows describe the implemented submitter branches and their required inputs. The later finalized-credit checkpoint establishes target-cluster acceptance for that exact original V1 transaction; it does not establish live confirmation by the replacement HTTP sender or any future cross-network execution.
 
 ## Dispatcher coverage
 
@@ -77,7 +72,6 @@ The settlement arrows describe the implemented submitter branches and their requ
 | `TIN_OPERATION`, staged | Initializer + bounded uploads + finalizer | Cranker signs and pays each transaction; owner approval is checked at finalization | Separate Web3 legacy transactions, each at most 1,232 bytes | Final signature, stage address and all staging signatures |
 | `SETTLEMENT`, native | One TSNP credit call followed by its Memo | Cranker is fee payer; Mother authority also signs the exact message | Application-owned Kit V1 builder with HTTP confirmation | `TCAP_GPRU_MEMO_CREDIT_V1_CONFIRMED`, signature and root sequence |
 | `TCAP_EPOCH_ACCOUNTING` | One complete epoch-accounting call | Cranker pays; Mother co-signs exact authorized message | Native wire and HTTP confirmation | `TCAP_EPOCH_ACCOUNTING_V1_CONFIRMED` and signature |
-| `SETTLEMENT`, Creditcoin | One EVM hub call | Configured Creditcoin executor wallet signs and pays gas | Ethers `executeSettlement()` | `CREDITCOIN_SETTLEMENT_SUBMITTED`, transaction hash and message ID |
 
 The daemon does not pay the owner-signed funding transaction's network fee merely because it broadcasts that wire. TIN rent and Cranker network fees are distinct from asset amounts and protocol fee policy. Individual private credit leaves public liabilities unchanged; complete epoch accounting reclassifies the authenticated aggregate once.
 
@@ -215,13 +209,9 @@ Add `--execute` to repair only the Receiver receipt after inspection. Version 28
 
 Receiver typechecking and all 16 tests passed, including isolated receipt/lease tests covering authentication, malformed/stale requests, exact-byte/account/signature/root mismatches, preview without mutation, funding/history preservation, duplicate repair rejection and signed-attempt expiry. The offline transport test passed: V1 message bytes match the installed DBrix builder, identity precedes broadcast, send/confirmation interruptions retain identity, checkpoint failure prevents broadcast and oversized messages fail. Focused TypeScript checking included the transport, its test and Cranker caller. The receipt matcher and authenticated live endpoint preview also passed against this actual finalized transaction using read-only RPC; the [sanitized local evidence](../../protocol-test-runs/native-credit-receipt-20261102/evidence.json) retains the bounded observations. The new endpoint's live write, replacement sender's live confirmation and owner Memo recovery have not been executed by this investigation.
 
-## 5. Retained Creditcoin settlement branch
+## 5. Removed EVM settlement branch
 
-When authorization kind is `TSN_CREDITCOIN_PAYOUT_AUTHORIZATION`, the daemon passes the supplied authorization and signature to `CreditcoinCranker.submit()`. The adapter validates payout fields/signature format, reads fresh route/liquidity evidence, compares authorized route, executor and token with the registry, checks available liquidity and expiry, and sends the EVM hub `executeSettlement()` call from its configured executor wallet.
-
-The adapter waits for a receipt with `status=1` and requires a `SettlementMessagePublished` event. The daemon reports Receiver `CONFIRMED` with result stage `CREDITCOIN_SETTLEMENT_SUBMITTED`, transaction hash and Attestcoin message ID. Here CONFIRMED describes the successful **hub publication transaction**; destination payout needs its own receipt/state evidence. The current native Node authorization endpoint accepts hidden-head verification only and does not supply this branch's envelope, so its presence in the dispatcher does not establish a working service handoff.
-
-No Creditcoin route, hub deployment, gas transaction or destination payout was verified for this map. Use the [adapter](../../tsn-protocol/services/tsn-crosschain/src/creditcoin-cranker.ts), [payout validator](../../tsn-protocol/services/tsn-crosschain/src/settlement.ts) and [existing route guide](../team/cross-chain/creditcoin-cranker-adapter.md) for that separate scope.
+The former EVM payout handler and dedicated operator key-generation command were retired on 2026-11-22. Current dispatch submits permitted Solana funding, TIN operations, private credit and aggregate epoch accounting. Generic EVM research does not enable a destination route. The [historical submitter record](../team/cross-chain/retired-evm-cranker-adapter.md) preserves the distinction between a hub publication receipt and a recipient payout without presenting removed exports as runtime instructions.
 
 ## Instructions outside this daemon's dispatch
 
@@ -231,7 +221,7 @@ Use [operations](operations-and-verification.md), [verifier setup record](experi
 
 ## Evidence to retain for another run
 
-Keep work ID and payload intent ID separately, kind/state version, Node decision and commitment-check result, lease context, branch/packet sizes, public chain signatures, chain error/confirmation status, and the expected account/root/liability effects. For staging, retain every initializer/upload signature plus the distinct final signature. For Creditcoin, retain hub and destination evidence separately.
+Keep work ID and payload intent ID separately, kind/state version, Node decision and commitment-check result, lease context, branch/packet sizes, public chain signatures, chain error/confirmation status, and the expected account/root/liability effects. For staging, retain every initializer/upload signature plus the distinct final signature. For any future cross-network route, retain source, transport and destination evidence separately.
 
 Do not copy private TINs, display names, seeds, encrypted envelopes, owner authorization signatures, service credentials, witnesses or raw stores into shared documentation. Public signatures and account references support inspection but still expose timing/account relationships. The [TIN completion guide](../protocol-flows/tin-creation/05-evidence.md) and [successful run](experiments/EXP-20261102-tin-staged-finalization.md) show the bounded evidence used here.
 

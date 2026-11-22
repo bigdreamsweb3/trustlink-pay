@@ -1,12 +1,14 @@
 # TrustLink Labs / TSN
 
-The [Laboratory engineering record](docs/laboratory/README.md) connects current architecture, source references, experiments and decisions. The [public SDK handbook](tsn-protocol/tsn-docs/sdk/index.mdx) provides developer guidance, and [documentation status](docs/DOCUMENTATION_STATUS.md) records verification and remaining gaps. Contributors and future agent sessions use the [documentation maintenance manual](docs/DOCUMENTATION_MAINTENANCE.md).
+**TSN (Transfer Settlement Network)** lets applications address digital value
+with a ten-digit Transfer Identity Number (TIN). A sender reviews the resolved
+recipient and payment terms, approves wallet funding, and follows the later
+credit through its own confirmation. The current experimental implementation
+provides a concrete Solana wallet-to-TIN integration path.
 
-TrustLink Labs is building foundational infrastructure for the **Internet of
-Value** through **TSN (Transfer Settlement Network)**, a hybrid, identity-aware
-settlement network designed to make value transfer interoperable across
-applications and blockchain networks. TSN combines off-chain coordination and
-verification with on-chain authorization and settlement enforcement. **TSNP
+TrustLink Labs is building TSN as hybrid, decentralized settlement infrastructure
+for the **Internet of Value (IoV)**. It combines off-chain identity resolution,
+coordination and verification with on-chain authorization and accounting. **TSNP
 (Transfer Settlement Network Protocol)** is its on-chain settlement protocol
 program. TIP, GPRU, TCAP, and DIP have separate responsibilities; Circle's CCTP
 is an external cross-chain protocol used only at supported integrations.
@@ -16,6 +18,10 @@ a mobile money experience as its goal.
 The separately hosted TrustLink Pay site is an earlier application surface.
 **TCAP (Transfer Confidential Asset Protocol)** provides the commitment-backed private
 balance accounting used by the current credit architecture.
+
+Future EVM evaluation prioritizes Base, Arbitrum and Polygon for lower transaction costs; gas still applies and Ethereum Layer 1 integration is outside the current scope. These are planned targets, not enabled routes. TIN display names are owner-provided today; optional issuer-backed credentials remain planned. See the [integration plan](docs/CROSS-NETWORK-PAYMENTS-BUILD-PLAN.md) and [identity boundaries](docs/identity-and-tin.md).
+
+The [Laboratory engineering record](docs/laboratory/README.md) connects architecture, source references, experiments and decisions. The [public SDK handbook](tsn-protocol/tsn-docs/sdk/index.mdx) provides developer guidance, and [documentation status](docs/DOCUMENTATION_STATUS.md) records verification and remaining gaps. Contributors use the [documentation maintenance manual](docs/DOCUMENTATION_MAINTENANCE.md).
 
 ## TrustLink Labs resources
 

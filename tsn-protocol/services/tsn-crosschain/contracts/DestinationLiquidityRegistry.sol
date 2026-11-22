@@ -2,9 +2,10 @@
 pragma solidity ^0.8.28;
 
 /// @title DestinationLiquidityRegistry
-/// @notice Creditcoin registry for supported destination EVM routes and their
+/// @notice Retained registry prototype for destination EVM routes and their
 ///         latest proof-backed liquidity observations.
-/// @dev This contract does not custody tokens. A proof-verifying ASC records
+/// @dev Research only; its former verifier/executor runtime is retired.
+///      This contract does not custody tokens. A designated recorder records
 ///      observations; the destination payout vault remains the source of value.
 contract DestinationLiquidityRegistry {
     struct Route {
@@ -111,7 +112,7 @@ contract DestinationLiquidityRegistry {
         );
     }
 
-    /// @notice Configure the complete settlement route used by Creditcoin.
+    /// @notice Configure the retained prototype route; no current TSN runtime consumes it.
     /// @dev A route is not executable until its destination executor and Outbox
     ///      are both registered. The proof fields remain bound to the same route.
     function configureSettlementRoute(

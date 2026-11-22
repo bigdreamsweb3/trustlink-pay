@@ -233,9 +233,9 @@ pre-burn escrow with an operator confirmation step, or a return path (see the ex
 
 ---
 
-## DIP-Arc vs the Creditcoin destination path
+## DIP-Arc and the retired destination prototype
 
-| | Creditcoin destination route | DIP-Arc |
+| | Retired destination prototype | Proposed DIP-Arc |
 | - | - | - |
 | Direction | outbound settlement to a destination | inbound deposit into TSN |
 | Authenticity source | Attestcoin/USC proof of a source event | CCTP attestation of the burn |
@@ -245,9 +245,7 @@ pre-burn escrow with an operator confirmation step, or a return path (see the ex
 | Finality | destination-dependent | sub-second on Arc |
 | Asset model | prefunded destination vault | reserve mint, then internal credit |
 
-DIP is also the natural place to fix the first row: the outbound path leaks `tinHash` to every destination
-chain. DIP demonstrates the correct pattern — bind identity inside the attestation or the Node's records,
-publish only a commitment — and the same change belongs upstream in `TSNSettlementExecutor`.
+The former outbound prototype exposed identity/head fields; its runtime executor is now retired. This comparison preserves the privacy finding, not a current route. Future adapters must review public field disclosure and authenticated identity binding under the [integration plan](CROSS-NETWORK-PAYMENTS-BUILD-PLAN.md). The DIP-Arc column is a proposed design and does not establish deployment, attestation acceptance or end-to-end credit.
 
 ---
 

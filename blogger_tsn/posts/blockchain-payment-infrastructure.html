@@ -282,88 +282,15 @@
 
 <hr />
 
-<h2>The TSN Model: Identity-First Blockchain Payment Infrastructure</h2>
-
-<p>Transfer Settlement Network (TSN) is designed around the thesis that blockchain payments need more than asset
-  transfer infrastructure. A complete payment system requires identity, intent, authorization, privacy, and settlement
-  coordination working together as a unified protocol.</p>
-
-<p>The TSN payment flow from human intent to final blockchain settlement:</p>
-
-<p>Human intent → TIN identity → Authorization rules → GPRU routing identity → TCap confidential settlement state →
-  Final settlement finality on Solana</p>
-
-<p>Most industry infrastructure stops at:</p>
-<p>Stablecoin → Blockchain → Settlement</p>
-
-<p>TSN introduces the missing middle:</p>
-<p>Human identity → Payment intent → Authorization → Private routing identity → Confidential balance state → Settlement
-  finality</p>
-
-<p><strong>Transfer Identity Number (TIN) — The Identity Layer</strong></p>
-<p>TIN is the identity infrastructure of TSN. Instead of interacting with raw wallet addresses, participants use
-  human-readable Transfer Identity Numbers as their payment identities. TIN maps human-oriented payment identity to the
-  correct cryptographic destination without exposing wallet addresses in the payment flow. A TIN can be bound to a
-  verified real-world entity for KYC and AML compliance purposes — making identity-based blockchain payments compatible
-  with institutional regulatory requirements at scale.</p>
-
-<p><strong>GPRU — Guard Privacy Routing Unit</strong></p>
-<p>A GPRU is a temporary guarded settlement routing identity used by TSN to separate payment identity, transaction
-  routing, and public blockchain visibility. Unlike a traditional receiving wallet, a GPRU does not represent a user's
-  public account. It acts as an authorization-controlled routing layer connected to confidential settlement state
-  managed by TCap.</p>
-
-<p>This architectural distinction is important. Traditional blockchain payment models create receiving wallets for every
-  participant — each wallet holding funds, exposing a public address, and accumulating a public transaction history
-  visible to anyone on the network. TSN's GPRU model separates routing from custody entirely. Blockchain payments do not
-  need millions of private receiving wallets. They need secure settlement routing identities capable of directing
-  ownership updates while keeping balance state confidential.</p>
-
-<p><strong>TCap — Transfer Capital Layer</strong></p>
-<p>TCap is the TSN settlement state engine responsible for confidential balance accounting, asset representation,
-  authorization validation, and settlement transitions. Rather than recording balances and ownership in publicly visible
-  wallet states on the blockchain, TCap maintains a confidential settlement accounting layer where balance ownership is
-  updated privately while remaining cryptographically verifiable.</p>
-
-<p>What the blockchain network observes:</p>
-<p>TCap settlement event → final settlement output</p>
-
-<p>What observers outside the authorized settlement relationship do not see:</p>
-<p>TIN owner identity + private balance history + internal settlement relationships + counterparty information</p>
-
-<p>That is the privacy architecture. Settlement can be proven. The details of who, how much, and to whom remain
-  confidential to unauthorized parties.</p>
-
-<p><strong>Intent-Based Settlement Coordination</strong></p>
-<p>TSN introduces intent-based settlement coordination where participants express desired payment outcomes and the
-  protocol infrastructure handles the technical execution. Settlement operators called crankers process settlement
-  queues and coordinate the final execution of ownership updates across the network — translating human payment intent
-  into cryptographically correct settlement results.</p>
-
-<p><strong>Controlled Settlement Flow</strong></p>
-<p>Rather than moving large institutional values in single exposed blockchain transactions, TSN routes value through
-  controlled settlement queues of verified settlement units. A large institutional settlement becomes a sequence of
-  verified units processed in order — reducing transaction exposure, improving liquidity management, and enabling
-  settlement operators to participate in processing at institutional scale.</p>
-
-<p><strong>Non-Custodial Architecture</strong></p>
-<p>TSN coordinates settlement without ever holding user funds. Users maintain full control of their assets throughout
-  the process. The security model is: user authorization plus cryptographic verification equals completed transfer. The
-  network coordinates without becoming the custodian — eliminating custodial risk at the protocol level.</p>
-
-<p>TSN is built on Solana — chosen for sub-second transaction finality, high throughput capacity, and low network fees
-  that make the controlled settlement queue model operationally viable at the scale institutional payments require.</p>
-
-<p>External reference: <a href="https://solana.com" rel="noopener" target="_blank">Solana — high-performance blockchain
-    for institutional-scale settlement</a></p>
-<p>Internal reference: <a href="https://tsn-protocol.blogspot.com/p/tsn-flow.html">TSN Protocol Flow — how a transfer
-    executes end to end</a></p>
-<p>Internal reference: <a href="https://tsn-protocol.blogspot.com/p/about-transfer-settlement-network-tsn.html">About
-    the Transfer Settlement Network — TSN Protocol</a></p>
-<p>Internal reference: <a href="https://tsn-protocol.blogspot.com/p/trustlink-pay.html">TrustLink Pay — consumer
-    application built on TSN infrastructure</a></p>
-
-<hr />
+<h2>The TSN Model: Hybrid Internet of Value Infrastructure</h2>
+<p>Applications can address digital value through a ten-digit Transfer Identity Number (TIN). Transfer Settlement Network (TSN) is hybrid decentralized settlement protocol infrastructure for the Internet of Value, combining off-chain verification and work coordination with on-chain authorization, private-credit proof verification and reserve accounting. Solana is the current experimental domain.</p>
+<h3>Identity and exact approval</h3>
+<p>TIP manages registration, authenticated recipient-route membership and owner recovery. The sender signs a TIN-targeted intent; Node resolves the permitted route and validates current state. The owner separately approves the exact TCAP wallet deposit. A TIN is not a private key, public balance account or proof of legal identity.</p>
+<h3>Verification and confidential accounting</h3>
+<p>Receiver coordinates restricted work and leases; Node verifies confirmed funding and constructs the private witness and encrypted owner Memo. Mother authorizes TSNP, Cranker submits the permitted transaction, and TCAP invokes GPRU before advancing the shared head/nullifier root and blinded credit transcript. TCAP owns reserve custody; GPRU verifies proof relations without holding reserve tokens. Complete aggregate accounting is separate from individual credit.</p>
+<h3>Evidence and future integration</h3>
+<p>The retained November 16 Solana Devnet checkpoint verifies two private credits and complete aggregate accounting. Wallet funding, roots, token, ciphertext, accounts, timing and aggregate totals remain public; Node handles sensitive routes and openings. General unlinkability, owner recovery, confidential spending and cross-network delivery require separate evidence. Base, Arbitrum and Polygon PoS are planned lower-fee targets with distinct security assumptions; they have transaction fees. Optional verified TIN credentials are proposed work.</p>
+<p><a href="/p/tsn-flow.html">Read the current native-credit flow</a> &middot; <a href="/p/tsn-protocol-whitepaper.html">Read the whitepaper and implementation limits</a></p>
 
 <h2>What the Stack Looks Like End to End</h2>
 
@@ -453,13 +380,10 @@
   Identity Numbers (TIN), which serve as the identity layer of the TSN payment infrastructure stack.</p>
 
 <h3>What is GPRU in TSN?</h3>
-<p>GPRU stands for Guard Privacy Routing Unit. It is a temporary guarded settlement routing identity used by TSN to
-  separate payment identity, transaction routing, and public blockchain visibility. Unlike a traditional receiving
-  wallet, a GPRU does not represent a user's public account or hold funds. It acts as an authorization-controlled
-  routing layer connected to confidential settlement state managed by the TCap Transfer Capital Layer.</p>
+<p>GPRU, the Guarded Privacy Routing Unit, verifies the hidden route, private balance transition, nullifier and proof-bound Memo in the current experimental credit flow. TIP manages TIN identity and route membership; TCAP holds reserve assets and applies accounting. GPRU does not act as a receiving wallet or hold reserve tokens.</p>
 
 <h3>What is TCap in TSN?</h3>
-<p>TCap stands for Transfer Capital Layer. It is the TSN settlement state engine responsible for confidential balance
+<p>TCap stands for Transfer Confidential Asset Protocol. It is the TSN settlement state engine responsible for confidential balance
   accounting, asset representation, authorization validation, and settlement transitions. TCap maintains a confidential
   settlement accounting layer where balance ownership is updated privately while remaining cryptographically verifiable
   — allowing settlement to be proven without exposing the private financial details of the participants to unauthorized

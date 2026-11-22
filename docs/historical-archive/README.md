@@ -22,8 +22,12 @@ The [research repository](../../research/Trustlink-Research/README.md) is an ind
 
 The TLR-001 through TLR-008 papers include privacy, identity, intent/lease, ZK-PRU, TCAP, payment-graph and private-view topics. Each publication needs a version-specific source reconciliation before citation as a current guarantee. The alternate `TRL-001` directory is a short archival warning; do not silently conflate its identifier with TLR-001.
 
-[Cross-network build plan](../CROSS-NETWORK-PAYMENTS-BUILD-PLAN.md), [cross-network research](../CROSS-NETWORK-PAYMENTS-RESEARCH.md), [DIP ingress design](../dip/DIPIngress-design.md) and [Arc integration material](../expo/ARC_INTEGRATION/PROTOCOL.md) retain proposals or route-specific experiments. A route claim needs deployed contracts, funding and source/destination execution evidence. Public submissions are not a substitute for those checks.
+[Current proposed cross-network plan](../CROSS-NETWORK-PAYMENTS-BUILD-PLAN.md), [cross-network research](../CROSS-NETWORK-PAYMENTS-RESEARCH.md), [DIP ingress design](../dip/DIPIngress-design.md) and [Arc integration material](../expo/ARC_INTEGRATION/PROTOCOL.md) retain proposals or route-specific experiments. A route claim needs deployed contracts, funding and source/destination execution evidence. Public submissions are not a substitute for those checks.
 
 ## Preservation rule
 
 Record original title, path, known date/commit, former claim, current discrepancy and replacement reference. Do not fabricate an original decision date or successful experiment. If source still exports a historically described capability, distinguish its existence from active runtime use. Historical research remains useful even where its operational claims are no longer current.
+
+## Retired destination prototype
+
+The [cross-network category](../team/cross-chain/README.md) preserves exact-token, registry-authority, deployment-failure and receipt findings from the removed EVM integration. Its three destination/submitter/explorer pages now use retired-evm filenames; the [historical address register](../team/cross-chain/verified-addresses.md) retains public hashes without promoting the old network. No deployment, SDK payout or key-generation instructions remain active.

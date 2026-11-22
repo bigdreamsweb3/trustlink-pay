@@ -3,7 +3,7 @@
 This guide defines how the TSN community can help expand settlement routing
 without treating popularity as a substitute for cryptographic authorization,
 liquidity evidence, or security review. It is an internal operating guide and
-does not claim that community governance is already live on Creditcoin.
+describes proposed route governance rather than deployed community authority.
 
 ## Why community governance belongs in TSN
 
@@ -16,7 +16,7 @@ use the route.
 
 The community helps decide which routes deserve technical review and
 activation. It does not replace Node validation, the Cranker's exact
-submission boundary, Attestcoin proof verification, or the destination vault's
+submission boundary, the selected route's proof or messaging verification, or the destination vault's
 stablecoin controls.
 
 ## Community roles
@@ -48,14 +48,14 @@ flowchart TD
 
 The route is not eligible for user settlement merely because a proposal or
 vote exists. Activation requires verified contract addresses, an approved
-asset, a destination executor, an Attestcoin Inbox/Outbox path where relevant,
+asset, a destination executor, an authenticated proof or messaging path where required,
 stablecoin liquidity, route limits, and successful testnet evidence.
 
 ## Required route proposal
 
 Every proposal must include the network and chain identifiers, RPC, explorer,
 finality, native gas asset, address model, stablecoin contract and decimals,
-liquidity owner, vault, executor, Inbox/Outbox path, route ID, replay rules,
+liquidity owner, vault, executor, proof or messaging path, route ID, replay rules,
 operator keys and fees, threat model, and real Devnet/Testnet evidence.
 
 The evidence packet must contain deployment receipts, configuration calls,
@@ -82,8 +82,7 @@ activation can make it eligible for Node route admission.
 
 ## Current observed status
 
-Creditcoin core contracts are deployed on CC3 Testnet, but the Node route gate
-currently reports no configured destination routes. The proposed community
+Current Node cross-network discovery exposes no enabled destination route. Planned Base, Arbitrum and Polygon integrations require their own implementation and evidence. The proposed community
 registry has not been deployed or activated. The correct status is:
 
 > Community route governance: design documented; on-chain implementation and

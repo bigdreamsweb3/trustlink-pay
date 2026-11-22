@@ -1,16 +1,4 @@
 {
-  "slides": [
-    {
-      "id": "team",
-      "text": "BULLETIN 14 — TEAM\n\nTrustLink Labs development.\n\nTrustLink Labs — an AI-native blockchain lab building open financial infrastructure: privacy, identity, and payment protocols.\n\nOpen monorepo with SDKs, node services, cross-chain contracts & docs\nOwner: Big Dreams Web3 — independent protocol development\nTrustLink Pay presents the experimental Solana reference flow\ngithub.com/Trustlink-Labs/TSN-Protocol\ntrustlink-pay.vercel.app\n@Trustlinklabs\ntrust-link-tsn.mintlify.site",
-      "rects": [
-        {
-          "tag": "DIV",
-          "top": 319.765625,
-          "bottom": 682.234375
-        }
-      ]
-    }
-  ],
+  "slides": [],
   "errors": []
 }

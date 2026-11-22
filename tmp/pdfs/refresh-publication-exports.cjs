@@ -18,6 +18,7 @@ const {chromium} = require('C:/Users/codepara/.cache/codex-runtimes/codex-primar
   const slides=await page.locator('.slide').evaluateAll(nodes=>nodes.map(node=>node.id));
   const results=[];
   for(let i=0;i<slides.length;i++){
+    if(process.argv.includes('--resume-only'))continue;
     if(process.argv.includes('--repair') && i!==13)continue;
     await page.locator('.dot-btn').nth(i).evaluate(node=>node.click());
     await page.evaluate(()=>{
@@ -41,5 +42,5 @@ const {chromium} = require('C:/Users/codepara/.cache/codex-runtimes/codex-primar
   await page.pdf({path:path.join(root,'resume/daniel-matthew-resume-2026-updated1.pdf'),format:'A4',printBackground:true,displayHeaderFooter:false,margin:{top:'10mm',bottom:'10mm',left:'8mm',right:'8mm'}});
   fs.writeFileSync(path.join(out,'export-validation.json'),JSON.stringify({slides:results,errors},null,2));
   await browser.close();
-  console.log(`Rendered ${slides.length} deck pages and refreshed resume PDF; page errors=${errors.length}`);
+  console.log(`Rendered ${results.length} deck pages and refreshed resume PDF; page errors=${errors.length}`);
 })().catch(error=>{console.error(error);process.exitCode=1;});

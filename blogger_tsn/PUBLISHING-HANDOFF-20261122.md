@@ -32,13 +32,23 @@ Each file contains its proposed title, search description and labels. Assign the
 
 The local files in `posts/` and the privacy-first settlement cluster have revised TSN architecture sections. Apply each revised file to its corresponding existing post by title. Preserve valuable external research and its source dates. The changes remove older temporary-GPRU, per-TIN-TCAP-tip, automatic credential-verification and generalized custody/privacy claims from current TSN explanations.
 
+## Publish the public handbook
+
+Review the public handbook changes in `../tsn-protocol/tsn-docs/`, including `docs.json` navigation and the four new Overview pages: `overview/payment-solutions.mdx`, `overview/solana-integration.mdx`, `overview/cross-network-roadmap.mdx` and `overview/identity-attestations.mdx`. Publish these alongside the revised existing concept, SDK, API and operator-boundary pages through the user's normal Mintlify/repository workflow. Local MDX and example checks do not establish that the hosted handbook is updated.
+
+Keep `../docs/RUN-YOUR-OWN-TSN.md` internal; this task does not authorize publishing or promoting that operating guide.
+
+## Reconcile older indexed external copies
+
+Use `dorahacks-buidl-page/tsn-dorahacks-submission (1).md` as the revised source for any existing DoraHacks description. Older Paragraph-hosted articles and other externally hosted pitch or whitepaper copies should be manually reconciled with the current canonical whitepaper. Preserve the original dates and unique research history while correcting present-day architecture and integration claims. No external page or submission was edited by this task.
+
 ## Update the hosted pitch and exports
 
 The current 15-slide source is `../pitch-deck/index.html`. Its pitch repository is a separate checkout, so the user should review that checkout's existing changes before updating the hosted deck. The main PDF export is `../docs/decks/TSN_Pitch_Deck.pdf`; the neutral concise export is `../docs/decks/TSN_Integration_Deck_2026_Fall.pdf`. The previous campaign-named PDF is replaced by the neutral export. Both describe experimental Solana credit and planned EVM/credential work.
 
 Nine existing PNG slide exports and `../docs/decks/TSN_Pitch_Deck_contact.png` are refreshed from the current deck. The updated project submission draft and diagrams are in `dorahacks-buidl-page/`. The two vector diagrams now show the native hybrid credit flow and actual funding/accounting boundaries. `tsn_demo_storyboard.txt` marks the earlier MP4 and thumbnail as historical planning material rather than current settlement evidence.
 
-The local resume HTML and PDF also remove the obsolete network integration claim. No external resume distribution occurred.
+The resume source is `../resume/daniel-matthew-resume-2026-updated.html`; its updated three-page PDF is `../resume/daniel-matthew-resume-2026-updated1.pdf`. Both remove the obsolete network integration claim. No external resume distribution occurred.
 
 ## Request indexing after publication
 

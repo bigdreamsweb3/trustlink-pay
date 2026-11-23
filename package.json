@@ -178,6 +178,7 @@
     "git:pull:protocol": "node scripts/repo-security.mjs fetch protocol origin main",
     "git:push:current": "node scripts/repo-security.mjs push-current workspace origin main",
     "git:push:tsn-protocol": "node scripts/repo-security.mjs commit-push-all protocol origin main",
+    "git:push:pitch-deck": "node scripts/repo-security.mjs commit-push-all pitch-deck origin main",
     "git:commit:push:staged": "node scripts/repo-security.mjs commit-push workspace origin main",
     "git:commit:push:all": "node scripts/repo-security.mjs commit-push-all workspace origin main"
   },

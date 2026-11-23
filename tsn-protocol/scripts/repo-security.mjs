@@ -291,7 +291,7 @@ function approvedRepository(repoName, remoteName, branch) {
   const config = checkRepository(repo.gitDir, repoName);
   checkPrivateTracking(repo.gitDir);
   const url = validateRemote(config, repoName, remoteName, branch);
-  return { repo, url };
+  return { repo: { ...repo, remoteName }, url };
 }
 
 function currentHead(repo, branch) {
@@ -322,6 +322,11 @@ export function pushTimeoutMilliseconds(source = process.env) {
 
 export function pushReviewed(repo, url, branch, expectedHead, run = spawnSync, source = process.env) {
   const timeout = pushTimeoutMilliseconds(source);
+  // Only fixed approved URLs may be printed; never echo credential-bearing input.
+  if (!Object.values(trustedRemotes).some(remotes => Object.values(remotes).includes(url))) {
+    throw new Error("Push destination is outside the approved source list.");
+  }
+  const repositoryUrl = url.replace(/\.git$/, "");
   requireReviewedHash(expectedHead, currentHead(repo, branch));
   checkPrivateTracking(repo.gitDir, expectedHead);
   console.log(`Pushing captured ${repo.name} commit ${expectedHead}; packing and upload have a ${timeout / 1000}-second time limit.`);
@@ -329,9 +334,25 @@ export function pushReviewed(repo, url, branch, expectedHead, run = spawnSync, s
     env: { ...gitEnvironment(source), GCM_INTERACTIVE: "Never", GCM_CREDENTIAL_STORE: "wincredman", GCM_TRACE: "false", GCM_TRACE_SECRETS: "false" }, encoding: "utf8", windowsHide: true, timeout,
   });
   if (result.error || result.status !== 0) {
-    throw new Error(gitFailureMessage(result, "Approved push"));
+    throw new Error(`${gitFailureMessage(result, "Approved push")}\nRepository: ${repositoryUrl}`);
+  }
+  // A URL-based push does not refresh origin/main as a named-remote push would.
+  // Record the accepted commit locally so Git's ahead/behind display is accurate.
+  try {
+    const remoteName = repo.remoteName ?? "origin";
+    if (!/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(remoteName)) throw new Error("Invalid tracking remote.");
+    const ref = `refs/remotes/${remoteName}/${branch}`;
+    const previous = git(repo.gitDir, ["rev-parse", "--verify", "--quiet", ref]);
+    const previousHead = previous.stdout.trim() || "0".repeat(expectedHead.length);
+    const updated = git(repo.gitDir, ["update-ref", ref, expectedHead, previousHead]);
+    if (updated.status !== 0) throw new Error("Tracking ref changed concurrently.");
+  } catch {
+    console.warn("Remote push succeeded, but the local remote-tracking ref could not be refreshed; its ahead/behind display may be stale.");
   }
   console.log(`Pushed reviewed ${repo.name} commit ${expectedHead} to the approved ${branch} branch.`);
+  console.log(`Repository: ${repositoryUrl}`);
+  console.log(`Branch: ${repositoryUrl}/tree/${encodeURIComponent(branch)}`);
+  console.log(`Commit: ${repositoryUrl}/commit/${expectedHead}`);
 }
 
 export function main(args) {

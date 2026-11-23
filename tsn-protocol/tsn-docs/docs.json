@@ -45,13 +45,8 @@
             "group": "Overview",
             "pages": [
               "overview/introduction",
-              "overview/payment-solutions",
-              "overview/solana-integration",
-              "overview/cross-network-roadmap",
-              "overview/identity-attestations",
               "overview/how-it-works",
               "overview/architecture",
-              "overview/separation-of-concerns",
               "get-started/faq",
               "glossary/index"
             ]
@@ -181,10 +176,7 @@
           },
           {
             "group": "Testing and Service Interfaces",
-            "pages": [
-              "testing/verification",
-              "api-reference/services"
-            ]
+            "pages": ["testing/verification", "api-reference/services"]
           }
         ]
       },

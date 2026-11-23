@@ -2281,8 +2281,8 @@
     ]
   },
   "docs/DOCUMENTATION_STATUS.md": {
-    "status": "EXPERIMENTAL",
-    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "status": "CURRENT",
+    "reason": "Records the full TSN product vision, source retirement, bounded verification and outstanding publication/fixture limits; not a claim of completed production capabilities.",
     "evidence": [
       "docs/laboratory/architecture-map.md",
       "docs/laboratory/credit-abi.md",
@@ -2670,6 +2670,34 @@
     ]
   },
   "docs/references/TSN-POSITIONING-20261122.md": {
+    "status": "CURRENT",
+    "reason": "Records the full TSN product vision, source retirement, bounded verification and outstanding publication/fixture limits; not a claim of completed production capabilities.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "docs/REPOSITORY-SECURITY.md": {
+    "status": "EXPERIMENTAL",
+    "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+    "evidence": [
+      "docs/laboratory/architecture-map.md",
+      "docs/laboratory/credit-abi.md",
+      "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+      "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+      "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "docs/references/REPO-SECURITY-20261116.md": {
     "status": "EXPERIMENTAL",
     "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
     "evidence": [

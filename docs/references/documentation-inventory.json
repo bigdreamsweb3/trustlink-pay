@@ -238,8 +238,8 @@
     {
       "path": ".agents/architecture-terminology.md",
       "title": "TrustLink naming and protocol boundaries",
-      "sha256": "b27731110a79e2cee27820aa65a5ab6d6435fc32420814b178547c2a5fffbc5f",
-      "lines": 48,
+      "sha256": "ec81d2477f54809d2fdef722857b9d8273ea61ee582a73e3f778d4dcb96182f7",
+      "lines": 50,
       "status": "CURRENT",
       "reason": "Current naming/engineering guidance and explicit user-directed retirement scope, not execution evidence.",
       "evidence": [
@@ -254,15 +254,15 @@
       ],
       "statusStatements": [
         {
-          "line": 28,
+          "line": 30,
           "text": "The current experimental implementation centers on Solana wallet-to-TIN credit. Planned EVM evaluation prioritizes lower-fee networks such as Base, Arbitrum and Polygon; Base and Arbitrum are Ethereum Layer 2 networks, while Polygon PoS is an EVM sidechain. Gas fees still apply. Ethereum Layer 1 integration is outside the current scope because of t"
         },
         {
-          "line": 44,
+          "line": 46,
           "text": "The privacy target is confidential TIN activity and public-observer unlinkability between TCAP actions, with public wallet funding and Node access to openings/routes accepted as intentional boundaries. Current experimental private credit proves exact funded-note amount/asset membership and uses secret-derived nullifiers and freshly blinded amount c"
         },
         {
-          "line": 46,
+          "line": 48,
           "text": "Keep CURRENT implementation, scoped test/VERIFIED evidence, EXPERIMENTAL, PROPOSED, DEPRECATED, RETIRED, HISTORICAL and UNVERIFIED distinct. A protocol name, source export, compiled artifact or Devnet program match is not an end-to-end payment or security audit. ZK-PRU is retired historical context. Older per-TIN TIP/epoch flows must not be used to"
         }
       ]
@@ -762,10 +762,10 @@
     {
       "path": "docs/DOCUMENTATION_STATUS.md",
       "title": "TSN documentation reconstruction status and continuation record",
-      "sha256": "be266f58e2a805c5d7cce63e3f0b8c1c1f0547bef238a3fe60133123a479e796",
-      "lines": 401,
-      "status": "EXPERIMENTAL",
-      "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+      "sha256": "327f0c30478c9909c1c17b37eedf834d8e0781f6c059bcab2d69279cf83c6862",
+      "lines": 407,
+      "status": "CURRENT",
+      "reason": "Records the full TSN product vision, source retirement, bounded verification and outstanding publication/fixture limits; not a claim of completed production capabilities.",
       "evidence": [
         "docs/laboratory/architecture-map.md",
         "docs/laboratory/credit-abi.md",
@@ -778,127 +778,127 @@
       ],
       "statusStatements": [
         {
-          "line": 7,
+          "line": 13,
           "text": "Local whitepaper, pitch-deck source, Blogger drafts/theme, handbook, README entry points and internal records now describe TSN as hybrid, decentralized settlement infrastructure for the Internet of Value. The copy leads with ten-digit TIN addressing and the current experimental Solana wallet-to-TIN credit workflow. Lower-fee Base, Arbitrum and Poly"
         },
         {
-          "line": 21,
+          "line": 27,
           "text": "The Node inventory covers 933 files/655 functions with no AST/import/organization findings, preserving 147 original contracts/231 original test mappings/test hashes and separately listing nineteen later functions. Receiver's audit covers 756 files/618 functions with no organization/import findings. Scoped document validation passed 42 files, fiftee"
         },
         {
-          "line": 25,
+          "line": 31,
           "text": "**Historical pre-staging checkpoint.** The November 18 sequence above supersedes initial full-payload ingress and moves slow authorization before deposit signing. Original results below remain dated evidence, and exact blockhash/context checks still apply at signed attachment."
         },
         {
-          "line": 29,
+          "line": 35,
           "text": "Hash rejection within the client-reported lifetime and partial transport/context/height failure remain retryable. Terminal hash rejection requires every configured endpoint's explicit rejection and observed height beyond that lifetime. This routing hint is not an issuer signature or proof of expiry/nonexecution. Confirmed receipt reconstruction and"
         },
         {
-          "line": 35,
+          "line": 41,
           "text": "Final scoped documentation validation covers 26 files: nine MDX compilations, 23 Markdown/fence checks, 249 local links, 82 Mintlify routes, 85 repository GitHub targets and 92 anchor checks pass. No Mermaid blocks occur in this scope, and both Git-boundary whitespace checks pass. The untracked scan checked 750 affected service/test/tool files; eig"
         },
         {
-          "line": 55,
+          "line": 61,
           "text": "Internal/public ABI, lifecycle, layer, operator, security and README records were aligned with that contract. ADR-005 separately records PROPOSED mixed-action accounting: private internal debit/credit must conserve total obligations, and typed complete transcripts/category deltas are required before counting debits, transfers or exits. The public-o"
         },
         {
-          "line": 77,
+          "line": 83,
           "text": "The [later checkpoint](laboratory/experiments/EXP-20261107-private-credit-epoch.md#release-headroom-signing-availability-and-unsigned-recovery-checkpoint) distinguishes logged release expiry from the following signing-service 404/503. Node release planning now uses monotonic census/full-workflow timing, validated recent slot rate and an initial 180"
         },
         {
-          "line": 87,
+          "line": 93,
           "text": "The [latest pool checkpoint](laboratory/experiments/EXP-20261107-private-credit-epoch.md#blockhash-not-found-and-minimum-context-correction) identifies logged Kit code `7050008` as `BlockhashNotFound`. Cranker retains the confirmed blockhash response's context slot for preflight/height polling; Gateway retries exact RPC `-32016` with identical requ"
         },
         {
-          "line": 101,
+          "line": 107,
           "text": "The [funded-note experiment](laboratory/experiments/EXP-20261103-funded-note-credit.md#public-only-deposit-to-credit-regression-2026-11-05) now records a public-only comparison of the two historical signature-nullifier links and the supplied updated deposit/credit. Both historical controls reproduce exactly; the updated nullifier does not match the"
         },
         {
-          "line": 103,
+          "line": 109,
           "text": "Internal/public privacy and operator guidance distinguish removal of the former formula from actual anonymity-set size. Six finalized receipts, two historical controls and the public Poseidon leaf/root reconstruction passed; JavaScript syntax passed. Larger-set unlinkability, new recipient-registry analysis, proof forgery, deployed-byte equality an"
         },
         {
-          "line": 111,
+          "line": 117,
           "text": "The November 3–5 [funded-note replacement](laboratory/experiments/EXP-20261103-funded-note-credit.md) introduced secret-derived nullifier and exact deposit membership while retaining public credit amounts. It is historical relative to the [November 7 private-credit/epoch source](laboratory/experiments/EXP-20261107-private-credit-epoch.md). New keys"
         },
         {
-          "line": 121,
+          "line": 127,
           "text": "[ADR-005](laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md) is now EXPERIMENTAL implementation: blinded credit amount, no individual liability reclassification, sealed positive-funding pools/common release windows and separate complete epoch accounting. Node/Receiver/Cranker contracts, SDK recovery, program/circuit layouts and oper"
         },
         {
-          "line": 140,
+          "line": 146,
           "text": "The internal [Laboratory and Engineering Record](laboratory/README.md) extends the existing team and protocol-flow directories. It contains foundations, an implementation map, component/function records, the explicit native-credit account/CPI ABI, cryptography, invariants, state/route/accounting diagrams, technology roles, operations, test evidence"
         },
         {
-          "line": 156,
+          "line": 162,
           "text": "The [reconciliation register](laboratory/reconciliation-register.md) records fourteen documentation discrepancies and the later locally tested native authorization-envelope correction with source evidence. Corrections include `recipientHash` being the resolved owner commitment rather than the TIN; twelve proof inputs/thirteen IC points; implemented"
         },
         {
-          "line": 158,
+          "line": 164,
           "text": "November 2 public-signature nullifier and November 5 amount-public funded-note observations remain historical. The private-credit replacement uses secret-derived nullifiers and blinded amount commitments with separate aggregate accounting. Deposit/epoch totals, roots, points, ciphertext, accounts, timing, Node knowledge and recipient/head correlati"
         },
         {
-          "line": 174,
+          "line": 180,
           "text": "- The final [local link/navigation audit](references/link-check.json) passed with **zero issues**, including frontmatter and balanced fences. Remote URLs and anchor fragments remain unverified; uncommitted source links may not yet exist on remote main."
         },
         {
-          "line": 182,
+          "line": 188,
           "text": "The later [verifier-initialization experiment](laboratory/experiments/EXP-20261102-verifier-initialization.md) records the user's reported successful deployment, the discovered oversized initializer, the staged GPRU source/build fix and read-only root/verifier/signer checks. It requires a new GPRU deployment before enrollment. This later protocol e"
         },
         {
-          "line": 190,
+          "line": 196,
           "text": "The inventory currently covers **276 relevant documents**: 146 CURRENT, 76 UNVERIFIED, three PROPOSED, nineteen EXPERIMENTAL, twenty-six HISTORICAL, three RETIRED and three VERIFIED experiment records. No page was labeled DEPRECATED without evidence that it is actually being phased out. The [claim inventory](references/technical-claim-inventory.jso"
         },
         {
-          "line": 194,
+          "line": 200,
           "text": "Historical adoption dates, original alternatives, claimed failed experiments and external governance approvals need original records. The two reconstructed experiments and four ADRs do not invent those missing facts. Complete runtime reachability of retained debit/exit, epoch/reimbursement, threshold-provider and cross-chain paths remains unresolve"
         },
         {
-          "line": 202,
+          "line": 208,
           "text": "3. **Resolve the privacy-design discrepancy.** Decide whether public funding-to-credit linkage is acceptable for this contract. If a replacement is proposed, define the replay/security/authorization relation across program, SDK, Receiver, Node and Cranker before any implementation; do not add an undocumented compatibility path."
         },
         {
-          "line": 230,
+          "line": 236,
           "text": "The final artifact built successfully with `anchor-0.30.1 build --no-idl` under Solana 1.18.26. [Four offline SBF regressions](../scripts/tests/test_tin_route_sbf.py) passed with `.\\.venv\\Scripts\\python.exe scripts/tests/test_tin_route_sbf.py`, covering direct and staged second-route creation, independent Poseidon root expectations, stage closure, "
         },
         {
-          "line": 238,
+          "line": 244,
           "text": "The [Cranker transaction map](laboratory/cranker-transaction-map.md) documents every current daemon branch, transaction/instruction/CPI boundaries, signers/payers, transports, account/result checks and retry limitations. Laboratory, experiment, operations, TIN evidence and public Cranker pages link the record. Current registry version references we"
         },
         {
-          "line": 276,
+          "line": 282,
           "text": "Receiver `npm test` passed typechecking and all 14 tests. Node's focused hidden-head suite ran 33 tests: 31 passed and two opt-in circuit/proof tests skipped. Python syntax checks passed. A read-only invocation of the corrected live TCAP preflight passed at Devnet slot 517908759 for 100000 base units: the asset was Active/Approved, unpaused and non"
         },
         {
-          "line": 300,
+          "line": 306,
           "text": "Receiver typechecking and 16 tests passed; the offline HTTP transport test and focused TypeScript check of the transport/test/Cranker caller passed. The receipt matcher and authenticated endpoint preview passed against the real finalized transaction through read-only RPC. Replacement HTTP confirmation, endpoint live mutation and owner recovery rema"
         },
         {
-          "line": 323,
+          "line": 329,
           "text": "[Build and operate your own TSN](RUN-YOUR-OWN-TSN.md) now records reference versus independent deployments, actual tool/package/setup commands, authority/key ownership, thirteen-input artifacts, persistent .env precedence, snapshot bootstrap, service startup and SDK/application integration. Root AGENTS requires the [.agents maintenance rule](../.ag"
         },
         {
-          "line": 325,
+          "line": 331,
           "text": "The supplied failures include three Node simulation rejections and one VERIFIED funding attempt failing at Cranker submission. XP now refreshes its hash after amount approval; gateway bank failover preserves the request; Node leaves partial RPC invalidity unknown and retries HTTP 5xx/transport failures under its renewed lease. Failed funding displa"
         },
         {
-          "line": 333,
+          "line": 339,
           "text": "[ADR-005](laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md) and [the ABI](laboratory/credit-abi.md) now describe the experimental private-amount replacement. Individual credits publish blinded commitments and update root/transcript without public liability reclassification. Positive sealed pools require two wallet sources and commo"
         },
         {
-          "line": 337,
+          "line": 343,
           "text": "Both documentation trees, README diagrams, persistent operator/prover guidance and agent maintenance pointers were reconciled. Remaining current overview/lifecycle/security summaries using the old amount/signature-nullifier/per-credit liability semantics were corrected, while dated receipts remain historical. Final checks covered 276 documents, 36 "
         },
         {
-          "line": 341,
+          "line": 347,
           "text": "The user deferred public run-your-own-TSN guidance while TSN is under construction. The complete procedure remains in docs/RUN-YOUR-OWN-TSN.md with an explicit internal publication boundary. Its public MDX page and navigation entry were removed, along with promotion from both README entry points, Node/Receiver/Cranker/gateway service READMEs and th"
         },
         {
-          "line": 358,
+          "line": 364,
           "text": "TrustLink/TSN remains in development for its experimental first release, **v1**. Terminology, architecture policy, maintenance guidance, both README entry points and current private-credit explanations now distinguish that product release from existing internal instruction/account/domain encodings. Exact serialized identifiers remain source-accurat"
         },
         {
-          "line": 389,
+          "line": 395,
           "text": "The user's November 14 recovery output records resolution of `settlement-54bbac67ede3175e52ece131ca2279f3`; the subsequent Cranker log is for a different queued settlement, `settlement-62e424aa6ebf25982c65e9b498507223`, rejected with program error `6023`. The prior chat's diagnostic simulations attributed this to TCAP `InvalidFundingRoot` after acc"
         }
       ]
@@ -1111,11 +1111,20 @@
     {
       "path": "docs/REPOSITORY-SECURITY.md",
       "title": "Local repository security",
-      "sha256": "3735ae95ed4489a4de03ecdbdb9040e1ca1f3cb1dcf560c4aa3e94eec9a76473",
-      "lines": 92,
-      "status": "UNVERIFIED",
-      "reason": "Discovered and indexed; whole-document claims need source reconciliation.",
-      "evidence": [],
+      "sha256": "453695bd81bd0929f20af8a1b21c2d5ca749b06fc30e86c9a32a7e42075dcaa7",
+      "lines": 113,
+      "status": "EXPERIMENTAL",
+      "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+      "evidence": [
+        "docs/laboratory/architecture-map.md",
+        "docs/laboratory/credit-abi.md",
+        "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+        "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+        "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+        "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+        "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+        "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+      ],
       "statusStatements": []
     },
     {
@@ -1389,7 +1398,7 @@
     {
       "path": "docs/TSN-WHITEPAPER.md",
       "title": "TSN: Hybrid Settlement Infrastructure for the Internet of Value",
-      "sha256": "6b2579b5baa0f39325d9070fa92ea34c082834d3353c078ea1ca6f66c73cf939",
+      "sha256": "f6281569a5aaebaf546cce9b90443c722979d20f56f318dca866f4da76c3a57f",
       "lines": 104,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
@@ -1406,11 +1415,7 @@
       "statusStatements": [
         {
           "line": 3,
-          "text": "**Status: EXPERIMENTAL first-release v1 infrastructure; publication revised 2026-11-22.** Current descriptions follow the [architecture map](./laboratory/architecture-map.md), [private-credit ABI](./laboratory/credit-abi.md) and [cryptographic boundaries](./laboratory/cryptography.md). The retained [November 16 Devnet checkpoint](./laboratory/exper"
-        },
-        {
-          "line": 11,
-          "text": "The current experimental settlement domain is Solana. Planned EVM expansion prioritizes lower-fee networks such as Base, Arbitrum and Polygon PoS, subject to route-specific implementation and security evidence. Base and Arbitrum are Ethereum Layer 2 networks; Polygon PoS is an EVM sidechain with different security assumptions. These networks have t"
+          "text": "**Status: EXPERIMENTAL first-release v1 infrastructure; publication revised 2026-11-23.** Current descriptions follow the [architecture map](./laboratory/architecture-map.md), [private-credit ABI](./laboratory/credit-abi.md) and [cryptographic boundaries](./laboratory/cryptography.md). The retained [November 16 Devnet checkpoint](./laboratory/exper"
         },
         {
           "line": 19,
@@ -3107,11 +3112,20 @@
     {
       "path": "docs/references/REPO-SECURITY-20261116.md",
       "title": "Repository hardening verification, 2026-11-16",
-      "sha256": "4c11c001fb584ef68bdee0aeb52b5e7d41ca0d1fe1468595678d524227b88ebc",
-      "lines": 47,
-      "status": "UNVERIFIED",
-      "reason": "Discovered and indexed; whole-document claims need source reconciliation.",
-      "evidence": [],
+      "sha256": "3fdd17dac2d74c98b094205f9821082559c5a5105da57b008d0213b9055e4b61",
+      "lines": 67,
+      "status": "EXPERIMENTAL",
+      "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+      "evidence": [
+        "docs/laboratory/architecture-map.md",
+        "docs/laboratory/credit-abi.md",
+        "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
+        "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+        "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
+        "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
+        "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
+        "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+      ],
       "statusStatements": [
         {
           "line": 43,
@@ -3141,8 +3155,8 @@
     {
       "path": "docs/references/TSN-OPERATOR-GUIDE-20261105.md",
       "title": "TSN operator guide and blockhash correction record",
-      "sha256": "f221a464508f499e4ae2cdb926825d4b3c554fdcde42cf3441858c9106c09a26",
-      "lines": 193,
+      "sha256": "ede80214bf7a27c35eaefc8450f41886c4b045f216934d10914ce0c9e9089573",
+      "lines": 195,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
       "evidence": [
@@ -3173,10 +3187,10 @@
     {
       "path": "docs/references/TSN-POSITIONING-20261122.md",
       "title": "TSN positioning and integration-scope update",
-      "sha256": "ebccd4f2b2d8f70f3a0b1b44e55fac834fd5c2de1b350083eb6c2635c8c7137d",
-      "lines": 48,
-      "status": "EXPERIMENTAL",
-      "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
+      "sha256": "5ea65448dfe0a23ab616887258d2abae0c40f2ebadf77990ac9d48585a29cd76",
+      "lines": 52,
+      "status": "CURRENT",
+      "reason": "Records the full TSN product vision, source retirement, bounded verification and outstanding publication/fixture limits; not a claim of completed production capabilities.",
       "evidence": [
         "docs/laboratory/architecture-map.md",
         "docs/laboratory/credit-abi.md",
@@ -3202,10 +3216,10 @@
         },
         {
           "line": 27,
-          "text": "Root and protocol baselines were inspected; the pitch subcheckout had independent existing prompt/package changes that were preserved. Solana program IDs, keypairs, source ABIs, existing deployment state, live environment files and user-managed services remain unchanged. No Git staging, commit or push, service operation, deployment or chain transac"
+          "text": "Root and protocol baselines were inspected; the pitch subcheckout had independent existing prompt/package changes that were preserved. The agents did not change Solana program IDs, keypairs, source ABIs, existing deployment state, live environment files or user-managed services, and performed no Git staging/commit/push, service operation, deploymen"
         },
         {
-          "line": 48,
+          "line": 52,
           "text": "The [file manifest](TSN-POSITIONING-20261122-files.json) records created/updated current paths and grouped removals. Private keys, environment contents and raw stores are excluded. Historical receipts and live configuration are preserved rather than reused as current-route evidence."
         }
       ]
@@ -4257,7 +4271,7 @@
     {
       "path": "tsn-protocol/services/tsn-cranker-op-daemon/README.md",
       "title": "TSN Cranker Operator Daemon",
-      "sha256": "c51c6e6cdd952a5e7a7611fb431ad5c76d5d038a4ce205fcae34c0970bf5514d",
+      "sha256": "0d59dd5c6d7e64c49bbddd957db44fc6026d3e0dba344284650ecdee779b54d8",
       "lines": 129,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
@@ -4656,8 +4670,8 @@
     {
       "path": "tsn-protocol/services/tsn-node/docs/architecture.md",
       "title": "TSN Node modular architecture",
-      "sha256": "99bc89ca49864db2ab14b30f2ae6dffac10540daa378127b5a6102e442006039",
-      "lines": 152,
+      "sha256": "24642e41b29dbc87e599fb92f5e908cd84b9b0a80c06dc0bbaca8dae35831ce9",
+      "lines": 151,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
       "evidence": [
@@ -4676,11 +4690,11 @@
           "text": "The tree below shows the present functional packages and their entry or contract files. The [active-server map](../core/component_contracts.json) retains contracts for its 147 original functions. The November 22 [production inventory](../core/component_inventory.json) records 547 production Python files and 377 authored functions after external run"
         },
         {
-          "line": 123,
+          "line": 122,
           "text": "The [context validator](../transactions/native/funding/funding_blockhash_context.py) binds the canonical nonzero hash to the unchanged signed wire. Simulation uses its minimum bank slot; the tuple remains a client-reported routing hint rather than issuer attestation or nonexecution evidence. [Confirmed/read reconstruction](../core/schemas/confirmed"
         },
         {
-          "line": 148,
+          "line": 147,
           "text": "[requirements.txt](../requirements.txt) retains FastAPI, Uvicorn, HTTPX, Firebase Admin, python-dotenv, PyNaCl and cryptography. Additional runtime prerequisites are the configured GPRU native library, matching credit/epoch circuit artifacts and the existing local JavaScript proving/serialization helpers. The former external proof worker and payout"
         }
       ]
@@ -4716,7 +4730,7 @@
     {
       "path": "tsn-protocol/services/tsn-node/docs/verification.md",
       "title": "Modular Node verification record",
-      "sha256": "5b28e64085bd22e8812a508602b00200f25522580e8e183bbd55145a42ec58d5",
+      "sha256": "94e3b681f58b1a9b56008bd74a3d720f7a5ba16652e236c65b4ffc353db5001e",
       "lines": 104,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
@@ -4757,7 +4771,7 @@
         },
         {
           "line": 94,
-          "text": "Live funding/settlement, actual Receiver leases and renewals, complete configured proof execution, Mother signing, chain submission/confirmation, owner recovery and optional retired external execution remain outside the verified scope. Review of this modular pilot can proceed from the retained source, contract maps and scoped results; those operati"
+          "text": "Live funding/settlement, actual Receiver leases and renewals, complete configured proof execution, Mother signing, chain submission/confirmation, owner recovery remain outside that historical verified scope. The former external execution family was unverified in that checkpoint and is now retired. Review of this modular pilot can proceed from the r"
         },
         {
           "line": 98,

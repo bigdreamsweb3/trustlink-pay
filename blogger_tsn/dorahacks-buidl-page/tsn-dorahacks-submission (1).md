@@ -1,8 +1,6 @@
-## Transfer Settlement Network (TSN)
+# Transfer Settlement Network: Blockchain Identity and Settlement for Digital Value
 
-### Hybrid decentralized settlement protocol infrastructure for the Internet of Value
-
-**Status:** Revised project copy, 2026-11-22. Experimental first-release Solana implementation; planned lower-fee EVM integration and optional credential attestations. This draft is not evidence of an external submission or live payout route.
+Transfer Settlement Network (TSN) is the hybrid decentralized blockchain settlement protocol infrastructure we are building for the Internet of Value. A ten-digit TIN gives people and businesses a recognizable payment identity; owner-consented attested credentials help senders confirm the intended recipient. Users share a TIN for payments rather than treat a public wallet address as their everyday identifier, while applications connect identity to confidential value and supported settlement environments.
 
 **Track:** DeFi: payments and settlement infrastructure.
 
@@ -10,50 +8,33 @@
 
 **Documentation:** [TSN handbook](https://trust-link-tsn.mintlify.site/)
 
-![TSN hybrid infrastructure and experimental native credit](assets/tsn-hybrid-architecture.svg)
+## The payment experience
 
-## Product and problem
+A Transfer Identity Number (TIN) makes the recipient human-facing. The intended product lets a person fund a payment identity, send value, confirm who should receive it and follow a clear settlement receipt. Wallet and payment developers can build familiar interfaces while TSN coordinates exact approval, private state, asset accounting and chain-specific delivery.
 
-Transfer Settlement Network (TSN) combines off-chain verification and work coordination with on-chain authorization, proof verification and reserve accounting. A ten-digit Transfer Identity Number (TIN) gives applications a human-facing recipient identifier while keeping identity distinct from blockchain execution accounts. TrustLink Pay is the reference payment experience built on this infrastructure.
+Owner-consented, issuer-verified personal and business names are part of the recipient-assurance direction. Verification must bind the intended identity, supported issuer and claim, validity and revocation, with selective disclosure. A chosen name or wallet-control proof is not treated as legal-identity verification.
 
-Blockchain payments remain fragmented across addresses, assets, fees and network-specific settlement mechanisms. Public transfers can expose counterparties and amounts, while a displayed success or relayed message may not establish final delivery. TSN separates identity, exact owner approval, verified funding, private credit, reserve accounting and settlement evidence.
+## Why hybrid infrastructure
 
-## Current Solana credit flow
+TIP manages payment identity and authenticated route membership. TSNP authorizes on-chain settlement. TCAP governs accepted assets, reserve custody and confidential accounting, while GPRU verifies hidden route, amount, balance and nullifier relations. Receiver coordinates durable work, Node verifies and prepares private witnesses, and Cranker submits exact permitted transactions. This separation connects an accessible payment experience to explicit settlement responsibilities.
 
-1. The sender approves a canonical TIN-targeted intent, then separately signs the exact TCAP deposit.
-2. Receiver coordinates work and leases; Cranker submits the owner-signed funding wire unchanged.
-3. TCAP verifies the actual asset transfer and appends an amount-and-asset-bound funded leaf. Node requires confirmed funding before preparing settlement.
-4. Node resolves the current TIP route, constructs the private witness and owner Memo, and proves the exact funded amount transition.
-5. Mother authorizes TSNP, Cranker submits the permitted transaction, and TCAP invokes GPRU before advancing shared head/nullifier state and the blinded credit-epoch transcript.
-6. A separate complete aggregate proof covers 2-64 accepted credits and reclassifies their authenticated total. An individual credit requires only one genuine confirmed deposit.
+![TSN hybrid infrastructure and native credit foundation](assets/tsn-hybrid-architecture.svg)
 
-The November 16 retained Solana Devnet checkpoint verifies two finalized private credits and complete aggregate accounting. This copy does not establish today's deployed state, complete owner recovery, confidential debit, wallet exit or production readiness.
+## Settlement network priorities
 
-## Protocol responsibilities
+Solana is the settlement foundation. Base, Arbitrum and Polygon PoS are lower-fee EVM integration priorities for the settlement network we are building. Base and Arbitrum are Ethereum Layer 2 networks; Polygon PoS is an EVM sidechain with different security assumptions. Each route must preserve exact recipient and asset authorization, finality, replay protection, actual value delivery and recovery. Ethereum Layer 1 is outside the present low-fee focus.
 
-TIP manages TIN registration, authenticated route membership and owner recovery. TSNP is the on-chain settlement authorization program. TCAP governs accepted assets, custody reserves, funded obligations and confidential accounting. GPRU verifies hidden route, amount, balance, nullifier and Memo relations without holding reserve tokens. Receiver manages durable coordination; Node handles verification and sensitive witnesses; Cranker submits exact permitted transactions and pays its network fee.
+Gas sponsorship can simplify the user experience, but network and liquidity costs still exist. Stablecoins are the intended payment asset; proof or message infrastructure does not create funds. A supported asset-transfer mechanism or destination liquidity must supply value on the payout network.
 
-## Planned low-fee EVM integration
+## Development and evidence
 
-Base, Arbitrum and Polygon PoS are candidate destination networks. Base and Arbitrum are Ethereum Layer 2 networks; Polygon PoS is an EVM sidechain with different security assumptions. They have transaction fees, even if an application sponsors gas. Ethereum Layer 1 is outside the current priority because of the intended low-cost payment experience.
+This revised project copy describes the end-state product and its technical foundation; it is not evidence of a new external submission. The first release remains under development. The retained November 16 Solana Devnet checkpoint verifies two private wallet-funded TIN credits and complete aggregate accounting. Broader confidential spending, complete owner recovery, EVM delivery, credential-provider integration and production readiness need separate implementation and verification.
 
-Each route requires reviewed source-finality evidence, destination authentication, exact recipient and token binding, replay rejection, actual value delivery, monitoring and partial-failure recovery. A supported transfer mechanism or prefunded destination liquidity must supply the payout asset. No completed TSN EVM payout route, universal verifier or guaranteed integration order is claimed.
-
-## Proposed credential attestations
-
-A future extension could associate provider-verified personal or business credentials with a TIN for recipient confirmation. It requires owner consent, a supported issuer and schema, correct TIN binding, revocation and expiry checks, and selective disclosure. No Solana Attestation Service or Sumsub integration is claimed; wallet control and a registered name are distinct from legal-identity verification.
-
-## Privacy and security
-
-The private-credit amount is committed privately and its nullifier derives from a funding-note secret. Wallet funding, token identifiers, roots, ciphertext, accounts, timing and aggregate totals remain public; Node intentionally handles private routes and openings. Sparse or known-amount histories and public owner-registration binding can limit unlinkability. Independent cryptographic review and complete owner recovery remain separate checks.
-
-## Liquidity and fees
-
-TCAP reserve funding and aggregate liabilities belong to the Solana asset-accounting contract. Future cross-network routes need actual value-transfer support or destination liquidity. Native tokens cover network gas; stablecoins are the intended payment asset. Fee policies and operator economics must be evidenced for the particular route, rather than described as an already deployed universal fee model.
+The current native flow separates canonical intent approval, exact sender-wallet deposit approval, confirmed funding, private settlement proving and complete aggregate accounting. A single genuine confirmed deposit can support an individual private credit; the 2-64-credit minimum applies to the separate complete accounting proof. Wallet funding, roots, token identifiers, ciphertext, accounts, timing and aggregate totals remain observable, and Node handles sensitive witnesses.
 
 ## Demo and resources
 
-Demo video 1 covered TIN creation during the earlier hackathon. Demo video 2 is the planned wallet-deposit-to-TIN-credit demonstration after documentation publication. Existing media templates are historical planning assets and are not a completed current demonstration.
+Demo video 1 covered TIN creation. Demo video 2 will demonstrate wallet deposit to TIN credit after documentation publication, with actual approval, funding and settlement evidence. Earlier media templates are historical planning assets rather than current settlement proof.
 
 - [Current whitepaper](../../docs/TSN-WHITEPAPER.md)
 - [Current credit ABI](../../docs/laboratory/credit-abi.md)

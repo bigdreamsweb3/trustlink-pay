@@ -64,13 +64,16 @@ npm --prefix "C:\Users\codepara\Desktop\trust-link\tsn-protocol" run git:commit:
 
 Both stage and commit the full nonignored protocol checkout before pushing its exact commit to `https://github.com/Trustlink-Labs/TSN-Protocol.git` on `main`. Protocol `git:push:all` and the Node/Receiver/gateway `git:commit:push:all` aliases use the same whole-protocol scope, regardless of the launching directory. Root-only files are excluded from the Labs repository. For selective protocol publication, stage reviewed paths and run its `git:commit:push:staged`; for an existing commit only, use its `git:push:current`.
 
-For the explicitly requested pitch-deck publication, review its pending changes and run:
+For the explicitly requested pitch-deck publication, review its pending changes and run either equivalent command:
 
 ```powershell
+npm --prefix "C:\Users\codepara\Desktop\trust-link" run git:push:pitch-deck
 npm --prefix "C:\Users\codepara\Desktop\trust-link\pitch-deck" run push
 ```
 
-This alias uses the parent workspace's guarded helper with `commit-push-all pitch-deck origin main`. The parent tooling checkout must be present. It captures only the deck repository, preserves the checked-out branch and pushes the exact commit to `https://github.com/Trustlink-Labs/TSN-Pitch-Deck.git`; a successful push to `main` triggers that repository's Pages workflow. Pages deployment requires separate workflow/site verification.
+Both aliases use the parent workspace's guarded helper with `commit-push-all pitch-deck origin main`. The parent tooling checkout must be present. They capture only the deck repository, preserve the checked-out branch and push the exact commit to `https://github.com/Trustlink-Labs/TSN-Pitch-Deck.git`; a successful push to `main` triggers that repository's Pages workflow. The root `git:commit:push:all` task publishes the root workspace to TrustLink Pay and does not advance the deck's independent Git history. Pages deployment requires separate workflow/site verification.
+
+Every successful guarded push finishes with links to its actual approved repository, branch and captured commit. Failed network pushes include the repository link without claiming the commit was published. After Git accepts a push, the helper refreshes the selected local remote-tracking branch to that accepted commit; direct URL pushes otherwise leave `origin/main` stale. A local tracking-update failure reports a warning while preserving the successful remote result and destination links. This tracking update changes neither the checked-out branch nor pending source/index contents.
 
 Pushes now allow 15 minutes for packing and upload instead of the previous two-minute cutoff. `TRUSTLINK_GIT_PUSH_TIMEOUT_MS` accepts an integer from `30000` to `3600000` milliseconds and is validated before staging or committing. For a slower connection, set a longer limit in the PowerShell session before retrying the existing root commit:
 

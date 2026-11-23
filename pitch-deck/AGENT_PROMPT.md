@@ -106,6 +106,8 @@ node ../scripts/repo-security.mjs commit-push-all pitch-deck origin main
 
 Use it only when the user explicitly requests publication. It uses the parent workspace's guarded Git helper, so that tooling checkout must be present. It stages nonignored changes in the standalone deck repository, captures the tree and parent, commits the captured changes and pushes the exact commit to the approved deck remote on `main`, which triggers GitHub Pages deployment. An empty-change retry pushes the existing commit. The helper allows 15 minutes for packing and upload; `TRUSTLINK_GIT_PUSH_TIMEOUT_MS` accepts `30000` to `3600000` milliseconds for a different limit.
 
+From the parent workspace, `npm run git:push:pitch-deck` performs the same deck publication. The root `git:commit:push:all` task targets TrustLink Pay instead. A successful push prints links to the actual repository, branch and commit, and refreshes the deck's local `origin/main` tracking ref. A failed push prints the destination without claiming publication; GitHub Pages still requires its separate workflow/site check.
+
 ## Safe Editing Rules
 
 - Keep the deck as a simple static `index.html` site.

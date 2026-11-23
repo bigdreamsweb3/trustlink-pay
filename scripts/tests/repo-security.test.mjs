@@ -110,6 +110,66 @@ test("a timed-out push retains the captured commit and reports a safe retry", ()
   } finally { f.dispose(); }
 });
 
+test("successful pushes print the actual repository links and refresh only its tracking ref", () => {
+  const f = fixture();
+  try {
+    const head = f.initialCommit();
+    const index = readFileSync(join(f.gitDir, "index"));
+    const log = console.log;
+    const warn = console.warn;
+    const output = [];
+    console.log = (...values) => output.push(values.join(" "));
+    console.warn = (...values) => output.push(values.join(" "));
+    try {
+      for (const name of ["workspace", "protocol", "pitch-deck"]) {
+        const url = trustedRemotes[name].origin;
+        const repositoryUrl = url.replace(/\.git$/, "");
+        let invocation;
+        // The synthetic network result updates real fixture tracking metadata only.
+        pushReviewed({ name, gitDir: f.gitDir, remoteName: name }, url, "main", head, (executable, args) => {
+          invocation = { executable, args };
+          return { status: 0, stdout: "", stderr: "" };
+        }, {});
+        assert.equal(invocation.executable, gitExecutable);
+        assert.deepEqual(invocation.args.slice(-3), ["--", url, `${head}:refs/heads/main`]);
+        assert.ok(output.includes(`Repository: ${repositoryUrl}`));
+        assert.ok(output.includes(`Branch: ${repositoryUrl}/tree/main`));
+        assert.ok(output.includes(`Commit: ${repositoryUrl}/commit/${head}`));
+        assert.equal(f.git(["rev-parse", `refs/remotes/${name}/main`]), head);
+        assert.equal(f.git(["rev-parse", "HEAD"]), head);
+        assert.deepEqual(readFileSync(join(f.gitDir, "index")), index);
+      }
+      assert.ok(!output.some(line => /could not be refreshed/.test(line)));
+    } finally { console.log = log; console.warn = warn; }
+  } finally { f.dispose(); }
+});
+
+test("failed pushes show their repository without successful commit links or tracking changes", () => {
+  const f = fixture();
+  try {
+    const head = f.initialCommit();
+    const url = trustedRemotes["pitch-deck"].origin;
+    const log = console.log;
+    const output = [];
+    console.log = (...values) => output.push(values.join(" "));
+    try {
+      assert.throws(() => pushReviewed({ name: "pitch-deck", gitDir: f.gitDir }, url, "main", head,
+        () => ({ status: 128, stderr: "Authentication failed: synthetic-secret" }), {}), error => {
+        assert.match(error.message, /Repository: https:\/\/github\.com\/Trustlink-Labs\/TSN-Pitch-Deck/);
+        assert.doesNotMatch(error.message, /synthetic-secret/);
+        return true;
+      });
+      assert.ok(!output.some(line => /Pushed reviewed|^Commit:/.test(line)));
+      assert.equal(f.git(["for-each-ref", "refs/remotes"]), "");
+      let ran = false;
+      assert.throws(() => pushReviewed({ name: "pitch-deck", gitDir: f.gitDir }, "https://user:synthetic-secret@fixture.invalid/repo.git", "main", head,
+        () => { ran = true; }, {}), /outside the approved source list/);
+      assert.equal(ran, false);
+      assert.ok(!output.some(line => /synthetic-secret/.test(line)));
+    } finally { console.log = log; }
+  } finally { f.dispose(); }
+});
+
 test("URL rewrite and ambient Git injection cannot redirect the reviewed fetch", () => {
   const base = [ ["remote.origin.url", [trustedRemotes.workspace.origin]] ];
   for (const suffix of ["insteadof", "pushinsteadof"]) assert.throws(() => validateRemote(new Map([...base, [`url.https://attacker.invalid/.${suffix}`, ["https://github.com/"]]]), "workspace", "origin", "main"));

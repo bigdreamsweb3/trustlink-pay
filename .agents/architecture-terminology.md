@@ -23,7 +23,9 @@
 
 ## Public positioning and integration scope
 
-TSN is **hybrid, decentralized settlement infrastructure for the Internet of Value (IoV)**: an identity-aware network organized around settlement protocols, with off-chain verification and coordination and on-chain authorization and accounting. “Hybrid” describes that division of responsibility; Solana supplies execution, ordering, consensus and finality. “Decentralized” describes the infrastructure direction and protocol enforcement, not evidence that every service or governance role is already permissionless.
+TSN is **Transfer Settlement Network: hybrid, decentralized settlement infrastructure being built for the Internet of Value (IoV)**. A blockchain-backed ten-digit TIN is the payment identity people and businesses share instead of exchanging wallet addresses. The full product vision connects confidential balances, identity-to-identity payments, wallet payouts, owner-consented verified credentials and supported blockchain networks, with privacy and recipient confidence as the purpose. Pitch and marketing copy should explain that complete network being built, then group development progress in its own slide or section. Technical references retain precise implementation and evidence classifications.
+
+“Hybrid” describes off-chain verification and coordination with on-chain authorization and accounting. Solana supplies execution, ordering, consensus and finality. “Decentralized” describes the infrastructure direction and protocol enforcement, not evidence that every service or governance role is already permissionless.
 
 The current experimental implementation centers on Solana wallet-to-TIN credit. Planned EVM evaluation prioritizes lower-fee networks such as Base, Arbitrum and Polygon; Base and Arbitrum are Ethereum Layer 2 networks, while Polygon PoS is an EVM sidechain. Gas fees still apply. Ethereum Layer 1 integration is outside the current scope because of transaction costs. A named candidate is not an implemented adapter, funded route or completed cross-network payment.
 

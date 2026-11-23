@@ -47,27 +47,27 @@
       <!-- Legacy duplicate metadata; intentionally not rendered. -->
       <b:if cond='data:view.isPost or data:view.isPage'>
         <meta
-          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid settlement infrastructure for the Internet of Value, with ten-digit TIN identities, experimental Solana credit and planned lower-fee EVM integration.&quot;'
+          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid decentralized blockchain settlement infrastructure for the Internet of Value: ten-digit TIN payment identity, attested recipient confidence and confidential value.&quot;'
           name='description' />
         <meta expr:content='data:blog.pageTitle' property='og:title' />
         <meta
-          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid settlement infrastructure for the Internet of Value, with ten-digit TIN identities, experimental Solana credit and planned lower-fee EVM integration.&quot;'
+          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid decentralized blockchain settlement infrastructure for the Internet of Value: ten-digit TIN payment identity, attested recipient confidence and confidential value.&quot;'
           property='og:description' />
         <meta expr:content='data:blog.pageTitle' name='twitter:title' />
         <meta
-          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid settlement infrastructure for the Internet of Value, with ten-digit TIN identities, experimental Solana credit and planned lower-fee EVM integration.&quot;'
+          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid decentralized blockchain settlement infrastructure for the Internet of Value: ten-digit TIN payment identity, attested recipient confidence and confidential value.&quot;'
           name='twitter:description' />
         <b:else />
         <meta
-          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid settlement infrastructure for the Internet of Value, with ten-digit TIN identities, experimental Solana credit and planned lower-fee EVM integration.&quot;'
+          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid decentralized blockchain settlement infrastructure for the Internet of Value: ten-digit TIN payment identity, attested recipient confidence and confidential value.&quot;'
           name='description' />
         <meta expr:content='data:blog.pageTitle' property='og:title' />
         <meta
-          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid settlement infrastructure for the Internet of Value, with ten-digit TIN identities, experimental Solana credit and planned lower-fee EVM integration.&quot;'
+          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid decentralized blockchain settlement infrastructure for the Internet of Value: ten-digit TIN payment identity, attested recipient confidence and confidential value.&quot;'
           property='og:description' />
         <meta expr:content='data:blog.pageTitle' name='twitter:title' />
         <meta
-          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid settlement infrastructure for the Internet of Value, with ten-digit TIN identities, experimental Solana credit and planned lower-fee EVM integration.&quot;'
+          expr:content='data:blog.metaDescription ?: &quot;TSN is hybrid decentralized blockchain settlement infrastructure for the Internet of Value: ten-digit TIN payment identity, attested recipient confidence and confidential value.&quot;'
           name='twitter:description' />
       </b:if>
     </b:if>
@@ -75,19 +75,19 @@
     <!-- Page-aware standard and Twitter metadata. -->
     <b:if cond='data:view.isPost or data:view.isPage'>
       <meta
-        expr:content='data:view.description ?: data:blog.metaDescription ?: &quot;TSN: hybrid Internet of Value infrastructure for identity-addressed settlement and experimental Solana private credit.&quot;'
+        expr:content='data:view.description ?: data:blog.metaDescription ?: &quot;TSN: ten-digit blockchain payment identity and hybrid decentralized settlement infrastructure for the Internet of Value.&quot;'
         name='description' />
       <meta expr:content='data:view.title + &quot; | TSN Protocol&quot;' name='twitter:title' />
       <meta
-        expr:content='data:view.description ?: data:blog.metaDescription ?: &quot;TSN: hybrid Internet of Value infrastructure for identity-addressed settlement and experimental Solana private credit.&quot;'
+        expr:content='data:view.description ?: data:blog.metaDescription ?: &quot;TSN: ten-digit blockchain payment identity and hybrid decentralized settlement infrastructure for the Internet of Value.&quot;'
         name='twitter:description' />
       <b:else />
       <meta
-        expr:content='data:blog.metaDescription ?: &quot;TSN: hybrid Internet of Value infrastructure for identity-addressed settlement and experimental Solana private credit.&quot;'
+        expr:content='data:blog.metaDescription ?: &quot;TSN: ten-digit blockchain payment identity and hybrid decentralized settlement infrastructure for the Internet of Value.&quot;'
         name='description' />
       <meta content='Transfer Settlement Network | TSN Protocol' name='twitter:title' />
       <meta
-        expr:content='data:blog.metaDescription ?: &quot;TSN: hybrid Internet of Value infrastructure for identity-addressed settlement and experimental Solana private credit.&quot;'
+        expr:content='data:blog.metaDescription ?: &quot;TSN: ten-digit blockchain payment identity and hybrid decentralized settlement infrastructure for the Internet of Value.&quot;'
         name='twitter:description' />
     </b:if>
 
@@ -471,9 +471,11 @@ h1,h2,h3,.post-title,.page-shell .post-title,.page-shell h1,.update-result h2,.u
         <section aria-labelledby='home-title'>
           <div class='home-kicker'>TrustLink Labs &#183; settlement infrastructure</div>
           <h1 id='home-title'>The settlement layer for stablecoin payments.</h1>
-          <p class='dek'>Address digital value through a ten-digit payment identity. TrustLink Labs is developing TSN as
-            hybrid decentralized settlement protocol infrastructure for the Internet of Value, combining
-            off-chain verification and coordination with on-chain authorization and asset accounting.</p>
+          <p class='dek'>Transfer Settlement Network is the hybrid decentralized blockchain settlement infrastructure
+            we are building for the Internet of Value. Share a ten-digit TIN as your payment identity,
+            confirm recipients through permitted attested credentials and connect digital value to
+            supported settlement networks. Off-chain coordination and on-chain enforcement keep identity,
+            authorization, confidential assets and settlement distinct.</p>
           <div class='home-actions'>
             <a href='/p/tsn-protocol-whitepaper.html'>Read the whitepaper</a>
             <a href='/p/updates.html'>View updates</a>
@@ -490,17 +492,17 @@ h1,h2,h3,.post-title,.page-shell .post-title,.page-shell h1,.update-result h2,.u
           <article class='home-data-card'>
             <small>Implementation</small>
             <strong>TSN</strong>
-            <p>TrustLink Labs&#8217; Transfer Settlement Network for intent-based coordination.</p>
+            <p>Identity, authorization, privacy and settlement for people, businesses and applications.</p>
           </article>
           <article class='home-data-card'>
             <small>Source domain</small>
             <strong>Solana</strong>
-            <p>Source-chain accounting, commitments, policy, and settlement liability.</p>
+            <p>The settlement foundation for identity-addressed digital value.</p>
           </article>
           <article class='home-data-card'>
             <small>EVM expansion</small>
             <strong>Base / Arbitrum / Polygon PoS</strong>
-            <p>Planned lower-fee EVM targets; no live TSN payout integration is claimed.</p>
+            <p>Lower-fee integration priorities for the network we are building.</p>
           </article>
         </section>
         <section aria-labelledby='home-updates-title' class='home-updates'>

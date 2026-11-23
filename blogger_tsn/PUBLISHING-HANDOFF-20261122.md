@@ -1,10 +1,12 @@
 # TSN publication handoff: 2026-11-22
 
+**Continuation revised 2026-11-23:** Ten-digit blockchain payment identity, recipient confidence and TSN settlement infrastructure lead the product vision; implementation and proof progress remain in dedicated sections.
+
 All changes in this handoff are local. The Blogger site, GitHub Pages pitch and search-engine index have not been updated by this task. The user will publish the revised material. Demo video 2 production follows this documentation phase.
 
 ## Positioning and status
 
-Use the same core description in the site settings and page introductions: **TSN is hybrid decentralized settlement protocol infrastructure for the Internet of Value, combining ten-digit payment identities and off-chain coordination with on-chain authorization, private-credit proof verification and reserve accounting.** Solana is the current experimental domain. Base, Arbitrum and Polygon PoS are planned lower-fee EVM targets; they have fees and distinct security assumptions. Ethereum Layer 1 is outside the current integration priority.
+Use the same vision-led core description in site settings and page introductions: **Transfer Settlement Network (TSN) is the hybrid decentralized blockchain settlement protocol infrastructure we are building for the Internet of Value: ten-digit TIN payment identity, owner-consented attested recipient confidence and confidential value connected to supported settlement networks.** Explain the full intended product from that building anchor, with mobile money used only as familiar interface context. Keep implementation and proof status in a dedicated development section. Solana is the current experimental domain. Base, Arbitrum and Polygon PoS are planned lower-fee EVM targets; they have fees and distinct security assumptions. Ethereum Layer 1 is outside the current integration priority.
 
 Optional issuer-verified personal and business credentials remain proposed. Current name resolution is an owner-provided display name, with an empty verified-credential collection; the presence of signed credential-shaped data does not authenticate an issuer. Solana Attestation Service and Sumsub must not be shown as integrated TSN features or announced partners.
 
@@ -44,7 +46,7 @@ Use `dorahacks-buidl-page/tsn-dorahacks-submission (1).md` as the revised source
 
 ## Update the hosted pitch and exports
 
-The current 15-slide source is `../pitch-deck/index.html`. Its pitch repository is a separate checkout, so the user should review that checkout's existing changes before updating the hosted deck. The main PDF export is `../docs/decks/TSN_Pitch_Deck.pdf`; the neutral concise export is `../docs/decks/TSN_Integration_Deck_2026_Fall.pdf`. The previous campaign-named PDF is replaced by the neutral export. Both describe experimental Solana credit and planned EVM/credential work.
+The current 15-slide source is `../pitch-deck/index.html`. Its pitch repository is a separate checkout, so the user should review that checkout's existing changes before updating the hosted deck. The main PDF export is `../docs/decks/TSN_Pitch_Deck.pdf`; the neutral concise export is `../docs/decks/TSN_Integration_Deck_2026_Fall.pdf`. The previous campaign-named PDF is replaced by the neutral export. Both present the complete TSN identity and settlement network being built, with development evidence on its own slide.
 
 Nine existing PNG slide exports and `../docs/decks/TSN_Pitch_Deck_contact.png` are refreshed from the current deck. The updated project submission draft and diagrams are in `dorahacks-buidl-page/`. The two vector diagrams now show the native hybrid credit flow and actual funding/accounting boundaries. `tsn_demo_storyboard.txt` marks the earlier MP4 and thumbnail as historical planning material rather than current settlement evidence.
 

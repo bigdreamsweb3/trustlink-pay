@@ -1,0 +1,108 @@
+---
+title: "gpru/tin-debit-record API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/tin-debit-record.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## decryptGpruTinDebitOwnerRecordV1
+
+Authenticate this owner's compact action against an already accepted statement.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/tin-debit-record`. [Implementation, line 115](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/tin-debit-record.ts#L115).
+
+```ts
+decryptGpruTinDebitOwnerRecordV1(params: { memoPayload: string; masterSeed: Uint8Array; gpruElgamalPublicKey: Uint8Array; gpruBalanceScanPublicKeyX: Uint8Array; gpruBalanceScanPublicKeyY: Uint8Array; publicInputs: readonly string[]; expectedLeg: 0 | 1; }): { record: GpruTinDebitOwnerRecordV1; balanceBlindingDelta: string; }
+```
+
+## deriveGpruTinDebitBalancePointV1
+
+TCAP point encoding; transfer openings allow u128 accumulated balances and the empty identity.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/tin-debit-record`. [Implementation, line 37](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/tin-debit-record.ts#L37).
+
+```ts
+deriveGpruTinDebitBalancePointV1(balance: string, blinding: string): BabyJubPointV1
+```
+
+## GpruTinDebitMemoBindingV1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/tin-debit-record`. [Implementation, line 42](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/tin-debit-record.ts#L42).
+
+```ts
+export type GpruTinDebitMemoBindingV1 = {
+  leg: 0 | 1; successorPortfolioRoot: string; successorBalancePoint: { x: string; y: string };
+  actionCommitment: string; encryptedBlindingDelta: string; deltaEphemeralPublicKey: { x: string; y: string };
+};
+```
+
+## GpruTinDebitOwnerRecordV1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/tin-debit-record`. [Implementation, line 46](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/tin-debit-record.ts#L46).
+
+```ts
+export type GpruTinDebitOwnerRecordV1 = {
+  version: 1; recordType: "tsn-gpru-tin-debit-action-v1"; actionKind: 4; leg: 0 | 1;
+  sequence: string; previousMemoCommitment: string; actionCommitment: string; authorizationCommitment: string;
+  nullifier: string; tokenId: number; amountBaseUnits: string; amountCommitment: string; amountBlinding: string;
+};
+```
+
+## parseGpruTinDebitMemoBindingV1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/tin-debit-record`. [Implementation, line 53](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/tin-debit-record.ts#L53).
+
+```ts
+parseGpruTinDebitMemoBindingV1(memoPayload: string): GpruTinDebitMemoBindingV1
+```
+
+Direct failure expressions:
+
+```text
+new Error("Transfer Memo point or delta cipher is invalid")
+```
+
+## recoverGpruTinDebitOwnerOpeningV1
+
+Recover one owner's successor after the caller independently verifies this exact
+Groth16 statement and authenticates the prior opening against its selected root.
+This helper verifies records and arithmetic; it does not verify a proof or receipt.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/tin-debit-record`. [Implementation, line 131](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/tin-debit-record.ts#L131).
+
+```ts
+recoverGpruTinDebitOwnerOpeningV1(params: { memoPayload: string; masterSeed: Uint8Array; gpruElgamalPublicKey: Uint8Array; gpruBalanceScanPublicKeyX: Uint8Array; gpruBalanceScanPublicKeyY: Uint8Array; publicInputs: readonly string[]; expectedLeg: 0 | 1; priorOpening: GpruTinDebitOwnerOpeningV1; }): GpruTinDebitOwnerOpeningV1
+```
+
+Direct failure expressions:
+
+```text
+new Error("Transfer recovery requires one explicit owner leg")
+new Error("Transfer Memo differs from its verified leg statement")
+new Error("Transfer prior opening has an unsupported field set")
+new Error("Prior owner sequence and Memo disagree")
+new Error("Transfer owner record differs from its predecessor or verified statement")
+new Error("Transfer recovered balance is outside u128")
+new Error("Transfer recovered opening differs from the proof-bound successor point")
+```
+
+## validateGpruTinDebitOwnerRecordV1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/tin-debit-record`. [Implementation, line 65](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/tin-debit-record.ts#L65).
+
+```ts
+validateGpruTinDebitOwnerRecordV1(value: unknown): GpruTinDebitOwnerRecordV1
+```
+
+Direct failure expressions:
+
+```text
+new Error("Transfer owner record has an unsupported field set")
+new Error("Unsupported transfer owner record")
+new Error("Transfer record token ID must be a positive u32")
+new Error("Transfer record sequence and predecessor Memo disagree")
+new Error("Transfer private amount opening differs from its commitment")
+new Error("Transfer private action commitment differs from its statement")
+```

@@ -1,6 +1,6 @@
 {
   "scope": "Both documentation trees, .agents Markdown and AGENTS/root/protocol README entries: MDX compilation and Mermaid syntax parsing; does not test Mintlify theme/browser rendering, external links or live endpoints.",
-  "mdxCompiled": 107,
+  "mdxCompiled": 106,
   "diagramsParsed": 38,
   "failures": []
 }

@@ -7,8 +7,12 @@ import { DEFAULT_TIP_PROGRAM_ID } from "../tins.js";
 import { deriveGpruElgamalPublicKey } from "../gpru.js";
 import { deriveGpruBalanceScanKeyV1 } from "./babyjub-delta-cipher.js";
 import { decodeGpruHistoryTransactionV1, type GpruHistoryWireTransactionV1 } from "./native-credit-wire.js";
-import { decryptGpruLedgerMemoV1, parseGpruMemoBindingV1, GpruMemoAuthenticationErrorV1 } from "./transaction-record.js";
+import { decryptGpruLedgerMemoV1, parseGpruMemoBindingV1, GpruMemoAuthenticationErrorV1, assertGpruMemoActionMatchesProofV1 } from "./transaction-record.js";
 import { recoverGpruBalanceHistoryV1, type GpruDecryptedMemoActionV1 } from "./balance-history.js";
+import type { GpruTinDebitOwnerOpeningV1 } from "./tin-debit-opening.js";
+import { deriveGpruTinDebitBalancePointV1, decryptGpruTinDebitOwnerRecordV1, parseGpruTinDebitMemoBindingV1 } from "./tin-debit-record.js";
+import { buildTsnRegisterTcapTinDebitAuthorizationV1Instruction, createGpruTinDebitMemoInstructionV1, deriveGpruTinDebitAccountsV1,
+  type GpruTinDebitProofV1 } from "../tcap-gpru-tin-debit.js";
 
 const TSNP = new PublicKey("TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V");
 const MEMO = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
@@ -41,6 +45,43 @@ export type GpruFinalizedCreditV1 = {
   fundingRoot?: string;
   action: GpruDecryptedMemoActionV1["onChainAction"];
 };
+
+export type GpruFinalizedTinDebitV1 = {
+  kind: "TIN_DEBIT"; signature: string; slot: number; sequence: bigint; oldRoot: string; newRoot: string;
+  memoPayloads: [string, string]; assetEntry: string; reserveState: string; proof: GpruTinDebitProofV1;
+  action: { actionKind: 4; tokenId: number; amountCommitment: string; actionCommitment: string; authorizationCommitment: string; nullifier: string };
+};
+export type GpruFinalizedTransitionV1 = GpruFinalizedCreditV1 | GpruFinalizedTinDebitV1;
+
+/** Chain acceptance plus exact account, public digest and both compact Memo bindings. */
+export function decodeFinalizedGpruTinDebitV1(wire: GpruHistoryWireTransactionV1, signature: string, slot: number): GpruFinalizedTinDebitV1 | null {
+  check(wire.signatures[0] === signature, "receipt signature differs from transaction bytes");
+  const transfers = wire.instructions.filter(ix => ix.programId === TSNP.toBase58() && bytesToHex(ix.data.subarray(0, 8)) === disc("global:tsn_register_tcap_tin_debit_authorization_v1"));
+  if (transfers.length === 0) return null;
+  check(transfers.length === 1 && wire.instructions.length === 3 && wire.instructions[0] === transfers[0], "unsupported transfer instruction order");
+  const ix = transfers[0]!;
+  check(ix.data.length === 1128 && ix.accounts.length === 13, "unsupported transfer ABI");
+  const hex = (offset: number, size = 32) => bytesToHex(ix.data.subarray(offset, offset + size));
+  const authorizationDigest = hex(8), publicInputs = Array.from({ length: 26 }, (_, index) => hex(40 + index * 32));
+  const proof = { publicInputs, proofA: hex(872, 64), proofB: hex(936, 128), proofC: hex(1064, 64) };
+  const accounts = deriveGpruTinDebitAccountsV1({ authority: new PublicKey(ix.accounts[0]), assetEntry: new PublicKey(ix.accounts[5]), authorizationDigest });
+  const expected = buildTsnRegisterTcapTinDebitAuthorizationV1Instruction({ accounts, authorizationDigest, proof });
+  check(expected.keys.every((key, index) => key.pubkey.toBase58() === ix.accounts[index]), "noncanonical transfer account");
+  check(ix.signerAccounts.length === 1 && ix.signerAccounts[0] === ix.accounts[0]
+    && ix.writableAccounts.length === 1 && ix.writableAccounts[0] === ix.accounts[6], "noncanonical transfer account privileges");
+  check(BigInt(publicInputs[6]!.startsWith("0x") ? publicInputs[6]! : `0x${publicInputs[6]}`) <= BigInt(slot)
+    && BigInt(slot) <= BigInt(`0x${publicInputs[7]}`), "transfer receipt lies outside its authorization interval");
+  const memoPayloads = wire.instructions.slice(1).map((memo, leg) => {
+    check(memo.programId === MEMO && memo.accounts.length === 1 && memo.accounts[0] === accounts.authority.toBase58()
+      && memo.signerAccounts.length === 1 && memo.signerAccounts[0] === memo.accounts[0] && memo.writableAccounts.length === 0, "noncanonical transfer Memo signer or privileges");
+    const payload = new TextDecoder("utf-8", { fatal: true }).decode(memo.data);
+    createGpruTinDebitMemoInstructionV1({ authority: accounts.authority, payload, publicInputs, expectedLeg: leg as 0 | 1 });
+    return payload;
+  }) as [string, string];
+  return { kind: "TIN_DEBIT", signature, slot, sequence: BigInt(`0x${publicInputs[3]}`) + 1n, oldRoot: publicInputs[0]!, newRoot: publicInputs[1]!,
+    memoPayloads, assetEntry: accounts.assetEntry.toBase58(), reserveState: accounts.reserveState.toBase58(), proof,
+    action: { actionKind: 4, tokenId: Number(BigInt(`0x${publicInputs[5]}`)), amountCommitment: publicInputs[8]!, authorizationCommitment: publicInputs[9]!, actionCommitment: publicInputs[10]!, nullifier: publicInputs[11]! } };
+}
 
 /** Read current funded credits and historical twelve-input receipts for owner recovery only. */
 export function decodeFinalizedGpruCreditV1(
@@ -135,7 +176,7 @@ async function readRoot(connection: Connection): Promise<RootSnapshot> {
 }
 
 /** Require every global transition from the activated empty root through the finalized snapshot. */
-export function validateGpruGlobalCreditHistoryV1(credits: readonly GpruFinalizedCreditV1[], snapshot: RootSnapshot): void {
+export function validateGpruGlobalCreditHistoryV1(credits: readonly GpruFinalizedTransitionV1[], snapshot: RootSnapshot): void {
   check(BigInt(credits.length) === snapshot.sequence, "finalized global history is incomplete or contains unsupported transitions");
   let root = EMPTY_ROOT;
   const nullifiers = new Set<string>();
@@ -165,12 +206,12 @@ async function readRawTransaction(connection: Connection, signature: string): Pr
 /** Read only public finalized credits. No owner key material enters RPC calls. */
 export async function loadGpruFinalizedCreditHistoryV1(params: {
   connection: Connection; signal?: AbortSignal; onProgress?: (message: string) => void;
-}): Promise<{ credits: GpruFinalizedCreditV1[]; snapshot: RootSnapshot }> {
+}): Promise<{ credits: GpruFinalizedTransitionV1[]; snapshot: RootSnapshot }> {
   const aborted = () => params.signal?.throwIfAborted();
   aborted();
   const snapshot = await readRoot(params.connection);
   check(snapshot.sequence <= 10_000n, "history exceeds this reader's 10000-transition limit");
-  const credits: GpruFinalizedCreditV1[] = [];
+  const credits: GpruFinalizedTransitionV1[] = [];
   const seen = new Set<string>();
   let before: string | undefined;
   // Admin transactions also touch the shared root; bound scanning explicitly.
@@ -190,10 +231,10 @@ export async function loadGpruFinalizedCreditHistoryV1(params: {
       check(typeof encoded === "string" && encoded.length <= 5464 && /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded),
         "invalid raw transaction encoding");
       const wire = decodeGpruHistoryTransactionV1(Buffer.from(encoded, "base64"));
-      const credit = decodeFinalizedGpruCreditV1(wire, entry.signature, entry.slot);
+      const credit = decodeFinalizedGpruCreditV1(wire, entry.signature, entry.slot) ?? decodeFinalizedGpruTinDebitV1(wire, entry.signature, entry.slot);
       if (credit) credits.push(credit);
     }
-    params.onProgress?.(`Reading finalized TIN balance history (${credits.length} shared credits checked)...`);
+    params.onProgress?.(`Reading finalized TIN balance history (${credits.length} shared transitions checked)...`);
     if (BigInt(credits.length) >= snapshot.sequence) break;
     before = signatures[signatures.length - 1].signature;
   }
@@ -206,7 +247,7 @@ export async function loadGpruFinalizedCreditHistoryV1(params: {
   return { credits, snapshot };
 }
 
-async function resolveAsset(connection: Connection, credit: GpruFinalizedCreditV1, minContextSlot: number) {
+async function resolveAsset(connection: Connection, credit: GpruFinalizedTransitionV1, minContextSlot: number) {
   const address = new PublicKey(credit.assetEntry);
   const response = await connection.getAccountInfoAndContext(address, { commitment: "finalized", minContextSlot });
   const account = response.value;
@@ -222,14 +263,13 @@ async function resolveAsset(connection: Connection, credit: GpruFinalizedCreditV
   return { mint: mint.toBase58(), decimals: data[244] };
 }
 
-export async function loadTinGpruTokenBalancesV1(params: {
+type OwnerHistoryParams = {
   connection: Connection; masterSeed: Uint8Array; gpruElgamalPublicKey: Uint8Array;
   gpruBalanceScanPublicKeyX: Uint8Array; gpruBalanceScanPublicKeyY: Uint8Array;
   signal?: AbortSignal; onProgress?: (message: string) => void;
-}): Promise<{
-  tokenBalances: Array<{ tokenId: number; mint: string; decimals: number; balanceBaseUnits: string }>;
-  latestGlobalSequence: string; latestOwnerSequence: string; actionCount: number;
-}> {
+};
+
+async function loadTinGpruOwnerHistoryV1(params: OwnerHistoryParams) {
   check(bytesToHex(deriveGpruElgamalPublicKey(params.masterSeed)) === bytesToHex(params.gpruElgamalPublicKey),
     "owner seed differs from the registered GPRU key");
   const scanKey = deriveGpruBalanceScanKeyV1(params.masterSeed);
@@ -239,29 +279,98 @@ export async function loadTinGpruTokenBalancesV1(params: {
       "owner seed differs from the registered balance scan key");
   } finally { scanKey.secret = 0n; }
   const { credits, snapshot } = await loadGpruFinalizedCreditHistoryV1(params);
-  const actions: GpruDecryptedMemoActionV1[] = [];
+  const actions: Array<{ sequence: string; memoCommitment: string }> = [];
+  const balances = new Map<number, bigint>();
+  const blindings = new Map<number, bigint>();
+  let ownerSequence = 0n, previousMemo = "0".repeat(64);
   const assets = new Map<number, { mint: string; decimals: number; address: string }>();
+  const latestPoints = new Map<number, { x: string; y: string }>();
   for (const credit of credits) {
     params.signal?.throwIfAborted();
-    let record;
-    try { record = decryptGpruLedgerMemoV1({ ...params, memoPayload: credit.memoPayload }); }
+    let owned: { record: { sequence: string; previousMemoCommitment: string; tokenId: number; amountBaseUnits: string }; delta: bigint;
+      memoPayload: string; point: { x: string; y: string }; sign: bigint } | undefined;
+    try {
+      if ("kind" in credit) {
+        for (const leg of [0, 1] as const) {
+          const memoPayload = credit.memoPayloads[leg];
+          try {
+            const decoded = decryptGpruTinDebitOwnerRecordV1({ ...params, memoPayload, publicInputs: credit.proof.publicInputs, expectedLeg: leg });
+            check(!owned, "both transfer legs authenticate under one owner");
+            owned = { record: decoded.record, delta: BigInt(decoded.balanceBlindingDelta), memoPayload,
+              point: parseGpruTinDebitMemoBindingV1(memoPayload).successorBalancePoint, sign: leg === 0 ? -1n : 1n };
+          } catch (error) { if (!(error instanceof GpruMemoAuthenticationErrorV1)) throw error; }
+        }
+        if (!owned) continue;
+      } else {
+        const record = decryptGpruLedgerMemoV1({ ...params, memoPayload: credit.memoPayload });
+        assertGpruMemoActionMatchesProofV1(record, credit.action);
+        owned = { record, delta: BigInt(record.balanceBlindingDelta), memoPayload: credit.memoPayload,
+          point: parseGpruMemoBindingV1(credit.memoPayload).successorBalancePoint, sign: record.actionKind === 1 ? 1n : -1n };
+      }
+    }
     catch (error) {
       // All recipients share this root. Skip only well-framed records whose
       // Secretbox cannot open under this owner's registered key.
       if (error instanceof GpruMemoAuthenticationErrorV1) continue;
       throw error;
     }
-    actions.push({ memoPayload: credit.memoPayload, record, onChainAction: credit.action });
+    const { record, memoPayload, delta, point, sign } = owned!;
+    check(BigInt(record.sequence) === ownerSequence + 1n, "owner Memo history has a sequence gap");
+    check(record.previousMemoCommitment === previousMemo, "owner Memo history has a predecessor gap");
+    check(record.tokenId === credit.action.tokenId, "owner record token differs from accepted action");
+    const amount = (balances.get(record.tokenId) ?? 0n) + sign * BigInt(record.amountBaseUnits);
+    check(amount >= 0n && amount < (1n << 128n), "owner balance is outside u128");
+    const blind = ((blindings.get(record.tokenId) ?? 0n) + delta) % 2736030358979909402780800718157159386076813972158567259200215660948447373041n;
+    const derivedPoint = deriveGpruTinDebitBalancePointV1(amount.toString(), blind.toString());
+    check(derivedPoint.x.toString(16).padStart(64, "0") === point.x && derivedPoint.y.toString(16).padStart(64, "0") === point.y,
+      "owner opening differs from accepted successor point");
+    balances.set(record.tokenId, amount); blindings.set(record.tokenId, blind);
+    ownerSequence += 1n; previousMemo = field(hash(new TextEncoder().encode(memoPayload)));
+    actions.push({ sequence: record.sequence, memoCommitment: previousMemo });
+    latestPoints.set(record.tokenId, point);
     const existing = assets.get(credit.action.tokenId);
     if (existing) check(existing.address === credit.assetEntry, "one token ID names multiple asset entries");
     else assets.set(credit.action.tokenId, { ...await resolveAsset(params.connection, credit, snapshot.slot), address: credit.assetEntry });
   }
-  const recovered = actions.length ? recoverGpruBalanceHistoryV1(actions) : null;
+  const recovered = actions.length ? { latestSequence: ownerSequence.toString(), actions,
+    balances: [...balances.entries()].sort(([a], [b]) => a - b).map(([tokenId, amount]) => ({ tokenId,
+      amountBaseUnits: amount.toString(), blindingScalar: blindings.get(tokenId)!.toString() })) } : null;
+  return { recovered, assets, snapshot, latestPoints, actionCount: actions.length };
+}
+
+export async function loadTinGpruTokenBalancesV1(params: OwnerHistoryParams): Promise<{
+  tokenBalances: Array<{ tokenId: number; mint: string; decimals: number; balanceBaseUnits: string }>;
+  latestGlobalSequence: string; latestOwnerSequence: string; actionCount: number;
+}> {
+  const { recovered, assets, snapshot, actionCount } = await loadTinGpruOwnerHistoryV1(params);
   return {
     tokenBalances: (recovered?.balances ?? []).map(balance => ({ tokenId: balance.tokenId,
       mint: assets.get(balance.tokenId)!.mint, decimals: assets.get(balance.tokenId)!.decimals,
       balanceBaseUnits: balance.amountBaseUnits })),
     latestGlobalSequence: snapshot.sequence.toString(), latestOwnerSequence: recovered?.latestSequence ?? "0",
-    actionCount: actions.length,
+    actionCount,
   };
+}
+
+/** Private owner-seed scope only; the high-level wallet-authorized callback owns consent. */
+export async function loadTinGpruDebitOpeningV1(params: OwnerHistoryParams & {
+  tokenId: number; expectedGlobalRoot: string; expectedRootSequence: string;
+}): Promise<GpruTinDebitOwnerOpeningV1> {
+  check(Number.isInteger(params.tokenId) && params.tokenId > 0 && params.tokenId <= 0xffff_ffff,
+    "transfer opening requires a positive u32 token ID");
+  const { recovered, snapshot, latestPoints } = await loadTinGpruOwnerHistoryV1(params);
+  const current = await readRoot(params.connection);
+  check(snapshot.currentRoot === params.expectedGlobalRoot && snapshot.sequence.toString() === params.expectedRootSequence
+    && current.currentRoot === snapshot.currentRoot && current.previousRoot === snapshot.previousRoot
+    && current.sequence === snapshot.sequence, "transfer opening does not match the selected current root and sequence");
+  params.signal?.throwIfAborted();
+  const selected = recovered?.balances.find(balance => balance.tokenId === params.tokenId);
+  if (selected) {
+    const point = deriveGpruTinDebitBalancePointV1(selected.amountBaseUnits, selected.blindingScalar);
+    const expected = latestPoints.get(params.tokenId)!;
+    check(point.x.toString(16).padStart(64, "0") === expected.x && point.y.toString(16).padStart(64, "0") === expected.y,
+      "recovered transfer opening differs from the finalized owner balance point");
+  }
+  return { tokenId: params.tokenId, balance: selected?.amountBaseUnits ?? "0", blinding: selected?.blindingScalar ?? "0",
+    sequence: recovered?.latestSequence ?? "0", previousMemoCommitment: recovered?.actions.at(-1)?.memoCommitment ?? "0".repeat(64) };
 }

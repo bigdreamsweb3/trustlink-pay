@@ -23,6 +23,7 @@ import { caseRpcTransportJsonRpcErrorsAndMissingDataAreFailures } from "./rpc-tr
 import { caseCheckpointAuthorizationPayloadAndFundingMustRetainExactCorrespon } from "./checkpoint-authorization-payload-and-funding-must-retain-exact-correspon.mjs";
 import { caseConcurrentWorkAuthorizationOrFundingChangesRejectTheEntireDispo } from "./concurrent-work-authorization-or-funding-changes-reject-the-entire-dispo.mjs";
 import { caseExecutionRecordsNonexecutionPreservesOriginalsAndPermitsTheNextundefined } from "./execution-records-nonexecution-preserves-originals-and-permits-the-next-.mjs";
+import { debitWithoutFunding } from "./debit-without-funding.mjs";
 export async function caseExpiredFailedCreditResolvesOnlyWithAnUnchangedFinalizedRootRet(t) {
     const directory = await mkdtemp(path.join(os.tmpdir(), "tsn-nonexecution-"));
     const names = ["TSN_RECEIVER_LOCAL_FILE", "TSN_RECEIVER_NODE_API_KEY", "TSN_RPC_URL"];
@@ -32,7 +33,7 @@ export async function caseExpiredFailedCreditResolvesOnlyWithAnUnchangedFinalize
     process.env.TSN_RECEIVER_NODE_API_KEY = "synthetic-recovery-key";
     process.env.TSN_RPC_URL = "https://offline.invalid";
     try {
-        await compileReceiverFixture(directory, ["work-contract.ts", "failed-settlement-resolution.ts", "local-firestore.ts", "store.ts", "settlement-retry.ts", "native-work-retry.ts", "node-authorizations.ts", "auth.ts"], { routes: [{ path: "app/api/internal/node/work/resolve-failed/route.ts", output: "route" }] });
+        await compileReceiverFixture(directory, ["work-contract.ts", "failed-settlement-resolution.ts", "local-firestore.ts", "store.ts", "settlement-retry.ts", "native-work-retry.ts", "node-authorizations.ts", "auth.ts", "http/api/work-status/by-id/GET.ts"], { routes: [{ path: "app/api/internal/node/work/resolve-failed/route.ts", output: "route" }] });
         for (const [name, source] of Object.entries({
             firebase: 'import {localDb} from "./local-firestore.mjs";export const db=localDb;export const workCollection=db.collection("tsn_receiver_work");',
             "firestore-stub": "export const FieldPath={};export const Timestamp={};",
@@ -49,6 +50,7 @@ export async function caseExpiredFailedCreditResolvesOnlyWithAnUnchangedFinalize
         const { resolveFailedSettlement } = await load("failed-settlement-resolution");
         const { leaseForNode } = await load("store");
         const { POST } = await load("route");
+        const { GET: getPublicStatus } = await load("http/api/work-status/by-id/GET");
         const { wakes, setWakeCheck } = await load("node-wake");
         const TCAP = new PublicKey("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
         const [rootAddress, bump] = PublicKey.findProgramAddressSync([Buffer.from("tcap:commitment-root:v1")], TCAP);
@@ -89,6 +91,11 @@ export async function caseExpiredFailedCreditResolvesOnlyWithAnUnchangedFinalize
         await t.test("checkpoint, authorization, payload and funding must retain exact correspondence", caseCheckpointAuthorizationPayloadAndFundingMustRetainExactCorrespon.bind(null, work, transition, reset, rpcFixture, resolveFailedSettlement, params, calls, wakes, funding));
         await t.test("concurrent work, authorization or funding changes reject the entire disposition", caseConcurrentWorkAuthorizationOrFundingChangesRejectTheEntireDispo.bind(null, reset, rpcFixture, resolveFailedSettlement, params, workCollection, id, wakes, db, work, funding));
         await t.test("execution records nonexecution, preserves originals and permits the next normal lease", caseExecutionRecordsNonexecutionPreservesOriginalsAndPermitsTheNextundefined.bind(null, reset, rpcFixture, POST, request, params, workCollection, id, hasResolvedNonExecution, work, funding, wakes, db, leaseForNode, next, resolveFailedSettlement, payloadCommitment));
+        await t.test("failed TIN-Debit resolves without inventing a funding record", debitWithoutFunding.bind(null, {
+          work, transition, createReceivedWork, workCollection, db, resolveFailedSettlement, hasResolvedNonExecution,
+          rpcFixture, setWakeCheck, assertDurableResolutionBeforeWake, payloadCommitment,
+          getPublicStatus,
+        }));
     }
     finally {
         globalThis.fetch = realFetch;

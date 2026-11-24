@@ -12,7 +12,7 @@ export async function leaseForNode(dependencies: Pick<WorkDependencies, "db" | "
         return work;
     if (work.kind === "SETTLEMENT")
         return await getWorkForNode(dependencies, work.id);
-    if (work.kind !== "AUTHORIZED_FUNDING")
+    if (work.kind !== "AUTHORIZED_FUNDING" && work.kind !== "TIN_DEBIT")
         return work;
     const envelope = work.payload.nodeEncryptedPayload;
     if (!envelope || typeof envelope !== "object")

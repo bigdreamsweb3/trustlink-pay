@@ -13,6 +13,7 @@ import { bytes } from "./bytes";
 import { assertPermissions } from "./assert-permissions";
 import { matchesExpectedAccount } from "./matches-expected-account";
 import { isMotherAuthority } from "./is-mother-authority";
+import { assertTinDebitReceipt } from "./assert-tin-debit-receipt";
 import { TSNP, TCAP, TIP, GPRU } from "./configuration";
 
 /** assertSettlementReceipt component. Inputs and results retain the original settlement-reconciliation contract; declared dependencies identify replaceable ports. Errors propagate in their original order. */
@@ -26,7 +27,7 @@ export function assertSettlementReceipt(work: ReceiverWork, signature: string, r
   if (wire.length > 4096 || wire[0] !== 0x81 || wire[1] !== 2 || wire.length < 170) throw new Error("SETTLEMENT_RECEIPT_INVALID_WIRE");
   const message = wire.subarray(0, -128);
   const mask = message.readUInt32LE(4), count = message[41];
-  if (message[40] !== (coordination ? 1 : 2) || mask !== 12 || count < 2 || count > 96) throw new Error("SETTLEMENT_RECEIPT_INVALID_WIRE");
+  if (message[40] !== (coordination ? 1 : work.kind === "TIN_DEBIT" ? 3 : 2) || mask !== 12 || count < 2 || count > 96) throw new Error("SETTLEMENT_RECEIPT_INVALID_WIRE");
   const keys = Array.from({ length: count }, receiptPublicKey.bind(null, { message }));
   if ((reportOwner && keys[0].toBase58() !== reportOwner)
       || (work.result?.signature && (
@@ -38,7 +39,7 @@ export function assertSettlementReceipt(work: ReceiverWork, signature: string, r
   let cursor = 42 + count * 32;
   if (message.readUInt32LE(cursor) !== 1_400_000 || message.readUInt32LE(cursor + 4) !== 64 * 1024 * 1024) throw new Error("SETTLEMENT_RECEIPT_INVALID_WIRE");
   cursor += 8;
-  const parsed = parseReceiptInstructions(message, cursor, count, coordination ? 1 : 2, keys);
+  const parsed = parseReceiptInstructions(message, cursor, count, coordination ? 1 : work.kind === "TIN_DEBIT" ? 3 : 2, keys);
   const instructions = parsed.instructions;
   cursor = parsed.cursor;
   if (cursor !== message.length) throw new Error("SETTLEMENT_RECEIPT_INVALID_WIRE");
@@ -54,6 +55,7 @@ export function assertSettlementReceipt(work: ReceiverWork, signature: string, r
   const motherData = Buffer.from(mother?.data?.[0] ?? "", "base64");
   if (mother?.owner !== TSNP.toBase58() || !motherData.subarray(0, 8).equals(hash("account:MotherEscrow").subarray(0, 8))) throw new Error("SETTLEMENT_RECEIPT_INVALID_MOTHER");
   const authority = new PublicKey(motherData.subarray(8, 40));
+  if (work.kind === "TIN_DEBIT") return assertTinDebitReceipt(t, signature, receipt.slot, message, keys, instructions, authority, root);
   if (coordination) {
     let expectedKeys: PublicKey[], expected: Buffer, stage: string;
       expectedKeys = [authority,pda("tsn_mother_escrow",TSNP),new PublicKey(t.tcapConfig),new PublicKey(t.assetEntry),new PublicKey(t.reserveState),new PublicKey(t.accountingEpoch),pda("gpru:tcap-epoch-verifier:v1",GPRU),GPRU];

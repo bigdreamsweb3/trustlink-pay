@@ -38,6 +38,9 @@ async def _verify_receiver_work(node: Dependencies, work: dict[str, Any]) -> dic
     payload = work.get("payload")
     if not isinstance(payload, dict):
         raise ValueError("Receiver work payload must be an object")
+    if kind == "TIN_DEBIT":
+        from settlement.debit.prepare_work import prepare_debit_work
+        return await prepare_debit_work(node, work)
     if kind == "AUTHORIZED_FUNDING":
         if work.get("fundingPhase") == "AUTHORIZATION":
             return await prepare_receiver_funding(node, work)

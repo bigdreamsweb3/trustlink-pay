@@ -18,7 +18,7 @@ export async function transition(dependencies: Pick<WorkDependencies, "assertNod
     if (params.actor === "node" && params.status === "VERIFIED") {
         await dependencies.publishCrankerWake("VERIFIED");
     }
-    if (result.fundingConfirmed || (params.actor === "cranker" && params.status === "CONFIRMED" && ["SETTLEMENT", "TCAP_EPOCH_ACCOUNTING"].includes(result.work.kind))) {
+    if (result.fundingConfirmed || (params.actor === "cranker" && params.status === "CONFIRMED" && ["SETTLEMENT", "TIN_DEBIT", "TCAP_EPOCH_ACCOUNTING"].includes(result.work.kind))) {
         // Funding confirmation is a trigger only. The Node independently checks
         // the chain transaction before it verifies the pre-created settlement.
         await dependencies.wakeTsnNode("AUTHORIZED_FUNDING");

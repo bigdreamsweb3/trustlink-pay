@@ -246,6 +246,8 @@ from transactions.native.signing import _native_blockhash_lifetime
 from transactions.native.signing import sign_settlement_transaction
 from api.handlers import mempool_status
 from api.handlers import consume_threshold_access_nonce
+from api.handlers.prepare_tin_debit import prepare_tin_debit_request
+from api.handlers.post_tin_debit import post_tin_debit
 from api.handlers import post_intent
 from api.handlers import get_network_recent_blockhash
 from api.handlers import post_funding_readiness, post_complete_funding
@@ -567,6 +569,8 @@ class NodeRuntime:
     sign_settlement_transaction = sign_settlement_transaction
     mempool_status = mempool_status
     consume_threshold_access_nonce = consume_threshold_access_nonce
+    prepare_tin_debit_request = prepare_tin_debit_request
+    post_tin_debit = post_tin_debit
     post_intent = post_intent
     get_network_recent_blockhash = get_network_recent_blockhash
     post_funding_readiness = post_funding_readiness

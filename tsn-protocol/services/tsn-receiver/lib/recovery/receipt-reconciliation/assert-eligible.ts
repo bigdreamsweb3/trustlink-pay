@@ -6,8 +6,8 @@ import { hash } from "./hash";
 /** assertEligible component. Inputs and results retain the original settlement-reconciliation contract; declared dependencies identify replaceable ports. Errors propagate in their original order. */
 export function assertEligible(dependencies: Pick<Dependencies, "clock">, work: ReceiverWork, funding: ReceiverWork | null, expectedVersion: number, reportOwner?: string) {
   const native = work.kind === "SETTLEMENT";
-  const expectedKind = native ? "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3" : "TSN_TCAP_COORDINATION_AUTHORIZATION_V1";
-  const expectedStage = {SETTLEMENT:"TCAP_GPRU_MEMO_CREDIT_V2_SIGNED",TCAP_EPOCH_ACCOUNTING:"TCAP_EPOCH_ACCOUNTING_V1_SIGNED"}[work.kind as "SETTLEMENT"|"TCAP_EPOCH_ACCOUNTING"];
+  const expectedKind = native ? "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3" : work.kind === "TIN_DEBIT" ? "TSN_TCAP_GPRU_TIN_DEBIT_AUTHORIZATION_V1" : "TSN_TCAP_COORDINATION_AUTHORIZATION_V1";
+  const expectedStage = {SETTLEMENT:"TCAP_GPRU_MEMO_CREDIT_V2_SIGNED",TCAP_EPOCH_ACCOUNTING:"TCAP_EPOCH_ACCOUNTING_V1_SIGNED",TIN_DEBIT:"TCAP_GPRU_TIN_DEBIT_V1_SIGNED"}[work.kind as "SETTLEMENT"|"TCAP_EPOCH_ACCOUNTING"|"TIN_DEBIT"];
   if (!expectedStage) throw new Error("SETTLEMENT_RECONCILIATION_KIND_INVALID");
   if (reportOwner) {
     const auth = work.authorization;
@@ -30,6 +30,7 @@ export function assertEligible(dependencies: Pick<Dependencies, "clock">, work: 
     if (work.status !== "FAILED" || work.nodeLease || work.crankerLease
         || work.authorization?.kind !== expectedKind) throw new Error("SETTLEMENT_RECONCILIATION_NOT_FAILED_NATIVE_CREDIT");
   }
+  if (work.kind === "TIN_DEBIT") return;
   if (!native) { if (payloadCommitment(work.payload) !== work.payloadCommitment) throw new Error("PRIVATE_COORDINATION_PAYLOAD_MISMATCH"); return; }
   if (!funding || funding.kind !== "AUTHORIZED_FUNDING" || funding.status !== "CONFIRMED" || !funding.result?.signature) throw new Error("SETTLEMENT_FUNDING_NOT_CONFIRMED");
   const id = `settlement-${hash(`${funding.id}:${funding.payloadCommitment}`).toString("hex").slice(0, 32)}`;

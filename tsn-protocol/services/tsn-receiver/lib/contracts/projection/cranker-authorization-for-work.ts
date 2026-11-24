@@ -13,6 +13,14 @@ import { verifiedPayloadForWork } from "../verification/verified-payload-for-wor
  * Verification: existing Receiver contract/coordination/recovery fixtures; individual branch coverage is unmeasured.
  */
 export function crankerAuthorizationForWork(work: ReceiverWork, authorization: Record<string, unknown>): Record<string, unknown> {
+  if (work.kind === "TIN_DEBIT") {
+    const field = "tcapTinDebitTransition";
+    const expected = crankerExecutionPayload(work.kind, verifiedPayloadForWork(work) ?? {})[field];
+    const transition = crankerExecutionPayload(work.kind, { [field]: authorization.transition })[field];
+    if (authorization.kind !== "TSN_TCAP_GPRU_TIN_DEBIT_AUTHORIZATION_V1" || payloadCommitment(expected) !== payloadCommitment(transition)) throw new Error("TIN_DEBIT_AUTHORIZATION_MISMATCH");
+    const allowed = new Set(["kind", "workStateVersion", "leaseId", "leaseVersion", "leaseExpiresAt", "expiresAtTs"]);
+    return { ...Object.fromEntries(Object.entries(authorization).filter(allowlistedEntry.bind(null, allowed))), transition };
+  }
   if (work.kind === "TCAP_EPOCH_ACCOUNTING") {
     const field = "tcapEpochAccounting";
     const expected = crankerExecutionPayload(work.kind, verifiedPayloadForWork(work) ?? {})[field];

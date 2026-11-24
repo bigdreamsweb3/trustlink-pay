@@ -1,7 +1,47 @@
 {
+  "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/README.md": {
+    "status": "EXPERIMENTAL",
+    "reason": "Current sender-only offline-recipient transfer contract; existing deposit credit is unchanged and no live runtime or audited-lineage guarantee is claimed.",
+    "evidence": [
+      "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/main.circom",
+      "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/offline/core.py",
+      "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/offline/sender.py"
+    ]
+  },
+  "docs/laboratory/experiments/EXP-20261123-private-transfer-core.md": {
+    "status": "HISTORICAL",
+    "reason": "Preserves dated verification of the original two-opening transfer prototype; superseded for operational design by sender-only offline-recipient transfer. Referenced source paths now select the replacement.",
+    "evidence": [
+      "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/main.circom",
+      "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/primitives.circom",
+      "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/offline/core.py",
+      "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/offline/test_core.py"
+    ]
+  },
+  "docs/laboratory/experiments/EXP-20261123-transfer-owner-recovery.md": {
+    "status": "HISTORICAL",
+    "reason": "Preserves dated verification of the participating-owner preparation/recovery prototype; recipient participation and two-opening requirements are superseded by the offline-recipient contract.",
+    "evidence": [
+      "docs/laboratory/experiments/EXP-20261123-transfer-owner-recovery.md",
+      "docs/laboratory/experiments/EXP-20261123-offline-recipient-transfer.md"
+    ]
+  },
+  "docs/laboratory/experiments/EXP-20261123-offline-recipient-transfer.md": {
+    "status": "EXPERIMENTAL",
+    "reason": "Current sender-only transfer preparation, authenticated recipient-point credit and later owner recovery; existing deposit credit is unchanged, and the u128 lifetime bound requires canonical-lineage review.",
+    "evidence": [
+      "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/main.circom",
+      "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/primitives.circom",
+      "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/offline/core.py",
+      "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/offline/sender.py",
+      "tsn-protocol/sdks/tsn-sdk/src/gpru/transfer-opening.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/gpru/transfer-record.ts",
+      "tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts"
+    ]
+  },
   "docs/laboratory/experiments/EXP-20261103-funded-note-credit.md": {
     "status": "HISTORICAL",
-    "reason": "November 3–5 amount-public funded-note replacement observations; current private-credit ABI supersedes this source snapshot.",
+    "reason": "November 3Ã¢â‚¬â€œ5 amount-public funded-note replacement observations; current private-credit ABI supersedes this source snapshot.",
     "evidence": [
       "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
       "tsn-protocol/programs/gpru/src/hidden_head.rs",
@@ -2709,6 +2749,38 @@
       "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
       "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
       "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+    ]
+  },
+  "tsn-protocol/contracts/README.md": {
+    "status": "EXPERIMENTAL",
+    "reason": "Current catalog and required private Wallet Deposit Intent boundary; TIN-Debit runtime integration and wallet-intent consumption/privacy remain incomplete.",
+    "evidence": [
+      "tsn-protocol/contracts/wallet-deposit-intent-v1.json",
+      "tsn-protocol/contracts/tin-creation-v1.json",
+      "tsn-protocol/contracts/tin-credit-v1.json",
+      "tsn-protocol/contracts/tin-debit-v1.json",
+      "docs/references/WALLET-DEPOSIT-INTENT-20261124.md"
+    ]
+  },
+  "docs/references/WALLET-DEPOSIT-INTENT-20261124.md": {
+    "status": "CURRENT",
+    "reason": "Dated source reconciliation of three funding ABIs, selected Wallet Deposit Intent naming and required privacy with explicit implementation gaps; no live guarantee.",
+    "evidence": [
+      "tsn-protocol/contracts/wallet-deposit-intent-v1.json",
+      "tsn-protocol/services/tsn-receiver/lib/contracts/projection/public-coordination-payload.ts",
+      "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/deposit_with_funding_commitment_v2.rs"
+    ]
+  },
+  "docs/laboratory/experiments/EXP-20261124-tin-debit-readiness.md": {
+    "status": "VERIFIED",
+    "reason": "Scoped November 24 offline tests and diagnosed readiness failures only; no live execution or matching debit proof claimed.",
+    "evidence": [
+      "tsn-protocol/sdks/tsn-sdk/src/gpru/native-credit-wire.ts",
+      "tsn-protocol/sdks/tsn-sdk/tests/gpru-chain-history.test.mjs",
+      "tsn-protocol/services/tsn-cranker-op-daemon/tests/tin-debit-transition.test.ts",
+      "tsn-protocol/programs/gpru/circuits/hidden_head_tin_debit_v1/main.circom",
+      "tsn-protocol/programs/gpru/circuits/hidden_head_tin_debit_v1/offline/core.py",
+      "tsn-protocol/programs/gpru/src/tin_debit.rs"
     ]
   }
 }

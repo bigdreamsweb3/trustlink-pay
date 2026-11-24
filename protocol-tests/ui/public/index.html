@@ -124,13 +124,13 @@
     button:disabled { opacity: .45; cursor: not-allowed; }
     #approveTinFunding[hidden], #cancelTinFunding[hidden] { display: none !important; }
 
-    #headerConnectWallet, #connectWallet, #prepareTinIdentity, #resolveTin, #payTin, #approveTinFunding, #buildWalletTransfer,
+    #headerConnectWallet, #connectWallet, #prepareTinIdentity, #resolveTin, #resolveTinDebit, #payTin, #sendTinDebit, #approveTinFunding, #buildWalletTransfer,
     button.overview-link, .modal-close {
       background: var(--paper-2);
       color: var(--green-2);
       border-color: rgba(231, 201, 110, .55);
     }
-    #headerConnectWallet:hover, #connectWallet:hover, #prepareTinIdentity:hover, #resolveTin:hover, #payTin:hover, #approveTinFunding:hover,
+    #headerConnectWallet:hover, #connectWallet:hover, #prepareTinIdentity:hover, #resolveTin:hover, #resolveTinDebit:hover, #payTin:hover, #sendTinDebit:hover, #approveTinFunding:hover,
     #buildWalletTransfer:hover, button.overview-link:hover, .modal-close:hover { background: var(--paper); color: var(--green); }
     #headerConnectWallet { margin-left: 4px; }
     #connectWallet::before, #prepareTinIdentity::before, #resolveTin::before, #payTin::before, #buildWalletTransfer::before {
@@ -424,6 +424,7 @@
         <button id="tab-status" role="tab" aria-controls="panel-status" aria-selected="true">Overview</button>
         <button id="tab-create-tin" role="tab" aria-controls="panel-create-tin" aria-selected="false">Create TIN</button>
         <button id="tab-tin" role="tab" aria-controls="panel-tin" aria-selected="false">TIN credit</button>
+        <button id="tab-tin-debit" role="tab" aria-controls="panel-tin-debit" aria-selected="false">TIN debit</button>
         <button id="tab-wallet" role="tab" aria-controls="panel-wallet" aria-selected="false">Wallet transfer</button>
       </nav>
       <div>
@@ -449,6 +450,7 @@
               <p>Connect a wallet to create a private TIN, prepare a transfer, or build a sponsored settlement transaction. Every action stays visible at the SDK boundary.</p>
               <div class="overview-actions">
                 <button class="alt overview-link" data-open-tab="tab-tin" style="background:#e9e0c8;color:#123a2a;border:1px solid #d4af37">Deposit to TIN credit</button>
+                <button class="alt overview-link" data-open-tab="tab-tin-debit">Pay from TIN balance</button>
                 <button class="alt overview-link" data-open-tab="tab-wallet" style="background:#e9e0c8;color:#123a2a;border:1px solid #d4af37">Private wallet transfer</button>
               </div>
             </div>
@@ -543,6 +545,21 @@ const identity = await createTinV1IdentityEnvelope({
               href="https://trust-link-tsn.mintlify.site/developers/payment-intent-lifecycle" target="_blank"
               rel="noreferrer">Read the Payment Intent guide -&gt;</a>
           </details>
+        </section>
+        <section id="panel-tin-debit" class="tab-panel" role="tabpanel" aria-labelledby="tab-tin-debit">
+          <button class="modal-close" type="button" data-close-modal>Back</button>
+          <div class="section-head">
+            <div>
+              <h2>TIN debit</h2>
+              <p>Pay another TIN from your private TIN balance. Connect the wallet that owns your TIN, resolve the recipient, then approve the amount and sender balance access. The recipient can recover the incoming credit later without approving this payment.</p>
+            </div>
+          </div>
+          <div class="form"><label>Recipient TIN<input id="debitRecipientTin" inputmode="numeric" maxlength="10"
+                placeholder="10-digit recipient TIN"></label><label>Settlement token mint<input id="debitMint"
+                placeholder="Solana SPL token mint"></label><label>Amount<input id="debitAmount" type="number"
+                min="0.000001" step="0.000001" value="1"></label></div>
+          <div class="form-actions" style="margin-top:12px"><button id="resolveTinDebit" type="button">Resolve TIN</button><button id="sendTinDebit" type="button">Pay from TIN balance</button></div>
+          <div id="tinDebitResolution" class="notice" style="margin-top:12px" hidden aria-live="polite"></div>
         </section>
         <section id="panel-wallet" class="tab-panel" role="tabpanel" aria-labelledby="tab-wallet">
           <button class="modal-close" type="button" data-close-modal>Back</button>

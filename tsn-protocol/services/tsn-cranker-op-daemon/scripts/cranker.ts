@@ -34,6 +34,7 @@ import { createMotherNodeTransactionSigner } from "../src/dbrix/mother-node-sign
 import { ConfirmedReceiptReportPending, RetryableConfirmedReportError, confirmedReportAvailabilityError, sendConfirmedWorkReport } from "../src/receiver/confirmed-report.js";
 import { nativeConflictReason, nativeSigningAvailabilityReason, nativeWorkRetryReason } from "../src/receiver/native-retry.js";
 import { assertFundingRoot } from "../src/dbrix/funding-root.js";
+import { buildPublicTinDebitInstructionsV1 } from "../src/dbrix/tin-debit-transition.js";
 import { createOwnerFundingSubmission, OwnerFundingSubmissionError, readOwnerSignedFunding, sendOwnerSignedFunding } from "../src/dbrix/owner-signed-funding.js";
 import {
   getTinsGlobalStatePda,
@@ -53,7 +54,7 @@ dotenv.config({ path: resolve(process.cwd(), ".env") });
 
 type Work = {
   id: string;
-  kind: "AUTHORIZED_FUNDING" | "SETTLEMENT" | "TIN_OPERATION" | "TCAP_EPOCH_ACCOUNTING";
+  kind: "AUTHORIZED_FUNDING" | "SETTLEMENT" | "TIN_OPERATION" | "TCAP_EPOCH_ACCOUNTING" | "TIN_DEBIT";
   stateVersion: number;
   status: string;
   payloadCommitment: string;
@@ -133,6 +134,7 @@ function verifyNodeAttestation(work: Work) {
       "senderAuthorizationMessage", "senderAuthorizationSignature", "senderAuthorizationNonce",
     ],
     SETTLEMENT: ["tcapCreditTransition"],
+    TIN_DEBIT: ["tcapTinDebitTransition"],
     TCAP_EPOCH_ACCOUNTING: ["tcapEpochAccounting"],
     TIN_OPERATION: [
       "intentId", "intentType", "ownerPubkey", "ownerSignature", "ownerIntentHash",
@@ -452,7 +454,7 @@ async function lease(signer: Keypair): Promise<Work | null> {
   const response = await receiverRequest<{ work: Work | null }>(
     signer,
     "POST",
-    { supportedKinds: ["AUTHORIZED_FUNDING", "SETTLEMENT", "TIN_OPERATION", "TCAP_EPOCH_ACCOUNTING"] },
+    { supportedKinds: ["AUTHORIZED_FUNDING", "SETTLEMENT", "TIN_OPERATION", "TCAP_EPOCH_ACCOUNTING", "TIN_DEBIT"] },
   );
   return response.work;
 }
@@ -670,6 +672,36 @@ async function processSettlement(signer: Keypair, work: Work, rpcUrl: string) {
     sequence: String(transition.tcapRootSequence),
     authorizationDigest: String(transition.authorizationDigest),
   });
+}
+
+async function processTinDebit(signer: Keypair, work: Work, rpcUrl: string) {
+  const auth = work.authorization;
+  if (work.verification?.verificationType !== "TSN_TIN_DEBIT_V1" || auth?.kind !== "TSN_TCAP_GPRU_TIN_DEBIT_AUTHORIZATION_V1"
+      || String(auth.leaseId) !== (work.crankerLease?.leaseId ?? work.id)
+      || Number(auth.leaseVersion) !== Number(work.crankerLease?.version ?? work.stateVersion)
+      || String(auth.leaseExpiresAt) !== work.crankerLease?.expiresAt) throw new Error("TIN_DEBIT_AUTHORIZATION_LEASE_INVALID");
+  if (Number(auth.expiresAtTs) <= Math.floor(Date.now() / 1000)) throw new Error("TCAP transfer authorization expired");
+  if (stableJson(auth.transition) !== stableJson(work.verification?.verifiedPayload?.tcapTinDebitTransition)) throw new Error("TIN_DEBIT_ATTESTATION_MISMATCH");
+  const mother = await tsnFetchMotherEscrowOnChain(rpcUrl);
+  if (!mother?.valid || !mother.authority) throw new Error("On-chain Mother Escrow authority is unavailable");
+  const authority = new PublicKey(mother.authority);
+  const { accounts, proof, transition, instructions } = buildPublicTinDebitInstructionsV1(auth.transition, authority, new PublicKey(mother.address));
+  const connection = createSolanaConnection(rpcUrl);
+  const rootDisc = hash("account:TcapCommitmentRootStateV1").subarray(0, 8);
+  const rootBefore = await connection.getAccountInfo(accounts.commitmentRoot, "confirmed");
+  if (!rootBefore || !rootBefore.owner.equals(accounts.tcapProgram) || rootBefore.data.length !== 124
+      || !rootBefore.data.subarray(0, 8).equals(rootDisc)
+      || !rootBefore.data.subarray(12, 44).equals(Buffer.from(proof.publicInputs[0], "hex"))
+      || rootBefore.data.readBigUInt64LE(80) !== BigInt(`0x${proof.publicInputs[3]}`)) throw new Error("TCAP_SHARED_REPLAY_ROOT_CHANGED_BEFORE_SETTLEMENT");
+  const signature = await sendMotherNodeCoSignedInstruction(rpcUrl, signer, authority, work, instructions, "TCAP_GPRU_TIN_DEBIT_V1");
+  const rootAfter = await connection.getAccountInfo(accounts.commitmentRoot, "confirmed");
+  if (!rootAfter || !rootAfter.owner.equals(accounts.tcapProgram) || rootAfter.data.length !== 124
+      || !rootAfter.data.subarray(0, 8).equals(rootDisc)
+      || !rootAfter.data.subarray(44, 76).equals(Buffer.from(proof.publicInputs[0], "hex"))
+      || !rootAfter.data.subarray(12, 44).equals(Buffer.from(proof.publicInputs[1], "hex"))
+      || rootAfter.data.readBigUInt64LE(80).toString() !== transition.tcapRootSequence) throw new Error("Confirmed transfer did not advance TCAP's shared replay root atomically");
+  await report(signer, work, "CONFIRMED", { signature, stage: "TCAP_GPRU_TIN_DEBIT_V1_CONFIRMED",
+    sequence: transition.tcapRootSequence, authorizationDigest: transition.authorizationDigest });
 }
 
 function base64Bytes(value: unknown, field: string, allowEmpty = false) {
@@ -1098,6 +1130,7 @@ async function main() {
           await processTinOperation(signer, work, rpcUrl);
         else if (work.kind === "TCAP_EPOCH_ACCOUNTING") await processPrivateCoordination(signer, work, rpcUrl);
         else if (work.kind === "SETTLEMENT") await processSettlement(signer, work, rpcUrl);
+        else if (work.kind === "TIN_DEBIT") await processTinDebit(signer, work, rpcUrl);
         else throw new Error("WORK_KIND_UNSUPPORTED");
       } catch (error) {
         if (error instanceof ConfirmedReceiptReportPending) {

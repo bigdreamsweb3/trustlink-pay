@@ -79,6 +79,16 @@ The history reader recognizes finalized historical twelve-input receipts and cur
 
 Authorization reuse is opt-in with `cacheAuthorization: true`. Cached signatures stay in device memory; the seed is decrypted per read and erased afterward. The SDK invalidates access on wallet disconnect/account events. Call `clearTinOwnerBalanceAccessV1(wallet)` on application logout or when using an adapter without those events. The reusable seed signature never enters HTTP requests; only the one-time lookup signature goes to the identity service.
 
+## Prepare a transfer while the recipient is offline
+
+**TIN-Debit integration, November 24:** the current SDK, Node, Receiver and Cranker share the 26-input contract and two 582-byte compact Memos. The client provides owner-authenticated preparation, local sender-opening recovery, separate approval/disclosure consent and exact-request retry state; XP presents its debit action and status. Circuit/proving verification and deployed/live evidence remain separate. The earlier twenty-input helper names below describe historical offline work; use the current TIN-Debit client section and canonical contract for integration.
+
+`withTinOwnerTransferOpeningV1` from `@trustlink/tsn-sdk/tin-owner-balance` reuses owner authentication and finalized supported credit history to recover the sender's selected private balance and blinding. Supply the asset and sender leg `0`, authorization commitment, expected shared root/global sequence and TIP route root alongside the existing owner-balance parameters. Its callback receives a canonical opening packet for separate `signTinTransferOpeningV1` disclosure consent; sender payment approval remains a distinct signature. The seed stays local, and the packet discloses only the selected sender opening to its preparer. Recipient opening/signature access is excluded, and existing deposit credit and display-balance behavior are unchanged.
+
+The root SDK export provides transfer commitment/approval helpers and `recoverGpruTransferOwnerOpeningV1`. Transfer preparation authenticates the recipient's stored point and applies the same homomorphic increment used by deposit credit, so the recipient can remain offline. Sender and later recovered balances use u128 while amounts remain u64; the unopened recipient's lifetime bound relies on canonical root lineage, not a local numeric recipient range proof.
+
+The recovery helper accepts one encrypted transfer Memo, the registered owner keys, an authenticated predecessor opening, the expected leg and the exact twenty-scalar public statement. The caller must independently verify that Groth16 statement before recovery. It checks the Memo hash, leg-specific successor fields, private amount/action relations and reconstructed balance point; it does not verify a finalized receipt or discover live transfer history. The recipient performs this recovery later, after preparation. See the [offline-recipient checkpoint](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261123-offline-recipient-transfer.md) for the command, lineage assumption and remaining integration requirements. No payment ingress, transaction builder or XP transfer flow is enabled by these helpers.
+
 ## Recurring Mandates (Planned, Disabled)
 
 The SDK includes a disabled foundation for recurring mandate contracts and verified provider validation.
@@ -95,3 +105,9 @@ This folder is intentionally isolated from the main TSN payment execution path:
 - `src/recurring` contains mandate serialization and validation helpers.
 - The recurring feature remains disabled by default.
 - No token transfer or delegate approval logic is implemented in this foundation.
+
+## TIN-Debit client
+
+`sendTinDebitV1` from `@trustlink/tsn-sdk/tin-debit` prepares a sender debit and offline recipient credit. Supply a stable `paymentId` and an empty private `retryState` object, retain that object in device memory, and reuse both on a lost response. The client authenticates preparation, recovers the sender opening locally, requests separate payment/disclosure consent, then stores the exact request before submission. A concurrent call or changed intent fails; retries request no new randomness or signatures. Do not log or persist `retryState.requestJson`, which contains the approved sender opening. Clear sensitive state after confirmed recovery; a page/session loss requires checking the original work before another approval.
+
+The recipient remains offline and supplies no opening or signature. `withTinOwnerDebitOpeningV1` and `signTinDebitOpeningV1` expose the lower-level sender consent path, while `recoverGpruTinDebitOwnerOpeningV1` validates later owner records against an independently authenticated statement and predecessor. Existing wallet deposit-credit APIs remain unchanged. Builds and synthetic checks do not prove deployed verifier compatibility or a live payment.

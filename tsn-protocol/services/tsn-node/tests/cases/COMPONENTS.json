@@ -2291,6 +2291,54 @@
       "name": "test_public_discovery_reports_no_enabled_external_route",
       "component": "cases/cross_chain_routes/functions/f003_test_public_discovery_reports_no_enabled_external_route.py",
       "reason": "November 22 external route retirement admission/discovery guard"
+    },
+    {
+      "component": "cases/tin_debit/asset_rpc.py",
+      "name": "asset_rpc",
+      "definitionLine": 5,
+      "async": true,
+      "kind": "fixture-or-support",
+      "provenance": "Added November 24 for TIN-Debit; scoped synthetic tests, no historical extraction provenance."
+    },
+    {
+      "component": "cases/tin_debit/fixture.py",
+      "name": "fixture",
+      "definitionLine": 12,
+      "async": false,
+      "kind": "fixture-or-support",
+      "provenance": "Added November 24 for TIN-Debit; scoped synthetic tests, no historical extraction provenance."
+    },
+    {
+      "component": "cases/tin_debit/test_deposit_independence.py",
+      "name": "test_deposit_independence",
+      "definitionLine": 11,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added November 24 for TIN-Debit; scoped synthetic tests, no historical extraction provenance."
+    },
+    {
+      "component": "cases/tin_debit/test_ingress_retry.py",
+      "name": "test_ingress_retry",
+      "definitionLine": 9,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added November 24 for TIN-Debit; scoped synthetic tests, no historical extraction provenance."
+    },
+    {
+      "component": "cases/tin_debit/test_prepare_authorization.py",
+      "name": "test_prepare_authorization",
+      "definitionLine": 12,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added November 24 for TIN-Debit; scoped synthetic tests, no historical extraction provenance."
+    },
+    {
+      "component": "cases/tin_debit/test_wire.py",
+      "name": "test_wire",
+      "definitionLine": 15,
+      "async": false,
+      "kind": "test",
+      "provenance": "Added November 24 for TIN-Debit; scoped synthetic tests, no historical extraction provenance."
     }
   ],
   "mappingBoundary": "Original 231 components and originalTests hashes retain their extraction provenance. newComponents separately records later authored test and fixture functions; source references do not measure execution or branch coverage.",

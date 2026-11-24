@@ -14,7 +14,7 @@ export async function recordSettlementSubmission(dependencies: Pick<WorkDependen
         || !/^\d+$/.test(String(evidence.lastValidBlockHeight ?? ""))
         || !/^[a-f0-9]{64}$/.test(String(evidence.wireSha256 ?? ""))
         || !Number.isSafeInteger(evidence.wireBytes) || Number(evidence.wireBytes) < 1 || Number(evidence.wireBytes) > 4096
-        || !["TCAP_GPRU_MEMO_CREDIT_V2_SIGNED", "TCAP_EPOCH_ACCOUNTING_V1_SIGNED"].includes(String(evidence.stage)))
+        || !["TCAP_GPRU_MEMO_CREDIT_V2_SIGNED", "TCAP_EPOCH_ACCOUNTING_V1_SIGNED", "TCAP_GPRU_TIN_DEBIT_V1_SIGNED"].includes(String(evidence.stage)))
         throw new Error("SETTLEMENT_SUBMISSION_INVALID");
     const ref = dependencies.workCollection.doc(params.id);
     return dependencies.db.runTransaction(recordSubmissionTransaction.bind(null, dependencies, ref, evidence, params));

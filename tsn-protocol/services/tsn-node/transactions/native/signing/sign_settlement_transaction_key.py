@@ -19,4 +19,7 @@ class Dependencies(Protocol):
     solana_rpc: Any
 
 def sign_settlement_transaction_key(current_kind, node, operator, authority, transition, candidate):
+    if current_kind == "TIN_DEBIT":
+        from settlement.debit.verify_message import verify_debit_message
+        return verify_debit_message(node, candidate, operator, authority, transition)
     return node._verify_mother_signed_tcap_settlement_message(candidate, operator=operator, authority=authority, transition=transition) if current_kind == 'SETTLEMENT' else node._verify_private_coordination_message(candidate, operator, authority, current_kind, transition)

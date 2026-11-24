@@ -15,9 +15,9 @@ export async function resolveFailedSettlement(dependencies: Pick<Dependencies, "
   const ref = dependencies.workCollection.doc(params.id);
   const work = (await ref.get()).data() as ReceiverWork | undefined;
   if (!work) throw new Error("WORK_NOT_FOUND");
-  if (typeof work.payload?.intentId !== "string" || !work.payload.intentId.trim()) fail("FUNDING_REFERENCE_MISMATCH");
-  const fundingRef = dependencies.workCollection.doc(String(work.payload.intentId));
-  const funding = (await fundingRef.get()).data() as ReceiverWork | undefined;
+  if (work.kind === "SETTLEMENT" && (typeof work.payload?.intentId !== "string" || !work.payload.intentId.trim())) fail("FUNDING_REFERENCE_MISMATCH");
+  const fundingRef = work.kind === "SETTLEMENT" ? dependencies.workCollection.doc(String(work.payload.intentId)) : null;
+  const funding = fundingRef ? (await fundingRef.get()).data() as ReceiverWork | undefined : undefined;
   const t = assertEligible(dependencies, work, funding, params.expectedVersion, params.signature);
   const options = { encoding: "base64", commitment: "finalized" };
   let root = assertUnchangedRoot(await rpc(dependencies, "getAccountInfo", [ROOT.toBase58(), options]), t, 1);

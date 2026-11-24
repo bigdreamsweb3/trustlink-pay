@@ -1,0 +1,29 @@
+# Wallet Deposit Intent contract reconciliation
+
+**Status: CURRENT source catalog with a REQUIRED private-intent boundary; runtime privacy and wallet delivery remain incomplete. Reviewed 2026-11-24.** The selected name is Wallet Deposit Intent: wallet identifies the funding source, and the intent specifies the privately authorized subsequent action. A TIN destination uses a separate TIN-Credit; a wallet destination must use its applicable settlement contract. Deposit confirmation alone establishes neither outcome.
+
+## Sources and contract scope
+
+The canonical [catalog record](../../tsn-protocol/contracts/wallet-deposit-intent-v1.json) replaces the initial TIN-Deposit label. It records three distinct TCAP source capabilities: `deposit_with_funding_commitment_v2` (225 bytes/thirteen accounts), `deposit_private_funding_v1` (48 bytes/nine accounts) and `deposit_asset_v2` (sixteen bytes/eight accounts). The first creates a pending claim with destination commitment and `ConfidentialOwner`/`PublicWallet` mode under a per-asset commitment chain. The native funded-note path uses a separate global Merkle root; the reserve-only instruction appends neither claim nor leaf. No claim-consumption handler or current SDK/Node/Cranker caller of the intent-bearing instruction was identified.
+
+Source inspection covered TCAP's three deposit handlers, `funding.rs`, `funding_state.rs`, `authority.rs`, `private_funding.rs` and `lib.rs`; SDK `contracts.ts`, `canonical-message.ts`, `funding-authorization.ts`, `tcap-gpru-credit.ts` and `wallet-transfer.ts`; Receiver funding ingress, attachment, storage encryption and public projections; Node's exact signed-deposit verifier; Cranker's `processAuthorizedFunding`; and retained TSNP `execute_private_payout.rs`. The catalog links exact source paths. Native ingress still requires a TIN and submits the exact owner-signed deposit through `AUTHORIZED_FUNDING`; retained payout uses distinct Epoch Treasury/DNA/CrankerVault contracts. An ordinary SDK SPL transfer uses no TCAP deposit or TSN intent.
+
+## Required privacy and current gaps
+
+All deposit purposes require restricted destination, requested action, authorization material and private openings. Current native Receiver ingress encrypts the complete envelope with AES-256-GCM while retaining `paymentId` and `recipientHash` outside it. Its staged public funding projection allowlists only `paymentId`, with status, versions, commitments, timing and transaction results supplied separately. Work without `fundingPhase` has a broader allowlist, so lifecycle privacy remains a separate review. Receiver receives plaintext and authenticated Node processing can decrypt the stored envelope; this is a trusted service boundary.
+
+The retained intent-bearing deposit publicly serializes its settlement mode and claim metadata. A destination commitment alone does not satisfy the selected private-intent requirement or prove unlinkability. That instruction remains a cataloged source capability with a privacy gap, rather than an approved replacement for native funded notes. Ordinary wallet funding publicly reveals source, asset, amount, vault, signatures and timing. No privacy guarantee, wallet dispatcher or protocol migration was implemented by this documentation task.
+
+## Documentation and operation impact
+
+The contract README, internal architecture map/credit ABI and public TCAP layer were synchronized. Root and protocol README diagrams remain scoped to the existing native wallet-to-TIN path and need no change for this catalog correction. The internal operator guide was reviewed; there is no build, deployment, key, configuration, startup, recovery command or SDK runtime change, so its operating steps remain applicable.
+
+Instructions explicitly reviewed were root `AGENTS.md`, `.agents/README.md`, architecture terminology/change policy, operator-guide policy, the documentation maintenance manual and the Node directory instructions. The architecture map, component/credit ABI records and internal operator guide supplied the source map. Existing unrelated runtime and documentation edits were preserved.
+
+## Verification and remaining work
+
+The final offline source comparison passed 58 assertions: JSON parsing, catalog source targets, selected label/privacy status, removal of superseded catalog filenames, all three exact instruction lengths, argument ordering/widths, account ordering and signer/writable flags, retained state-account lengths, mode values, Pending-only status, distinct root seeds and signed funding-attachment field order. These are catalog consistency checks, not program execution or cryptographic verification. No application test suite was rerun for this catalog/prose change.
+
+`node docs/references/tooling/validate-doc-syntax.mjs <existing temporary parser prefix>` passed 104 MDX compilations and 38 Mermaid parses with zero failures. `documentation-audit.py inventory` indexed 378 documents; `generate-claim-register.py` covered all 378 documents and 36 explicit selectors. `documentation-audit.py check` reported 28 findings, none in the changed scope: 26 target markers were verified in pre-task HEAD, and two belong to the existing transfer-owner recovery record's links to subsequently renamed SDK files. CRLF-aware whitespace checks passed in both Git boundaries, and the new catalog/record passed a separate untracked-file whitespace scan. Reference search found no remaining superseded catalog filename. These checks do not verify browser rendering, remote URLs or live endpoints.
+
+Remaining implementation work is private intent binding and one-time consumption for each supported settlement purpose, a complete public projection/transaction disclosure review, service/SDK integration for wallet-directed intents, and separate execution/privacy evidence. This task performed no service control, transaction signing/submission, deployment, migration, staging, commit or push.

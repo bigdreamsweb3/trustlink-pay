@@ -1,0 +1,35 @@
+{
+  "name": "TIN Creation",
+  "status": "CURRENT source contract; EXPERIMENTAL first release v1",
+  "purpose": "Register a ten-digit TIN identity, wallet-encrypted owner recovery material and authenticated shared TIP route membership",
+  "program": "TIP",
+  "encoding": "One-byte explicit instruction tag followed by Borsh parameters; not an Anchor discriminator",
+  "instructions": {
+    "CreateTinV1": {"tag": 17, "fixedBytes": 352, "variableBytes": "encrypted_tin_recovery.len + encrypted_identity_envelope.len + encrypted_master_seed.len"},
+    "TinV1CreationStage": {"tag": 19, "bytes": 352},
+    "TinV1CreationChunk": {"tag": 20, "fixedBytes": 10, "variableBytes": "bytes.len"},
+    "TinV1CreationFinalize": {"tag": 21, "bytes": 33},
+    "TinV1CreationClose": {"tag": 22, "bytes": 33}
+  },
+  "directAccounts": [
+    {"name": "payer", "signer": true, "writable": true},
+    {"name": "globalState", "signer": false, "writable": true},
+    {"name": "routeRoot", "signer": false, "writable": true},
+    {"name": "registry", "signer": false, "writable": true},
+    {"name": "ownerRecovery", "signer": false, "writable": true},
+    {"name": "instructions", "signer": false, "writable": false},
+    {"name": "systemProgram", "signer": false, "writable": false}
+  ],
+  "stageAccounts": ["payer signer writable", "staging writable", "System program readonly"],
+  "chunkAccounts": ["payer signer writable", "staging writable"],
+  "finalizeAccounts": ["payer signer writable", "globalState writable", "routeRoot writable", "registry writable", "ownerRecovery writable", "instructions readonly", "System program readonly", "staging writable"],
+  "closeAccounts": ["Cranker signer writable", "staging writable"],
+  "directParameterOrder": ["owner_pubkey", "lookup_commitment", "encrypted_tin_recovery", "encrypted_identity_envelope", "encrypted_master_seed", "encrypted_metadata_hash", "route_version", "route_nonce", "tip_route_version", "gpru_elgamal_key_version", "gpru_elgamal_public_key", "gpru_elgamal_key_commitment", "gpru_balance_scan_key_version", "gpru_balance_scan_public_key_x", "gpru_balance_scan_public_key_y", "policy_commitment", "intent_hash", "expiry_ts"],
+  "authorization": "Payer signs transaction; TIP independently verifies the owner's exact creation-intent hash through the instructions sysvar/Ed25519 approval",
+  "stateEffect": "Create registry and separate owner-recovery account; append authenticated route leaf. Staged finalization uses the same creation application contract",
+  "routeLeaf": "Poseidon5(lookupCommitment, gpruElgamalKeyCommitment, scanX, scanY, policyCommitment)",
+  "privacyBoundary": "Encrypted identity and owner seed/recovery envelopes; public registration still associates the owner wallet and public registered route keys",
+  "sources": ["programs/transfer-identity-protocol/tin-registrar/program/src/instruction_auto.rs", "programs/transfer-identity-protocol/tin-registrar/program/src/processor/create_tin_v1.rs", "programs/transfer-identity-protocol/tin-registrar/program/src/processor/tin_v1_creation_staging.rs", "programs/transfer-identity-protocol/tin-registrar/program/src/state.rs", "sdks/tsn-sdk/src/tins.ts"],
+  "canonicalRecord": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/components.md#tip-and-tin-identity",
+  "verificationBoundary": "Catalog extracted from current source; does not establish a new deployment, registration or complete recovery"
+}

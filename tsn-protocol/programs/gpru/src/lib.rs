@@ -3,6 +3,8 @@
 use anchor_lang::prelude::*;
 
 pub mod hidden_head;
+pub mod tin_debit;
+pub use tin_debit::*;
 pub mod tcap_epoch;
 pub use tcap_epoch::*;
 #[path = "program.rs"]
@@ -131,6 +133,11 @@ pub mod tsn_gpru_proof_contract {
     ) -> Result<()> {
         hidden_head::verify_transition(ctx, args)
     }
+
+    pub fn initialize_tin_debit_verifier_v1(ctx: Context<InitializeTinDebitVerifierV1>, args: InitializeTinDebitVerifierArgsV1) -> Result<()> { tin_debit::initialize(ctx,args) }
+    pub fn write_tin_debit_verifier_ic_v1(ctx: Context<ConfigureTinDebitVerifierV1>, args: WriteTinDebitVerifierIcArgsV1) -> Result<()> { tin_debit::write_ic(ctx,args) }
+    pub fn enable_tin_debit_verifier_v1(ctx: Context<ConfigureTinDebitVerifierV1>) -> Result<()> { tin_debit::enable(ctx) }
+    pub fn verify_hidden_head_tin_debit_v1(ctx: Context<VerifyHiddenHeadTinDebitV1>, args: HiddenHeadTinDebitProofV1) -> Result<()> { tin_debit::verify(ctx,args) }
 
     pub fn initialize_tcap_epoch_verifier_v1(ctx: Context<InitializeTcapEpochVerifierV1>, args: ConfigureTcapEpochVerifierArgsV1) -> Result<()> { tcap_epoch::initialize(ctx,args) }
     pub fn write_tcap_epoch_verifier_ic_v1(ctx: Context<ConfigureTcapEpochVerifierV1>, args: WriteTcapEpochVerifierIcArgsV1) -> Result<()> { tcap_epoch::write_ic(ctx,args) }

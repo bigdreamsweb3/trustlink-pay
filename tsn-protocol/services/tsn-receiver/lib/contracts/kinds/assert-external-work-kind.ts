@@ -8,5 +8,5 @@ import type { WorkKind } from "../models";
  * Verification: existing Receiver contract/coordination/recovery fixtures; individual branch coverage is unmeasured.
  */
 export function assertExternalWorkKind(kind: WorkKind): void {
-  if (!["AUTHORIZED_FUNDING", "TIN_OPERATION"].includes(kind)) throw new Error(`${kind}_WORK_INTERNAL_ONLY`);
+  if (!["AUTHORIZED_FUNDING", "TIN_OPERATION", "TIN_DEBIT"].includes(kind)) throw new Error(`${kind}_WORK_INTERNAL_ONLY`);
 }

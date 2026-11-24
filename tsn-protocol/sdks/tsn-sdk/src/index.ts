@@ -27,6 +27,9 @@ export * from "./gpru/stealth-keys.js";
 export * from "./gpru/babyjub-delta-cipher.js";
 export * from "./gpru/transaction-record.js";
 export * from "./gpru/balance-history.js";
+export * from "./gpru/tin-debit-opening.js";
+export * from "./gpru/tin-debit-record.js";
+export * from "./tcap-gpru-tin-debit.js";
 export * from "./gpru/chain-history.js";
 export * from "./gpru/funding-note.js";
 export * from "./tcap-one-time-credit.js";
@@ -50,3 +53,5 @@ export * from "./recovery/index.js";
 export * from "./sessions/proof-of-possession.js";
 export * from "./device/public.js";
 export * from "./sessions/private-session-request.js";
+
+export * from "./tin-debit.js";

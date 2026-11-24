@@ -1,0 +1,47 @@
+# Offline atomic private TIN-to-TIN transfer core
+
+**Status: HISTORICAL two-opening prototype with scoped offline verification, 2026-11-23; superseded for operational design by the [offline-recipient transfer checkpoint](EXP-20261123-offline-recipient-transfer.md).** This record preserves the original same-asset, fee-free two-opening experiment and its dated tests. The replacement requires only sender approval/opening and credits the authenticated recipient point while the recipient is offline. Deposit credit, funding, epoch and retained instruction families remain unchanged.
+
+The source paths and npm commands below now select the replacement. Original results describe the earlier two-opening source/artifacts, not the corrected circuit. Retained original artifacts under `hidden_head_transfer_v1/build/` and `build/dev/` are historical evidence; the current tools use `build/sender-only/` and its own matching development key. Do not use this historical contract to require recipient participation or to mix old keys with the replacement circuit.
+
+## Implemented contract
+
+The [circuit and source contract](../../../tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/README.md) reuse current TIP route membership, TCAP head/portfolio/nullifier encodings, native Poseidon and BabyJubjub balance bases. The [witness builder](../../../tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/offline/core.py) verifies Ed25519 approval against a separately supplied registered-owner hash, binds both routes, amount commitment, asset, deployment context, nonce and slots, validates trusted root snapshots and reserve arithmetic, and returns both successor heads in an in-memory candidate without changing inputs.
+
+The circuit requires both old balance openings, proves u64 old/new balances and opposite changes by the same positive amount, advances both private head sequences, and binds two nonzero Memo commitments. The recipient path is authenticated against the intermediate root after the sender update; its successor produces the final paired root. One stable private-nonce-derived nullifier is inserted into an empty authenticated slot, and the global-root sequence remains incrementable. Both full route keys and their low-128-bit indices must be distinct.
+
+The twenty public inputs and their order are recorded in the source README. Amount, nonce, private routes/indices, balance openings and Merkle paths are omitted from the public projection. Asset, slots, shared roots, successor points/portfolio roots and Memo commitments remain public. This experiment verifies relation integrity; it does not establish public-observer unlinkability or a production circuit audit.
+
+Owner signature verification, trusted registry/asset/reserve provenance and current-slot validity are host checks rather than Groth16 claims. A valid proof alone does not establish registration-owner consent. The caller must obtain those trusted records independently; this offline builder performs no RPC. Two nonzero Memo fields bind heads, but actual encrypted owner records, transaction-Memo bytes and recovery are not constructed or verified.
+
+## Selected accounting boundary
+
+One transfer counts as one paired action with one replay identity and one global-root advance. For this fee-free same-asset action, custody assets and all current reserve categories have zero delta. The sender debit and recipient credit conserve value; no independent debit reclassification or new funded positive credit is introduced. Existing positive-credit epoch discovery, transcript and aggregate proof remain unchanged. Mixed live batches, provider fees, exits, refunds, capacity and maturity still require separate decisions and enforcement.
+
+Current homomorphic credit does not require the recipient's balance opening. This circuit does require it to bound the recipient successor, and no service acquisition API is invented. Runtime promotion must resolve that opening dependency, owner-record construction and authentication, exact TSNP/TCAP/GPRU account/instruction enforcement, independent Mother authorization, current-root serialization, Receiver/Node/Cranker projections, transport and SDK/XP consent/recovery.
+
+## Verification observed
+
+The existing pinned circom2 0.2.19, circomlib 2.0.5 and snarkjs 0.7.6 tooling compiled the separate circuit with `--O2`: 258,953 nonlinear constraints, zero linear constraints, twenty public inputs and 259,397 wires. R1CS and WASM were generated in the new ignored build directory, with source/artifact hashes retained in `build-info.json` and `test-results.json`.
+
+Fourteen Python host tests passed. They cover immutable preparation, both-leg conservation, unrelated-asset retention, initial recipient/token creation, full spend, changed or attacker approval, wrong openings, underflow/overflow, stale/unregistered routes, authorization lifetime, sequence exhaustion, stable replay rejection, blinding carry/aliases, malformed amounts and reserve/snapshot failures. Subtests are included within that fourteen-case count.
+
+Four honest witnesses passed actual R1CS checks: existing recipient, first recipient, full sender spend and modulo-subgroup blinding carry. All 29 modified witnesses were rejected, including independent recipient paths, partial updates, extra credit, insufficient balance, overflow, changed asset/amount/owner authorization/deployment/expiry/nonce/Memo, invalid blinding, stale roots and replay. These are synthetic fixtures, with no real TIN, owner seed, deposit, RPC or live payment.
+
+Separate development Groth16 preparation completed: the retained development Ptau and contributed circuit-specific key passed snarkjs verification, with twenty public inputs and twenty-one IC points. `npm run gpru:transfer:prove:dev` generated a real proof for the synthetic existing-recipient transfer, matched all twenty expected public scalars and verified it locally. All seven tested changes to its old/new root, value/authorization commitment, nullifier, Memo and successor-point statement were rejected. This is one Groth16 proof plus four separately checked R1CS witnesses, rather than four Groth16 runs.
+
+The R1CS SHA-256 is `791fbe42d9706d761cb35c2156620d8884659610197426f7618c529071934504`; the separate verification-key SHA-256 is `4c113ee4f71d285c5a32fd1580d14c0a14e125fe0839597fa0b296122f4ea6bf`. Matching sources, R1CS, WASM and key hashes are recorded in `build/dev/metadata.json`. The ignored build directory retains `synthetic-proof.json`, `synthetic-public.json` and `proof-results.json`, containing only proof/public verification data. Current credit/epoch artifacts were read without replacement, and no on-chain initializer was exported. The source/fixture generator and public scope remain reviewable when those local development files are absent.
+
+Commands run from the root in Windows PowerShell were the new `tools/compile.mjs`, `tools/test.mjs` and the equivalent native-library-pinned Python unittest discovery. Root npm aliases expose the same tools. The unchanged Node credit-witness suite passed eight checks and skipped two opt-in matching-artifact checks. JavaScript syntax checks passed for all four tools, and new-source whitespace plus CRLF-aware checks in both Git boundaries passed.
+
+An invalid synthetic private witness was also sent through the direct prover's stdin path. It rejected with empty stdout and exactly `GPRU_OFFLINE_TRANSFER_PROVER_FAILED` on stderr; library/WASM console diagnostics are suppressed to prevent private values escaping before a caught exception. No failed candidate or private witness was persisted.
+
+The internal operator guide, public GPRU proof page, ADR and both README boundaries were reviewed/updated; their native credit diagrams remain applicable because live execution is unchanged. MDX compilation passed all 102 currently present pages and Mermaid parsing passed 38 diagrams, with zero syntax failures. Local-link audit reported 26 findings: 25 references to missing existing pages and the already documented Node-instruction internal-guide publication flag. All 26 reference markers were confirmed in pre-task Git HEAD; none arise from the transfer files. Unrelated references were preserved. These parser/source checks do not verify remote publication or browser rendering.
+
+Documentation discovery was refreshed to 371 currently present documents. Regenerating the claim register against that fresh inventory passed all 36 explicit selectors and indexed 7,171 review units. The earlier attempt against the stale inventory stopped on an already missing cross-network page; no selector was removed or weakened to complete regeneration.
+
+## Preservation and remaining work
+
+No Solana program source, current credit/epoch circuit, SDK, Node, Receiver, Cranker, XP, program ID, keypair, deployment configuration or service environment was changed. No service was controlled, transaction signed/submitted, program deployed, account migrated, state recovery executed or Git staging/commit/push performed. The offline tests sign only synthetic owner-approval messages.
+
+Program/SBF enforcement, on-chain verifier enrollment, production ceremony/audit, usable owner opening/recovery, service/SDK/XP integration and a finalized transfer receipt remain unverified. The source contract and deterministic fixture generator remain reviewable when ignored local development artifacts are absent.

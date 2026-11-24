@@ -5952,5 +5952,97 @@
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Individual function execution and branch coverage were not measured. Imports, patch targets and source calls do not establish that the original implementation or every branch executed. No indirect coverage is inferred."
     }
+  },
+  {
+    "name": "post_tin_debit",
+    "path": "api/handlers/post_tin_debit.py",
+    "inputs": "node: Dependencies, request: TinDebitRequest",
+    "output": "dict",
+    "dependencies": [
+      "TSN_PROGRAM_ID",
+      "TCAP_PROGRAM_ID",
+      "GPRU_PROGRAM_ID",
+      "TINS_PROGRAM_ID",
+      "TOKEN_PROGRAM_ID",
+      "TOKEN_2022_PROGRAM_ID",
+      "TSN_RECEIVER_URL",
+      "TSN_RECEIVER_NODE_API_KEY",
+      "solana_rpc",
+      "get_mother_escrow_pda",
+      "read_onchain_tin_tip_route",
+      "receiver_request",
+      "_receiver_work_by_id"
+    ],
+    "async": true,
+    "runtimeRequired": true,
+    "responsibility": "Accept a sender-approved private debit through encrypted Receiver ingress.",
+    "errors": [
+      "HTTPException: generic authorization, context or idempotency refusal"
+    ],
+    "dependencyTypes": {
+      "TSN_PROGRAM_ID": "str",
+      "TCAP_PROGRAM_ID": "str",
+      "GPRU_PROGRAM_ID": "str",
+      "TINS_PROGRAM_ID": "str",
+      "TOKEN_PROGRAM_ID": "Any",
+      "TOKEN_2022_PROGRAM_ID": "Any",
+      "TSN_RECEIVER_URL": "str",
+      "TSN_RECEIVER_NODE_API_KEY": "str",
+      "solana_rpc": "Callable[..., Any]",
+      "get_mother_escrow_pda": "Callable[..., Any]",
+      "read_onchain_tin_tip_route": "Callable[..., Any]",
+      "receiver_request": "Callable[..., Any]",
+      "_receiver_work_by_id": "Callable[..., Any]"
+    },
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [
+        "tests/test_tin_debit.py"
+      ],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Scoped synthetic checks; no branch coverage or live execution inferred."
+    }
+  },
+  {
+    "name": "prepare_tin_debit_request",
+    "path": "api/handlers/prepare_tin_debit.py",
+    "inputs": "node: Dependencies, request: TinDebitPrepareRequest",
+    "output": "dict",
+    "dependencies": [
+      "TSN_PROGRAM_ID",
+      "TCAP_PROGRAM_ID",
+      "GPRU_PROGRAM_ID",
+      "TINS_PROGRAM_ID",
+      "TOKEN_PROGRAM_ID",
+      "TOKEN_2022_PROGRAM_ID",
+      "solana_rpc",
+      "get_mother_escrow_pda",
+      "read_onchain_tin_tip_route"
+    ],
+    "async": true,
+    "runtimeRequired": true,
+    "responsibility": "Resolve the authenticated debit context before sender approval.",
+    "errors": [
+      "HTTPException: generic authorization, context or idempotency refusal"
+    ],
+    "dependencyTypes": {
+      "TSN_PROGRAM_ID": "str",
+      "TCAP_PROGRAM_ID": "str",
+      "GPRU_PROGRAM_ID": "str",
+      "TINS_PROGRAM_ID": "str",
+      "TOKEN_PROGRAM_ID": "Any",
+      "TOKEN_2022_PROGRAM_ID": "Any",
+      "solana_rpc": "Callable[..., Any]",
+      "get_mother_escrow_pda": "Callable[..., Any]",
+      "read_onchain_tin_tip_route": "Callable[..., Any]"
+    },
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [
+        "tests/test_tin_debit.py"
+      ],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Scoped synthetic checks; no branch coverage or live execution inferred."
+    }
   }
 ]

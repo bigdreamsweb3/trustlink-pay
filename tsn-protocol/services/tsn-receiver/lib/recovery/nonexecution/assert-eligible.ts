@@ -11,12 +11,13 @@ import { ROOT } from "./configuration";
 /** assertEligible component. Inputs and results retain the original failed-settlement-resolution contract; declared dependencies identify replaceable ports. Errors propagate in their original order. */
 export function assertEligible(dependencies: Pick<Dependencies, "clock">, work: ReceiverWork, funding: ReceiverWork | undefined, expectedVersion: number, signature: string) {
   if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 1 || expectedVersion >= Number.MAX_SAFE_INTEGER || work.stateVersion !== expectedVersion) throw new Error("STALE_STATE_VERSION");
-  if (work.kind !== "SETTLEMENT" || work.status !== "FAILED" || work.nodeLease || work.crankerLease || work.nonExecutionResolution
-      || work.authorization?.kind !== "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3"
-      || work.verification?.verificationType !== "TSN_TCAP_GPRU_HIDDEN_HEAD_V1") fail("NOT_FAILED_NATIVE_CREDIT");
+  const debit = work.kind === "TIN_DEBIT";
+  if ((!debit && work.kind !== "SETTLEMENT") || work.status !== "FAILED" || work.nodeLease || work.crankerLease || work.nonExecutionResolution
+      || work.authorization?.kind !== (debit ? "TSN_TCAP_GPRU_TIN_DEBIT_AUTHORIZATION_V1" : "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3")
+      || work.verification?.verificationType !== (debit ? "TSN_TIN_DEBIT_V1" : "TSN_TCAP_GPRU_HIDDEN_HEAD_V1")) fail("NOT_FAILED_NATIVE_CREDIT");
   const result = work.result;
   if (!result || result.signature !== signature || !/^[1-9A-HJ-NP-Za-km-z]{86,88}$/.test(signature)
-      || result.stage !== "TCAP_GPRU_MEMO_CREDIT_V2_SIGNED" || !/^[a-f0-9]{64}$/.test(String(result.wireSha256))
+      || result.stage !== (debit ? "TCAP_GPRU_TIN_DEBIT_V1_SIGNED" : "TCAP_GPRU_MEMO_CREDIT_V2_SIGNED") || !/^[a-f0-9]{64}$/.test(String(result.wireSha256))
       || !Number.isSafeInteger(result.wireBytes) || Number(result.wireBytes) < 170 || Number(result.wireBytes) > 4096) return fail("INVALID_CHECKPOINT");
   try {
     const blockhash = new PublicKey(String(result.blockhash));
@@ -30,9 +31,15 @@ export function assertEligible(dependencies: Pick<Dependencies, "clock">, work: 
   // Reuse the canonical public projection; never revive a historical executor.
   const t = crankerAuthorizationForWork(work, auth).transition as Record<string, any>;
   if (!t || t.commitmentRoot !== ROOT.toBase58() || !/^[a-f0-9]{64}$/.test(String(t.previousTcapRoot))
-      || !Array.isArray(t.proof?.publicInputs) || t.proof.publicInputs.length !== 13
+      || !Array.isArray(t.proof?.publicInputs) || t.proof.publicInputs.length !== (debit ? 26 : 13)
       || t.proof.publicInputs[0] !== t.previousTcapRoot || u64(t.expiresAtSlot) < u64(t.validAfterSlot)) fail("INVALID_AUTHORIZATION");
   u64(t.tcapRootSequence);
+  if (debit) {
+    if (t.proof.publicInputs[3] !== (u64(t.tcapRootSequence) - 1n).toString(16).padStart(64, "0")
+        || t.proof.publicInputs[6] !== u64(t.validAfterSlot).toString(16).padStart(64, "0")
+        || t.proof.publicInputs[7] !== u64(t.expiresAtSlot).toString(16).padStart(64, "0")) fail("INVALID_AUTHORIZATION");
+    return t;
+  }
   if (!funding || funding.kind !== "AUTHORIZED_FUNDING" || funding.status !== "CONFIRMED" || !funding.result?.signature) return fail("FUNDING_NOT_CONFIRMED");
   const id = `settlement-${createHash("sha256").update(`${funding.id}:${funding.payloadCommitment}`).digest("hex").slice(0, 32)}`;
   if (work.id !== id || work.payload.intentId !== funding.id || work.payload.paymentId !== (funding.payload.paymentId ?? funding.id)

@@ -38,3 +38,9 @@ Inputs, outputs, dependency types and raised exceptions are recorded per compone
 ## Verification and replacement
 
 Run `python -m testing.run_suite` from the Node directory for the complete offline suite, or select the relevant unittest family under `tests/`. Supply synthetic dependencies to exercise a component directly; use an awaited mock only for an async port. Preserve the signature, errors and transaction/response projection when replacing a component, then verify its direct consumers. Update this README and the contract map when ownership or an interface changes.
+
+## TIN-Debit preparation and ingress
+
+`prepare_tin_debit_request` checks a short-lived registered-owner signature before returning the two route commitments, governed asset decimals and proof context. `post_tin_debit` validates both sender signatures, binds their authorization and forwards the exact private request through authenticated Receiver ingress. An identical durable request returns its existing status before current-route/prover work; changed bodies conflict. Models forbid unknown fields and bound their encodings. Generic private-route validation responses omit input values. Recipient approval/opening is never requested.
+
+The [debit package](../../settlement/debit/README.md) owns context checks, witness construction, proving, public projection, lease authorization and Mother-message validation. NodeRuntime binds both handlers. The canonical contract and tests define source behavior; deployment and chain results remain separate.

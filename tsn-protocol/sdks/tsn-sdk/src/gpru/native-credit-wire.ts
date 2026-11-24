@@ -71,7 +71,8 @@ function decodeNativeCredit(raw: Uint8Array): GpruHistoryWireTransactionV1 {
   const view = new DataView(message.buffer, message.byteOffset, message.byteLength);
   // Only the current native credit configuration is understood: no fee/heap
   // extensions or lookup addresses; compute and loaded-account limits follow keys.
-  if (required !== 2 || view.getUint32(4, true) !== 12 || message[40] !== 2) {
+  const instructionCount = message[40];
+  if (required !== 2 || view.getUint32(4, true) !== 12 || (instructionCount !== 2 && instructionCount !== 3)) {
     invalid("unsupported V1 native credit configuration");
   }
   const count = message[41];
@@ -86,7 +87,7 @@ function decodeNativeCredit(raw: Uint8Array): GpruHistoryWireTransactionV1 {
   const keys = Array.from({ length: count }, () => new PublicKey(take(32)).toBase58());
   validateHeader(required, readonlySigned, readonlyUnsigned, keys);
   take(8); // Explicit u32 compute-unit and loaded-account byte limits.
-  const headers = Array.from({ length: 2 }, () => {
+  const headers = Array.from({ length: instructionCount }, () => {
     const bytes = take(4);
     return { program: bytes[0], count: bytes[1], size: bytes[2] | (bytes[3] << 8) };
   });
@@ -97,12 +98,16 @@ function decodeNativeCredit(raw: Uint8Array): GpruHistoryWireTransactionV1 {
     header.program, Array.from(take(header.count)), take(header.size), keys, isSigner, isWritable,
   ));
   if (cursor !== message.length) invalid("trailing V1 message bytes");
-  if (instructions[0].programId !== TSNP || instructions[1].programId !== MEMO
-      || !((instructions[0].accounts.length === 13 && instructions[0].data.length === 825)
+  const credit = instructionCount === 2 && instructions[0].programId === TSNP && instructions[1].programId === MEMO
+      && ((instructions[0].accounts.length === 13 && instructions[0].data.length === 825)
         || (instructions[0].accounts.length === 14 && instructions[0].data.length === 857)
         || (instructions[0].accounts.length === 16 && instructions[0].data.length === 905))
-      || instructions[1].accounts.length !== 1
-      || instructions[1].accounts[0] !== keys[0]) {
+      && instructions[1].accounts.length === 1 && instructions[1].accounts[0] === keys[0];
+  const transfer = instructionCount === 3 && instructions[0].programId === TSNP && instructions[0].accounts.length === 13
+      && instructions[0].data.length === 1128 && instructions.slice(1).every(memo => memo.programId === MEMO
+        && memo.accounts.length === 1 && memo.accounts[0] === instructions[0].accounts[0]
+        && memo.signerAccounts.length === 1 && memo.writableAccounts.length === 0 && memo.data.length === 582);
+  if (!credit && !transfer) {
     invalid("unsupported V1 native credit instructions");
   }
   const signatures = Array.from({ length: required }, (_, index) => {

@@ -23,6 +23,8 @@ Future EVM evaluation prioritizes Base, Arbitrum and Polygon for lower transacti
 
 The [Laboratory engineering record](docs/laboratory/README.md) connects architecture, source references, experiments and decisions. The [public SDK handbook](tsn-protocol/tsn-docs/sdk/index.mdx) provides developer guidance, and [documentation status](docs/DOCUMENTATION_STATUS.md) records verification and remaining gaps. Contributors use the [documentation maintenance manual](docs/DOCUMENTATION_MAINTENANCE.md).
 
+The [offline-recipient TIN-to-TIN transfer experiment](docs/laboratory/experiments/EXP-20261123-offline-recipient-transfer.md) uses the sender's approval/opening and atomically credits the recipient's authenticated balance point without recipient participation. Encrypted records support later owner recovery. This experiment supplies no live transfer instruction or XP flow; existing wallet deposit/credit behavior and the native credit diagram below are unchanged.
+
 ## TrustLink Labs resources
 
 

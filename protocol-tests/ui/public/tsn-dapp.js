@@ -1,6 +1,7 @@
 (() => {
   let session;
   let resolvedTin;
+  let resolvedDebitTin;
   let networkStatus;
   let activeWallet;
   let ownerTinIdentity;
@@ -94,6 +95,9 @@
     activeWallet = null;
     invalidateTinFundingApproval();
     ownerTinIdentity = null;
+    if (pendingTinDebitId) tinDebitRetryState.workId = pendingTinDebitId;
+    delete tinDebitRetryState.requestJson;
+    delete tinDebitRetryState.intent;
     balanceController?.abort();
     balanceInFlight = null;
     window.TsnTinCreationSdk?.clearTinOwnerBalanceAccessV1(wallet);
@@ -503,17 +507,21 @@
     log("TIN V1 STATUS PENDING", "The owner session remains active; refresh status after the Cranker submits the transaction.");
   }
 
-  async function resolveTinForReview() {
-    const tin = $("recipientTin").value.trim();
-    const result = $("tinResolution");
-    resolvedTin = null;
-    $("payTin").disabled = true;
+  async function resolveTinForReview(action = "credit") {
+    const isDebit = action === "debit";
+    const tin = $(isDebit ? "debitRecipientTin" : "recipientTin").value.trim();
+    const result = $(isDebit ? "tinDebitResolution" : "tinResolution");
+    const submit = $(isDebit ? "sendTinDebit" : "payTin");
+    if (isDebit) resolvedDebitTin = null;
+    else resolvedTin = null;
+    submit.disabled = true;
     result.hidden = false;
     result.textContent = "Resolving the TIN display name through TSN Node…";
     try {
       requireNetwork();
       const identity = await api("/api/tsn/sdk/resolve-tin", { method: "POST", body: JSON.stringify({ tin }) });
-      resolvedTin = identity;
+      if (isDebit) resolvedDebitTin = identity;
+      else resolvedTin = identity;
       result.replaceChildren();
       const heading = document.createElement("strong");
       heading.textContent = identity.displayName || "No display name provided";
@@ -522,11 +530,82 @@
       const match = document.createElement("small");
       match.textContent = `Resolved TIN ${identity.tin}`;
       result.append(heading, detail, match);
-      $("payTin").disabled = false;
+      submit.disabled = false;
       log("TSN SDK resolve TIN", `TIN ${tin} / ${identity.displayName || "no display name"} / owner-provided name`);
     } catch (error) {
       result.textContent = `TIN could not be resolved: ${error.message}`;
       log("TIN RESOLUTION BLOCKED", error.message);
+    }
+  }
+
+  let tinDebitInFlight = false;
+  let pendingTinDebitId;
+  const tinDebitRetryState = {};
+  function reconcileTinDebitStatus(work, workId) {
+    if (work?.operationId !== workId || work.kind !== "TIN_DEBIT") throw new Error("The original TIN-Debit status could not be verified.");
+    if (work.status !== "CONFIRMED" && !(["REJECTED", "FAILED"].includes(work.status) && work.safeToReplace === true)) return false;
+    if (pendingTinDebitId !== workId) return false;
+    delete tinDebitRetryState.intent; delete tinDebitRetryState.requestJson; delete tinDebitRetryState.workId;
+    pendingTinDebitId = undefined;
+    $("tinDebitResolution").textContent = work.status === "CONFIRMED"
+      ? "TIN-Debit confirmed. Your outgoing debit and the recipient's incoming credit are recorded."
+      : "TIN-Debit did not execute. You can prepare another debit.";
+    return true;
+  }
+  async function sendTinDebit() {
+    if (tinDebitInFlight) return;
+    const wallet = activeWallet, identity = ownerTinIdentity;
+    if (!wallet || !identity) return log("TIN-DEBIT", "Connect your wallet and open your TIN identity first.");
+    const recipientTin = $("debitRecipientTin").value.trim();
+    if (pendingTinDebitId && !tinDebitRetryState.requestJson && tinDebitRetryState.workId) {
+      try {
+        const status = await api(`/api/tsn/sdk/tin-debit-status?workId=${encodeURIComponent(pendingTinDebitId)}`);
+        $("tinDebitResolution").hidden = false;
+        $("tinDebitResolution").textContent = `Original TIN-Debit ${pendingTinDebitId}: ${status.status}.`;
+        if (reconcileTinDebitStatus(status, pendingTinDebitId) && status.status === "CONFIRMED") await refreshTinBalance();
+      } catch {
+        log("TIN-DEBIT STATUS", `Keep the original payment ID ${pendingTinDebitId}; its status is unavailable in this wallet session.`);
+      }
+      return;
+    }
+    if (!tinDebitRetryState.requestJson && (!resolvedDebitTin || resolvedDebitTin.tin !== recipientTin)) return log("TIN-DEBIT", "Resolve and review the recipient TIN first.");
+    tinDebitInFlight = true;
+    $("sendTinDebit").disabled = true;
+    pendingTinDebitId ??= crypto.randomUUID();
+    try {
+      const sdk = window.TsnTinCreationSdk;
+      if (!sdk?.sendTinDebitV1) throw new Error("Rebuild the XP browser SDK to enable TIN-Debit.");
+      const connection = new sdk.Connection(`${window.location.origin}/api/tsn/rpc`, {
+        commitment: "finalized", httpHeaders: { "x-trustlink-session": session.sessionId, "x-trustlink-csrf": session.csrfToken },
+      });
+      const result = await sdk.sendTinDebitV1({ connection, tin: identity.tin, recipientTin,
+        tokenMintAddress: $("debitMint").value.trim(), amount: $("debitAmount").value.trim(),
+        paymentId: pendingTinDebitId, retryState: tinDebitRetryState, identityClient: ownerIdentityClient, ownerWallet: wallet, cacheAuthorization: true,
+        debitClient: { post: (path, body) => api(path.endsWith("/prepare") ? "/api/tsn/sdk/prepare-tin-debit" : "/api/tsn/sdk/submit-tin-debit", { method: "POST", body: JSON.stringify(body) }) },
+        onProgress: message => { $("tinDebitResolution").hidden = false; $("tinDebitResolution").textContent = message; },
+      });
+      if (activeWallet !== wallet || ownerTinIdentity !== identity) throw new Error("Wallet changed; preserve the original payment ID for status recovery.");
+      $("tinDebitResolution").textContent = `TIN-Debit ${result.workId} accepted. Follow its settlement status in network activity.`;
+      log("TIN-DEBIT ACCEPTED", `${result.workId} / ${result.status}`);
+      for (let attempt = 0; attempt < 60 && activeWallet === wallet; attempt++) {
+        const work = await api(`/api/tsn/sdk/tin-debit-status?workId=${encodeURIComponent(result.workId)}`);
+        $("tinDebitResolution").textContent = `TIN-Debit ${result.workId}: ${work.status}.`;
+        if (reconcileTinDebitStatus(work, result.workId)) {
+          if (work.status === "CONFIRMED" && ownerTinIdentity === identity) await refreshTinBalance();
+          break;
+        }
+        if (["REJECTED", "FAILED"].includes(work.status)) {
+          $("tinDebitResolution").textContent += " Preserve this payment ID for recovery; do not create a replacement.";
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+    } catch (error) {
+      $("tinDebitResolution").hidden = false;
+      $("tinDebitResolution").textContent = error instanceof Error ? error.message : "TIN-Debit could not be completed.";
+    } finally {
+      tinDebitInFlight = false;
+      $("sendTinDebit").disabled = false;
     }
   }
 
@@ -910,6 +989,12 @@
     $("tinResolution").hidden = true;
   });
   $("payTin").onclick = payTin;
+  $("resolveTinDebit").onclick = () => resolveTinForReview("debit");
+  $("debitRecipientTin").addEventListener("input", () => {
+    resolvedDebitTin = null;
+    if (!pendingTinDebitId) $("tinDebitResolution").hidden = true;
+  });
+  $("sendTinDebit").onclick = sendTinDebit;
   $("approveTinFunding").onclick = approveTinFunding;
   $("cancelTinFunding").onclick = cancelTinFundingApproval;
   $("buildWalletTransfer").onclick = buildWalletTransfer;

@@ -1,5 +1,5 @@
 /** Sender-signed, Node-verified reserve funding and separate settlement work. */
-export type WorkKind = "AUTHORIZED_FUNDING" | "SETTLEMENT" | "TIN_OPERATION" | "TCAP_EPOCH_ACCOUNTING";
+export type WorkKind = "AUTHORIZED_FUNDING" | "SETTLEMENT" | "TIN_DEBIT" | "TIN_OPERATION" | "TCAP_EPOCH_ACCOUNTING";
 
 export type WorkStatus =
   | "RECEIVED"

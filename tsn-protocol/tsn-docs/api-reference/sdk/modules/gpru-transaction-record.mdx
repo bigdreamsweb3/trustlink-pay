@@ -41,6 +41,7 @@ new Error(`GPRU Memo ${label} must use canonical Base64`)
 new Error("Unsupported GPRU Memo compression")
 new Error("Malformed GPRU Memo nonce or ciphertext length")
 new GpruMemoAuthenticationErrorV1()
+new Error("GPRU owner record could not be decoded")
 new Error("TIN master seed does not derive the registered GPRU balance scan key")
 new Error("Decrypted GPRU action commitment differs from the proof-bound Memo prefix")
 ```

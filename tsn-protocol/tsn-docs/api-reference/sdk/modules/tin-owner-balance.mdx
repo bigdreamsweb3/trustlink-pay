@@ -11,7 +11,7 @@ This reference is generated from the checked-out TypeScript exports. Types and s
 
 Canonical message shared with the owner identity service; no transaction authority.
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 60](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L60).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 62](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L62).
 
 ```ts
 buildOwnerTinIdentityChallengeMessageV1(params: { ownerPublicKey: string; tin: string; challengeId: string; }): Uint8Array
@@ -27,7 +27,7 @@ new Error("Invalid owner identity challenge.")
 
 Erases reusable local signatures and invalidates outstanding balance reads.
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 49](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L49).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 51](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L51).
 
 ```ts
 clearTinOwnerBalanceAccessV1(wallet: TinBalanceWallet): void
@@ -37,7 +37,7 @@ clearTinOwnerBalanceAccessV1(wallet: TinBalanceWallet): void
 
 Backend owner-context validation using the same registry checks as the complete balance read.
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 92](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L92).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 94](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L94).
 
 ```ts
 getTinOwnerBalanceContextV1(params: { connection: Connection; registry: string; programId: string; ownerPublicKey: string; }): Promise<TinOwnerBalanceContextV1>
@@ -45,30 +45,17 @@ getTinOwnerBalanceContextV1(params: { connection: Connection; registry: string; 
 
 ## loadTinOwnerBalanceV1
 
-Complete owner balance read: resolve identity, validate registry and owner,
-obtain wallet seed authorization, decrypt locally and verify finalized history.
-RPC and the identity service never receive the seed or reusable seed signature.
+Complete wallet-authorized local display balance read.
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 104](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L104).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 209](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L209).
 
 ```ts
 loadTinOwnerBalanceV1(params: LoadTinOwnerBalanceV1Params): Promise<TinOwnerBalanceV1>
 ```
 
-Direct failure expressions:
-
-```text
-new Error("A ten-digit TIN is required.")
-new Error("Connected wallet changed during balance recovery.")
-new Error("Invalid owner wallet signature.")
-new Error("Owner identity challenge binding mismatch.")
-new Error("Owner TIN balance context is unavailable.")
-new Error("This TIN envelope does not support current wallet-owner GPRU recovery.")
-```
-
 ## LoadTinOwnerBalanceV1Params
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 24](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L24).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 26](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L26).
 
 ```ts
 export type LoadTinOwnerBalanceV1Params = {
@@ -89,7 +76,7 @@ export type LoadTinOwnerBalanceV1Params = {
 
 Accepts both wallet adapters and injected Solana browser wallets.
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L11).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L13).
 
 ```ts
 export type TinBalanceWallet = {
@@ -102,7 +89,7 @@ export type TinBalanceWallet = {
 
 ## TinOwnerBalanceContextV1
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 22](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L22).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 24](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L24).
 
 ```ts
 export type TinOwnerBalanceContextV1 = { registry: string; programId: string };
@@ -110,7 +97,7 @@ export type TinOwnerBalanceContextV1 = { registry: string; programId: string };
 
 ## TinOwnerBalanceV1
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 23](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L23).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 25](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L25).
 
 ```ts
 export type TinOwnerBalanceV1 = Awaited<ReturnType<typeof loadTinGpruTokenBalancesV1>>;
@@ -120,10 +107,29 @@ export type TinOwnerBalanceV1 = Awaited<ReturnType<typeof loadTinGpruTokenBalanc
 
 Authenticated transport for the existing owner identity challenge service.
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 19](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L19).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 21](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L21).
 
 ```ts
 export type TinOwnerIdentityClient = {
   post(path: string, body: unknown): Promise<unknown>;
 };
+```
+
+## withTinOwnerDebitOpeningV1
+
+Recover the sender's private opening locally; receiving requires no recipient access.
+The callback may request separate opening-packet consent; neither RPC nor the
+identity service receives the opening, seed, or seed-access signature.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-owner-balance`. [Implementation, line 222](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts#L222).
+
+```ts
+withTinOwnerDebitOpeningV1<Result>(params: LoadTinOwnerBalanceV1Params & { tokenId: number; leg: 0; authorizationCommitment: string; expectedGlobalRoot: string; tipRouteRoot: string; expectedRootSequence: string; }, callback: (packet: TinDebitOpeningPacketV1) => Result | Promise<Result>): Promise<Result>
+```
+
+Direct failure expressions:
+
+```text
+new Error("Transfer opening consent is required only from the sender")
+new Error("Transfer opening requires a positive u32 token ID")
 ```

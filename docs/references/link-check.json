@@ -2,8 +2,133 @@
   "scope": "Two documentation trees, all tsn-protocol Markdown, .agents Markdown and AGENTS/root README references: local targets, exported-subtree boundary, internal-only operator-guide publication, Mintlify navigation, frontmatter, fence balance. Remote URLs, anchors and Mermaid rendering require separate validation.",
   "issues": [
     {
+      "file": "docs/references/TSN-POSITIONING-20261122.md",
+      "target": "../../tsn-protocol/tsn-docs/overview/solana-integration.mdx",
+      "kind": "local link"
+    },
+    {
+      "file": "docs/references/TSN-POSITIONING-20261122.md",
+      "target": "../../tsn-protocol/tsn-docs/overview/payment-solutions.mdx",
+      "kind": "local link"
+    },
+    {
+      "file": "docs/references/TSN-POSITIONING-20261122.md",
+      "target": "../../tsn-protocol/tsn-docs/overview/cross-network-roadmap.mdx",
+      "kind": "local link"
+    },
+    {
+      "file": "docs/references/TSN-POSITIONING-20261122.md",
+      "target": "../../tsn-protocol/tsn-docs/overview/identity-attestations.mdx",
+      "kind": "local link"
+    },
+    {
       "file": "tsn-protocol/services/tsn-node/AGENTS.md",
       "kind": "premature operator-guide publication"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/about/current-technology.mdx",
+      "target": "/overview/solana-integration",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/about/current-technology.mdx",
+      "target": "/overview/cross-network-roadmap",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/about/current-technology.mdx",
+      "target": "/overview/identity-attestations",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/about/trustlink-labs.mdx",
+      "target": "/overview/solana-integration",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/about/trustlink-labs.mdx",
+      "target": "/overview/cross-network-roadmap",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/about/what-were-building.mdx",
+      "target": "/overview/solana-integration",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/about/what-were-building.mdx",
+      "target": "/overview/cross-network-roadmap",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/api-reference/sdk/tsn-sdk.mdx",
+      "target": "/overview/cross-network-roadmap",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/developers/network-status.mdx",
+      "target": "/overview/solana-integration",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/developers/network-status.mdx",
+      "target": "/overview/cross-network-roadmap",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/get-started/faq.mdx",
+      "target": "/overview/solana-integration",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/get-started/faq.mdx",
+      "target": "/overview/cross-network-roadmap",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/get-started/faq.mdx",
+      "target": "/overview/identity-attestations",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/layers/tin.mdx",
+      "target": "/overview/identity-attestations",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/operators/tsn-cranker.mdx",
+      "target": "/overview/cross-network-roadmap",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/overview/architecture.mdx",
+      "target": "/overview/cross-network-roadmap",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/overview/introduction.mdx",
+      "target": "/overview/solana-integration",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/overview/introduction.mdx",
+      "target": "/overview/cross-network-roadmap",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/overview/introduction.mdx",
+      "target": "/overview/identity-attestations",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/overview/introduction.mdx",
+      "target": "/overview/cross-network-roadmap",
+      "kind": "local link"
+    },
+    {
+      "file": "tsn-protocol/tsn-docs/sdk/integrations.mdx",
+      "target": "/overview/cross-network-roadmap",
+      "kind": "local link"
     }
   ]
 }

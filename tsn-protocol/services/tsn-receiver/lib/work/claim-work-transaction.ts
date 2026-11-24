@@ -12,7 +12,7 @@ export async function claimWorkTransaction(dependencies: Pick<WorkDependencies, 
         return null;
     if (!dependencies.isSupportedWorkKind(current.kind))
         return null;
-    const serial = current.kind === "SETTLEMENT" || current.kind === "TCAP_EPOCH_ACCOUNTING";
+    const serial = current.kind === "SETTLEMENT" || current.kind === "TIN_DEBIT" || current.kind === "TCAP_EPOCH_ACCOUNTING";
     const lockRef = dependencies.db.collection("tsn_private_credit_locks").doc("global-root");
     if (serial && next === "NODE_VERIFYING") {
         const lock = await transaction.get(lockRef);
@@ -30,7 +30,7 @@ export async function claimWorkTransaction(dependencies: Pick<WorkDependencies, 
     }
     // Native execution includes two full Node authorization passes before
     // signing, then bounded broadcast/confirmation. Recovery stays finite.
-    const nativeCranker = next === "CRANKER_LEASED" && (current.kind === "TCAP_EPOCH_ACCOUNTING"
+    const nativeCranker = next === "CRANKER_LEASED" && (current.kind === "TCAP_EPOCH_ACCOUNTING" || current.kind === "TIN_DEBIT"
         || (current.kind === "SETTLEMENT" && current.verification?.verificationType === "TSN_TCAP_GPRU_HIDDEN_HEAD_V1"));
     const expiresAt = new Date(Date.now() + (nativeCranker ? 180000 : 60000)).toISOString();
     const patch = {

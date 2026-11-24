@@ -19,6 +19,8 @@ evidence limits below.
 
 Planned lower-fee EVM evaluation prioritizes Base, Arbitrum and Polygon; gas still applies, Ethereum Layer 1 is outside the current scope, and no enabled cross-network destination is claimed. Resolved TIN names are owner-provided; issuer-backed attestations remain planned. See the [public integration guidance](tsn-docs/sdk/integrations.mdx) and [canonical integration plan](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/CROSS-NETWORK-PAYMENTS-BUILD-PLAN.md).
 
+The [offline private-transfer core](programs/gpru/circuits/hidden_head_transfer_v1/README.md) uses the sender's approval/opening and atomically credits the recipient's authenticated balance point with a separate twenty-input circuit. The recipient supplies no opening or signature and can remain offline; encrypted records support later recovery. It has no deployed instruction, payment API or XP flow, and existing wallet deposit/credit behavior and the following credit diagram are unchanged.
+
 ## Wallet-to-TIN credit flow and data boundaries
 
 ```mermaid

@@ -70,6 +70,22 @@
       "import": "./dist/tin-private-controller.js",
       "types": "./dist/tin-private-controller.d.ts"
     },
+    "./tin-debit": {
+      "import": "./dist/tin-debit.js",
+      "types": "./dist/tin-debit.d.ts"
+    },
+    "./tcap-gpru-tin-debit": {
+      "import": "./dist/tcap-gpru-tin-debit.js",
+      "types": "./dist/tcap-gpru-tin-debit.d.ts"
+    },
+    "./gpru/tin-debit-opening": {
+      "import": "./dist/gpru/tin-debit-opening.js",
+      "types": "./dist/gpru/tin-debit-opening.d.ts"
+    },
+    "./gpru/tin-debit-record": {
+      "import": "./dist/gpru/tin-debit-record.js",
+      "types": "./dist/gpru/tin-debit-record.d.ts"
+    },
     "./tin-owner-balance": {
       "import": "./dist/tin-owner-balance.js",
       "types": "./dist/tin-owner-balance.d.ts"

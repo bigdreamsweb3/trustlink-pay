@@ -2237,6 +2237,7 @@ name = "tsn-gpru-proof-contract"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
+ "bytemuck",
  "curve25519-dalek",
  "getrandom 0.1.16",
  "groth16-solana",

@@ -10,4 +10,4 @@ async def test_fair_order(self):
                                        "fast-claim", "verify:funding-2", "coordinate", "normal-claim", "verify:tin"])
     self.assertEqual([work["id"] for work in node.processed], ["funding-1", "accounting", "funding-2", "tin"])
     self.assertEqual(node.requests[0], {"nodeId": "synthetic-node", "supportedKinds": ["AUTHORIZED_FUNDING"], "fundingPhase": "SIGNED_DEPOSIT"})
-    self.assertEqual(node.requests[1], {"nodeId": "synthetic-node", "supportedKinds": ["AUTHORIZED_FUNDING", "TIN_OPERATION", "SETTLEMENT", "TCAP_EPOCH_ACCOUNTING"]})
+    self.assertEqual(node.requests[1], {"nodeId": "synthetic-node", "supportedKinds": ["AUTHORIZED_FUNDING", "TIN_OPERATION", "SETTLEMENT", "TIN_DEBIT", "TCAP_EPOCH_ACCOUNTING"]})

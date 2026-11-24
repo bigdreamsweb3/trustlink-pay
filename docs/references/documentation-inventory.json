@@ -44,8 +44,8 @@
     {
       "path": "README.md",
       "title": "TrustLink Labs / TSN",
-      "sha256": "1ae185dab39198c355515282c6689adf90667ed62412f00705ca5a40092cbbdb",
-      "lines": 320,
+      "sha256": "4d376b142b005740a40580712ea1fbc28e0e47307b2aca4b0ec8580b1196862b",
+      "lines": 322,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
       "evidence": [
@@ -68,31 +68,31 @@
           "text": "The project is still developing its experimental first release, **v1**, with"
         },
         {
-          "line": 189,
+          "line": 191,
           "text": "Current experimental native credit uses `tsn_register_tcap_credit_authorization_v3` → TCAP `credit_gpru_memo_v2` → GPRU `verify_hidden_head_transition_v2`. It advances the authenticated head/nullifier root and blinded epoch transcript with no tokens moving or liability counters changing. Separate Node/Receiver/Cranker epoch work proves the complete"
         },
         {
-          "line": 212,
+          "line": 214,
           "text": "## Historical architecture boundary"
         },
         {
-          "line": 216,
+          "line": 218,
           "text": "only for historical auditability. New integrations must not target ZK-PRU as a"
         },
         {
-          "line": 217,
+          "line": 219,
           "text": "receiving, balance or spending architecture. See the [ZK-PRU retirement note](docs/ZK-PRU-RETIRED.md)."
         },
         {
-          "line": 231,
+          "line": 233,
           "text": "a matching deployment or current account readiness. See [Devnet build and deploy](docs/DEVNET-BUILD-DEPLOY.md), the [historical TCAP Devnet preparation](docs/TCAP-V2-DEVNET.md), the [historical TCAP debit and credit design](docs/TCAP-V2-DEBIT-CREDIT-DESIGN.md), and the [legacy TCAP smoke notice](docs/tcap-devnet-credit-smoke.md)."
         },
         {
-          "line": 233,
+          "line": 235,
           "text": "## Historical Devnet evidence: first wallet-assisted TIN-to-TIN test"
         },
         {
-          "line": 236,
+          "line": 238,
           "text": "receiving path. It is preserved here as historical transaction evidence only;"
         }
       ]
@@ -762,8 +762,8 @@
     {
       "path": "docs/DOCUMENTATION_STATUS.md",
       "title": "TSN documentation reconstruction status and continuation record",
-      "sha256": "327f0c30478c9909c1c17b37eedf834d8e0781f6c059bcab2d69279cf83c6862",
-      "lines": 407,
+      "sha256": "22f34308f9b3bdde1f434bcc67f62a85d4ef2908afc25702b6f2772943a3d557",
+      "lines": 453,
       "status": "CURRENT",
       "reason": "Records the full TSN product vision, source retirement, bounded verification and outstanding publication/fixture limits; not a claim of completed production capabilities.",
       "evidence": [
@@ -778,127 +778,147 @@
       ],
       "statusStatements": [
         {
-          "line": 13,
-          "text": "Local whitepaper, pitch-deck source, Blogger drafts/theme, handbook, README entry points and internal records now describe TSN as hybrid, decentralized settlement infrastructure for the Internet of Value. The copy leads with ten-digit TIN addressing and the current experimental Solana wallet-to-TIN credit workflow. Lower-fee Base, Arbitrum and Poly"
+          "line": 11,
+          "text": "SDK/browser builds and generated API reference passed. Documentation syntax passed 106 MDX compilations and 38 diagrams; the link audit retains 26 unrelated findings after correcting two transfer-to-debit source links. Internal operator procedures and canonical component/ABI records are updated in place, with historical experiments retained as date"
         },
         {
-          "line": 27,
-          "text": "The Node inventory covers 933 files/655 functions with no AST/import/organization findings, preserving 147 original contracts/231 original test mappings/test hashes and separately listing nineteen later functions. Receiver's audit covers 756 files/618 functions with no organization/import findings. Scoped document validation passed 42 files, fiftee"
+          "line": 21,
+          "text": "The [offline-recipient checkpoint](laboratory/experiments/EXP-20261123-offline-recipient-transfer.md) replaces the experimental two-opening transfer design. Preparation uses only the sender's approval/opening and authenticates the recipient's stored balance point before applying the same homomorphic increment used by existing deposit credit. The re"
+        },
+        {
+          "line": 25,
+          "text": "The corrected round trip passed six cases/six R1CS witnesses and later recovered twelve owner successors, including accumulated u64 credits on both sides through unchanged credit-history arithmetic. The existing-recipient case verified one real Groth16 proof and rejected nine modified public statements; the other five cases used R1CS and recovery w"
         },
         {
           "line": 31,
+          "text": "**Historical verification checkpoint, superseded for operational design by the offline-recipient correction above.** The following counts describe the earlier two-opening prototype. Source paths and current commands select the replacement; these results do not verify its changed circuit, and recipient participation is no longer a transfer requireme"
+        },
+        {
+          "line": 43,
+          "text": "**Historical verification checkpoint, superseded for operational design by the offline-recipient correction above.** The original tests below remain dated evidence for the earlier two-opening core; its contract and keys do not direct current transfer integration."
+        },
+        {
+          "line": 59,
+          "text": "Local whitepaper, pitch-deck source, Blogger drafts/theme, handbook, README entry points and internal records now describe TSN as hybrid, decentralized settlement infrastructure for the Internet of Value. The copy leads with ten-digit TIN addressing and the current experimental Solana wallet-to-TIN credit workflow. Lower-fee Base, Arbitrum and Poly"
+        },
+        {
+          "line": 73,
+          "text": "The Node inventory covers 933 files/655 functions with no AST/import/organization findings, preserving 147 original contracts/231 original test mappings/test hashes and separately listing nineteen later functions. Receiver's audit covers 756 files/618 functions with no organization/import findings. Scoped document validation passed 42 files, fiftee"
+        },
+        {
+          "line": 77,
           "text": "**Historical pre-staging checkpoint.** The November 18 sequence above supersedes initial full-payload ingress and moves slow authorization before deposit signing. Original results below remain dated evidence, and exact blockhash/context checks still apply at signed attachment."
         },
         {
-          "line": 35,
+          "line": 81,
           "text": "Hash rejection within the client-reported lifetime and partial transport/context/height failure remain retryable. Terminal hash rejection requires every configured endpoint's explicit rejection and observed height beyond that lifetime. This routing hint is not an issuer signature or proof of expiry/nonexecution. Confirmed receipt reconstruction and"
         },
         {
-          "line": 41,
+          "line": 87,
           "text": "Final scoped documentation validation covers 26 files: nine MDX compilations, 23 Markdown/fence checks, 249 local links, 82 Mintlify routes, 85 repository GitHub targets and 92 anchor checks pass. No Mermaid blocks occur in this scope, and both Git-boundary whitespace checks pass. The untracked scan checked 750 affected service/test/tool files; eig"
         },
         {
-          "line": 61,
+          "line": 107,
           "text": "Internal/public ABI, lifecycle, layer, operator, security and README records were aligned with that contract. ADR-005 separately records PROPOSED mixed-action accounting: private internal debit/credit must conserve total obligations, and typed complete transcripts/category deltas are required before counting debits, transfers or exits. The public-o"
         },
         {
-          "line": 83,
+          "line": 129,
           "text": "The [later checkpoint](laboratory/experiments/EXP-20261107-private-credit-epoch.md#release-headroom-signing-availability-and-unsigned-recovery-checkpoint) distinguishes logged release expiry from the following signing-service 404/503. Node release planning now uses monotonic census/full-workflow timing, validated recent slot rate and an initial 180"
         },
         {
-          "line": 93,
+          "line": 139,
           "text": "The [latest pool checkpoint](laboratory/experiments/EXP-20261107-private-credit-epoch.md#blockhash-not-found-and-minimum-context-correction) identifies logged Kit code `7050008` as `BlockhashNotFound`. Cranker retains the confirmed blockhash response's context slot for preflight/height polling; Gateway retries exact RPC `-32016` with identical requ"
         },
         {
-          "line": 107,
+          "line": 153,
           "text": "The [funded-note experiment](laboratory/experiments/EXP-20261103-funded-note-credit.md#public-only-deposit-to-credit-regression-2026-11-05) now records a public-only comparison of the two historical signature-nullifier links and the supplied updated deposit/credit. Both historical controls reproduce exactly; the updated nullifier does not match the"
         },
         {
-          "line": 109,
+          "line": 155,
           "text": "Internal/public privacy and operator guidance distinguish removal of the former formula from actual anonymity-set size. Six finalized receipts, two historical controls and the public Poseidon leaf/root reconstruction passed; JavaScript syntax passed. Larger-set unlinkability, new recipient-registry analysis, proof forgery, deployed-byte equality an"
         },
         {
-          "line": 117,
+          "line": 163,
           "text": "The November 3–5 [funded-note replacement](laboratory/experiments/EXP-20261103-funded-note-credit.md) introduced secret-derived nullifier and exact deposit membership while retaining public credit amounts. It is historical relative to the [November 7 private-credit/epoch source](laboratory/experiments/EXP-20261107-private-credit-epoch.md). New keys"
         },
         {
-          "line": 127,
+          "line": 173,
           "text": "[ADR-005](laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md) is now EXPERIMENTAL implementation: blinded credit amount, no individual liability reclassification, sealed positive-funding pools/common release windows and separate complete epoch accounting. Node/Receiver/Cranker contracts, SDK recovery, program/circuit layouts and oper"
         },
         {
-          "line": 146,
+          "line": 192,
           "text": "The internal [Laboratory and Engineering Record](laboratory/README.md) extends the existing team and protocol-flow directories. It contains foundations, an implementation map, component/function records, the explicit native-credit account/CPI ABI, cryptography, invariants, state/route/accounting diagrams, technology roles, operations, test evidence"
         },
         {
-          "line": 162,
+          "line": 208,
           "text": "The [reconciliation register](laboratory/reconciliation-register.md) records fourteen documentation discrepancies and the later locally tested native authorization-envelope correction with source evidence. Corrections include `recipientHash` being the resolved owner commitment rather than the TIN; twelve proof inputs/thirteen IC points; implemented"
         },
         {
-          "line": 164,
+          "line": 210,
           "text": "November 2 public-signature nullifier and November 5 amount-public funded-note observations remain historical. The private-credit replacement uses secret-derived nullifiers and blinded amount commitments with separate aggregate accounting. Deposit/epoch totals, roots, points, ciphertext, accounts, timing, Node knowledge and recipient/head correlati"
         },
         {
-          "line": 180,
+          "line": 226,
           "text": "- The final [local link/navigation audit](references/link-check.json) passed with **zero issues**, including frontmatter and balanced fences. Remote URLs and anchor fragments remain unverified; uncommitted source links may not yet exist on remote main."
         },
         {
-          "line": 188,
+          "line": 234,
           "text": "The later [verifier-initialization experiment](laboratory/experiments/EXP-20261102-verifier-initialization.md) records the user's reported successful deployment, the discovered oversized initializer, the staged GPRU source/build fix and read-only root/verifier/signer checks. It requires a new GPRU deployment before enrollment. This later protocol e"
         },
         {
-          "line": 196,
+          "line": 242,
           "text": "The inventory currently covers **276 relevant documents**: 146 CURRENT, 76 UNVERIFIED, three PROPOSED, nineteen EXPERIMENTAL, twenty-six HISTORICAL, three RETIRED and three VERIFIED experiment records. No page was labeled DEPRECATED without evidence that it is actually being phased out. The [claim inventory](references/technical-claim-inventory.jso"
         },
         {
-          "line": 200,
+          "line": 246,
           "text": "Historical adoption dates, original alternatives, claimed failed experiments and external governance approvals need original records. The two reconstructed experiments and four ADRs do not invent those missing facts. Complete runtime reachability of retained debit/exit, epoch/reimbursement, threshold-provider and cross-chain paths remains unresolve"
         },
         {
-          "line": 208,
+          "line": 254,
           "text": "3. **Resolve the privacy-design discrepancy.** Decide whether public funding-to-credit linkage is acceptable for this contract. If a replacement is proposed, define the replay/security/authorization relation across program, SDK, Receiver, Node and Cranker before any implementation; do not add an undocumented compatibility path."
         },
         {
-          "line": 236,
+          "line": 282,
           "text": "The final artifact built successfully with `anchor-0.30.1 build --no-idl` under Solana 1.18.26. [Four offline SBF regressions](../scripts/tests/test_tin_route_sbf.py) passed with `.\\.venv\\Scripts\\python.exe scripts/tests/test_tin_route_sbf.py`, covering direct and staged second-route creation, independent Poseidon root expectations, stage closure, "
         },
         {
-          "line": 244,
+          "line": 290,
           "text": "The [Cranker transaction map](laboratory/cranker-transaction-map.md) documents every current daemon branch, transaction/instruction/CPI boundaries, signers/payers, transports, account/result checks and retry limitations. Laboratory, experiment, operations, TIN evidence and public Cranker pages link the record. Current registry version references we"
         },
         {
-          "line": 282,
+          "line": 328,
           "text": "Receiver `npm test` passed typechecking and all 14 tests. Node's focused hidden-head suite ran 33 tests: 31 passed and two opt-in circuit/proof tests skipped. Python syntax checks passed. A read-only invocation of the corrected live TCAP preflight passed at Devnet slot 517908759 for 100000 base units: the asset was Active/Approved, unpaused and non"
         },
         {
-          "line": 306,
+          "line": 352,
           "text": "Receiver typechecking and 16 tests passed; the offline HTTP transport test and focused TypeScript check of the transport/test/Cranker caller passed. The receipt matcher and authenticated endpoint preview passed against the real finalized transaction through read-only RPC. Replacement HTTP confirmation, endpoint live mutation and owner recovery rema"
         },
         {
-          "line": 329,
+          "line": 375,
           "text": "[Build and operate your own TSN](RUN-YOUR-OWN-TSN.md) now records reference versus independent deployments, actual tool/package/setup commands, authority/key ownership, thirteen-input artifacts, persistent .env precedence, snapshot bootstrap, service startup and SDK/application integration. Root AGENTS requires the [.agents maintenance rule](../.ag"
         },
         {
-          "line": 331,
+          "line": 377,
           "text": "The supplied failures include three Node simulation rejections and one VERIFIED funding attempt failing at Cranker submission. XP now refreshes its hash after amount approval; gateway bank failover preserves the request; Node leaves partial RPC invalidity unknown and retries HTTP 5xx/transport failures under its renewed lease. Failed funding displa"
         },
         {
-          "line": 339,
+          "line": 385,
           "text": "[ADR-005](laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md) and [the ABI](laboratory/credit-abi.md) now describe the experimental private-amount replacement. Individual credits publish blinded commitments and update root/transcript without public liability reclassification. Positive sealed pools require two wallet sources and commo"
         },
         {
-          "line": 343,
+          "line": 389,
           "text": "Both documentation trees, README diagrams, persistent operator/prover guidance and agent maintenance pointers were reconciled. Remaining current overview/lifecycle/security summaries using the old amount/signature-nullifier/per-credit liability semantics were corrected, while dated receipts remain historical. Final checks covered 276 documents, 36 "
         },
         {
-          "line": 347,
+          "line": 393,
           "text": "The user deferred public run-your-own-TSN guidance while TSN is under construction. The complete procedure remains in docs/RUN-YOUR-OWN-TSN.md with an explicit internal publication boundary. Its public MDX page and navigation entry were removed, along with promotion from both README entry points, Node/Receiver/Cranker/gateway service READMEs and th"
         },
         {
-          "line": 364,
+          "line": 410,
           "text": "TrustLink/TSN remains in development for its experimental first release, **v1**. Terminology, architecture policy, maintenance guidance, both README entry points and current private-credit explanations now distinguish that product release from existing internal instruction/account/domain encodings. Exact serialized identifiers remain source-accurat"
         },
         {
-          "line": 395,
+          "line": 441,
           "text": "The user's November 14 recovery output records resolution of `settlement-54bbac67ede3175e52ece131ca2279f3`; the subsequent Cranker log is for a different queued settlement, `settlement-62e424aa6ebf25982c65e9b498507223`, rejected with program error `6023`. The prior chat's diagnostic simulations attributed this to TCAP `InvalidFundingRoot` after acc"
         }
       ]
@@ -1140,8 +1160,8 @@
     {
       "path": "docs/RUN-YOUR-OWN-TSN.md",
       "title": "Build and operate your own TSN",
-      "sha256": "c95858d826497ebf7a3c34131dd86c67c5e79715d5eca5f7075046096e775fbf",
-      "lines": 386,
+      "sha256": "4a43b9a957b25322839708d52e7cbc2bfc3128b24d8b741a63b6bab903524b0f",
+      "lines": 444,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
       "evidence": [
@@ -1182,6 +1202,22 @@
         {
           "line": 382,
           "text": "No cross-network settlement destination is enabled. Node discovery returns an empty route list and signed external intent verification rejects before destination RPC or debit authorization. The former intermediary hub, proof workers, destination payout adapter, registry configuration/deployment helpers and dedicated Cranker key-funding command are "
+        },
+        {
+          "line": 410,
+          "text": "These steps change the debit operating requirements only. No service, deployment, transaction signing or submission is performed here. The Node verification record and canonical records retain exact completed checks and pending artifact/chain validation. The older transfer tools below are historical offline evidence and must not be used to provisio"
+        },
+        {
+          "line": 412,
+          "text": "### Historical offline-recipient transfer, November 23, 2026"
+        },
+        {
+          "line": 414,
+          "text": "The [offline-recipient checkpoint](laboratory/experiments/EXP-20261123-offline-recipient-transfer.md) describes the separate twenty-input transfer circuit and in-memory witness builder. Only the sender supplies approval and an opening; the authenticated recipient point receives the matching homomorphic credit while the recipient is offline. Encrypt"
+        },
+        {
+          "line": 431,
+          "text": "The direct setup command avoids the observed PowerShell npm-wrapper failure in which `-- --ptau` dropped the flag. It requires that retained file to exist, verifies it and the contributed transfer key, and refuses existing corrected key files. The second command generates and locally verifies a synthetic Groth16 statement and rejects changed public"
         }
       ]
     },
@@ -2060,8 +2096,8 @@
     {
       "path": "docs/laboratory/architecture-map.md",
       "title": "Canonical implementation map",
-      "sha256": "39cb14220cb12842f06813a0adb4d7eec60d04520b7d95503d4732ae69c80087",
-      "lines": 110,
+      "sha256": "b8acce87a3bb8bdfd1638ec2f2b6d9ca8c3082699b9942277bc3d9b5dfb10112",
+      "lines": 122,
       "status": "EXPERIMENTAL",
       "reason": "Current first-release v1 private-credit source map uses the authenticated shared funding account, without sealed-pool scheduling. Source mapping does not establish activation or full live settlement.",
       "evidence": [
@@ -2079,6 +2115,10 @@
         {
           "line": 94,
           "text": "The [private-credit ABI](credit-abi.md) has one current runtime and separate historical receipt readers. A single confirmed funded note can be credited without pool creation or source-count/release gating. The existing global funding account authenticates current and up to 128 retained root/count pairs; later deposits within that window preserve a "
+        },
+        {
+          "line": 104,
+          "text": "The [offline-recipient transfer core](experiments/EXP-20261123-offline-recipient-transfer.md) implements a separate experimental two-head statement and witness preparation. It binds a same-asset sender debit and recipient point credit into one final root with zero fee-free reserve-category deltas. Only the sender supplies an opening and approval; t"
         }
       ]
     },
@@ -2181,8 +2221,8 @@
     {
       "path": "docs/laboratory/credit-abi.md",
       "title": "Native private credit ABI and epoch accounting",
-      "sha256": "8b41007e9a0155f5fe073434df433dae46aff72938ec6568340cea4acc9f8634",
-      "lines": 69,
+      "sha256": "9463842f81460f33728f96933f766d9d976fef2878707f3acda53ad9208a157e",
+      "lines": 73,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled first-release v1 private amount/shared funding/complete epoch contract, including shared epoch initialization. Actual internal encodings and one-time layout migration are separate from product releases; live activation/full payment remain unverified.",
       "evidence": [
@@ -2197,23 +2237,23 @@
           "text": "**Status: EXPERIMENTAL first-release v1 funded credit, reviewed 2026-11-16.** This checkout follows [ADR-005](decisions/ADR-005-private-amount-and-adaptive-pools.md). The [November 16 checkpoint](experiments/EXP-20261116-private-credit-epoch.md) verifies two finalized private credits and complete aggregate accounting. Earlier source/offline, receip"
         },
         {
-          "line": 13,
+          "line": 17,
           "text": "Each successful deposit records its resulting root/count atomically. TCAP/GPRU accept a proof-selected funding root only while it is current or retained in that authenticated history. Node prepares from current state and rechecks its selected root/count before publishing/signing. New deposits within the retained window do not invalidate funding mem"
         },
         {
-          "line": 57,
+          "line": 61,
           "text": "Successful accounting marks the existing account accounted and advances the reserve epoch number. The first credit of the next epoch starts its new timer and may create the next numbered account. There is no native epoch close or rent-reclaim entrypoint in this path; an accounted epoch account remains on chain. Empty or singleton timeout closure, a"
         },
         {
-          "line": 59,
+          "line": 63,
           "text": "Current epoch discovery and its circuit cover accepted private credits only. The [mixed-action direction](decisions/ADR-005-private-amount-and-adaptive-pools.md#proposed-mixed-action-accounting) is a proposal requiring typed action commitments, complete ordered proof coverage and conservation across liability categories before debits, transfers or "
         },
         {
-          "line": 63,
+          "line": 67,
           "text": "Unsigned retired funding roots, shared-root/epoch races and exact signing/lifetime/height availability failures require authenticated current-lease, current-version re-verification without an execution checkpoint. Durable signed attempts retain exact receipt reconciliation before replacement. For expired FAILED native credit, the separate authentic"
         },
         {
-          "line": 65,
+          "line": 69,
           "text": "Pool capture, its dispatcher/work kind and pool-recovery CLI/endpoint are retired. Existing historical pool accounts and stored attempts are not erased or rent-refunded by this source change. Their cleanup requires separate explicit chain/state operations; they cannot supply current credit authority."
         }
       ]
@@ -2570,8 +2610,8 @@
     {
       "path": "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
       "title": "Private credit amounts and shared funded roots",
-      "sha256": "ed3b6a5d77029d21572a02a6329af5ff2c58ffbf247d89ca2bbf9a90f6b4ec3e",
-      "lines": 59,
+      "sha256": "428dd00acf778230b322e2cf054ca24039b09eb465da94c2edc76787d3531cc8",
+      "lines": 61,
       "status": "EXPERIMENTAL",
       "reason": "User chose public classic-token funding/private TIN credit; sealed-pool trial is retired, shared funded roots remain current, and eligible confidential Token-2022 funding is an unimplemented future integration requirement.",
       "evidence": [
@@ -2619,14 +2659,18 @@
         },
         {
           "line": 45,
-          "text": "**Status: PROPOSED direction discussed on 2026-11-16; no replacement runtime or circuit is implemented by this record.** The target is a complete per-asset accounting batch covering accepted confidential financial actions, including credits and debits, with a possible capacity of 64 actions. Current discovery, transcript and aggregate proof cover p"
+          "text": "**Status: mixed-action batching remains PROPOSED, discussed on 2026-11-16; the November 23 offline-recipient transfer below is a separate experiment.** The target is a complete per-asset accounting batch covering accepted confidential financial actions, including credits and debits, with a possible capacity of 64 actions. Current runtime discovery,"
         },
         {
-          "line": 55,
+          "line": 51,
+          "text": "The [November 23 offline-recipient transfer](../experiments/EXP-20261123-offline-recipient-transfer.md) selects one paired action for a same-asset, fee-free transfer: the sender opens and debits its balance, the recipient's authenticated point receives the matching increment, one nullifier is consumed and all reserve-category deltas are zero. The r"
+        },
+        {
+          "line": 57,
           "text": "Offline tests cover honest/mutated witnesses and real proofs, serialized native verification, current/historical owner recovery, bounded transport, single-deposit admission, pagination/deferral/concurrent serialization, exact receipts, replay/accounting arithmetic and initializer packets/resume. [The experiment](../experiments/EXP-20261107-private-"
         },
         {
-          "line": 59,
+          "line": 61,
           "text": "The November 5 design review's 275-page inventory, 36 selectors, 103 MDX and 39 Mermaid checks are historical documentation evidence, not tests of this replacement. Its runtime-source preservation comparison applies only to that documentation-only review."
         }
       ]
@@ -2755,7 +2799,7 @@
       "sha256": "6dd0d72e5bfa11e72ead70f8dc01351070f05a614237903a3bd10f90c3401568",
       "lines": 96,
       "status": "HISTORICAL",
-      "reason": "November 3–5 amount-public funded-note replacement observations; current private-credit ABI supersedes this source snapshot.",
+      "reason": "November 3Ã¢â‚¬â€œ5 amount-public funded-note replacement observations; current private-credit ABI supersedes this source snapshot.",
       "evidence": [
         "tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom",
         "tsn-protocol/programs/gpru/src/hidden_head.rs",
@@ -2939,10 +2983,121 @@
       ]
     },
     {
+      "path": "docs/laboratory/experiments/EXP-20261123-offline-recipient-transfer.md",
+      "title": "Sender-authorized transfer with an offline recipient",
+      "sha256": "b9d78e5878cca2336e2d49241757d8fc2cca593eeb1d5e68acd1433805ae412e",
+      "lines": 53,
+      "status": "EXPERIMENTAL",
+      "reason": "Current sender-only transfer preparation, authenticated recipient-point credit and later owner recovery; existing deposit credit is unchanged, and the u128 lifetime bound requires canonical-lineage review.",
+      "evidence": [
+        "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/main.circom",
+        "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/primitives.circom",
+        "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/offline/core.py",
+        "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/offline/sender.py",
+        "tsn-protocol/sdks/tsn-sdk/src/gpru/transfer-opening.ts",
+        "tsn-protocol/sdks/tsn-sdk/src/gpru/transfer-record.ts",
+        "tsn-protocol/sdks/tsn-sdk/src/tin-owner-balance.ts"
+      ],
+      "statusStatements": [
+        {
+          "line": 3,
+          "text": "**Status: EXPERIMENTAL first-release v1 offline implementation with scoped local verification, 2026-11-23.** The selected transfer contract requires the sender's approval and balance opening, while the recipient remains offline. It replaces the earlier [two-opening core](EXP-20261123-private-transfer-core.md) and [participating-owner recovery](EXP-"
+        },
+        {
+          "line": 19,
+          "text": "This is a source-level design assumption requiring program/root-lineage review, rather than an audited guarantee or a new deposit-credit range check. New transfer sender openings are bounded directly by the circuit, and SDK recovery reconstructs the resulting point, but neither independently establishes the entire network's historical state provena"
+        },
+        {
+          "line": 29,
+          "text": "Current compile, test, setup, prove and round-trip tools select the corrected `hidden_head_transfer_v1/build/sender-only/` artifacts, with the matching development key under `sender-only/dev/`. The earlier `build/` and `build/dev/` files remain historical evidence. The current tools have no two-opening artifact/key fallback; the public input count "
+        },
+        {
+          "line": 39,
+          "text": "The direct setup command verified the retained Powers of Tau file, generated and contributed the corrected circuit-specific key, verified that key against R1CS/Ptau and exported twenty-input/twenty-one-IC verification data with pinned metadata under `build/sender-only/dev/`. The corrected `main.circom` source SHA-256 is `37460442940de9784582f714b5d"
+        },
+        {
+          "line": 51,
+          "text": "This replaces the experimental transfer prototype only. Source comparison found no diff in the existing [thirteen-input deposit-credit circuit](../../../tsn-protocol/programs/gpru/circuits/hidden_head_v1/main.circom), [Node credit preparation](../../../tsn-protocol/services/tsn-node/settlement/witness/hidden_head_witness_store_prepare_credit.py), ["
+        }
+      ]
+    },
+    {
+      "path": "docs/laboratory/experiments/EXP-20261123-private-transfer-core.md",
+      "title": "Offline atomic private TIN-to-TIN transfer core",
+      "sha256": "a8956ab94292117f156213f2c78e4328459c2614c5dc2fc0763f3509457f3089",
+      "lines": 47,
+      "status": "HISTORICAL",
+      "reason": "Preserves dated verification of the original two-opening transfer prototype; superseded for operational design by sender-only offline-recipient transfer. Referenced source paths now select the replacement.",
+      "evidence": [
+        "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/main.circom",
+        "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/primitives.circom",
+        "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/offline/core.py",
+        "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/offline/test_core.py"
+      ],
+      "statusStatements": [
+        {
+          "line": 3,
+          "text": "**Status: HISTORICAL two-opening prototype with scoped offline verification, 2026-11-23; superseded for operational design by the [offline-recipient transfer checkpoint](EXP-20261123-offline-recipient-transfer.md).** This record preserves the original same-asset, fee-free two-opening experiment and its dated tests. The replacement requires only sen"
+        },
+        {
+          "line": 5,
+          "text": "The source paths and npm commands below now select the replacement. Original results describe the earlier two-opening source/artifacts, not the corrected circuit. Retained original artifacts under `hidden_head_transfer_v1/build/` and `build/dev/` are historical evidence; the current tools use `build/sender-only/` and its own matching development ke"
+        }
+      ]
+    },
+    {
+      "path": "docs/laboratory/experiments/EXP-20261123-transfer-owner-recovery.md",
+      "title": "Participating-owner transfer preparation and recovery",
+      "sha256": "7a6ed93a5f6aea744a396fabafa7114a5b74f82c5a8f0cad5067f764d776be4e",
+      "lines": 51,
+      "status": "HISTORICAL",
+      "reason": "Preserves dated verification of the participating-owner preparation/recovery prototype; recipient participation and two-opening requirements are superseded by the offline-recipient contract.",
+      "evidence": [
+        "docs/laboratory/experiments/EXP-20261123-transfer-owner-recovery.md",
+        "docs/laboratory/experiments/EXP-20261123-offline-recipient-transfer.md"
+      ],
+      "statusStatements": [
+        {
+          "line": 3,
+          "text": "**Status: HISTORICAL participating-owner prototype, verified at the scoped local-test level on 2026-11-23; superseded for operational design by the [offline-recipient transfer checkpoint](EXP-20261123-offline-recipient-transfer.md).** This preserves the original two-owner preparation/recovery experiment and its dated test results. The current repla"
+        },
+        {
+          "line": 5,
+          "text": "The source paths and npm commands below now describe or select the replacement. The original counts apply to the earlier participating-owner source/artifacts and do not verify the corrected sender-only circuit. Original `build/` and `build/dev/` artifacts remain historical evidence; current commands select `build/sender-only/` and its separate matc"
+        },
+        {
+          "line": 19,
+          "text": "The historical `participants.py` adapter rejected unsigned openings, supplied successor Memos and malformed packets. It validated both disclosure signatures against independent registry owner pins and bound their context to the selected routes/state. The core reconstructed each opening's balance point and authenticated both route and state paths. S"
+        }
+      ]
+    },
+    {
+      "path": "docs/laboratory/experiments/EXP-20261124-tin-debit-readiness.md",
+      "title": "TIN-Debit readiness checks",
+      "sha256": "7e4f6f9eec3e5c3b4a11284fe5a95f813f8b93ad06c520d25b3317f5b0c888a9",
+      "lines": 27,
+      "status": "VERIFIED",
+      "reason": "Scoped November 24 offline tests and diagnosed readiness failures only; no live execution or matching debit proof claimed.",
+      "evidence": [
+        "tsn-protocol/sdks/tsn-sdk/src/gpru/native-credit-wire.ts",
+        "tsn-protocol/sdks/tsn-sdk/tests/gpru-chain-history.test.mjs",
+        "tsn-protocol/services/tsn-cranker-op-daemon/tests/tin-debit-transition.test.ts",
+        "tsn-protocol/programs/gpru/circuits/hidden_head_tin_debit_v1/main.circom",
+        "tsn-protocol/programs/gpru/circuits/hidden_head_tin_debit_v1/offline/core.py",
+        "tsn-protocol/programs/gpru/src/tin_debit.rs"
+      ],
+      "statusStatements": [
+        {
+          "line": 17,
+          "text": "The current runtime [catalog](../../../tsn-protocol/contracts/tin-debit-v1.json), [GPRU verifier](../../../tsn-protocol/programs/gpru/src/tin_debit.rs) and SDK instruction builder require twenty-six public inputs, including six encrypted-delta/ephemeral-coordinate scalars absent from the twenty-input circuit. Aligning only the domain constants woul"
+        }
+      ]
+    },
+    {
       "path": "docs/laboratory/experiments/README.md",
       "title": "Research and experiment register",
-      "sha256": "807ce4d4ffb9fc86d2d430af9fcd9c1d5a543252f557378e79e1d6e0ca4488ea",
-      "lines": 21,
+      "sha256": "58ae9e6d07dcc03172be407175dde96461796084f0160b2a3d46ab98641ed958",
+      "lines": 24,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
       "evidence": [
@@ -2954,15 +3109,19 @@
       ],
       "statusStatements": [
         {
-          "line": 5,
+          "line": 7,
           "text": "Experiments preserve observations, failures and conclusions with bounded evidence. They do not infer deployment from a compilation or invent missing dates. Existing research remains at its original paths, with [historical classifications](../../historical-archive/README.md) preventing superseded models from directing current integrations."
         },
         {
-          "line": 11,
+          "line": 9,
+          "text": "- [EXP-20261123: offline-recipient transfer](EXP-20261123-offline-recipient-transfer.md) records the sender-only approval/opening contract, authenticated recipient-point credit and later encrypted owner recovery. The earlier [two-opening core](EXP-20261123-private-transfer-core.md) and [participating-owner recovery](EXP-20261123-transfer-owner-reco"
+        },
+        {
+          "line": 14,
           "text": "- [EXP-20261103: native-credit linkability](EXP-20261103-native-credit-linkability.md) reconstructs the actual first credit's public recipient registry/root, verifies fourteen offline correlation controls and assesses the proposed one-transaction/unlinking options."
         },
         {
-          "line": 21,
+          "line": 24,
           "text": "For older experiments, start with the [existing historical runbooks](../../historical-archive/README.md). The independent research publication series includes papers predating current terminology; a Published label does not certify those papers as current implementation specifications."
         }
       ]
@@ -3223,6 +3382,20 @@
           "text": "The [file manifest](TSN-POSITIONING-20261122-files.json) records created/updated current paths and grouped removals. Private keys, environment contents and raw stores are excluded. Historical receipts and live configuration are preserved rather than reused as current-route evidence."
         }
       ]
+    },
+    {
+      "path": "docs/references/WALLET-DEPOSIT-INTENT-20261124.md",
+      "title": "Wallet Deposit Intent contract reconciliation",
+      "sha256": "6d9fe777af92c16ea2f0dfc59e3ed560c5eac4de753b50797841ff910db3fdbb",
+      "lines": 29,
+      "status": "CURRENT",
+      "reason": "Dated source reconciliation of three funding ABIs, selected Wallet Deposit Intent naming and required privacy with explicit implementation gaps; no live guarantee.",
+      "evidence": [
+        "tsn-protocol/contracts/wallet-deposit-intent-v1.json",
+        "tsn-protocol/services/tsn-receiver/lib/contracts/projection/public-coordination-payload.ts",
+        "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/deposit_with_funding_commitment_v2.rs"
+      ],
+      "statusStatements": []
     },
     {
       "path": "docs/references/agent-knowledge-alignment.md",
@@ -4036,8 +4209,8 @@
     {
       "path": "tsn-protocol/README.md",
       "title": "Transfer Settlement Network",
-      "sha256": "f1200a0f799dc4504eeceb3496e6d49a2cd876605077d646c4d0946245acc60a",
-      "lines": 186,
+      "sha256": "b975cb46841251f4fc0eb16b71330aa68e93f718b3ab8b0dd2366795799f507c",
+      "lines": 188,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
       "evidence": [
@@ -4060,18 +4233,34 @@
           "text": "finality. The project is still developing its experimental first release,"
         },
         {
-          "line": 149,
+          "line": 151,
           "text": "The primary privacy target is to hide TIN participation from public observers and prevent linking TCAP actions, including intended TIN-to-TIN transfers. Trusted Node access to verification routes/openings and public wallet funding are accepted boundaries. Deposits expose wallets, token/amount and signature. Individual credit exposes a blinded amoun"
         },
         {
-          "line": 151,
+          "line": 153,
           "text": "The experimental replacement has pinned witness/prover adapters, isolated real credit/epoch proof tests and native verification. [November 7 evidence](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md) preserves the earlier offline checks and activation gaps. [November 16 Devne"
         },
         {
-          "line": 169,
+          "line": 171,
           "text": "boundaries. ZK-PRU is retired historical context, not an integration target."
         }
       ]
+    },
+    {
+      "path": "tsn-protocol/contracts/README.md",
+      "title": "TSN contract catalog",
+      "sha256": "11e2cefa99778fc1e6d9bc258ebd448238dcaa49064f40c004b5c49da5fbd005",
+      "lines": 16,
+      "status": "EXPERIMENTAL",
+      "reason": "Current catalog and required private Wallet Deposit Intent boundary; TIN-Debit runtime integration and wallet-intent consumption/privacy remain incomplete.",
+      "evidence": [
+        "tsn-protocol/contracts/wallet-deposit-intent-v1.json",
+        "tsn-protocol/contracts/tin-creation-v1.json",
+        "tsn-protocol/contracts/tin-credit-v1.json",
+        "tsn-protocol/contracts/tin-debit-v1.json",
+        "docs/references/WALLET-DEPOSIT-INTENT-20261124.md"
+      ],
+      "statusStatements": []
     },
     {
       "path": "tsn-protocol/docs/mces/candidate-assessment.md",
@@ -4162,6 +4351,39 @@
       "statusStatements": []
     },
     {
+      "path": "tsn-protocol/programs/gpru/circuits/hidden_head_tin_debit_v1/README.md",
+      "title": "TIN-Debit circuit and runtime preparation",
+      "sha256": "9544b46d7d390c371b99bc0a9aaf7b651d39d5e2433c767a6dc6e7368d29a0a0",
+      "lines": 45,
+      "status": "UNVERIFIED",
+      "reason": "Discovered and indexed; whole-document claims need source reconciliation.",
+      "evidence": [],
+      "statusStatements": []
+    },
+    {
+      "path": "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/README.md",
+      "title": "Offline private TIN-to-TIN transfer core",
+      "sha256": "69a6aa920704d855464508b8785fe3d850b318f0a7407681cc3212e7fb456698",
+      "lines": 74,
+      "status": "EXPERIMENTAL",
+      "reason": "Current sender-only offline-recipient transfer contract; existing deposit credit is unchanged and no live runtime or audited-lineage guarantee is claimed.",
+      "evidence": [
+        "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/main.circom",
+        "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/offline/core.py",
+        "tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/offline/sender.py"
+      ],
+      "statusStatements": [
+        {
+          "line": 3,
+          "text": "**Status: EXPERIMENTAL first-release v1 offline-recipient implementation, 2026-11-23.** This circuit and witness builder implement one fee-free, same-asset paired transfer using the sender's opening/approval and the recipient's authenticated balance point. The recipient supplies no opening or signature and can remain offline. Sender SDK preparation"
+        },
+        {
+          "line": 50,
+          "text": "This runs host tests, compiles when source/artifact hashes do not match, checks valid witnesses against R1CS and rejects the mutation fixtures. `GPRU_TRANSFER_PYTHON` selects an offline interpreter. `GPRU_NATIVE_LIBRARY_PATH` selects the existing native Poseidon library; the default uses the current `node-native-funded-note/release` target on Windo"
+        }
+      ]
+    },
+    {
       "path": "tsn-protocol/programs/gpru/circuits/hidden_head_v1/README.md",
       "title": "GPRU hidden-head Groth16 circuit V1",
       "sha256": "15379506d08d9eda1155ada32db8ac6d725bb12818867a35cfd9c2f9847c114d",
@@ -4244,8 +4466,8 @@
     {
       "path": "tsn-protocol/sdks/tsn-sdk/README.md",
       "title": "TSN SDK",
-      "sha256": "ea05de64dd827adcf75810ce18af3deb7794f3f082f664341ba452467aa57d31",
-      "lines": 97,
+      "sha256": "f9cb3deaf4eb675306dce46b4f0895be307b1d1768387f2d2ae139da4b6af6fd",
+      "lines": 113,
       "status": "UNVERIFIED",
       "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
       "evidence": [],
@@ -4265,6 +4487,10 @@
         {
           "line": 78,
           "text": "The history reader recognizes finalized historical twelve-input receipts and current thirteen-input funded receipts. `fundingProofVersion` distinguishes those forms; historical recovery does not supply an old deposit or settlement runtime fallback."
+        },
+        {
+          "line": 84,
+          "text": "**TIN-Debit integration, November 24:** the current SDK, Node, Receiver and Cranker share the 26-input contract and two 582-byte compact Memos. The client provides owner-authenticated preparation, local sender-opening recovery, separate approval/disclosure consent and exact-request retry state; XP presents its debit action and status. Circuit/provi"
         }
       ]
     },
@@ -4402,8 +4628,8 @@
     {
       "path": "tsn-protocol/services/tsn-node/README.md",
       "title": "TSN Node by TrustLink Labs",
-      "sha256": "e85d161c78892b04f067898ade64b598b89a2aa085888f1ca3d342e781db023e",
-      "lines": 141,
+      "sha256": "8b127ddef390c08b4fe644d6eca1d23d6cf257e21b863f1af75d0ba976b2001b",
+      "lines": 145,
       "status": "UNVERIFIED",
       "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
       "evidence": [],
@@ -4453,8 +4679,8 @@
     {
       "path": "tsn-protocol/services/tsn-node/api/handlers/README.md",
       "title": "api / handlers",
-      "sha256": "5ad03b9e6c717f5b6e435c3841b33ed7b671b5b05965566b5c1f2a2ebbce3258",
-      "lines": 40,
+      "sha256": "8a2506a705b8c87c7e9281e7aad9554790bc3983e95e5acdf19d76ae38172377",
+      "lines": 46,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
       "evidence": [
@@ -4730,8 +4956,8 @@
     {
       "path": "tsn-protocol/services/tsn-node/docs/verification.md",
       "title": "Modular Node verification record",
-      "sha256": "94e3b681f58b1a9b56008bd74a3d720f7a5ba16652e236c65b4ffc353db5001e",
-      "lines": 104,
+      "sha256": "7626ab7b8fad22c3a348ed95c8743fa09810fee95321b09d24cdfd964b4bcaf8",
+      "lines": 114,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
       "evidence": [
@@ -4747,34 +4973,34 @@
       "statusStatements": [
         {
           "line": 3,
-          "text": "**Status: CURRENT source and scoped offline verification through November 18, 2026.** The staged-funding suite and current AST/import audit passed; the original HTTP-equality and isolated startup checks below remain historical structural-refactor evidence. Live staged Receiver/prover operation, chain execution and owner payment recovery remain UNVE"
+          "text": "**Status: CURRENT source and scoped offline verification through November 24, 2026.** The staged-funding suite and current AST/import audit passed; the original HTTP-equality and isolated startup checks below remain historical structural-refactor evidence. Live staged Receiver/prover operation, chain execution and owner payment recovery remain UNVE"
         },
         {
           "line": 5,
           "text": "Evidence paths below are relative to the reviewing machine's `%LOCALAPPDATA%\\Temp`. These local logs/JSON files are retained evidence, not published network/deployment results. The earlier workspace-root `protocol-test-runs/node-modular-20261116` records remain unchanged historical baseline artifacts."
         },
         {
-          "line": 23,
+          "line": 33,
           "text": "The [cross-component validation record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/references/STAGED-FUNDING-20261118.md) records SDK/XP, Receiver and Cranker evidence, operator reload steps and remaining limits. This deliberate request/route/state change supersedes the earlier initial-ingress shape; no program ABI, deployment, m"
         },
         {
-          "line": 27,
+          "line": 37,
           "text": "**Historical pre-staging checkpoint.** Its test results remain valid for that source snapshot. The November 18 sequence above moves slow authorization before deposit signing and replaces its initial full-payload ingress; the tuple and unchanged-wire verification remain required at signed attachment."
         },
         {
-          "line": 35,
+          "line": 45,
           "text": "This follow-up changes the new-funding request and execution contracts deliberately; the earlier structural-refactor OpenAPI equality remains a historical checkpoint. The internal operator guide, public API/SDK guidance, package documentation and source inventories describe the new tuple, stable confirmed-receipt boundary and affected reload steps."
         },
         {
-          "line": 74,
+          "line": 84,
           "text": "At the November 16 pilot checkpoint, the [complete production inventory](../core/component_inventory.json) separated 560 production files/387 authored functions from seven verification-tool files/five functions and 329 test files/233 functions. The 173 function-free production files held models, constants, class shells, package entrypoints and impo"
         },
         {
-          "line": 94,
+          "line": 104,
           "text": "Live funding/settlement, actual Receiver leases and renewals, complete configured proof execution, Mother signing, chain submission/confirmation, owner recovery remain outside that historical verified scope. The former external execution family was unverified in that checkpoint and is now retired. Review of this modular pilot can proceed from the r"
         },
         {
-          "line": 98,
+          "line": 108,
           "text": "The former external registry, payout authorization and receipt/proof worker are removed. Node keeps its native Solana path and public `/settlement-networks` operation; discovery now returns no enabled external routes, and external signed-intent preflight rejects before RPC and authorization. Stale route environment entries cannot restore the remove"
         }
       ]
@@ -4824,6 +5050,16 @@
       "title": "Complete private credit epoch reconstruction",
       "sha256": "69dfade6ebc303bf2b8829d0ba35b0e36277eb8b4291b8db2e0aaad7dde89bc0",
       "lines": 7,
+      "status": "UNVERIFIED",
+      "reason": "Discovered and indexed; whole-document claims need source reconciliation.",
+      "evidence": [],
+      "statusStatements": []
+    },
+    {
+      "path": "tsn-protocol/services/tsn-node/settlement/debit/README.md",
+      "title": "TIN-Debit components",
+      "sha256": "62391ecb157bd88418df6ac6b28b45f52916797e475b987ccbd77e5c6259f1ae",
+      "lines": 15,
       "status": "UNVERIFIED",
       "reason": "Discovered and indexed; whole-document claims need source reconciliation.",
       "evidence": [],
@@ -5295,7 +5531,7 @@
     {
       "path": "tsn-protocol/services/tsn-receiver/lib/recovery/nonexecution/README.md",
       "title": "Expired signed nonexecution disposition",
-      "sha256": "8ce53b3425cd16b4ce268a4c73b59700742da1bca241c27795c902615bee9eb9",
+      "sha256": "edab43a9a3a2aa512808cc7ba6d2fd4b222af65a720f5efc6b1b875b4a2fe35f",
       "lines": 9,
       "status": "UNVERIFIED",
       "reason": "Discovered and indexed; whole-document claims need source reconciliation.",
@@ -5305,7 +5541,7 @@
     {
       "path": "tsn-protocol/services/tsn-receiver/lib/recovery/receipt-reconciliation/README.md",
       "title": "Finalized signed receipt reconciliation",
-      "sha256": "71ca20cfd3c24e384a7aa374243f02aca085731d17d871a65ce87e6dcc48d197",
+      "sha256": "dfae52a7dcb00f1011884a6ece2b272e06d47dfa52b6ce40d1d19fdc4099d4a5",
       "lines": 9,
       "status": "UNVERIFIED",
       "reason": "Discovered and indexed; whole-document claims need source reconciliation.",
@@ -5704,8 +5940,8 @@
     {
       "path": "tsn-protocol/tsn-docs/api-reference/services.mdx",
       "title": "Service API boundaries",
-      "sha256": "4191408d9fd1075aff3889bc0a50a19af44bfa628efc4212bb9a196592c9d53a",
-      "lines": 88,
+      "sha256": "5277872b2e59fc5ba6fa1e0f3047b5db2715292ea7613ebb26b6b366f1104d77",
+      "lines": 96,
       "status": "CURRENT",
       "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
       "evidence": [
@@ -6048,8 +6284,8 @@
     {
       "path": "tsn-protocol/tsn-docs/api-reference/sdk/modules/gpru-chain-history.mdx",
       "title": "gpru/chain-history API",
-      "sha256": "d9b5320889a6bc74c045c595f8ed1212a12d5de91b0ca51c8fb33c46834dc747",
-      "lines": 73,
+      "sha256": "d5954c00cfd60c65b2bc19348ebd03881f282367f45415e6e9130739daeaa73b",
+      "lines": 107,
       "status": "UNVERIFIED",
       "reason": "Discovered and indexed; whole-document claims need source reconciliation.",
       "evidence": [],
@@ -6085,10 +6321,30 @@
       "statusStatements": []
     },
     {
+      "path": "tsn-protocol/tsn-docs/api-reference/sdk/modules/gpru-tin-debit-opening.mdx",
+      "title": "gpru/tin-debit-opening API",
+      "sha256": "4de36df473031719d7753eadc48ff7531d52667008d94e63846686a39dd17ed0",
+      "lines": 163,
+      "status": "UNVERIFIED",
+      "reason": "Discovered and indexed; whole-document claims need source reconciliation.",
+      "evidence": [],
+      "statusStatements": []
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/api-reference/sdk/modules/gpru-tin-debit-record.mdx",
+      "title": "gpru/tin-debit-record API",
+      "sha256": "705adbfd230f08186fe068f925b6f12f73b3d6d61c36be7e5831f1d13173e3aa",
+      "lines": 108,
+      "status": "UNVERIFIED",
+      "reason": "Discovered and indexed; whole-document claims need source reconciliation.",
+      "evidence": [],
+      "statusStatements": []
+    },
+    {
       "path": "tsn-protocol/tsn-docs/api-reference/sdk/modules/gpru-transaction-record.mdx",
       "title": "gpru/transaction-record API",
-      "sha256": "ef5e63d0d72f45320d9ca9c27706c484eefdf652d21b701fc05ade1fabfc27d1",
-      "lines": 183,
+      "sha256": "cd6431587c81adadf0728a3e762454e1fceed2f1cc54341bd14c739baed01462",
+      "lines": 184,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
       "evidence": [
@@ -6402,6 +6658,16 @@
       "statusStatements": []
     },
     {
+      "path": "tsn-protocol/tsn-docs/api-reference/sdk/modules/tcap-gpru-tin-debit.mdx",
+      "title": "tcap-gpru-tin-debit API",
+      "sha256": "26ca3f99e75327e6d218609bd0e85a4bd7af4164e0fede3a1896b61871815d56",
+      "lines": 178,
+      "status": "UNVERIFIED",
+      "reason": "Discovered and indexed; whole-document claims need source reconciliation.",
+      "evidence": [],
+      "statusStatements": []
+    },
+    {
       "path": "tsn-protocol/tsn-docs/api-reference/sdk/modules/tcap-one-time-credit.mdx",
       "title": "tcap-one-time-credit API",
       "sha256": "f0871c80c1a78311258e64e6d990a08c0bdbc830964500e42f1b54da18a0235f",
@@ -6413,6 +6679,16 @@
         "tsn-protocol/sdks/tsn-sdk/package.json",
         "docs/references/sdk-api-inventory.json"
       ],
+      "statusStatements": []
+    },
+    {
+      "path": "tsn-protocol/tsn-docs/api-reference/sdk/modules/tin-debit.mdx",
+      "title": "tin-debit API",
+      "sha256": "588f156051ee35fdc5a1798222a1d4ac0207f4d7e1f3d661ad672c3608116739",
+      "lines": 74,
+      "status": "UNVERIFIED",
+      "reason": "Discovered and indexed; whole-document claims need source reconciliation.",
+      "evidence": [],
       "statusStatements": []
     },
     {
@@ -6488,8 +6764,8 @@
     {
       "path": "tsn-protocol/tsn-docs/api-reference/sdk/modules/tin-owner-balance.mdx",
       "title": "tin-owner-balance API",
-      "sha256": "5f2b74f369fadb25b8b90e0e916f0ccff6ae91e5c75d7a8c2511955da3490963",
-      "lines": 129,
+      "sha256": "743edfd98a7e6502bd4483621308e2695c05ff1f0c57a52e5ba69cccf6273595",
+      "lines": 135,
       "status": "UNVERIFIED",
       "reason": "Discovered and indexed; whole-document claims need source reconciliation.",
       "evidence": [],
@@ -6654,8 +6930,8 @@
     {
       "path": "tsn-protocol/tsn-docs/developers/groth16-hidden-head.mdx",
       "title": "How GPRU Proofs Guard User State",
-      "sha256": "4264f986b9a8a00bb04798c0c9078af9c796e244c69d5cab5293e77f3231c7db",
-      "lines": 22,
+      "sha256": "0e5a5aaadb0c7af9c796629a6de2f63017006cb853673b7751f1ae2274d5cbf0",
+      "lines": 30,
       "status": "CURRENT",
       "reason": "Source-backed engineering/reference or bounded evidence record. Generated declarations/signatures and recorded observations have the scope stated on the page; this does not certify deployed readiness or every retained API.",
       "evidence": [
@@ -6673,6 +6949,14 @@
         {
           "line": 16,
           "text": "The current experimental credit publishes a freshly blinded amount commitment instead of plaintext amount, and advances the head/nullifier root plus epoch digest without reserve liability changes. Node prepares one aggregate proof covering every ordered opening in an eligible 2–64-credit epoch. GPRU verifies that proof; TCAP owns the transcript and"
+        },
+        {
+          "line": 22,
+          "text": "The current [TIN-Debit contract](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/contracts/tin-debit-v1.json) uses 26 public inputs, two compact encrypted owner Memos and a separate verifier. Sender approval/opening is sufficient; the recipient remains offline. Circuit domains and runtime input order are aligned, and Node/Rece"
+        },
+        {
+          "line": 28,
+          "text": "Each complete transfer Memo is hashed into the proof's sender or recipient successor head. The circuit does not prove encryption correctness or record decryptability. Later owner recovery checks the exact Memo hash, explicit debit/credit leg, private amount commitment and successor portfolio/point against an independently verified twenty-input stat"
         }
       ]
     },
@@ -6849,8 +7133,8 @@
     {
       "path": "tsn-protocol/tsn-docs/layers/tcap.mdx",
       "title": "TCAP: Asset and Settlement Authority",
-      "sha256": "79cf80d7cada2d4b5401456852111de823eac543e549a664494b0187142affe4",
-      "lines": 47,
+      "sha256": "0abd4b77491a882d8df085931e02f1647dc7e93c4a5e972f2d2c6d8d2120a4e1",
+      "lines": 51,
       "status": "CURRENT",
       "reason": "Reviewed current source narrative and explicit capability limits. CURRENT does not establish live network availability or execution of illustrative snippets.",
       "evidence": [
@@ -6864,19 +7148,19 @@
           "text": "For a private-state transition, **GPRU guards the integrity and privacy of the user's state presented to TCAP**. Its proof is intended to show that the hidden state is current and that the proposed change follows from it. TCAP remains the authority over funds and applies the valid, authorized transition atomically; GPRU does not hold the user's ass"
         },
         {
-          "line": 31,
+          "line": 35,
           "text": "This is a credit-only transcript. Mixed credit/debit/exit epoch accounting is proposed work that needs its own proof, authorization and conservation contract. Retained TSNP `EpochTreasury`, payout and refund instructions have distinct accounts and do not determine this native TCAP epoch's timing."
         },
         {
-          "line": 41,
+          "line": 45,
           "text": "The private-credit replacement is experimental. Local real credit/epoch proofs and native verifier tests passed. A later isolated TCAP SBF build and synthetic compiled-program regressions verified account decoding and funding-root rejection checks; those tests stopped before proof acceptance. The corrected reference TCAP deployment at slot 52255816"
         },
         {
-          "line": 43,
+          "line": 47,
           "text": "A single genuine confirmed deposit supports credit without creating a pool account or waiting for another depositor. The canonical global funding account authenticates current and up to 128 retained root/count records. New deposits within that window preserve funded membership; a retired root requires fresh unsigned verification. The latest shared "
         },
         {
-          "line": 45,
+          "line": 49,
           "text": "Under the selected experimental first-release v1 contract, classic-token reserve deposits remain public and individual TIN-credit amounts use the private proof/commitment. Confidential funding for eligible Token-2022 assets is a future integration requirement, with no currently wired confidential-funding route."
         }
       ]
@@ -7036,25 +7320,6 @@
       ]
     },
     {
-      "path": "tsn-protocol/tsn-docs/overview/cross-network-roadmap.mdx",
-      "title": "TSN Cross-Network Settlement and EVM Integration Roadmap",
-      "sha256": "e97f858f9a0edfe1a4d6f3fb34969e7497ec228438f64179923108c1d8a5ff89",
-      "lines": 23,
-      "status": "PROPOSED",
-      "reason": "Current stated integration priorities or optional credential requirements; no adapter, issuer verifier, deployment, partnership or completed route is implied.",
-      "evidence": [
-        "docs/laboratory/architecture-map.md",
-        "docs/laboratory/credit-abi.md",
-        "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
-        "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-        "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
-        "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
-        "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
-        "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
-      ],
-      "statusStatements": []
-    },
-    {
       "path": "tsn-protocol/tsn-docs/overview/how-it-works.mdx",
       "title": "How a TSN Transfer Works",
       "sha256": "50c5c65b60fd308a3d7e1c833a380b72aebe14d1b83bc2a646bb04e16fee44fd",
@@ -7087,38 +7352,6 @@
       ]
     },
     {
-      "path": "tsn-protocol/tsn-docs/overview/identity-attestations.mdx",
-      "title": "TIN Identity and Credential Attestations",
-      "sha256": "005879d3a291cd4071b6fa496934506f50057b0c600e5dfdf0dfa23b259b3ce1",
-      "lines": 21,
-      "status": "PROPOSED",
-      "reason": "Current stated integration priorities or optional credential requirements; no adapter, issuer verifier, deployment, partnership or completed route is implied.",
-      "evidence": [
-        "docs/laboratory/architecture-map.md",
-        "docs/laboratory/credit-abi.md",
-        "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
-        "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-        "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
-        "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
-        "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
-        "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
-      ],
-      "statusStatements": [
-        {
-          "line": 4,
-          "text": "description: \"Owner-provided TIN display names today and the proposed extension for optional issuer-backed personal and business credentials.\""
-        },
-        {
-          "line": 15,
-          "text": "## Proposed optional attestations"
-        },
-        {
-          "line": 21,
-          "text": "This extension remains **PROPOSED**. No provider partnership, deployed attestation route or mandatory identity-verification requirement is announced by this page. Follow [current capabilities](/about/current-technology) for implementation status and [the cross-network roadmap](/overview/cross-network-roadmap) for settlement priorities."
-        }
-      ]
-    },
-    {
       "path": "tsn-protocol/tsn-docs/overview/introduction.mdx",
       "title": "Transfer Settlement Network: Hybrid Settlement Infrastructure",
       "sha256": "3e3f8ebcfae513c1f00e3fb228885cae6185f383654c672845826ba2e4bbaf52",
@@ -7147,93 +7380,10 @@
       ]
     },
     {
-      "path": "tsn-protocol/tsn-docs/overview/payment-solutions.mdx",
-      "title": "TSN Payment Applications and Identity-Based Settlement",
-      "sha256": "3876ac924a5f65cc2309dedb2d918b1eb50a6784bcdcc456710a4c6668914ca7",
-      "lines": 29,
-      "status": "EXPERIMENTAL",
-      "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
-      "evidence": [
-        "docs/laboratory/architecture-map.md",
-        "docs/laboratory/credit-abi.md",
-        "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
-        "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-        "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
-        "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
-        "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
-        "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
-      ],
-      "statusStatements": [
-        {
-          "line": 4,
-          "text": "description: \"Build a TIN-addressed payment experience with TSN's experimental Solana credit flow, and understand planned merchant-identity and cross-network extensions.\""
-        },
-        {
-          "line": 11,
-          "text": "The current experimental Solana flow supports a wallet deposit followed by private credit to a TIN. An application presents the resolved recipient, accepted asset, amount, fee and expiry; obtains the signed payment message and exact deposit approval; and follows funding and settlement through their separate confirmations. This gives a developer a c"
-        },
-        {
-          "line": 19,
-          "text": "Optional attested business or personal claims are a proposed way to give the sender more context. An implementation would need issuer authentication, binding to the TIN owner, expiry and revocation checks, and consent-aware disclosure. See [identity attestations](/overview/identity-attestations) for the boundary between signed display metadata and "
-        },
-        {
-          "line": 23,
-          "text": "Base, Arbitrum and Polygon are planned lower-fee EVM destinations. A future payout route would need a source action, exact destination asset and recipient, authorized liquidity, replay protection and evidence of the destination result. These targets do not yet establish an available TSN payout service; Ethereum mainnet is outside the present integr"
-        }
-      ]
-    },
-    {
-      "path": "tsn-protocol/tsn-docs/overview/separation-of-concerns.mdx",
-      "title": "Protocol Responsibilities",
-      "sha256": "4d9380a8e095b72aa9fba3f0b832f0c4a342d1cebc8a90726013f9fc04fd3e34",
-      "lines": 18,
-      "status": "EXPERIMENTAL",
-      "reason": "Source-reconciled private credit and complete aggregate epoch accounting, reviewed November 7. Offline checks remain separate from unverified SBF, matching activation, live flow and full privacy.",
-      "evidence": [
-        "docs/laboratory/credit-abi.md",
-        "docs/laboratory/decisions/ADR-005-private-amount-and-adaptive-pools.md",
-        "docs/laboratory/experiments/EXP-20261107-private-credit-epoch.md"
-      ],
-      "statusStatements": [
-        {
-          "line": 16,
-          "text": "For a balance-changing action, GPRU is intended to prove that the hidden state is current and that the proposed transition follows from it. TCAP checks the applicable asset, authorization, and liquidity conditions, then applies the authorized transition atomically. This keeps state protection separate from control of funds."
-        },
-        {
-          "line": 18,
-          "text": "The experimental native-credit statement uses a secret-derived funded-note nullifier and a freshly blinded amount commitment. It omits the plaintext amount, note opening and private route/predecessor witness; individual credit updates shared head/root and epoch transcript without changing reserve liabilities. TCAP reclassifies the complete epoch ag"
-        }
-      ]
-    },
-    {
-      "path": "tsn-protocol/tsn-docs/overview/solana-integration.mdx",
-      "title": "Transfer Settlement Network Solana Integration",
-      "sha256": "a1fed71f868f3ff143ce08f753f2c652801c4bf76703fa3dd9616ebdfba9e2dc",
-      "lines": 29,
-      "status": "EXPERIMENTAL",
-      "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
-      "evidence": [
-        "docs/laboratory/architecture-map.md",
-        "docs/laboratory/credit-abi.md",
-        "tsn-protocol/sdks/tsn-sdk/src/tins.ts",
-        "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-        "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
-        "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
-        "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
-        "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
-      ],
-      "statusStatements": [
-        {
-          "line": 7,
-          "text": "Transfer Settlement Network (TSN) uses Solana as the chain for its current experimental settlement implementation. TSN is hybrid Internet of Value infrastructure: services resolve identities and coordinate authorized work off chain, while Solana programs enforce identity registration, accepted-asset funding, proof checks and state transitions. This"
-        }
-      ]
-    },
-    {
       "path": "tsn-protocol/tsn-docs/sdk/api-reference.mdx",
       "title": "Complete SDK API reference",
-      "sha256": "0397a9e4e5bb4ce1f7c65b96d6c192157e73ab395625b5aa09bbb3c04d60b6f0",
-      "lines": 75,
+      "sha256": "d6237d369f81cc2dfe31a555f23bcdbb5c02fb8960ebc577932b98593be6ab35",
+      "lines": 79,
       "status": "EXPERIMENTAL",
       "reason": "Source-reconciled first-release positioning, current Solana responsibility/credit/identity boundaries and locally qualified proposed integrations; no production, privacy-audit or complete-route claim.",
       "evidence": [
@@ -7252,7 +7402,7 @@
           "text": "The generated reference covers public root exports and the explicit `package.json` subpaths, including server-only modules. An exported method may still require a configured service, deployed program, or experimental provider. Browser bundles must use only browser-safe modules; the root entry exports server facilities as well."
         },
         {
-          "line": 73,
+          "line": 77,
           "text": "Regenerate from the workspace root with `node docs/references/tooling/generate-sdk-reference.mjs`. The package's installed TypeScript compiler is required. The output is documentation metadata, not another SDK implementation. Source links point to the existing workspace remote and its main branch; local uncommitted changes may not yet be visible re"
         }
       ]

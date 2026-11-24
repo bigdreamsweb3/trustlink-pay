@@ -11,7 +11,7 @@ import { payloadCommitment } from "../commitments/payload-commitment";
  */
 export function hasResolvedNonExecution(work: ReceiverWork): boolean {
   const resolution = work.nonExecutionResolution;
-  return work.kind === "SETTLEMENT" && work.status === "FAILED" && !work.nodeLease && !work.crankerLease
+  return ["SETTLEMENT", "TIN_DEBIT"].includes(work.kind) && work.status === "FAILED" && !work.nodeLease && !work.crankerLease
     && resolution?.kind === "EXPIRED_UNCHANGED_ROOT"
     && Number.isSafeInteger(resolution.previousStateVersion)
     && resolution.resolvedStateVersion === work.stateVersion

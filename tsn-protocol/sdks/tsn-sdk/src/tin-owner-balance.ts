@@ -5,7 +5,9 @@ import nacl from "tweetnacl";
 import { decodeTinV1RegistryAccount, validateTinTipRoute } from "./tins.js";
 import { decodeTinMasterSeedEnvelope } from "./tin-envelopes.js";
 import { withTinOwnerMasterSeed } from "./tin-private-controller.js";
-import { loadTinGpruTokenBalancesV1 } from "./gpru/chain-history.js";
+import { loadTinGpruTokenBalancesV1, loadTinGpruDebitOpeningV1 } from "./gpru/chain-history.js";
+import { validateTinDebitOpeningPacketV1, tinDebitHexV1, tinDebitDecimalV1, type TinDebitOpeningPacketV1 } from "./gpru/tin-debit-opening.js";
+import { bytesToHex } from "@noble/hashes/utils";
 
 /** Accepts both wallet adapters and injected Solana browser wallets. */
 export type TinBalanceWallet = {
@@ -101,7 +103,10 @@ export async function getTinOwnerBalanceContextV1(params: {
  * obtain wallet seed authorization, decrypt locally and verify finalized history.
  * RPC and the identity service never receive the seed or reusable seed signature.
  */
-export async function loadTinOwnerBalanceV1(params: LoadTinOwnerBalanceV1Params): Promise<TinOwnerBalanceV1> {
+async function withTinOwnerBalanceAccessV1<Result>(params: LoadTinOwnerBalanceV1Params, read: (context: {
+  masterSeed: Uint8Array; account: Awaited<ReturnType<typeof readOwnerBalanceRegistryV1>>;
+  onProgress: (message: string) => void; checkCurrent: () => void;
+}) => Promise<Result>): Promise<Result> {
   if (!/^\d{10}$/.test(params.tin)) throw new Error("A ten-digit TIN is required.");
   const wallet = params.ownerWallet, publicKey = walletKey(wallet);
   let access = accessByWallet.get(wallet);
@@ -193,13 +198,48 @@ export async function loadTinOwnerBalanceV1(params: LoadTinOwnerBalanceV1Params)
       ownerWallet: { publicKey, signMessage: async message => (seedSignature = await sign(message, true)) },
     }, masterSeed => {
       checkCurrent();
-      return loadTinGpruTokenBalancesV1({ connection: params.connection, masterSeed,
-        gpruElgamalPublicKey: account.gpruElgamalPublicKey, gpruBalanceScanPublicKeyX: account.gpruBalanceScanPublicKeyX,
-        gpruBalanceScanPublicKeyY: account.gpruBalanceScanPublicKeyY, signal: params.signal,
-        onProgress: message => { checkCurrent(); params.onProgress?.(message); },
-      });
+      return read({ masterSeed, account, checkCurrent, onProgress: message => { checkCurrent(); params.onProgress?.(message); } });
     });
     checkCurrent();
     return result;
   } finally { seedSignature?.fill(0); }
+}
+
+/** Complete wallet-authorized local display balance read. */
+export async function loadTinOwnerBalanceV1(params: LoadTinOwnerBalanceV1Params): Promise<TinOwnerBalanceV1> {
+  return withTinOwnerBalanceAccessV1(params, ({ masterSeed, account, onProgress }) => loadTinGpruTokenBalancesV1({
+    connection: params.connection, masterSeed, gpruElgamalPublicKey: account.gpruElgamalPublicKey,
+    gpruBalanceScanPublicKeyX: account.gpruBalanceScanPublicKeyX, gpruBalanceScanPublicKeyY: account.gpruBalanceScanPublicKeyY,
+    signal: params.signal, onProgress,
+  }));
+}
+
+/**
+ * Recover the sender's private opening locally; receiving requires no recipient access.
+ * The callback may request separate opening-packet consent; neither RPC nor the
+ * identity service receives the opening, seed, or seed-access signature.
+ */
+export async function withTinOwnerDebitOpeningV1<Result>(params: LoadTinOwnerBalanceV1Params & {
+  tokenId: number; leg: 0; authorizationCommitment: string; expectedGlobalRoot: string;
+  tipRouteRoot: string; expectedRootSequence: string;
+}, callback: (packet: TinDebitOpeningPacketV1) => Result | Promise<Result>): Promise<Result> {
+  // Validate the requested statement before identity transport or wallet access.
+  if (params.leg !== 0) throw new Error("Transfer opening consent is required only from the sender");
+  if (!Number.isInteger(params.tokenId) || params.tokenId <= 0 || params.tokenId > 0xffff_ffff) throw new Error("Transfer opening requires a positive u32 token ID");
+  tinDebitHexV1(params.authorizationCommitment, "Transfer authorization", true, true);
+  tinDebitHexV1(params.expectedGlobalRoot, "Selected global root", true, true);
+  tinDebitHexV1(params.tipRouteRoot, "Selected TIP route root", true, true);
+  tinDebitDecimalV1(params.expectedRootSequence, "Selected global sequence", 0xffff_ffff_ffff_ffffn);
+  return withTinOwnerBalanceAccessV1(params, async ({ masterSeed, account, onProgress, checkCurrent }) => {
+    const opening = await loadTinGpruDebitOpeningV1({ connection: params.connection, masterSeed,
+      gpruElgamalPublicKey: account.gpruElgamalPublicKey, gpruBalanceScanPublicKeyX: account.gpruBalanceScanPublicKeyX,
+      gpruBalanceScanPublicKeyY: account.gpruBalanceScanPublicKeyY, signal: params.signal, onProgress,
+      tokenId: params.tokenId, expectedGlobalRoot: params.expectedGlobalRoot, expectedRootSequence: params.expectedRootSequence });
+    checkCurrent();
+    const packet = validateTinDebitOpeningPacketV1({ version: 1, recordType: "tsn-gpru-tin-debit-opening-v1", leg: params.leg,
+      authorizationCommitment: params.authorizationCommitment,
+      routeKeyCommitment: bytesToHex(account.gpruElgamalKeyCommitment), ...opening });
+    try { return await callback(packet); }
+    finally { packet.balance = "0"; packet.blinding = "0"; }
+  });
 }

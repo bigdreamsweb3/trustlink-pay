@@ -384,3 +384,80 @@ No cross-network settlement destination is enabled. Node discovery returns an em
 The root `test:real-integration` alias forwarded a nonexistent external-service test command and is removed without a replacement. The retained EVM package supports only `npm --prefix tsn-protocol/services/tsn-crosschain run build`, a non-emitting TypeScript check. Solidity research and local validators do not enable an adapter. Base, Arbitrum and Polygon remain planning targets; Ethereum L1 is outside the current integration scope.
 
 After adopting this source update, operators review and rebuild the SDK and existing Cranker package before their own authorized reload. Native Solana IDs, account/instruction layouts, signing, funding, private credit, epoch accounting and recovery procedures retain their existing contracts. This task performs no service reload, deployment, signing or chain operation. The [November 22 maintenance record](references/TSN-POSITIONING-20261122.md) and [Node verification](../tsn-protocol/services/tsn-node/docs/verification.md#external-route-retirement-november-22-2026) record offline results and artifact limitations.
+
+## TIN-Debit implementation and local verification
+
+**November 24 status:** the [canonical debit contract](../tsn-protocol/contracts/tin-debit-v1.json) and [Node component documentation](../tsn-protocol/services/tsn-node/settlement/debit/README.md) describe the integrated runtime. The domain/input-count mismatch is corrected to 26 public inputs. Node now has owner-authenticated preparation, signed-opening ingress, paired proving, attestation, lease authorization and exact Mother-message inspection. Receiver encrypts debit requests, serializes shared-root work and supports signed checkpoints, receipt reconciliation and expired unchanged-root nonexecution resolution. SDK/XP use the same private request for retries and expose the sender debit while later recipient recovery records a credit. Deployment and live payment remain unverified.
+
+XP exposes **TIN debit** in its navigation and **Pay from TIN balance** on the connected-wallet overview. The debit panel has independent recipient, token, amount and status controls; resolve its recipient before approving a debit. Refresh the XP page to load these static HTML/JavaScript changes; the existing server reads those files for each request with `Cache-Control: no-store`. This UI correction needs no service restart, SDK rebuild, configuration change or program deployment. The debit deployment/verifier requirements below still apply to live execution.
+
+Run source checks from the root in PowerShell:
+
+```powershell
+npm run tsn:sdk:build
+npm run tsn:sdk:browser:build
+npm --prefix tsn-protocol/services/tsn-receiver run typecheck
+node --test tsn-protocol/sdks/tsn-sdk/tests/tin-debit-client.test.mjs tsn-protocol/sdks/tsn-sdk/tests/gpru-tin-debit-record.test.mjs tsn-protocol/sdks/tsn-sdk/tests/gpru-chain-history.test.mjs tsn-protocol/sdks/tsn-sdk/tests/tin-owner-balance.test.mjs
+npm run gpru:tin-debit:test
+```
+
+Run `node --import tsx --test tests/tin-debit-transition.test.ts` from the Cranker package. The canonical debit wire is 2,977 bytes with one 1,128-byte TSNP instruction and two 582-byte Memos. The Node suite uses `python -m testing.run_suite --native-library <absolute-compatible-native-library-path>` from its service directory; replace the placeholder with an existing library. The circuit README defines development setup/proof/recovery commands and pinned artifact requirements. Only matching current sources, R1CS, WASM and 26-input/27-IC keys may be enrolled. If debit setup fails after both development keys exist, preserve them and use its documented `--verify-existing` option to verify a newly recomputed disk-backed initial key against the retained initial key, then verify the existing contribution. Completed sets remain immutable; do not delete keys to force a fresh setup.
+
+Debit proving requires separate `GPRU_TIN_DEBIT_CIRCUIT_BUILD_DIR`, `GPRU_TIN_DEBIT_CIRCUIT_WASM_PATH`, `GPRU_TIN_DEBIT_PROVING_KEY_PATH`, `GPRU_TIN_DEBIT_VERIFICATION_KEY_PATH`, `GPRU_TIN_DEBIT_PROVER_METADATA_PATH` and `GPRU_TIN_DEBIT_PROVER_METADATA_SHA256`. For this debit circuit, a process-only native compiler override uses `GPRU_TIN_DEBIT_CIRCOM_EXECUTABLE` plus `GPRU_TIN_DEBIT_CIRCOM_SHA256`; it requires version 2.1.9 and records executable provenance in the build manifest. Relative artifact paths follow the existing Node service working-directory convention. Existing credit/epoch artifacts remain separate. Receiver debit ingress requires the Node service credential; its Node projection releases the private request only through authenticated processing. Amount, TINs, opening and owner signatures must remain out of public execution, logs and command arguments.
+
+GPRU uses the already locked bytemuck 1.25.1 as an explicit dependency for safe in-place verifier access. Its account remains 2,284 bytes with the same discriminator, field offsets and enabled byte; no migration follows from this loading fix. Inspect SBF diagnostics for stack-offset errors even when the compiler command exits zero.
+
+The operator must build and verify TSNP, TCAP and GPRU, review/deploy their matching binaries, initialize/write/enable the separate Mother-governed debit verifier, configure pinned proving artifacts and current shared-root snapshots, and reload their existing services before a live debit. Preserve IDs, keys, credit verifier and existing state. An accepted Receiver work ID is pending coordination; verify its finalized receipt and both owners' independently recovered balances before calling the debit successful. Keep a failed signed attempt until receipt reconciliation or finalized expired unchanged-root evidence resolves it. A changed root with no proven outcome remains unresolved.
+
+XP now releases a completed request after matching CONFIRMED status or Receiver's `safeToReplace: true`. That flag requires exact work/payment identity and no active lease, plus either an initial rejection with no retained execution attempt or the existing finalized, version/commitment-bound nonexecution resolution. An unresolved FAILED/SUBMITTED attempt stays pending. After reconnecting the sender wallet, status can be checked before resolving the recipient again. An older attempt's status cannot clear a different pending debit.
+
+At finalized Devnet slot 525816601 on November 24, 2026 at 15:14:29 Africa/Lagos, all three deployed executable payloads differed from the checked debit builds. The comparison validated the upgradeable-loader program/ProgramData tags, excluded the 45-byte ProgramData header and required any trailing payload padding to be zero. The checked binaries under `programs/gpru/circuits/hidden_head_tin_debit_v1/build/native-tin-debit/sbf/` have these SHA-256 values: GPRU `ce05a00d30008d9c3409b833888f143c52544573320e570c740711eb14e56994`, TCAP `2d79fad380ba2d7b75171f3fe5562c882119f6d2ad135ab205eb88b83993a60f`, and TSNP `a0cf32acda6c5ac77ab4bf05e9f2cab0ffa04c6ca0ae5974cbbff3bf474cd753`. GPRU capacity was 548,864 bytes for a 601,104-byte build; TCAP capacity was 1,636,352 for 1,661,488. Both require additional ProgramData capacity. TSNP's 1,574,144 bytes can hold its 1,088,312-byte build, but its deployed bytes still differ. These are time-sensitive observations; compare the exact intended artifacts again before and after an operator deployment.
+
+All three observed program upgrade authorities were `78AacdSEWquuus5QyU654C7Gjb6gFb8okLNb8v1hn5MX`. Debit enrollment instead requires the Mother authority, observed as `FnTrWDNgsXedkoCxpgKvwmEF3By4G6wzu9oyoU1n9xUG` on Mother `ETNJWb2KDNdHSscVNbEiz1iWboddZdr8EPgmzw53hNkR`. The debit verifier `FTWa2Q7RdvdPguFPAA5VZHDp9UwUupkWfXpFYS41j9Hm` was absent. Do not substitute one authority for the other or change existing keys.
+
+The exporter writes an unsigned initialize/seven-IC-write/enable plan, now consumed by the separate [debit enrollment helper](../scripts/tin-debit-setup.mjs). `gpru:verifier:init:devnet` selects the separate thirteen-input credit setup and must not be used for debit enrollment. The existing deployment helper supports `node scripts/devnet-program-deploy.mjs deploy gpru`, `deploy tcap` and `deploy tsn` from the repository root in PowerShell and bridges to WSL. Those commands rebuild the canonical `target/deploy` artifacts before upload, so the previously checked `sbf/` copies are not automatically the binaries they deploy. Review the canonical build bytes and resulting deployed bytes independently. No existing deployment helper or private environment file was changed for this handoff.
+
+The new helper defaults to `status`, which performs account reads only. `init` also verifies the independently pinned metadata, source/R1CS/WASM/proving/verification-key hashes and existing real proof through the existing verifier adapter. It compares the entire nine-instruction plan with the current Mother authority and reconstructed instruction bytes/accounts. This reuses completed artifacts without downloading or regenerating the ceremony. Preview never reads a wallet, including when `--wallet` is supplied. These are operator-run commands from the repository root in PowerShell:
+
+```powershell
+node scripts/tin-debit-setup.mjs status
+node scripts/tin-debit-setup.mjs init --metadata-sha256 6c877b506a167bac185cdce011501b23def6cf2a4dea5136e4ff0859dc607316
+```
+
+That metadata hash identifies the reviewed local development set, not a production ceremony. Optional `--build-dir` and `--plan` select another retained matching set; review its independent metadata pin rather than reusing this value. `GPRU_TIN_DEBIT_PROVER_METADATA_SHA256` supplies the pin when the flag is omitted. Explicit operator execution adds `--send --wallet <Mother-authority-keypair-path>` to the reviewed `init` command; replace the placeholder locally and never include key contents. The helper enforces Devnet genesis and current Mother authority, refuses conflicting account/key/IC bytes, skips matching chunks, re-reads after every confirmed transaction and enables only with all 27 matching points. An already matching enabled verifier is a no-op. Fourteen offline mocked checks and syntax passed; no live helper submission or wallet access was tested. Deployment parity is explicitly outside enrollment's checks and remains a separate prerequisite.
+
+These steps change the debit operating requirements only. No service, deployment, transaction signing or submission is performed here. The Node verification record and canonical records retain exact completed checks and pending artifact/chain validation. The older transfer tools below are historical offline evidence and must not be used to provision the debit runtime.
+
+### Historical offline-recipient transfer, November 23, 2026
+
+The [offline-recipient checkpoint](laboratory/experiments/EXP-20261123-offline-recipient-transfer.md) describes the separate twenty-input transfer circuit and in-memory witness builder. Only the sender supplies approval and an opening; the authenticated recipient point receives the matching homomorphic credit while the recipient is offline. Encrypted records support later owner recovery. The earlier [two-opening core](laboratory/experiments/EXP-20261123-private-transfer-core.md) and [participating-owner extension](laboratory/experiments/EXP-20261123-transfer-owner-recovery.md) are historical operational designs. Existing wallet deposit/credit code, account initialization, native credit and credit-epoch accounting procedures are unchanged; this transfer has no deployed instruction, service dispatch or XP flow.
+
+From the root in Windows PowerShell, use the existing native GPRU library and pinned circuit tooling:
+
+```powershell
+npm run gpru:transfer:test
+```
+
+The command uses the workspace's `.venv/Scripts/python.exe` by default and checks the sender-only core/authorization contract and real R1CS witnesses. `GPRU_TRANSFER_PYTHON` can select another compatible interpreter, while `GPRU_NATIVE_LIBRARY_PATH` selects the host-native Poseidon library for this process. These are offline command settings rather than additions to Node's service `.env`. Compilation writes the corrected circuit's ignored `build/sender-only/`, preserving original two-opening `build/` evidence and all existing deposit-credit/epoch artifacts. Current commands have no old-artifact fallback.
+
+The retained reference development Ptau can supply the separate circuit-specific test key. These commands perform local development cryptography only:
+
+```powershell
+node tsn-protocol/programs/gpru/circuits/hidden_head_transfer_v1/tools/setup-dev.mjs --ptau tsn-protocol/programs/gpru/circuits/hidden_head_v1/build/hidden_head_v1/dev/pot_final.ptau
+npm run gpru:transfer:prove:dev
+```
+
+The direct setup command avoids the observed PowerShell npm-wrapper failure in which `-- --ptau` dropped the flag. It requires that retained file to exist, verifies it and the contributed transfer key, and refuses existing corrected key files. The second command generates and locally verifies a synthetic Groth16 statement and rejects changed public inputs. Corrected keys live under `hidden_head_transfer_v1/build/sender-only/dev`; the earlier two-opening `build/dev` files are preserved as historical evidence and cannot be used with the changed circuit despite its unchanged public-input count. Source/R1CS/WASM/key hashes must match. There is no verifier initializer, migration, deployment or service reload in these commands, and the existing thirteen-input deposit-credit verifier remains unchanged.
+
+After rebuilding the SDK, run the offline-recipient round trip from the root in Windows PowerShell:
+
+```powershell
+npm run tsn:sdk:build
+npm run gpru:transfer:roundtrip
+```
+
+The round-trip tool requires matching corrected transfer circuit/development-key artifacts and the same Python/native-library settings. It recovers the synthetic sender's credit history, signs sender approval/disclosure and prepares the paired witness and Memos using only the authenticated recipient point/public keys. Recipient private recovery inputs are withheld until after preparation and circuit/proof verification. The tool then recovers each encrypted successor independently, with a recipient wallet stub that rejects any attempted approval. It writes no owner seeds, openings or private witnesses to versioned files and performs no RPC, service or chain operation. Missing or mismatched artifacts reject; rebuild or select compatible current offline tools rather than using stale SDK output.
+
+Application integration uses `withTinOwnerTransferOpeningV1` with sender leg `0` and `signTinTransferOpeningV1` for separate sender disclosure consent. The recipient supplies no opening or signature. The in-memory preparer must receive the independently validated sender registry/owner pin, authenticated routes/root lineage and selected TIP/TCAP snapshots; ordinary Node ingress has no transfer-opening endpoint. Sender and later owner recovery support u128 accumulated balances while amounts remain u64. The unopened recipient's numeric lifetime bound depends on canonical lineage and nonresetting sequence/admitted-credit limits, not a local recipient range proof or audited guarantee.
+
+Later SDK successor recovery requires the exact independently verified twenty-input statement and an authenticated predecessor opening. The circuit binds full Memo hashes but does not prove encryption correctness, so recovery must also reconstruct the successor point. Live integration must preserve the offline-recipient contract; canonical-lineage enforcement, finalized transfer-history discovery, program/account enforcement, transport capacity, complete service/XP integration and production ceremony/audit remain separate engineering work.

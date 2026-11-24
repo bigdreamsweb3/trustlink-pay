@@ -18,6 +18,7 @@ PAYMENT_AUTHORIZATION_KEYS.delete("senderFundingBlockhashContext");
 export const INTERNAL_KEYS: Record<WorkKind, Set<string>> = {
   AUTHORIZED_FUNDING: new Set(["paymentId", "recipientHash", "tokenMintAddress", "amount", "nodeEncryptedPayload"]),
   TCAP_EPOCH_ACCOUNTING: new Set(["assetEntry", "reserveState", "tcapConfig", "accountingEpoch"]),
+  TIN_DEBIT: new Set(["paymentId", "nodeEncryptedPayload"]),
   SETTLEMENT: new Set(["paymentId", "intentId", "recipientHash", "source", "nodeEncryptedPayload"]),
   // Exact private TIN V1 creation payload accepted from the SDK.
   TIN_OPERATION: new Set([

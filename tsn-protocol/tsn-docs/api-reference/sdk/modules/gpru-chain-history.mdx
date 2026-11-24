@@ -11,15 +11,25 @@ This reference is generated from the checked-out TypeScript exports. Types and s
 
 Read current funded credits and historical twelve-input receipts for owner recovery only.
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/chain-history`. [Implementation, line 46](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L46).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/chain-history`. [Implementation, line 87](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L87).
 
 ```ts
 decodeFinalizedGpruCreditV1(wire: GpruHistoryWireTransactionV1, signature: string, slot: number): GpruFinalizedCreditV1 | null
 ```
 
+## decodeFinalizedGpruTinDebitV1
+
+Chain acceptance plus exact account, public digest and both compact Memo bindings.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/chain-history`. [Implementation, line 57](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L57).
+
+```ts
+decodeFinalizedGpruTinDebitV1(wire: GpruHistoryWireTransactionV1, signature: string, slot: number): GpruFinalizedTinDebitV1 | null
+```
+
 ## GpruFinalizedCreditV1
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/chain-history`. [Implementation, line 30](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L30).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/chain-history`. [Implementation, line 34](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L34).
 
 ```ts
 export type GpruFinalizedCreditV1 = {
@@ -38,36 +48,60 @@ export type GpruFinalizedCreditV1 = {
 };
 ```
 
+## GpruFinalizedTinDebitV1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/chain-history`. [Implementation, line 49](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L49).
+
+```ts
+export type GpruFinalizedTinDebitV1 = {
+  kind: "TIN_DEBIT"; signature: string; slot: number; sequence: bigint; oldRoot: string; newRoot: string;
+  memoPayloads: [string, string]; assetEntry: string; reserveState: string; proof: GpruTinDebitProofV1;
+  action: { actionKind: 4; tokenId: number; amountCommitment: string; actionCommitment: string; authorizationCommitment: string; nullifier: string };
+};
+```
+
+## GpruFinalizedTransitionV1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/chain-history`. [Implementation, line 54](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L54).
+
+```ts
+export type GpruFinalizedTransitionV1 = GpruFinalizedCreditV1 | GpruFinalizedTinDebitV1;
+```
+
 ## loadGpruFinalizedCreditHistoryV1
 
 Read only public finalized credits. No owner key material enters RPC calls.
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/chain-history`. [Implementation, line 166](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L166).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/chain-history`. [Implementation, line 207](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L207).
 
 ```ts
-loadGpruFinalizedCreditHistoryV1(params: { connection: Connection; signal?: AbortSignal; onProgress?: (message: string) => void; }): Promise<{ credits: GpruFinalizedCreditV1[]; snapshot: RootSnapshot; }>
+loadGpruFinalizedCreditHistoryV1(params: { connection: Connection; signal?: AbortSignal; onProgress?: (message: string) => void; }): Promise<{ credits: GpruFinalizedTransitionV1[]; snapshot: RootSnapshot; }>
+```
+
+## loadTinGpruDebitOpeningV1
+
+Private owner-seed scope only; the high-level wallet-authorized callback owns consent.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/chain-history`. [Implementation, line 356](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L356).
+
+```ts
+loadTinGpruDebitOpeningV1(params: OwnerHistoryParams & { tokenId: number; expectedGlobalRoot: string; expectedRootSequence: string; }): Promise<GpruTinDebitOwnerOpeningV1>
 ```
 
 ## loadTinGpruTokenBalancesV1
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/chain-history`. [Implementation, line 225](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L225).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/chain-history`. [Implementation, line 341](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L341).
 
 ```ts
-loadTinGpruTokenBalancesV1(params: { connection: Connection; masterSeed: Uint8Array; gpruElgamalPublicKey: Uint8Array; gpruBalanceScanPublicKeyX: Uint8Array; gpruBalanceScanPublicKeyY: Uint8Array; signal?: AbortSignal; onProgress?: (message: string) => void; }): Promise<{ tokenBalances: Array<{ tokenId: number; mint: string; decimals: number; balanceBaseUnits: string; }>; latestGlobalSequence: string; latestOwnerSequence: string; actionCount: number; }>
-```
-
-Direct failure expressions:
-
-```text
-error
+loadTinGpruTokenBalancesV1(params: OwnerHistoryParams): Promise<{ tokenBalances: Array<{ tokenId: number; mint: string; decimals: number; balanceBaseUnits: string; }>; latestGlobalSequence: string; latestOwnerSequence: string; actionCount: number; }>
 ```
 
 ## validateGpruGlobalCreditHistoryV1
 
 Require every global transition from the activated empty root through the finalized snapshot.
 
-Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/chain-history`. [Implementation, line 138](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L138).
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/gpru/chain-history`. [Implementation, line 179](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/gpru/chain-history.ts#L179).
 
 ```ts
-validateGpruGlobalCreditHistoryV1(credits: readonly GpruFinalizedCreditV1[], snapshot: RootSnapshot): void
+validateGpruGlobalCreditHistoryV1(credits: readonly GpruFinalizedTransitionV1[], snapshot: RootSnapshot): void
 ```

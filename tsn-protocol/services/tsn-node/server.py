@@ -285,6 +285,8 @@ _native_blockhash_lifetime = runtime._native_blockhash_lifetime
 sign_settlement_transaction = runtime.sign_settlement_transaction
 mempool_status = runtime.mempool_status
 consume_threshold_access_nonce = runtime.consume_threshold_access_nonce
+prepare_tin_debit_request = runtime.prepare_tin_debit_request
+post_tin_debit = runtime.post_tin_debit
 post_intent = runtime.post_intent
 get_network_recent_blockhash = runtime.get_network_recent_blockhash
 post_funding_readiness = runtime.post_funding_readiness
@@ -335,6 +337,8 @@ app.post('/internal/settlement-authorizations/signature', dependencies=[Depends(
 app.post('/', response_model=MempoolStatusResponse)(mempool_status)
 app.post('/threshold-access/nonces/consume')(consume_threshold_access_nonce)
 app.post('/intents', response_model=PublicMempoolIntent)(post_intent)
+app.post('/network/tin-debit/prepare')(prepare_tin_debit_request)
+app.post('/network/tin-debit')(post_tin_debit)
 app.get('/network/recent-blockhash')(get_network_recent_blockhash)
 app.post('/network/funding/readiness')(post_funding_readiness)
 app.post('/network/funding/complete')(post_complete_funding)

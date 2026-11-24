@@ -19,7 +19,7 @@ export async function reclaimExpiredWorkLease(dependencies: Pick<WorkDependencie
         // Once a signed attempt is durable, never rebuild on lease expiry.
         // Its signature must be reconciled even if broadcast was interrupted.
         status: next === "NODE_VERIFYING" ? "RECEIVED"
-            : current.result?.signature ? "FAILED" : ["SETTLEMENT", "TCAP_EPOCH_ACCOUNTING"].includes(current.kind) ? "RECEIVED" : "VERIFIED",
+            : current.result?.signature ? "FAILED" : ["SETTLEMENT", "TIN_DEBIT", "TCAP_EPOCH_ACCOUNTING"].includes(current.kind) ? "RECEIVED" : "VERIFIED",
         stateVersion: current.stateVersion + 1,
         updatedAt: now(),
         nodeLease: null,

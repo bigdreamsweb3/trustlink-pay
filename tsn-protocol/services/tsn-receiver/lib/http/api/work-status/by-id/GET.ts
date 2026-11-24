@@ -9,6 +9,7 @@ type Context = {
 };
 import type { Dependencies } from "./dependencies";
 import { publicFundingReadiness } from "../../../../contracts/projection/public-funding-readiness";
+import { canReplaceTinDebit } from "../../../../contracts/recovery/can-replace-tin-debit";
 
 export async function GET(dependencies: Pick<Dependencies, "NextResponse" | "createHash" | "getWork">, _request: NextRequest, context: Context) {
     const { id } = await context.params;
@@ -38,7 +39,7 @@ export async function GET(dependencies: Pick<Dependencies, "NextResponse" | "cre
             } : null,
         }, { headers: { "cache-control": "no-store" } });
     }
-    if (work.kind !== "TIN_OPERATION") {
+    if (work.kind !== "TIN_OPERATION" && work.kind !== "TIN_DEBIT") {
         return dependencies.NextResponse.json({ error: "WORK_STATUS_UNSUPPORTED" }, { status: 404 });
     }
     return dependencies.NextResponse.json({
@@ -48,6 +49,7 @@ export async function GET(dependencies: Pick<Dependencies, "NextResponse" | "cre
         receivedAt: work.receivedAt,
         updatedAt: work.updatedAt,
         verificationType: work.verification?.verificationType ?? null,
+        ...(work.kind === "TIN_DEBIT" ? { safeToReplace: work.id === id && canReplaceTinDebit(work) } : {}),
         result: work.result ? {
             signature: work.result.signature ?? null,
             stage: work.result.stage ?? null,

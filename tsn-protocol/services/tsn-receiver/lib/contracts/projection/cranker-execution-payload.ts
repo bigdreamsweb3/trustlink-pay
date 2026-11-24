@@ -1,6 +1,7 @@
 import type { WorkKind } from "../models";
 import { allowlistedEntry } from "./allowlisted-entry";
 import { assertSenderFundingBlockhashContext } from "../validation/assert-sender-funding-blockhash-context";
+import { tinDebitTransition } from "./tin-debit-transition";
 
 /**
  * Apply current work-specific and nested transition/proof allowlists to verified execution data.
@@ -10,6 +11,7 @@ import { assertSenderFundingBlockhashContext } from "../validation/assert-sender
  * Verification: existing Receiver contract/coordination/recovery fixtures; individual branch coverage is unmeasured.
  */
 export function crankerExecutionPayload(kind: WorkKind, payload: Record<string, unknown>): Record<string, unknown> {
+  if (kind === "TIN_DEBIT") return { tcapTinDebitTransition: tinDebitTransition(payload.tcapTinDebitTransition) };
   if (kind === "AUTHORIZED_FUNDING") assertSenderFundingBlockhashContext(payload.senderFundingBlockhashContext);
   const allowed = kind === "AUTHORIZED_FUNDING"
     ? new Set(["senderSignedFundingTransaction", "senderFundingMode", "senderFundingBlockhashContext"])

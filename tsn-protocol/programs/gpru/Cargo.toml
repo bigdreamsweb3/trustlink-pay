@@ -16,6 +16,8 @@ cpi = ["no-entrypoint"]
 idl-build = ["anchor-lang/idl-build"]
 
 [dependencies]
+# Existing locked dependency; safe in-place verifier access preserves its ABI.
+bytemuck = { version = "=1.25.1", features = ["derive", "min_const_generics"] }
 anchor-lang = { version = "=0.30.1", features = ["init-if-needed"] }
 solana-program = "=1.18.26"
 sha3 = "=0.9.1"

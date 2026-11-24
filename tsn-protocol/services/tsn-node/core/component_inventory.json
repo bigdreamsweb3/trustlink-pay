@@ -1,5 +1,5 @@
 {
-  "status": "Source inventory refreshed November 22, 2026 after external runtime retirement; AST/import ownership only, no deployment or branch-coverage claim",
+  "status": "Source inventory extended November 24, 2026 for TIN-Debit; scoped AST parse and one-function checks, no branch coverage or deployment claim",
   "scope": "Every authored production Python source file in this Node; testing/ support and tests/ are counted separately without duplicating their inventory",
   "references": {
     "activeServerContracts": "core/component_contracts.json",
@@ -7,30 +7,32 @@
     "verification": "docs/verification.md"
   },
   "coverage": {
-    "productionFiles": 547,
-    "productionFunctions": 377,
+    "productionFiles": 583,
+    "productionFunctions": 408,
     "verificationToolsFiles": 7,
     "verificationToolsFunctions": 5,
-    "testsFiles": 369,
-    "testsFunctions": 269
+    "testsFiles": 376,
+    "testsFunctions": 275
   },
   "productionCoverage": {
-    "files": 547,
-    "functionFreeFiles": 170,
-    "singleFunctionFiles": 377,
+    "files": 583,
+    "functionFreeFiles": 175,
+    "singleFunctionFiles": 408,
     "multipleFunctionFiles": [],
     "originalServerContractEntries": 147,
     "missingServerContractFiles": [],
     "testComponentEntries": 228,
-    "newComponentTestFunctions": 41,
+    "newComponentTestFunctions": 47,
     "contractVerificationStatuses": {
       "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED": 100,
       "TEST_SOURCE_REFERENCES_WITHOUT_DIRECT_CALL": 13,
-      "DIRECT_TEST_CALL_SOURCE_REFERENCES": 34
+      "DIRECT_TEST_CALL_SOURCE_REFERENCES": 34,
+      "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD": 2
     },
     "productionFunctionVerificationStatuses": {
       "DIRECT_TEST_CALL_SOURCE_REFERENCES": 45,
       "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED": 328,
+      "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD": 31,
       "TEST_SOURCE_REFERENCES_WITHOUT_DIRECT_CALL": 4
     }
   },
@@ -3435,6 +3437,170 @@
       ],
       "verification": {
         "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "api/handlers/post_tin_debit.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "post_tin_debit",
+          "line": 33,
+          "async": true,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [
+        "Dependencies"
+      ],
+      "imports": [
+        {
+          "module": "httpx",
+          "symbols": []
+        },
+        {
+          "module": "hashlib",
+          "symbols": []
+        },
+        {
+          "module": "nacl.signing",
+          "symbols": [
+            "VerifyKey"
+          ]
+        },
+        {
+          "module": "nacl.exceptions",
+          "symbols": [
+            "BadSignatureError"
+          ]
+        },
+        {
+          "module": "fastapi",
+          "symbols": [
+            "HTTPException"
+          ]
+        },
+        {
+          "module": "core.schemas.tin_debit_request",
+          "symbols": [
+            "TinDebitRequest"
+          ]
+        },
+        {
+          "module": "settlement.debit.preparation.commitments",
+          "symbols": [
+            "commitments"
+          ]
+        },
+        {
+          "module": "settlement.debit.preparation.verify_approval",
+          "symbols": [
+            "verify_approval"
+          ]
+        },
+        {
+          "module": "settlement.debit.preparation.opening_message",
+          "symbols": [
+            "opening_message"
+          ]
+        },
+        {
+          "module": "settlement.debit.read_context",
+          "symbols": [
+            "read_debit_context"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any",
+            "Callable",
+            "Protocol"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "api/handlers/prepare_tin_debit.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "prepare_tin_debit_request",
+          "line": 26,
+          "async": true,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [
+        "Dependencies"
+      ],
+      "imports": [
+        {
+          "module": "core.schemas.tin_debit_request",
+          "symbols": [
+            "TinDebitPrepareRequest"
+          ]
+        },
+        {
+          "module": "settlement.debit.read_context",
+          "symbols": [
+            "read_debit_context"
+          ]
+        },
+        {
+          "module": "fastapi",
+          "symbols": [
+            "HTTPException"
+          ]
+        },
+        {
+          "module": "hashlib",
+          "symbols": []
+        },
+        {
+          "module": "time",
+          "symbols": []
+        },
+        {
+          "module": "nacl.signing",
+          "symbols": [
+            "VerifyKey"
+          ]
+        },
+        {
+          "module": "nacl.exceptions",
+          "symbols": [
+            "BadSignatureError"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any",
+            "Callable",
+            "Protocol"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
         "testReferences": []
       }
     },
@@ -25888,6 +26054,39 @@
       }
     },
     {
+      "file": "core/schemas/tin_debit_request.py",
+      "sourceInterfaces": [],
+      "functions": [],
+      "classes": [
+        "TinDebitIdentityRequest",
+        "TinDebitPrepareRequest",
+        "TinDebitApproval",
+        "TinDebitOpening",
+        "TinDebitRequest"
+      ],
+      "imports": [
+        {
+          "module": "pydantic",
+          "symbols": [
+            "BaseModel",
+            "ConfigDict",
+            "Field"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Literal"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
       "file": "core/schemas/token_network_status.py",
       "sourceInterfaces": [
         "server.py"
@@ -33414,6 +33613,1804 @@
       ],
       "verification": {
         "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/__init__.py",
+      "sourceInterfaces": [],
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/accounts.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "debit_accounts",
+          "line": 17,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [
+        "Dependencies"
+      ],
+      "imports": [
+        {
+          "module": "hashlib",
+          "symbols": []
+        },
+        {
+          "module": "app.solana_pubkey",
+          "symbols": [
+            "Pubkey"
+          ]
+        },
+        {
+          "module": ".contract",
+          "symbols": [
+            "CONTEXT_FIELDS",
+            "FIELD"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any",
+            "Callable",
+            "Protocol"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/authorize.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "authorize_debit",
+          "line": 29,
+          "async": true,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [
+        "Dependencies"
+      ],
+      "imports": [
+        {
+          "module": "datetime",
+          "symbols": [
+            "datetime"
+          ]
+        },
+        {
+          "module": ".read_context",
+          "symbols": [
+            "read_debit_context"
+          ]
+        },
+        {
+          "module": ".public_transition",
+          "symbols": [
+            "public_debit_transition"
+          ]
+        },
+        {
+          "module": ".contract",
+          "symbols": [
+            "PUBLIC_FIELDS"
+          ]
+        },
+        {
+          "module": ".prove",
+          "symbols": [
+            "prove_debit"
+          ]
+        },
+        {
+          "module": ".wire",
+          "symbols": [
+            "debit_instructions"
+          ]
+        },
+        {
+          "module": "fastapi",
+          "symbols": [
+            "HTTPException"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any",
+            "Callable",
+            "Protocol"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/contract.py",
+      "sourceInterfaces": [],
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ]
+        },
+        {
+          "module": "asyncio",
+          "symbols": []
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/deployment.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "debit_deployment",
+          "line": 7,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "hashlib",
+          "symbols": []
+        },
+        {
+          "module": "app.solana_pubkey",
+          "symbols": [
+            "Pubkey"
+          ]
+        },
+        {
+          "module": ".contract",
+          "symbols": [
+            "CONTEXT_FIELDS",
+            "FIELD"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/digest.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "debit_digest",
+          "line": 7,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "hashlib",
+          "symbols": []
+        },
+        {
+          "module": "app.solana_pubkey",
+          "symbols": [
+            "Pubkey"
+          ]
+        },
+        {
+          "module": ".contract",
+          "symbols": [
+            "CONTEXT_FIELDS"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/__init__.py",
+      "sourceInterfaces": [],
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/_decimal.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "_decimal",
+          "line": 12,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ]
+        },
+        {
+          "module": "re",
+          "symbols": []
+        },
+        {
+          "module": ".uint",
+          "symbols": [
+            "uint"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/_encrypt_memo.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "_encrypt_memo",
+          "line": 17,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "nacl.secret",
+          "symbols": [
+            "SecretBox"
+          ]
+        },
+        {
+          "module": "security.cryptography.derive_node_record_shared_point",
+          "symbols": [
+            "derive_node_record_shared_point"
+          ]
+        },
+        {
+          "module": "transactions.records._sha256_to_bn254_scalar_hex",
+          "symbols": [
+            "_sha256_to_bn254_scalar_hex"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ]
+        },
+        {
+          "module": "base64",
+          "symbols": []
+        },
+        {
+          "module": "hashlib",
+          "symbols": []
+        },
+        {
+          "module": "secrets",
+          "symbols": []
+        },
+        {
+          "module": "._route_record_key",
+          "symbols": [
+            "_route_record_key"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/_route_record_key.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "_route_record_key",
+          "line": 12,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ]
+        },
+        {
+          "module": "hashlib",
+          "symbols": []
+        },
+        {
+          "module": "re",
+          "symbols": []
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/approval_message.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "approval_message",
+          "line": 11,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": ".contract",
+          "symbols": [
+            "SIGNATURE_DOMAIN"
+          ]
+        },
+        {
+          "module": ".scalar",
+          "symbols": [
+            "scalar"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/balance_point.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "balance_point",
+          "line": 15,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "security.cryptography._babyjub_add",
+          "symbols": [
+            "_babyjub_add"
+          ]
+        },
+        {
+          "module": "security.cryptography._babyjub_mul",
+          "symbols": [
+            "_babyjub_mul"
+          ]
+        },
+        {
+          "module": "security.cryptography.gpru_contract",
+          "symbols": [
+            "BABYJUB_BASE8"
+          ]
+        },
+        {
+          "module": "settlement.witness.witness_contract",
+          "symbols": [
+            "BALANCE_H"
+          ]
+        },
+        {
+          "module": ".contract",
+          "symbols": [
+            "BABYJUB_SUBORDER"
+          ]
+        },
+        {
+          "module": ".uint",
+          "symbols": [
+            "uint"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/commitments.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "commitments",
+          "line": 15,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "security.cryptography.poseidon_v1",
+          "symbols": [
+            "poseidon_v1"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ]
+        },
+        {
+          "module": ".contract",
+          "symbols": [
+            "ACTION_KIND",
+            "AUTH_DOMAIN",
+            "CONTEXT_DOMAIN",
+            "NULLIFIER_DOMAIN",
+            "VALUE_DOMAIN"
+          ]
+        },
+        {
+          "module": ".route_fields",
+          "symbols": [
+            "route_fields"
+          ]
+        },
+        {
+          "module": ".scalar",
+          "symbols": [
+            "scalar"
+          ]
+        },
+        {
+          "module": ".uint",
+          "symbols": [
+            "uint"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/contract.py",
+      "sourceInterfaces": [],
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "module": "security.cryptography.gpru_contract",
+          "symbols": [
+            "BABYJUB_SUBORDER"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/hex_scalar.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "hex_scalar",
+          "line": 12,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ]
+        },
+        {
+          "module": "re",
+          "symbols": []
+        },
+        {
+          "module": ".scalar",
+          "symbols": [
+            "scalar"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/opening_message.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "opening_message",
+          "line": 15,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ]
+        },
+        {
+          "module": "re",
+          "symbols": []
+        },
+        {
+          "module": ".contract",
+          "symbols": [
+            "BABYJUB_SUBORDER",
+            "OPENING_DOMAIN",
+            "OPENING_FIELDS",
+            "OPENING_TAG"
+          ]
+        },
+        {
+          "module": ".hex_scalar",
+          "symbols": [
+            "hex_scalar"
+          ]
+        },
+        {
+          "module": ".uint",
+          "symbols": [
+            "uint"
+          ]
+        },
+        {
+          "module": "._decimal",
+          "symbols": [
+            "_decimal"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/prepare_sender_tin_debit.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "prepare_sender_tin_debit",
+          "line": 17,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "settlement.witness.hex_field",
+          "symbols": [
+            "hex_field"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ]
+        },
+        {
+          "module": "copy",
+          "symbols": []
+        },
+        {
+          "module": ".commitments",
+          "symbols": [
+            "commitments"
+          ]
+        },
+        {
+          "module": ".prepare_tin_debit",
+          "symbols": [
+            "prepare_tin_debit"
+          ]
+        },
+        {
+          "module": "._encrypt_memo",
+          "symbols": [
+            "_encrypt_memo"
+          ]
+        },
+        {
+          "module": "._route_record_key",
+          "symbols": [
+            "_route_record_key"
+          ]
+        },
+        {
+          "module": ".validate_opening",
+          "symbols": [
+            "validate_opening"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/prepare_tin_debit.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "prepare_tin_debit",
+          "line": 32,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "security.cryptography._babyjub_add",
+          "symbols": [
+            "_babyjub_add"
+          ]
+        },
+        {
+          "module": "security.cryptography._babyjub_mul",
+          "symbols": [
+            "_babyjub_mul"
+          ]
+        },
+        {
+          "module": "security.cryptography.encrypt_balance_blinding_delta_v1",
+          "symbols": [
+            "encrypt_balance_blinding_delta_v1"
+          ]
+        },
+        {
+          "module": "security.cryptography.gpru_contract",
+          "symbols": [
+            "BABYJUB_BASE8"
+          ]
+        },
+        {
+          "module": "security.cryptography.poseidon_v1",
+          "symbols": [
+            "poseidon_v1"
+          ]
+        },
+        {
+          "module": "settlement.witness._point",
+          "symbols": [
+            "_point"
+          ]
+        },
+        {
+          "module": "settlement.witness._portfolio",
+          "symbols": [
+            "_portfolio"
+          ]
+        },
+        {
+          "module": "settlement.witness.hex_field",
+          "symbols": [
+            "hex_field"
+          ]
+        },
+        {
+          "module": "settlement.witness.path_root",
+          "symbols": [
+            "path_root"
+          ]
+        },
+        {
+          "module": "settlement.witness.sparse_tree",
+          "symbols": [
+            "SparseTree"
+          ]
+        },
+        {
+          "module": "settlement.witness.witness_contract",
+          "symbols": [
+            "BALANCE_H"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ]
+        },
+        {
+          "module": "copy",
+          "symbols": []
+        },
+        {
+          "module": "secrets",
+          "symbols": []
+        },
+        {
+          "module": ".contract",
+          "symbols": [
+            "ACTION_KIND",
+            "BABYJUB_SUBORDER",
+            "MAX_BALANCE",
+            "MAX_U64",
+            "PUBLIC_FIELDS",
+            "RESERVE_CATEGORIES"
+          ]
+        },
+        {
+          "module": ".balance_point",
+          "symbols": [
+            "balance_point"
+          ]
+        },
+        {
+          "module": ".commitments",
+          "symbols": [
+            "commitments"
+          ]
+        },
+        {
+          "module": ".hex_scalar",
+          "symbols": [
+            "hex_scalar"
+          ]
+        },
+        {
+          "module": ".route_fields",
+          "symbols": [
+            "route_fields"
+          ]
+        },
+        {
+          "module": ".scalar",
+          "symbols": [
+            "scalar"
+          ]
+        },
+        {
+          "module": ".state_trees",
+          "symbols": [
+            "state_trees"
+          ]
+        },
+        {
+          "module": ".uint",
+          "symbols": [
+            "uint"
+          ]
+        },
+        {
+          "module": ".verify_approval",
+          "symbols": [
+            "verify_approval"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/route_fields.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "route_fields",
+          "line": 14,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "security.cryptography.gpru_contract",
+          "symbols": [
+            "BABYJUB_FIELD"
+          ]
+        },
+        {
+          "module": "settlement.witness._point",
+          "symbols": [
+            "_point"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ]
+        },
+        {
+          "module": "re",
+          "symbols": []
+        },
+        {
+          "module": ".scalar",
+          "symbols": [
+            "scalar"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/scalar.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "scalar",
+          "line": 12,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "security.cryptography.gpru_contract",
+          "symbols": [
+            "BABYJUB_FIELD"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ]
+        },
+        {
+          "module": "re",
+          "symbols": []
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/state_trees.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "state_trees",
+          "line": 16,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "security.cryptography.poseidon_v1",
+          "symbols": [
+            "poseidon_v1"
+          ]
+        },
+        {
+          "module": "settlement.witness._portfolio",
+          "symbols": [
+            "_portfolio"
+          ]
+        },
+        {
+          "module": "settlement.witness.sparse_tree",
+          "symbols": [
+            "SparseTree"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ]
+        },
+        {
+          "module": ".hex_scalar",
+          "symbols": [
+            "hex_scalar"
+          ]
+        },
+        {
+          "module": ".scalar",
+          "symbols": [
+            "scalar"
+          ]
+        },
+        {
+          "module": ".uint",
+          "symbols": [
+            "uint"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/uint.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "uint",
+          "line": 10,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/validate_opening.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "validate_opening",
+          "line": 18,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "nacl.exceptions",
+          "symbols": [
+            "BadSignatureError"
+          ]
+        },
+        {
+          "module": "nacl.signing",
+          "symbols": [
+            "VerifyKey"
+          ]
+        },
+        {
+          "module": "settlement.witness.hex_field",
+          "symbols": [
+            "hex_field"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ]
+        },
+        {
+          "module": "hashlib",
+          "symbols": []
+        },
+        {
+          "module": "re",
+          "symbols": []
+        },
+        {
+          "module": ".contract",
+          "symbols": [
+            "OPENING_FIELDS",
+            "OPENING_TAG"
+          ]
+        },
+        {
+          "module": ".route_fields",
+          "symbols": [
+            "route_fields"
+          ]
+        },
+        {
+          "module": ".opening_message",
+          "symbols": [
+            "opening_message"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/preparation/verify_approval.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "verify_approval",
+          "line": 14,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "nacl.exceptions",
+          "symbols": [
+            "BadSignatureError"
+          ]
+        },
+        {
+          "module": "nacl.signing",
+          "symbols": [
+            "VerifyKey"
+          ]
+        },
+        {
+          "module": "hashlib",
+          "symbols": []
+        },
+        {
+          "module": "re",
+          "symbols": []
+        },
+        {
+          "module": ".approval_message",
+          "symbols": [
+            "approval_message"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/prepare_work.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "prepare_debit_work",
+          "line": 34,
+          "async": true,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [
+        "Dependencies"
+      ],
+      "imports": [
+        {
+          "module": "asyncio",
+          "symbols": []
+        },
+        {
+          "module": "os",
+          "symbols": []
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ]
+        },
+        {
+          "module": ".read_context",
+          "symbols": [
+            "read_debit_context"
+          ]
+        },
+        {
+          "module": ".preparation.prepare_sender_tin_debit",
+          "symbols": [
+            "prepare_sender_tin_debit"
+          ]
+        },
+        {
+          "module": ".contract",
+          "symbols": [
+            "PUBLIC_FIELDS"
+          ]
+        },
+        {
+          "module": ".digest",
+          "symbols": [
+            "debit_digest"
+          ]
+        },
+        {
+          "module": ".accounts",
+          "symbols": [
+            "debit_accounts"
+          ]
+        },
+        {
+          "module": ".prove",
+          "symbols": [
+            "prove_debit"
+          ]
+        },
+        {
+          "module": ".publish_candidate",
+          "symbols": [
+            "publish_debit_candidate"
+          ]
+        },
+        {
+          "module": ".wire",
+          "symbols": [
+            "debit_instructions"
+          ]
+        },
+        {
+          "module": "settlement.witness._read_snapshot",
+          "symbols": [
+            "_read_snapshot"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any",
+            "Callable",
+            "Protocol"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/prove.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "prove_debit",
+          "line": 9,
+          "async": true,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "asyncio",
+          "symbols": []
+        },
+        {
+          "module": "hashlib",
+          "symbols": []
+        },
+        {
+          "module": "json",
+          "symbols": []
+        },
+        {
+          "module": "os",
+          "symbols": []
+        },
+        {
+          "module": ".contract",
+          "symbols": [
+            "CIRCUIT",
+            "PUBLIC_FIELDS",
+            "PROVER_LOCK"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/public_transition.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "public_debit_transition",
+          "line": 5,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": ".contract",
+          "symbols": [
+            "TRANSITION_FIELDS"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/publish_candidate.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "publish_debit_candidate",
+          "line": 8,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "module": "json",
+          "symbols": []
+        },
+        {
+          "module": "os",
+          "symbols": []
+        },
+        {
+          "module": "secrets",
+          "symbols": []
+        },
+        {
+          "module": "pathlib",
+          "symbols": [
+            "Path"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/read_context.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "read_debit_context",
+          "line": 25,
+          "async": true,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [
+        "Dependencies"
+      ],
+      "imports": [
+        {
+          "module": "base64",
+          "symbols": []
+        },
+        {
+          "module": "hashlib",
+          "symbols": []
+        },
+        {
+          "module": "app.solana_pubkey",
+          "symbols": [
+            "Pubkey"
+          ]
+        },
+        {
+          "module": ".accounts",
+          "symbols": [
+            "debit_accounts"
+          ]
+        },
+        {
+          "module": ".deployment",
+          "symbols": [
+            "debit_deployment"
+          ]
+        },
+        {
+          "module": ".contract",
+          "symbols": [
+            "FIELD"
+          ]
+        },
+        {
+          "module": ".resolve_debit_asset",
+          "symbols": [
+            "resolve_debit_asset"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any",
+            "Callable",
+            "Protocol"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/resolve_debit_asset.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "resolve_debit_asset",
+          "line": 21,
+          "async": true,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [
+        "Dependencies"
+      ],
+      "imports": [
+        {
+          "module": "__future__",
+          "symbols": [
+            "annotations"
+          ]
+        },
+        {
+          "module": "app.solana_pubkey",
+          "symbols": [
+            "Pubkey"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any"
+          ]
+        },
+        {
+          "module": "base64",
+          "symbols": []
+        },
+        {
+          "module": "binascii",
+          "symbols": []
+        },
+        {
+          "module": "hashlib",
+          "symbols": []
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any",
+            "Callable",
+            "Protocol"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/verify_message.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "verify_debit_message",
+          "line": 17,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [
+        "Dependencies"
+      ],
+      "imports": [
+        {
+          "module": "fastapi",
+          "symbols": [
+            "HTTPException"
+          ]
+        },
+        {
+          "module": ".wire",
+          "symbols": [
+            "debit_instructions"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any",
+            "Callable",
+            "Protocol"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/wire.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "debit_instructions",
+          "line": 22,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [
+        "Dependencies"
+      ],
+      "imports": [
+        {
+          "module": "base64",
+          "symbols": []
+        },
+        {
+          "module": "hashlib",
+          "symbols": []
+        },
+        {
+          "module": "app.solana_pubkey",
+          "symbols": [
+            "Pubkey"
+          ]
+        },
+        {
+          "module": ".accounts",
+          "symbols": [
+            "debit_accounts"
+          ]
+        },
+        {
+          "module": ".deployment",
+          "symbols": [
+            "debit_deployment"
+          ]
+        },
+        {
+          "module": ".digest",
+          "symbols": [
+            "debit_digest"
+          ]
+        },
+        {
+          "module": ".contract",
+          "symbols": [
+            "ACCOUNT_FIELDS",
+            "FIELD"
+          ]
+        },
+        {
+          "module": ".public_transition",
+          "symbols": [
+            "public_debit_transition"
+          ]
+        },
+        {
+          "module": "typing",
+          "symbols": [
+            "Any",
+            "Callable",
+            "Protocol"
+          ]
+        }
+      ],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/debit/witness_strings.py",
+      "sourceInterfaces": [],
+      "functions": [
+        {
+          "name": "witness_strings",
+          "line": 4,
+          "async": false,
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          }
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
         "testReferences": []
       }
     },
@@ -54624,6 +56621,6 @@
     "forbiddenProductionPatterns": [],
     "topLevelImportCycles": [],
     "missingTestComponentTargets": [],
-    "method": "November 22 current AST parse, all discovered Python files; named local import target/symbol checks and explicit component target checks. Other forbidden-pattern/cycle fields retain the previous structural audit scope; no modules or chain operations executed by this inventory refresh."
+    "method": "November 24: all Python files parsed and one-function invariant checked. Prior import/symbol/cycle findings retain their November 22 audit scope; see verification record for runtime imports/tests."
   }
 }

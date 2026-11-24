@@ -1,0 +1,405 @@
+{
+  "name": "Wallet Deposit Intent",
+  "status": "CURRENT source contract; EXPERIMENTAL first release v1",
+  "purpose": "Authorize private settlement instructions associated with wallet funding; the intent defines what the funding is for, independently of a later TIN-Credit or wallet delivery",
+  "contractBoundary": "Catalog of existing funding ABIs, current native coordination and the required private-intent contract; no new instruction, destination dispatcher or privacy guarantee is enabled by this record",
+  "intent": {
+    "currentNativeRequest": "CreateIntentRequest",
+    "workKind": "AUTHORIZED_FUNDING",
+    "fundingMode": "tcap_funded_note_v1",
+    "destination": "Current native ingress requires recipientTin and recipientHash; Node resolves the authenticated TIN route for later TIN-Credit",
+    "authorization": "Sender signs the canonical payment message binding recipient TIN and displayed identity, asset, amount, fee, nonce, expiry and funding-note commitment before approving the exact deposit transaction; Node independently resolves the route",
+    "initialIngress": "Message authorization only; no signed deposit or blockhash context",
+    "readiness": "Node verification produces FUNDING_READY for the original work; this status supplies no Cranker execution or confirmed funding",
+    "signedAttachment": {
+      "request": "CompleteTsnFundingRequest",
+      "fields": [
+        "workId",
+        "senderPubkey",
+        "authorizationSignature",
+        "expectedStateVersion",
+        "authorizationPayloadCommitment",
+        "senderFundingDepositTxB64",
+        "senderFundingBlockhashContext"
+      ],
+      "effect": "Attach the exact wallet-approved deposit to the same versioned authorized work; no new intent or recipient substitution"
+    },
+    "execution": "Node checks the signed instruction/accounts/amount/note and returns a verified execution projection; Cranker submits the owner-signed wire unchanged",
+    "completion": "Confirmed funding enables independent settlement verification; deposit confirmation alone does not establish recipient credit or wallet delivery",
+    "recovery": "Reconcile the original work and chain signatures before preparing another deposit; changing a signed blockhash invalidates its authorization"
+  },
+  "program": "TCAP",
+  "encoding": "8-byte Anchor discriminator followed by Borsh fields",
+  "subsequentActions": {
+    "tinCredit": {
+      "contract": "tin-credit-v1.json",
+      "scope": "Current native funded-note intent path; credit is separately authorized, proved and confirmed"
+    },
+    "walletDelivery": {
+      "scope": "Wallet-to-wallet settlement is a distinct purpose and must not be described as TIN-Credit",
+      "sourceCapability": "PublicWallet is a mode in the retained intent-bearing TCAP funding claim; separately, retained TSNP tsn_execute_private_payout transfers tokens under its Epoch Treasury, Settlement DNA and CrankerVault contract",
+      "integrationBoundary": "No current caller/consumer connects the intent-bearing funding claim to wallet delivery. Current CreateIntentRequest and Receiver native funding ingress require a TIN",
+      "directWalletUtility": "buildTsnSplTokenTransferTransaction builds an ordinary SPL wallet transfer, without TCAP deposit or TSN intent"
+    }
+  },
+  "sources": [
+    "programs/tcap-protocol/programs/tcap/src/instructions/deposit_private_funding_v1.rs",
+    "programs/tcap-protocol/programs/tcap/src/instructions/deposit_asset_v2.rs",
+    "programs/tcap-protocol/programs/tcap/src/private_funding.rs",
+    "programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/execute_private_payout.rs",
+    "sdks/tsn-sdk/src/tcap-gpru-credit.ts",
+    "sdks/tsn-sdk/src/contracts.ts",
+    "sdks/tsn-sdk/src/canonical-message.ts",
+    "sdks/tsn-sdk/src/funding-authorization.ts",
+    "services/tsn-receiver/lib/contracts/validation/assert-payment-authorization-payload.ts",
+    "services/tsn-node/transactions/native/funding/verify_signed_tcap_deposit_contract.py",
+    "services/tsn-cranker-op-daemon/scripts/cranker.ts",
+    "programs/tcap-protocol/programs/tcap/src/instructions/deposit_with_funding_commitment_v2.rs",
+    "programs/tcap-protocol/programs/tcap/src/funding.rs",
+    "programs/tcap-protocol/programs/tcap/src/funding_state.rs",
+    "programs/tcap-protocol/programs/tcap/src/authority.rs",
+    "programs/tcap-protocol/programs/tcap/src/lib.rs",
+    "sdks/tsn-sdk/src/wallet-transfer.ts",
+    "services/tsn-receiver/lib/work/receive.ts",
+    "services/tsn-receiver/lib/contracts/projection/public-coordination-payload.ts",
+    "services/tsn-receiver/lib/security/node-envelope/encrypt-payload-for-node.ts",
+    "services/tsn-receiver/lib/security/node-envelope/decrypt-payload-for-node.ts"
+  ],
+  "canonicalRecord": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/laboratory/credit-abi.md#deposit-and-authenticated-funding-roots",
+  "verificationBoundary": "Catalog extracted from current source; does not establish deployment, current chain state, a live deposit or end-to-end wallet delivery",
+  "fundingProfiles": {
+    "intentBearingClaim": {
+      "scope": "Distinct retained source capability with public intent metadata; not compliant with required private intent and no current SDK/Node/Cranker caller or claim settlement consumer was found",
+      "instruction": "deposit_with_funding_commitment_v2",
+      "argumentType": "DepositWithFundingCommitmentArgsV2",
+      "instructionBytes": 225,
+      "arguments": [
+        {
+          "name": "amount",
+          "type": "u64",
+          "bytes": 8
+        },
+        {
+          "name": "settlement_mode",
+          "type": "u8",
+          "bytes": 1
+        },
+        {
+          "name": "destination_commitment",
+          "type": "[u8;32]",
+          "bytes": 32
+        },
+        {
+          "name": "funding_identifier",
+          "type": "[u8;32]",
+          "bytes": 32
+        },
+        {
+          "name": "authorization_nonce",
+          "type": "u64",
+          "bytes": 8
+        },
+        {
+          "name": "expires_at_slot",
+          "type": "u64",
+          "bytes": 8
+        },
+        {
+          "name": "fee_authorization_commitment",
+          "type": "[u8;32]",
+          "bytes": 32
+        },
+        {
+          "name": "randomness_commitment",
+          "type": "[u8;32]",
+          "bytes": 32
+        },
+        {
+          "name": "domain_separator",
+          "type": "[u8;32]",
+          "bytes": 32
+        },
+        {
+          "name": "expected_funding_commitment",
+          "type": "[u8;32]",
+          "bytes": 32
+        }
+      ],
+      "settlementModes": [
+        {
+          "value": 0,
+          "name": "ConfidentialOwner"
+        },
+        {
+          "value": 1,
+          "name": "PublicWallet"
+        }
+      ],
+      "accounts": [
+        {
+          "name": "depositor",
+          "signer": true,
+          "writable": true
+        },
+        {
+          "name": "config",
+          "signer": false,
+          "writable": false
+        },
+        {
+          "name": "registry",
+          "signer": false,
+          "writable": false
+        },
+        {
+          "name": "assetEntry",
+          "signer": false,
+          "writable": false
+        },
+        {
+          "name": "reserveState",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "name": "fundingRoot",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "name": "fundingClaim",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "name": "fundingNonce",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "name": "source",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "signer": false,
+          "writable": false
+        },
+        {
+          "name": "tokenProgram",
+          "signer": false,
+          "writable": false
+        },
+        {
+          "name": "systemProgram",
+          "signer": false,
+          "writable": false
+        }
+      ],
+      "stateAccounts": {
+        "fundingRoot": {
+          "type": "FundingRootV1",
+          "bytes": 117,
+          "seeds": [
+            "tcap:funding-root:v1",
+            "assetEntry"
+          ],
+          "boundary": "Per-asset commitment chain; distinct from the native global funded-note Merkle tree"
+        },
+        "fundingClaim": {
+          "type": "FundingClaimV1",
+          "bytes": 335,
+          "seeds": [
+            "tcap:funding-claim:v1",
+            "assetEntry",
+            "fundingIdentifier"
+          ],
+          "status": "Pending"
+        },
+        "fundingNonce": {
+          "type": "FundingAuthorizationNonceV1",
+          "bytes": 115,
+          "seeds": [
+            "tcap:funding-nonce:v1",
+            "assetEntry",
+            "depositor"
+          ]
+        }
+      },
+      "commitmentFunction": "funding_commitment_v3",
+      "commitmentDomain": "TCAP_FUNDING_CLAIM_V3",
+      "authorizationFunction": "depositor_authorization_commitment_v3",
+      "validation": "Positive amount; nonzero destination/funding-ID/fee/randomness commitments; supported mode; future expiry; exact domain and computed commitment; sequential depositor nonce; governed source/vault/asset and exact transferred amount",
+      "stateEffect": "Transfer tokens into reserve and add actual assets/pending obligations; atomically create a Pending claim, advance per-asset funding commitment chain and depositor nonce",
+      "recipientParticipation": "No recipient signer; destination is a commitment in the depositor-signed transaction",
+      "privacyBoundary": "Public amount, depositor and claim; destination commitment is not a demonstrated unlinkability guarantee; raw client randomness is absent",
+      "completionBoundary": "PublicWallet mode does not transfer to the destination wallet; only Pending exists in FundingClaimStatusV1. Claim consumption, service integration and live settlement remain outstanding"
+    },
+    "nativeFundedNote": {
+      "instruction": "deposit_private_funding_v1",
+      "instructionBytes": 48,
+      "arguments": [
+        {
+          "name": "amount",
+          "type": "u64",
+          "bytes": 8,
+          "positive": true
+        },
+        {
+          "name": "note_commitment",
+          "type": "canonical nonzero BN254 BE32",
+          "bytes": 32
+        }
+      ],
+      "accounts": [
+        {
+          "name": "depositor",
+          "signer": true,
+          "writable": false
+        },
+        {
+          "name": "config",
+          "signer": false,
+          "writable": false
+        },
+        {
+          "name": "assetEntry",
+          "signer": false,
+          "writable": false
+        },
+        {
+          "name": "reserveState",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "name": "source",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "signer": false,
+          "writable": false
+        },
+        {
+          "name": "tokenProgram",
+          "signer": false,
+          "writable": false
+        },
+        {
+          "name": "fundingRoot",
+          "signer": false,
+          "writable": true
+        }
+      ],
+      "fundingRootBytes": 6209,
+      "fundingRootLayoutVersion": 2,
+      "fundingRootProtocolVersion": 1,
+      "fundedLeaf": "Poseidon4(TSN_FUNDED_LEAF_V1, noteCommitment, tokenId, actualTransferredAmount)",
+      "stateEffect": "Actual token transfer to governed vault; add actual assets and pending obligations; atomically append funded leaf/current retained root",
+      "authorization": "Depositor signs exact wallet funding transaction; source token owner and governed asset/vault/reserve policy are checked",
+      "recipientParticipation": "No recipient signer in the deposit ABI; destination and subsequent action belong to the applicable intent/settlement contract",
+      "privacyBoundary": "Wallet address and deposit amount are public; this instruction does not contain a recipient TIN",
+      "fundingRootSeeds": [
+        "tcap:funding-root:v1"
+      ],
+      "scope": "Current native funded-note funding used by separately coordinated TIN-Credit"
+    },
+    "reserveOnly": {
+      "instruction": "deposit_asset_v2",
+      "instructionBytes": 16,
+      "arguments": [
+        {
+          "name": "amount",
+          "type": "u64",
+          "bytes": 8,
+          "positive": true
+        }
+      ],
+      "accounts": [
+        {
+          "name": "depositor",
+          "signer": true,
+          "writable": false
+        },
+        {
+          "name": "config",
+          "signer": false,
+          "writable": false
+        },
+        {
+          "name": "assetEntry",
+          "signer": false,
+          "writable": false
+        },
+        {
+          "name": "reserveState",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "name": "source",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "signer": false,
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "signer": false,
+          "writable": false
+        },
+        {
+          "name": "tokenProgram",
+          "signer": false,
+          "writable": false
+        }
+      ],
+      "stateEffect": "Actual token transfer to governed vault; add actual assets and pending obligations; no funded-note leaf append or recipient credit",
+      "boundary": "Distinct retained source capability; it is not accepted in place of deposit_private_funding_v1 by current native TIN-credit ingress"
+    }
+  },
+  "privacy": {
+    "requirementStatus": "REQUIRED for Wallet Deposit Intent; current source coverage is partial and does not establish end-to-end privacy",
+    "requiredIntentBoundary": "All deposit purposes, including TIN credit and wallet delivery, keep recipient identity/destination, settlement purpose/route, authorization message/signature, private note opening and payment-specific instructions out of public work views and plaintext transaction data",
+    "trustedProcessing": "Sender approval and authorized Receiver/Node validation may inspect intent data; existing Receiver storage encryption is a service trust boundary, not client-to-Node encryption excluding Receiver",
+    "publicFundingBoundary": "Current ordinary SPL reserve deposits reveal sender/source, token, vault, amount, signature and timing. Hiding intent does not hide these funding facts or prove deposit-to-settlement unlinkability",
+    "currentNative": {
+      "restrictedStorage": "Receiver encrypts full native ingress with AES-256-GCM and retains paymentId plus recipientHash outside the envelope; authenticated Node projection decrypts it",
+      "publicFundingView": "For fundingPhase work, publicCoordinationPayload allowlists paymentId only; public status still exposes coordination metadata, commitments and transaction results",
+      "otherPublicViews": "Work without fundingPhase may expose paymentId, intentId, recipientHash, source, tokenMintAddress and amount when present; complete lifecycle privacy requires further review",
+      "onchainDeposit": "deposit_private_funding_v1 carries amount and note commitment, with no plaintext destination or purpose field"
+    },
+    "retainedIntentClaim": {
+      "status": "Does not meet the required intent-hiding boundary",
+      "publicMetadata": [
+        "settlement_mode",
+        "destination_commitment",
+        "funding_identifier",
+        "authorization_nonce",
+        "expires_at_slot",
+        "fee_authorization_commitment",
+        "randomness_commitment",
+        "domain_separator",
+        "expected_funding_commitment"
+      ],
+      "limitation": "deposit_with_funding_commitment_v2 serializes these fields publicly and persists claim metadata; a committed destination is not a private intent or a demonstrated unlinkability guarantee"
+    },
+    "remainingWork": "An implementation meeting the requirement needs reviewed private intent binding and consumption for each destination, public projection/record review and transaction/observer evidence. The retained claim is a source capability, not an approved privacy-preserving replacement for native funded notes"
+  }
+}

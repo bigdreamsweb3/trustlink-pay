@@ -1,0 +1,178 @@
+---
+title: "tcap-gpru-tin-debit API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## buildTsnRegisterTcapTinDebitAuthorizationV1Instruction
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 74](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L74).
+
+```ts
+buildTsnRegisterTcapTinDebitAuthorizationV1Instruction(fields: { accounts: GpruTinDebitAccountsV1; authorizationDigest: string; proof: GpruTinDebitProofV1; }): TransactionInstruction
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN_DEBIT_ACCOUNT_NOT_CANONICAL")
+new Error("TIN_DEBIT_CONTEXT_OR_DIGEST_MISMATCH")
+new Error(`TIN_DEBIT_${key}_INVALID`)
+new Error("TIN_DEBIT_INSTRUCTION_SIZE_MISMATCH")
+```
+
+## createGpruTinDebitMemoInstructionV1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 105](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L105).
+
+```ts
+createGpruTinDebitMemoInstructionV1(params: { authority: PublicKey; payload: string; publicInputs: readonly string[]; expectedLeg: 0 | 1; }): TransactionInstruction
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN_DEBIT_MEMO_STATEMENT_MISMATCH")
+```
+
+## decodeGpruTinDebitMemoBytesV1
+
+Strict compact framing is checked before record authentication.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 96](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L96).
+
+```ts
+decodeGpruTinDebitMemoBytesV1(payload: string): Uint8Array
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN_DEBIT_MEMO_LENGTH_OR_PREFIX_INVALID")
+new Error("TIN_DEBIT_MEMO_BASE64URL_INVALID")
+new Error("TIN_DEBIT_MEMO_ENCODING_INVALID")
+```
+
+## deriveGpruTinDebitAccountsV1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 60](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L60).
+
+```ts
+deriveGpruTinDebitAccountsV1(params: { authority: PublicKey; assetEntry: PublicKey; authorizationDigest: string; tcapProgram?: PublicKey; tsnProgram?: PublicKey; gpruProgram?: PublicKey; tipProgram?: PublicKey; }): GpruTinDebitAccountsV1
+```
+
+## deriveGpruTinDebitAuthorizationDigestV1
+
+This SHA digest authorizes TSNP CPI; public input 9 remains the owner's Poseidon commitment.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 55](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L55).
+
+```ts
+deriveGpruTinDebitAuthorizationDigestV1(accounts: GpruTinDebitAccountsV1, inputs: readonly string[]): string
+```
+
+## deriveGpruTinDebitDeploymentCommitmentV1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 50](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L50).
+
+```ts
+deriveGpruTinDebitDeploymentCommitmentV1(accounts: GpruTinDebitAccountsV1): string
+```
+
+## GPRU_TIN_DEBIT_INSTRUCTION_BYTES_V1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 11](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L11).
+
+```ts
+1128
+```
+
+## GPRU_TIN_DEBIT_MEMO_BINARY_BYTES_V1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L13).
+
+```ts
+416
+```
+
+## GPRU_TIN_DEBIT_MEMO_PREFIX_V1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L12).
+
+```ts
+"TSN_GPRU_TIN_DEBIT_MEMO_V1:"
+```
+
+## GPRU_TIN_DEBIT_MEMO_PROGRAM_ID_V1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 16](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L16).
+
+```ts
+PublicKey
+```
+
+## GPRU_TIN_DEBIT_MEMO_TEXT_BYTES_V1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 14](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L14).
+
+```ts
+number
+```
+
+## GPRU_TIN_DEBIT_PUBLIC_INPUT_COUNT_V1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 10](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L10).
+
+```ts
+26
+```
+
+## GPRU_TIN_DEBIT_TSNP_PROGRAM_ID_V1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 15](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L15).
+
+```ts
+PublicKey
+```
+
+## GpruTinDebitAccountsV1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 23](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L23).
+
+```ts
+export type GpruTinDebitAccountsV1 = {
+  authority: PublicKey; motherEscrow: PublicKey; tcapProgram: PublicKey; tsnProgram: PublicKey;
+  config: PublicKey; assetEntry: PublicKey; commitmentRoot: PublicKey; reserveState: PublicKey;
+  authorizationSigner: PublicKey; tipRouteRoot: PublicKey; tinDebitVerifier: PublicKey;
+  instructions: PublicKey; gpruProgram: PublicKey; tipProgram: PublicKey;
+};
+```
+
+## GpruTinDebitProofV1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 22](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L22).
+
+```ts
+export type GpruTinDebitProofV1 = { publicInputs: readonly string[]; proofA: string; proofB: string; proofC: string };
+```
+
+## validateGpruTinDebitPublicInputsV1
+
+The transfer circuit has its own key and exact BE32 public statement.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tcap-gpru-tin-debit`. [Implementation, line 31](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tcap-gpru-tin-debit.ts#L31).
+
+```ts
+validateGpruTinDebitPublicInputsV1(inputs: readonly string[]): string[]
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN_DEBIT_PROOF_REQUIRES_26_INPUTS")
+new Error("TIN_DEBIT_PUBLIC_STATEMENT_INVALID")
+new Error("TIN_DEBIT_PUBLIC_CIPHER_INVALID")
+```

@@ -27,6 +27,8 @@ declare_id!("tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF");
 pub mod tcap {
     use super::*;
 
+    pub fn debit_gpru_memo_v1(ctx: Context<DebitGpruMemoV1>, args: DebitGpruMemoV1Args) -> Result<()> { instructions::debit_gpru_memo_v1::handler(ctx,args) }
+
 
     pub fn account_credit_epoch_v1(ctx: Context<AccountCreditEpochV1>, args: AccountCreditEpochArgsV1) -> Result<()> { private_epoch::account_epoch(ctx,args) }
 

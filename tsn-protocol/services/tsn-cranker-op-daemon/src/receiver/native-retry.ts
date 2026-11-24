@@ -10,6 +10,7 @@ const NATIVE_REVERIFY_REASONS = new Set([
   "TCAP_EPOCH_ALREADY_ACCOUNTED",
   "TIP route root changed since settlement verification",
   "TCAP credit authorization expired",
+  "TCAP transfer authorization expired",
   "Cranker transaction blockhash is no longer valid; rebuild and request a fresh Mother signature",
 ]);
 
@@ -35,6 +36,7 @@ export function nativeWorkRetryReason(work: {
 }, error: unknown): string | null {
   if ((work.result && Object.keys(work.result).length) || !(error instanceof Error) || !NATIVE_REVERIFY_REASONS.has(error.message)) return null;
   const native = work.kind === "TCAP_EPOCH_ACCOUNTING"
+    || (work.kind === "TIN_DEBIT" && work.verification?.verificationType === "TSN_TIN_DEBIT_V1")
     || (work.kind === "SETTLEMENT" && work.verification?.verificationType === "TSN_TCAP_GPRU_HIDDEN_HEAD_V1");
   return native ? error.message : null;
 }

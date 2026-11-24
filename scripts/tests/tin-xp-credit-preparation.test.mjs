@@ -224,7 +224,7 @@ async function browserCreditHarness(options = {}) {
     transaction.instructions.unshift(ComputeBudgetProgram.setComputeUnitLimit({ units: 400000 }));
     if (options.replaceBlockhash) transaction.recentBlockhash = key(8).toBase58(); transaction.partialSign(owner); return transaction;
   } };
-  const instance = vm.runInNewContext(`let pendingTinCredit; let tinCreditInFlight = false; let tinCreditGeneration = 0; let tinFundingReadinessTimer;\n${declarations.join("\n")}\nfunction watchTinCredit(operationId){if(creditTrackingEnabled)return actualWatchTinCredit(operationId);}\n({payTin,approveTinFunding,cancelTinFundingApproval,recoverTinCredit,renderTinFundingControls,watchCredit:actualWatchTinCredit,getPending:()=>pendingTinCredit,getGeneration:()=>tinCreditGeneration,disconnectWallet:()=>handleWalletDisconnect(activeWallet),setWallet:wallet=>{activeWallet=wallet;renderTinFundingControls();}})`, {
+  const instance = vm.runInNewContext(`let pendingTinCredit; let tinCreditInFlight = false; let tinCreditGeneration = 0; let tinFundingReadinessTimer; let pendingTinDebitId; const tinDebitRetryState = {};\n${declarations.join("\n")}\nfunction watchTinCredit(operationId){if(creditTrackingEnabled)return actualWatchTinCredit(operationId);}\n({payTin,approveTinFunding,cancelTinFundingApproval,recoverTinCredit,renderTinFundingControls,watchCredit:actualWatchTinCredit,getPending:()=>pendingTinCredit,getGeneration:()=>tinCreditGeneration,disconnectWallet:()=>handleWalletDisconnect(activeWallet),setWallet:wallet=>{activeWallet=wallet;renderTinFundingControls();}})`, {
     Buffer, BigInt, Error, AbortController, Date: clock.Date, setTimeout: clock.setTimeout, clearTimeout: clock.clearTimeout, crypto: globalThis.crypto,
     window: { TsnRecipientCreditSdk: { ...sdk, PublicKey } }, $: name => elements[name] ??= { style: {} },
     requireWallet() {}, requireNetwork() {}, setWalletConnectedView() {}, ownerTinIdentity: null, balanceController: null, balanceInFlight: null,
@@ -422,7 +422,8 @@ async function creditWatcherHarness(responses) {
   let polls = 0;
   let controlsReleased = 0, timersCleared = 0, aborted = false;
   const context = {
-    pendingTinCredit: { workId: "synthetic-work", controller: { abort() { aborted = true; } } }, tinCreditGeneration: 0,
+    activeWallet: { publicKey: { toBase58: () => "synthetic-owner" } },
+    pendingTinCredit: { workId: "synthetic-work", senderWallet: "synthetic-owner", controller: { abort() { aborted = true; } } }, tinCreditGeneration: 0,
     ownerTinIdentity: null, renderTinFundingControls() { controlsReleased++; }, clearTinFundingReadinessTimer() { timersCleared++; },
     setTimeout: resolve => resolve(), log: (...values) => logs.push(values), $: () => output,
     api: async () => responses[Math.min(polls++, responses.length - 1)],

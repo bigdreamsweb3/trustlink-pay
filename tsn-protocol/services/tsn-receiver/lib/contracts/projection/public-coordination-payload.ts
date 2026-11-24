@@ -11,6 +11,6 @@ import { verifiedPayloadForWork } from "../verification/verified-payload-for-wor
  */
 export function publicCoordinationPayload(work: ReceiverWork): Record<string, unknown> {
   const payload = verifiedPayloadForWork(work) ?? work.payload;
-  const allowed = work.fundingPhase ? new Set(["paymentId"]) : new Set(["paymentId", "intentId", "recipientHash", "source", "tokenMintAddress", "amount"]);
+  const allowed = (work.fundingPhase || work.kind === "TIN_DEBIT") ? new Set(["paymentId"]) : new Set(["paymentId", "intentId", "recipientHash", "source", "tokenMintAddress", "amount"]);
   return Object.fromEntries(Object.entries(payload).filter(allowlistedEntry.bind(null, allowed)));
 }

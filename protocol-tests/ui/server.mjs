@@ -253,6 +253,14 @@ async function handleApi(req, res, url) {
     const body = await readJson(req);
     const publicKey = String(body.publicKey ?? "").trim();
     if (!publicKey) return json(res, 422, { error: "WALLET_PUBLIC_KEY_REQUIRED" });
+    if (session.wallet !== publicKey) {
+      session.ownerTinIdentity = null;
+      // Retain only public work identity across wallet changes.
+      if (session.pendingTinDebit) {
+        (session.tinDebitAttempts ??= []).push({ workId: session.pendingTinDebit.paymentId, owner: session.wallet });
+        session.pendingTinDebit = null;
+      }
+    }
     if (session.wallet !== publicKey && !session.pendingTinCredit?.completion) {
       session.pendingTinCredit = null;
       session.pendingTinCreditOperationId = null;
@@ -544,6 +552,7 @@ async function handleApi(req, res, url) {
         return json(res, 502, { error: "OWNER_TIN_BALANCE_CONTEXT_INVALID" });
       }
     }
+    session.ownerTinIdentity = { tin, displayName: identity.displayName };
     return json(res, 200, {
       tin,
       displayName: identity.displayName,
@@ -575,6 +584,47 @@ async function handleApi(req, res, url) {
       verifiedCredentials: Array.isArray(identity.verifiedCredentials) ? identity.verifiedCredentials : [],
       source: "TSN SDK / TIP registry RPC",
     });
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/tsn/sdk/tin-debit-status") {
+    const workId = String(url.searchParams.get("workId") ?? "");
+    if (!workId || !session.wallet || !(session.pendingTinDebit?.paymentId === workId
+        || session.tinDebitAttempts?.some(attempt => attempt.workId === workId && attempt.owner === session.wallet))) return json(res, 404, { error: "TIN_DEBIT_NOT_FOUND_IN_SESSION" });
+    const receiverUrl = (mode === "local" ? (process.env.TSN_LOCAL_RECEIVER_URL ?? "http://127.0.0.1:8010")
+      : process.env.TSN_RECEIVER_URL ?? "https://tsn-receiver-kappa.vercel.app").replace(/\/$/, "");
+    const response = await fetch(`${receiverUrl}/api/work-status/${encodeURIComponent(workId)}`, { cache: "no-store", signal: AbortSignal.timeout(10_000) });
+    const result = await response.json().catch(() => ({}));
+    if (response.ok && result.operationId === workId && result.kind === "TIN_DEBIT"
+        && (result.status === "CONFIRMED" || (["REJECTED", "FAILED"].includes(result.status) && result.safeToReplace === true))) {
+      if (!session.tinDebitAttempts?.some(attempt => attempt.workId === workId && attempt.owner === session.wallet)) {
+        (session.tinDebitAttempts ??= []).push({ workId, owner: session.wallet });
+      }
+      if (session.pendingTinDebit?.paymentId === workId) session.pendingTinDebit = null;
+    }
+    return json(res, response.status, result);
+  }
+
+  if (req.method === "POST" && ["/api/tsn/sdk/prepare-tin-debit", "/api/tsn/sdk/submit-tin-debit"].includes(url.pathname)) {
+    if (!session.wallet || !session.ownerTinIdentity) return json(res, 403, { error: "OWNER_TIN_IDENTITY_REQUIRED" });
+    const body = await readJson(req);
+    if (body.senderTin !== session.ownerTinIdentity.tin) return json(res, 403, { error: "TIN_DEBIT_SENDER_IDENTITY_MISMATCH" });
+    const exactRetry = session.pendingTinDebit && JSON.stringify(session.pendingTinDebit) === JSON.stringify(body);
+    const resolved = session.resolvedTin;
+    if (!exactRetry && (!resolved || resolved.tin !== body.recipientTin || resolved.expiresAt < Date.now())) return json(res, 409, { error: "TIN_RESOLUTION_REQUIRED" });
+    const nodeUrl = configuredNodeUrl();
+    if (!nodeUrl) return json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED" });
+    const submit = url.pathname.endsWith("submit-tin-debit");
+    if (submit) {
+      if (!body.approval || body.approval.ownerPublicKey !== Buffer.from(new PublicKey(session.wallet).toBytes()).toString("hex")) return json(res, 403, { error: "TIN_DEBIT_OWNER_APPROVAL_REQUIRED" });
+      if (session.pendingTinDebit && JSON.stringify(session.pendingTinDebit) !== JSON.stringify(body)) return json(res, 409, { error: "TIN_DEBIT_ALREADY_PENDING_CHECK_SAME_WORK" });
+      session.pendingTinDebit = body;
+    }
+    const response = await fetch(`${nodeUrl}/network/tin-debit${submit ? "" : "/prepare"}`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(30_000),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (submit && response.ok) session.pendingTinDebitWorkId = result.workId;
+    return json(res, response.status, result);
   }
 
   if (req.method === "POST" && url.pathname === "/api/tsn/sdk/prepare-tin-credit") {

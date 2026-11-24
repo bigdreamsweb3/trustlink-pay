@@ -1,6 +1,7 @@
 /** Authored work component; transaction boundaries, errors and return values retain the baseline contract. */
 import type { ReceiverWork, WorkKind, WorkStatus } from "../work-contract";
 import type { WorkDependencies } from "./dependencies";
+import { assertTinDebitIngress } from "../contracts/validation/assert-tin-debit-ingress";
 import { persistReceivedWork } from "./persist-received-work";
 export async function receive(dependencies: Pick<WorkDependencies, "assertPaymentAuthorizationIngress" | "assertExternalWorkKind" | "createReceivedWork" | "db" | "encryptPayloadForNode" | "payloadCommitment" | "wakeTsnNode" | "workCollection">, input: {
     id?: string;
@@ -11,13 +12,19 @@ export async function receive(dependencies: Pick<WorkDependencies, "assertPaymen
     if (input.kind === "AUTHORIZED_FUNDING")
         dependencies.assertPaymentAuthorizationIngress(input.payload);
     if (input.kind === "AUTHORIZED_FUNDING" && input.id && input.id !== input.payload.paymentId) throw new Error("FUNDING_WORK_ID_MISMATCH");
-    const durablePayload = input.kind === "AUTHORIZED_FUNDING"
+    if (input.kind === "TIN_DEBIT") {
+        assertTinDebitIngress(input.payload);
+        if (input.id && input.id !== input.payload.paymentId) throw new Error("TIN_DEBIT_WORK_ID_MISMATCH");
+    }
+    const durablePayload = input.kind === "TIN_DEBIT"
+        ? { paymentId: String(input.payload.paymentId), nodeEncryptedPayload: dependencies.encryptPayloadForNode(input.payload) }
+        : input.kind === "AUTHORIZED_FUNDING"
         ? {
             paymentId: String(input.payload.paymentId), recipientHash: String(input.payload.recipientHash),
             nodeEncryptedPayload: dependencies.encryptPayloadForNode(input.payload),
         }
         : input.payload;
-    const work: ReceiverWork = dependencies.createReceivedWork({ ...input, ...(input.kind === "AUTHORIZED_FUNDING" ? { id: String(input.payload.paymentId) } : {}), payload: durablePayload, payloadCommitment: dependencies.payloadCommitment(input.payload) });
+    const work: ReceiverWork = dependencies.createReceivedWork({ ...input, ...(["AUTHORIZED_FUNDING", "TIN_DEBIT"].includes(input.kind) ? { id: String(input.payload.paymentId) } : {}), payload: durablePayload, payloadCommitment: dependencies.payloadCommitment(input.payload) });
     if (input.kind === "AUTHORIZED_FUNDING") {
         work.fundingPhase = "AUTHORIZATION";
         work.authorizationPayloadCommitment = work.payloadCommitment;

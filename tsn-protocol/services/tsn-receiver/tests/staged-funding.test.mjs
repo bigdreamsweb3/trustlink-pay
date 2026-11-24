@@ -1,3 +1,5 @@
+import { tinDebitIngressTest } from "./cases/staged-funding/tin-debit-ingress-test.mjs";
+import { tinDebitStatusTest } from "./cases/staged-funding/tin-debit-status-test.mjs";
 import { after, test } from "node:test";
 import { createStagedFixture } from "./cases/staged-funding/create-staged-fixture.mjs";
 import { cleanupFixture } from "./cases/staged-funding/cleanup-fixture.mjs";
@@ -37,3 +39,6 @@ test("a signed-funding fast claim leaves message-only work available for normal 
 test("signed-funding selection rechecks the current phase atomically before leasing", signedFundingFilterRaceTest.bind(null, fixture));
 test("Node work HTTP validates the optional signed-funding filter before the persistence call", signedFundingFilterRouteTest.bind(null, fixture));
 test("signed-funding reclamation rechecks the persisted phase while ordinary reclamation remains unchanged", signedFundingReclamationRaceTest.bind(null, fixture));
+
+test("TIN-Debit ingress encrypts openings and preserves identical retries", tinDebitIngressTest.bind(null, fixture));
+test("TIN-Debit public status releases only rejection before any execution attempt", tinDebitStatusTest.bind(null, fixture));

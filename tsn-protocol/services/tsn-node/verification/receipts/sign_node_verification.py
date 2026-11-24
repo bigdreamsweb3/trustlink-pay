@@ -35,6 +35,7 @@ def _sign_node_verification(node: Dependencies,
             # are evidence, not Cranker execution inputs.
             "AUTHORIZED_FUNDING": {"senderSignedFundingTransaction", "senderFundingMode", "senderFundingBlockhashContext"},
             "SETTLEMENT": {"tcapCreditTransition"},
+            "TIN_DEBIT": {"tcapTinDebitTransition"},
             "TCAP_EPOCH_ACCOUNTING": {"tcapEpochAccounting"},
             "TIN_OPERATION": {
                 "intentId", "intentType", "ownerPubkey", "ownerSignature", "ownerIntentHash",
@@ -49,6 +50,9 @@ def _sign_node_verification(node: Dependencies,
         execution_payload = {name: verified_payload[name] for name in allowed if name in verified_payload}
         if work.get("kind") == "SETTLEMENT" and isinstance(execution_payload.get("tcapCreditTransition"), dict):
             execution_payload["tcapCreditTransition"] = node._public_tcap_transition(execution_payload["tcapCreditTransition"])
+        if work.get("kind") == "TIN_DEBIT":
+            from settlement.debit.public_transition import public_debit_transition
+            execution_payload["tcapTinDebitTransition"] = public_debit_transition(execution_payload["tcapTinDebitTransition"])
         for kind, field in (("TCAP_EPOCH_ACCOUNTING", "tcapEpochAccounting"),):
             if work.get("kind") == kind and isinstance(execution_payload.get(field), dict):
                 execution_payload[field] = node._public_coordination(kind, execution_payload[field])

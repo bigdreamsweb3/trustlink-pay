@@ -1,0 +1,191 @@
+{
+  "status": "EXPERIMENTAL first release v1; integration under implementation",
+  "actionKind": 4,
+  "workKind": "TIN_DEBIT",
+  "verificationType": "TSN_TIN_DEBIT_V1",
+  "authorizationKind": "TSN_TCAP_GPRU_TIN_DEBIT_AUTHORIZATION_V1",
+  "publicInputs": [
+    "oldGlobalRoot",
+    "newGlobalRoot",
+    "tipRouteRoot",
+    "rootSequence",
+    "deploymentCommitment",
+    "assetId",
+    "validAfterSlot",
+    "expiresAtSlot",
+    "amountCommitment",
+    "authorizationCommitment",
+    "actionCommitment",
+    "nullifier",
+    "memoCommitments[0]",
+    "memoCommitments[1]",
+    "successorPortfolioRoots[0]",
+    "successorPortfolioRoots[1]",
+    "successorBalanceX[0]",
+    "successorBalanceX[1]",
+    "successorBalanceY[0]",
+    "successorBalanceY[1]",
+    "encryptedBlindingDeltas[0]",
+    "encryptedBlindingDeltas[1]",
+    "deltaEphemeralPublicX[0]",
+    "deltaEphemeralPublicX[1]",
+    "deltaEphemeralPublicY[0]",
+    "deltaEphemeralPublicY[1]"
+  ],
+  "instructions": {
+    "tsnp": "tsn_register_tcap_tin_debit_authorization_v1",
+    "tcap": "debit_gpru_memo_v1",
+    "gpru": "verify_hidden_head_tin_debit_v1",
+    "tsnpDataBytes": 1128,
+    "order": [
+      "TSNP TIN-Debit",
+      "sender Memo",
+      "recipient Memo"
+    ]
+  },
+  "accounts": [
+    {
+      "name": "authority",
+      "signer": true,
+      "writable": false
+    },
+    {
+      "name": "motherEscrow",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "name": "tcapProgram",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "name": "tsnProgram",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "name": "config",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "name": "assetEntry",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "name": "commitmentRoot",
+      "signer": false,
+      "writable": true
+    },
+    {
+      "name": "reserveState",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "name": "authorizationSigner",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "name": "tipRouteRoot",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "name": "tinDebitVerifier",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "name": "instructions",
+      "signer": false,
+      "writable": false
+    },
+    {
+      "name": "gpruProgram",
+      "signer": false,
+      "writable": false
+    }
+  ],
+  "contextAddresses": [
+    "tsnProgram",
+    "tcapProgram",
+    "gpruProgram",
+    "tipProgram",
+    "commitmentRoot",
+    "assetEntry",
+    "reserveState",
+    "tipRouteRoot",
+    "tinDebitVerifier"
+  ],
+  "deploymentDomain": "TSN_GPRU_TCAP_TIN_DEBIT_CONTEXT_V1\u0000",
+  "authorizationDomain": "TSN_GPRU_TIN_DEBIT_AUTHORIZATION_V1\u0000",
+  "verifierSeed": "gpru:tin-debit-verifier:v1",
+  "verifierAccount": "GpruTinDebitVerifierV1",
+  "verifierAccountBytes": 2284,
+  "verifierOffsets": {
+    "version": 8,
+    "authority": 10,
+    "circuitCommitment": 42,
+    "keyCommitment": 74,
+    "bump": 106,
+    "enabled": 107,
+    "alphaG1": 108,
+    "betaG2": 172,
+    "gammaG2": 300,
+    "deltaG2": 428,
+    "ic": 556
+  },
+  "keyCommitmentDomain": "GPRU_TIN_DEBIT_VERIFYING_KEY_V1\u0000",
+  "circuitCommitmentDomain": "TSN_GPRU_HIDDEN_HEAD_TIN_DEBIT_V1\u0000",
+  "memoPrefix": "TSN_GPRU_TIN_DEBIT_MEMO_V1:",
+  "memoBinaryBytes": 416,
+  "memoTextBytes": 582,
+  "memoOffsets": {
+    "version": 0,
+    "leg": 1,
+    "portfolio": 2,
+    "x": 34,
+    "y": 66,
+    "action": 98,
+    "cipherC": 130,
+    "cipherX": 162,
+    "cipherY": 194,
+    "dna": 226,
+    "recordEphemeral": 258,
+    "nonce": 290,
+    "ciphertext": 314
+  },
+  "recordPlaintextBytes": 86,
+  "recordOffsets": {
+    "version": 0,
+    "leg": 1,
+    "sequenceLE": 2,
+    "previousMemoBE": 10,
+    "tokenIdLE": 42,
+    "amountLE": 46,
+    "amountBlindingBE": 54
+  },
+  "nativeV1LimitBytes": 4096,
+  "artifactDirectory": "programs/gpru/circuits/hidden_head_tin_debit_v1/build/native-tin-debit",
+  "balances": "u128 sender opening and later owner recovery; u64 debit amount; recipient commitment addition",
+  "senderOpening": "Signed sender head/previous Memo/opening and authorization; unrelated global-root advances may rebase only when this sender head is unchanged",
+  "preservation": "Existing deposit-credit instructions, 13-input verifier, Memo format, account layouts and credit-only epoch accounting remain unchanged",
+  "verification": {
+    "hostTests": 24,
+    "validCircuitWitnesses": 6,
+    "rejectedCircuitMutations": 49,
+    "realGroth16ProofVerified": true,
+    "rejectedPublicInputMutations": 26,
+    "scope": "Local development artifacts and synthetic context; no deployment or live payment",
+    "nativeRustProofVerified": true,
+    "ownerRoundTripCases": 6,
+    "ownerSuccessorsRecovered": 12,
+    "recipientWalletRequests": 0,
+    "recipientOpeningSupplied": false,
+    "rejectedOwnerRecoveryMutations": 72
+  }
+}

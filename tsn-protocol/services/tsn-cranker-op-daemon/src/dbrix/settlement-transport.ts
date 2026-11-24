@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import {
   AccountRole, address, addSignersToTransactionMessage, appendTransactionMessageInstructions,
   assertIsTransactionWithBlockhashLifetime, assertIsTransactionWithinSizeLimit,
-  createSolanaRpc, createTransactionMessage, getSignatureFromTransaction,
+  createSolanaRpc, createTransactionMessage, compileTransaction, getSignatureFromTransaction,
   getTransactionEncoder, pipe, setTransactionMessageConfig,
   isSolanaError, SOLANA_ERROR__JSON_RPC__SERVER_ERROR_SEND_TRANSACTION_PREFLIGHT_FAILURE,
   SOLANA_ERROR__RPC__TRANSPORT_HTTP_ERROR,
@@ -79,6 +79,10 @@ export async function sendSettlementV1(instructions: readonly TransactionInstruc
     tx => addSignersToTransactionMessage([options.payerSigner, ...options.additionalSigners], tx),
     tx => setTransactionMessageConfig({ computeUnitLimit: 1_400_000, loadedAccountsDataSizeLimit: 64 * 1024 * 1024 }, tx),
   );
+  // Compile with reserved signature slots before any signer is invoked. The
+  // serializer defines the budget, including native V1 config and all accounts.
+  const unsignedWire = getTransactionEncoder().encode(compileTransaction(message));
+  if (unsignedWire.length > 4096) throw new Error(`Solana v1 transaction is ${unsignedWire.length} bytes; maximum is 4096`);
   const signed = await signTransactionMessageWithSigners(message);
   assertIsTransactionWithBlockhashLifetime(signed);
   const finalLifetime = signed.lifetimeConstraint;

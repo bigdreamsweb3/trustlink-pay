@@ -1,9 +1,12 @@
 # Research and experiment register
 
+- [EXP-20261124: TIN-Debit readiness](EXP-20261124-tin-debit-readiness.md) records current offline SDK/Receiver/Cranker checks, the corrected Memo-length decoder, and circuit/domain/service blockers to live execution.
+
 - [EXP-20261107: private credit and complete epoch accounting](EXP-20261107-private-credit-epoch.md) records current amount commitment/pool/epoch contracts, real local proofs/native verification, offline coordination/recovery and missing SBF/activation/privacy checks.
 
 Experiments preserve observations, failures and conclusions with bounded evidence. They do not infer deployment from a compilation or invent missing dates. Existing research remains at its original paths, with [historical classifications](../../historical-archive/README.md) preventing superseded models from directing current integrations.
 
+- [EXP-20261123: offline-recipient transfer](EXP-20261123-offline-recipient-transfer.md) records the sender-only approval/opening contract, authenticated recipient-point credit and later encrypted owner recovery. The earlier [two-opening core](EXP-20261123-private-transfer-core.md) and [participating-owner recovery](EXP-20261123-transfer-owner-recovery.md) remain historical test checkpoints, superseded for operational design.
 - [EXP-20261102: hidden-head development setup reuse](EXP-20261102-hidden-head.md) records matching circuit artifacts, key verification, local proof tests, four program builds and a dated chain preflight.
 - [EXP-20261102: verifier initialization packet limit](EXP-20261102-verifier-initialization.md) records the unusable full-key initializer, its staged replacement, signer/account observations and setup validation.
 - [EXP-20261102: successful staged TIN finalization](EXP-20261102-tin-staged-finalization.md) maps six independently finalized Devnet transactions, account/rent effects and the remaining credit boundary.

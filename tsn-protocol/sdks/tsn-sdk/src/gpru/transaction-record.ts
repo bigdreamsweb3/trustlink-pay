@@ -285,10 +285,16 @@ export function decryptGpruLedgerMemoV1(params: {
     const authenticated = nacl.secretbox.open(ciphertext, nonce, key);
     if (authenticated === null) throw new GpruMemoAuthenticationErrorV1();
     authenticated.fill(0);
-    const record = decrypt<unknown>(
-      { data: envelope.data, nonce: envelope.nonce, ...(envelope.compression ? { compression: envelope.compression } : {}) } satisfies EncryptedData,
-      key,
-    );
+    let record: unknown;
+    try {
+      record = decrypt<unknown>(
+        { data: envelope.data, nonce: envelope.nonce, ...(envelope.compression ? { compression: envelope.compression } : {}) } satisfies EncryptedData,
+        key,
+      );
+    } catch {
+      // Library JSON errors can carry a plaintext preview in their metadata.
+      throw new Error("GPRU owner record could not be decoded");
+    }
     const scanKey = deriveGpruBalanceScanKeyV1(params.masterSeed);
     if (scanKey.publicKey.x !== decodeBabyJubHexV1(bytesToHex(params.gpruBalanceScanPublicKeyX), "TIP scan public x")
         || scanKey.publicKey.y !== decodeBabyJubHexV1(bytesToHex(params.gpruBalanceScanPublicKeyY), "TIP scan public y")) {

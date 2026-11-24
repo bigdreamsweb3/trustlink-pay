@@ -5,6 +5,7 @@ import { PublicKey, Keypair } from "@solana/web3.js";
 import nacl from "tweetnacl";
 import {
   loadTinOwnerBalanceV1, clearTinOwnerBalanceAccessV1, buildOwnerTinIdentityChallengeMessageV1,
+  withTinOwnerDebitOpeningV1,
 } from "@trustlink/tsn-sdk/tin-owner-balance";
 import { createTinV1OwnerSeedEnvelope } from "../dist/tin-private-controller.js";
 import { DEFAULT_TIP_PROGRAM_ID } from "../dist/tins.js";
@@ -127,5 +128,35 @@ test("aborted calls fail before any wallet approval or transport", async () => {
   const h = harness(), controller = new AbortController(); controller.abort();
   await assert.rejects(loadTinOwnerBalanceV1({ ...h.params, signal: controller.signal }), { name: "AbortError" });
   assert.equal(h.signatures(), 0); assert.equal(h.calls.length, 0);
+  clearTinOwnerBalanceAccessV1(h.params.ownerWallet);
+});
+
+const openingContext = { tokenId: 1, leg: 0, authorizationCommitment: "0".repeat(63) + "1",
+  expectedGlobalRoot: "14935d601de8d6fbd04b084de8f8510dd25b5ed1d80ab5382b8f908dc0734b3a",
+  tipRouteRoot: "0".repeat(63) + "2", expectedRootSequence: "0" };
+test("sender-authorized transfer callback recovers an empty opening without disclosing it to transport", async () => {
+  const h = harness();
+  let exposed;
+  const result = await withTinOwnerDebitOpeningV1({ ...h.params, ...openingContext }, packet => {
+    exposed = packet;
+    return { ...packet };
+  });
+  assert.equal(result.balance, "0"); assert.equal(result.blinding, "0"); assert.equal(result.sequence, "0");
+  assert.equal(result.routeKeyCommitment, Buffer.from(created.gpruElgamalKeyCommitment).toString("hex"));
+  for (const field of ["oldGlobalRoot", "tipRouteRoot", "rootSequence"]) assert.equal(field in result, false);
+  assert.equal(h.signatures(), 2); assert.equal(h.calls.length, 2);
+  assert.equal(exposed.blinding, "0");
+  assert.deepEqual(Object.keys(h.calls[1].body).sort(), ["challengeId", "includeBalanceContext", "ownerSignature", "tin"]);
+  clearTinOwnerBalanceAccessV1(h.params.ownerWallet);
+});
+test("invalid or stale transfer-opening context never invokes the private callback", async () => {
+  const h = harness();
+  let callbacks = 0;
+  await assert.rejects(withTinOwnerDebitOpeningV1({ ...h.params, ...openingContext, leg: 1 }, () => callbacks++), /only from the sender/);
+  assert.equal(h.signatures(), 0); assert.equal(h.calls.length, 0); assert.equal(callbacks, 0);
+  await assert.rejects(withTinOwnerDebitOpeningV1({ ...h.params, ...openingContext, expectedRootSequence: "00" }, () => callbacks++), /canonical decimal/);
+  assert.equal(h.signatures(), 0); assert.equal(h.calls.length, 0);
+  await assert.rejects(withTinOwnerDebitOpeningV1({ ...h.params, ...openingContext, expectedRootSequence: "1" }, () => callbacks++), /selected current root/);
+  assert.equal(callbacks, 0);
   clearTinOwnerBalanceAccessV1(h.params.ownerWallet);
 });

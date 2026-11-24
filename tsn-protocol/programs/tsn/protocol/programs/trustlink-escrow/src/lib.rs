@@ -141,6 +141,13 @@ pub mod trustlink_escrow {
         tsn::instructions::register_tcap_debit_authorization_v2::handler(ctx, args)
     }
 
+    pub fn tsn_register_tcap_tin_debit_authorization_v1(
+        ctx: Context<RegisterTcapTinDebitAuthorizationV1>,
+        args: RegisterTcapTinDebitAuthorizationV1Args,
+    ) -> Result<()> {
+        tsn::instructions::register_tcap_tin_debit_authorization_v1::handler(ctx, args)
+    }
+
     pub fn tsn_register_tcap_exit_debit_v1(ctx: Context<RegisterTcapExitDebitV1>, args: RegisterTcapExitDebitV1Args) -> Result<()> { tsn::instructions::register_tcap_exit_debit_v1::handler(ctx,args) }
     pub fn tsn_register_tcap_exit_payout_v1(ctx: Context<RegisterTcapExitPayoutV1>, args: RegisterTcapExitPayoutV1Args) -> Result<()> { tsn::instructions::register_tcap_exit_payout_v1::handler(ctx, args) }
 

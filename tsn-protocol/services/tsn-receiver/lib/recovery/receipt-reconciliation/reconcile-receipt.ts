@@ -21,7 +21,7 @@ export async function reconcileReceipt(dependencies: Pick<Dependencies, "workCol
     rpc(dependencies, "getTransaction", [params.signature, { encoding: "base64", commitment: "finalized", maxSupportedTransactionVersion: 1 }]),
     funding ? rpc(dependencies, "getTransaction", [funding.result!.signature, { encoding: "base64", commitment: "finalized", maxSupportedTransactionVersion: 1 }]) : Promise.resolve(null),
     rpc(dependencies, "getAccountInfo", [pda("tsn_mother_escrow", TSNP).toBase58(), { encoding: "base64", commitment: "finalized" }]),
-    rpc(dependencies, "getAccountInfo", [work.kind === "SETTLEMENT" ? t.commitmentRoot : t.accountingEpoch, { encoding: "base64", commitment: "finalized" }]),
+    rpc(dependencies, "getAccountInfo", [["SETTLEMENT", "TIN_DEBIT"].includes(work.kind) ? t.commitmentRoot : t.accountingEpoch, { encoding: "base64", commitment: "finalized" }]),
   ]);
   if (funding && deposit.meta?.err !== null) throw new Error("SETTLEMENT_FUNDING_NOT_CONFIRMED");
   const evidence = assertSettlementReceipt(work, params.signature, receipt, mother.value, root.value, reportOwner);

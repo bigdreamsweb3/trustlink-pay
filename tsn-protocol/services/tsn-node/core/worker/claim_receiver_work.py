@@ -21,7 +21,7 @@ class Dependencies(Protocol):
 async def claim_receiver_work(node: Dependencies, client: httpx.AsyncClient,
                               headers: dict[str, str], *, signed_funding_only: bool = False) -> bool:
     body = {"nodeId": node.TSN_NODE_ID, "supportedKinds": ["AUTHORIZED_FUNDING"] if signed_funding_only else
-            ["AUTHORIZED_FUNDING", "TIN_OPERATION", "SETTLEMENT", "TCAP_EPOCH_ACCOUNTING"]}
+            ["AUTHORIZED_FUNDING", "TIN_OPERATION", "SETTLEMENT", "TIN_DEBIT", "TCAP_EPOCH_ACCOUNTING"]}
     if signed_funding_only:
         body["fundingPhase"] = "SIGNED_DEPOSIT"
     started = asyncio.get_running_loop().time()

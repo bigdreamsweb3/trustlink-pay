@@ -8,9 +8,9 @@ export async function recordSubmissionTransaction(dependencies: Pick<WorkDepende
     if (!snapshot.exists)
         throw new Error("WORK_NOT_FOUND");
     const current = snapshot.data() as ReceiverWork;
-    const stage = { SETTLEMENT: "TCAP_GPRU_MEMO_CREDIT_V2_SIGNED", TCAP_EPOCH_ACCOUNTING: "TCAP_EPOCH_ACCOUNTING_V1_SIGNED" } as Record<string, string>;
+    const stage = { SETTLEMENT: "TCAP_GPRU_MEMO_CREDIT_V2_SIGNED", TCAP_EPOCH_ACCOUNTING: "TCAP_EPOCH_ACCOUNTING_V1_SIGNED", TIN_DEBIT: "TCAP_GPRU_TIN_DEBIT_V1_SIGNED" } as Record<string, string>;
     if (!stage[current.kind] || evidence.stage !== stage[current.kind] || current.status !== "CRANKER_LEASED"
-        || current.authorization?.kind !== (current.kind === "SETTLEMENT" ? "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3" : "TSN_TCAP_COORDINATION_AUTHORIZATION_V1"))
+        || current.authorization?.kind !== (current.kind === "SETTLEMENT" ? "TSN_TCAP_GPRU_CREDIT_AUTHORIZATION_V3" : current.kind === "TIN_DEBIT" ? "TSN_TCAP_GPRU_TIN_DEBIT_AUTHORIZATION_V1" : "TSN_TCAP_COORDINATION_AUTHORIZATION_V1"))
         throw new Error("SETTLEMENT_SUBMISSION_NOT_LEASED");
     if (current.stateVersion !== params.expectedVersion)
         throw new Error("STALE_STATE_VERSION");

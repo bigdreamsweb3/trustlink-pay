@@ -86,3 +86,13 @@ Node schedules `TCAP_EPOCH_ACCOUNTING` for a complete 2–63-credit epoch after 
 ## Retired pool API boundary
 
 Pool capture work, its recovery endpoint and CLI are retired. They are absent from the supported runtime. Historical signed records and on-chain accounts are preserved for separately authorized inspection/cleanup; source removal does not refund rent or mark payment confirmed.
+
+## TIN-Debit
+
+The first-release debit runtime has two Node POST routes. `/network/tin-debit/prepare` requires the sender TIN, recipient TIN, mint and a short-lived registered-owner signature over `TSN_TIN_DEBIT_PREPARE_V1` plus those fields and expiry. It returns asset decimals, route/context commitments and a slot interval. `/network/tin-debit` accepts the payment ID, private amount/nonce/blinding, deployment/slots, sender authorization and signed sender opening. Use the SDK to construct these encodings. The recipient supplies no signature, opening or private key.
+
+Node forwards validated debit ingress to Receiver using its service credential. Receiver encrypts the private request, and public coordination/status omit its TINs, amount and opening. The response identifies pending work with `{workId,status,stateVersion}`; it does not establish chain execution. Repeat an uncertain submission with the exact same body and payment ID. Replacement details conflict, and approval expiry or unrelated root movement does not create a new payment. Public `/api/work-status/<id>` returns the debit status and compact signature/stage, while private processing stays authenticated.
+
+Debit status also returns `safeToReplace`. This is true only for the exact debit identity with no active leases and either an initial rejection without retained execution attempts or a FAILED attempt with the existing version/commitment-bound finalized nonexecution resolution. XP releases its original private retry request only after a matching CONFIRMED response or this affirmative flag. A bare FAILED/REJECTED label, missing status response or uncertain signed attempt does not authorize replacement. Checking an older completed attempt cannot clear a newer pending debit in the same session.
+
+One debit proof binds both owner balance changes, replay protection and two encrypted Memos. The sender sees outgoing debit and the recipient recovers incoming credit later. Existing deposit-credit requests and their thirteen-input proof are unchanged. Matching deployed binaries, the separate enabled verifier and configured proving artifacts remain prerequisites for live execution; source and offline verification are separate evidence.

@@ -38,6 +38,9 @@ async def create_settlement_authorization(node: Dependencies, body: dict[str, An
         raise HTTPException(422, "workId and crankerPubkey are required")
     work = await node._receiver_work_by_id(work_id)
     node._assert_current_settlement_lease(work, operator)
+    if work["kind"] == "TIN_DEBIT":
+        from settlement.debit.authorize import authorize_debit
+        return await authorize_debit(node, work, operator)
     if work["kind"] == "TCAP_EPOCH_ACCOUNTING":
         return await node._authorize_private_coordination(work, operator)
     if (work.get("verification") or {}).get("verificationType") != "TSN_TCAP_GPRU_HIDDEN_HEAD_V1":

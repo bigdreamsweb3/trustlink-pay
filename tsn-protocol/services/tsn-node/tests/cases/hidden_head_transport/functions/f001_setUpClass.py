@@ -9,6 +9,7 @@ import json
 from server import runtime as server
 import shutil
 import subprocess
+import tempfile
 from cases.hidden_head_transport.functions.f002_field import field as _case_f002_field
 from cases.hidden_head_transport.functions.f003_account import account as _case_f003_account
 
@@ -40,7 +41,10 @@ def setUpClass(cls):
     public_inputs[2] = memo['memoCommitmentField']
     fixture = {'transition': transition, 'operator': cls.operator, 'authority': cls.authority, 'blockhash': cls.blockhash, 'motherEscrow': str(server.get_mother_escrow_pda()), 'tipRouteRoot': str(Pubkey.find_program_address([b'tip:route-merkle-root:v1'], Pubkey.from_string(server.TINS_PROGRAM_ID))[0]), 'gpruVerifier': str(Pubkey.find_program_address([b'gpru:hidden-head-verifier:v1'], Pubkey.from_string(server.GPRU_PROGRAM_ID))[0])}
     cranker = Path(__file__).resolve().parents[2] / 'tsn-cranker-op-daemon'
-    result = subprocess.run([shutil.which('node') or 'node', '--import', 'tsx', 'tests/settlement-v1-fixture.ts'], cwd=cranker, input=json.dumps(fixture), text=True, capture_output=True, timeout=60)
+    with tempfile.TemporaryFile() as fixture_input:
+        fixture_input.write(json.dumps(fixture).encode('utf-8'))
+        fixture_input.seek(0)
+        result = subprocess.run([shutil.which('node') or 'node', '--import', 'tsx', 'tests/settlement-v1-fixture.ts'], cwd=cranker, stdin=fixture_input, text=True, capture_output=True, timeout=60)
     if result.returncode:
         raise AssertionError(f'Offline DBrix V1 builder failed: {result.stderr}')
     cls.transport = json.loads(result.stdout)

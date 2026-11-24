@@ -7,7 +7,7 @@ export function projectWorkForNode(dependencies: Pick<WorkDependencies, "decrypt
         return work;
     if (work.kind === "SETTLEMENT")
         return work;
-    if (work.kind !== "AUTHORIZED_FUNDING")
+    if (work.kind !== "AUTHORIZED_FUNDING" && work.kind !== "TIN_DEBIT")
         return work;
     const envelope = work.payload.nodeEncryptedPayload;
     // VERIFIED/terminal payment records are deliberately redacted after Node

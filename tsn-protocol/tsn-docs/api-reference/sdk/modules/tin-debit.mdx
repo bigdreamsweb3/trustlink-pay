@@ -1,0 +1,74 @@
+---
+title: "tin-debit API"
+description: "Source-derived exports, parameter and result types, public methods and source links."
+---
+
+This reference is generated from the checked-out TypeScript exports. Types and signatures describe the package contract; source presence does not establish deployment or service availability. Error expressions below are direct throws, not an exhaustive list of failures from dependencies.
+
+[Source module](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-debit.ts). See the [reference index](/sdk/api-reference) for package import boundaries and verification scope.
+
+## sendTinDebitV1
+
+Approve a private sender debit and recipient credit with local owner recovery.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-debit`. [Implementation, line 23](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-debit.ts#L23).
+
+```ts
+sendTinDebitV1(params: SendTinDebitV1Params): Promise<TinDebitResultV1>
+```
+
+Direct failure expressions:
+
+```text
+new Error("TIN-Debit is already being prepared or submitted.")
+new Error("A different ten-digit recipient TIN is required.")
+new Error("TIN-Debit payment ID is invalid.")
+new Error("TIN-Debit is pending. Check the original payment before changing its details.")
+new Error("The connected wallet changed during TIN-Debit approval.")
+new Error("TIN-Debit submission outcome is unavailable. Check the same payment ID.")
+new Error("TIN-Debit preparation requires the connected owner's signature.")
+new Error("TIN-Debit preparation is invalid.")
+new Error("TIN-Debit approval signature is invalid.")
+new Error("Insufficient TIN balance.")
+```
+
+## SendTinDebitV1Params
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-debit`. [Implementation, line 13](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-debit.ts#L13).
+
+```ts
+export type SendTinDebitV1Params = LoadTinOwnerBalanceV1Params & {
+  recipientTin: string;
+  tokenMintAddress: string;
+  amount: string;
+  debitClient: TinDebitClientV1;
+  paymentId: string;
+  retryState: TinDebitRetryStateV1;
+};
+```
+
+## TinDebitClientV1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-debit`. [Implementation, line 9](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-debit.ts#L9).
+
+```ts
+export type TinDebitClientV1 = { post(path: string, body: unknown): Promise<unknown> };
+```
+
+## TinDebitResultV1
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-debit`. [Implementation, line 10](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-debit.ts#L10).
+
+```ts
+export type TinDebitResultV1 = { workId: string; status: string; stateVersion: number };
+```
+
+## TinDebitRetryStateV1
+
+Keep this private in device memory until the original work is reconciled.
+
+Import from `@trustlink/tsn-sdk` or `@trustlink/tsn-sdk/tin-debit`. [Implementation, line 12](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/tin-debit.ts#L12).
+
+```ts
+export type TinDebitRetryStateV1 = { intent?: string; requestJson?: string; workId?: string; inFlight?: boolean };
+```

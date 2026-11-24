@@ -19,3 +19,8 @@ from .get_epoch_status import get_epoch_status
 from .close_epoch import close_epoch
 
 __all__ = ['wake_receiver_verification', 'private_payment_validation_error', 'create_settlement_authorization', 'mempool_status', 'consume_threshold_access_nonce', 'post_intent', 'get_network_recent_blockhash', 'list_intents', 'update_intent_status', 'list_pending_intent_work', 'get_metrics', 'post_cranker_heartbeat', 'get_settlement_networks', 'get_network_overview', 'get_epoch_status', 'close_epoch']
+
+from .prepare_tin_debit import prepare_tin_debit_request
+from .post_tin_debit import post_tin_debit
+
+__all__ += ["prepare_tin_debit_request", "post_tin_debit"]

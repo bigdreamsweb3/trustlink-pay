@@ -94,9 +94,13 @@ Node schedules `TCAP_EPOCH_ACCOUNTING` for a complete 2–63-credit epoch after 
 
 Pool capture work, its recovery endpoint and CLI are retired. They are absent from the supported runtime. Historical signed records and on-chain accounts are preserved for separately authorized inspection/cleanup; source removal does not refund rent or mark payment confirmed.
 
+## Cranker wake cursor
+
+Use `GET /api/cranker/wake` to poll the Receiver's opaque `{cursor}` hint before requesting a lease. It reads one control document and returns no work payload or session credential. A changed cursor tells the Cranker to use its normal authenticated claim. Keep periodic authenticated recovery claims to discover work after a missed hint or lease expiry. The reference Cranker checks every ten seconds for idle signed funding and every sixty seconds for idle native work, and drains immediately while claims return work.
+
 ## TIN-Debit
 
-The first-release debit runtime has two Node POST routes. `/network/tin-debit/prepare` requires the sender TIN, recipient TIN, mint and a short-lived registered-owner signature over `TSN_TIN_DEBIT_PREPARE_V1` plus those fields and expiry. It returns asset decimals, route/context commitments and a slot interval. `/network/tin-debit` accepts the payment ID, private amount/nonce/blinding, deployment/slots, sender authorization and signed sender opening. Use the SDK to construct these encodings. The recipient supplies no signature, opening or private key.
+To pay from a TIN balance, call the SDK's `sendTinDebitV1`. It asks the sender's wallet to sign `TSN TIN Balance Payment Preparation`, with labeled sender and recipient TINs, token mint, ISO UTC expiry and the TSN domain. Node verifies that exact message at `/network/tin-debit/prepare` and returns asset decimals, route/context commitments and a slot interval. A missing debit verifier returns HTTP 503 with `TIN_DEBIT_VERIFIER_UNAVAILABLE`. The SDK then constructs sender approval and submits the payment ID, private amount/nonce/blinding, deployment/slots and signed sender opening to `/network/tin-debit`. The recipient supplies no signature, opening or private key.
 
 Node forwards validated debit ingress to Receiver using its service credential. Receiver encrypts the private request, and public coordination/status omit its TINs, amount and opening. The response identifies pending work with `{workId,status,stateVersion}`; it does not establish chain execution. Repeat an uncertain submission with the exact same body and payment ID. Replacement details conflict, and approval expiry or unrelated root movement does not create a new payment. Public `/api/work-status/<id>` returns the debit status and compact signature/stage, while private processing stays authenticated.
 

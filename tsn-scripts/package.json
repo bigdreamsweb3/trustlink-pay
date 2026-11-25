@@ -7,6 +7,8 @@
     "tsn:receiver:dev": "npm --prefix .. run tsn:receiver:dev",
     "tsn:node:dev": "npm --prefix .. run tsn:node:dev",
     "tsn:cranker:start": "npm --prefix .. run tsn:cranker:start",
-    "tsn:cranker:help": "npm --prefix .. run tsn:cranker:help"
+    "tsn:cranker:help": "npm --prefix .. run tsn:cranker:help",
+    "+++++##### XP ######+++": "///////////////////",
+    "tsn:xp": "npm --prefix .. run protocol-tests:ui"
   }
 }

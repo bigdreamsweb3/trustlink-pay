@@ -42,7 +42,7 @@ export async function handleStoreRequest(request,env) {
         const row=JSON.parse(record.value);if(!row||typeof row!=="object"||Array.isArray(row))return reply(null,400);
       }
     }
-    const statements=[env.DB.prepare("INSERT INTO commit_guard(metadata_key,expected) VALUES (?,?)").bind(body.metadataKey,body.expected),
+    const statements=[env.DB.prepare("INSERT INTO commit_guard(metadata_key,expected) VALUES (?,?) ON CONFLICT(metadata_key) DO UPDATE SET expected=excluded.expected").bind(body.metadataKey,body.expected),
       env.DB.prepare("UPDATE records SET value=? WHERE key=?").bind(body.metadata,body.metadataKey)];
     const writes=body.records.filter(record=>record.value!==null),deletes=body.records.filter(record=>record.value===null);
     for(let start=0;start<writes.length;start+=40){
@@ -50,7 +50,6 @@ export async function handleStoreRequest(request,env) {
       statements.push(env.DB.prepare("INSERT INTO records(key,value) VALUES "+page.map(()=>"(?,?)").join(",")+" ON CONFLICT(key) DO UPDATE SET value=excluded.value").bind(...page.flatMap(record=>[record.key,record.value])));
     }
     for(let start=0;start<deletes.length;start+=40){const page=deletes.slice(start,start+40);statements.push(env.DB.prepare("DELETE FROM records WHERE key IN ("+page.map(()=>"?").join(",")+")").bind(...page.map(record=>record.key)));}
-    statements.push(env.DB.prepare("DELETE FROM commit_guard WHERE metadata_key=?").bind(body.metadataKey));
     if(statements.length>50)return reply(null,413);
     await env.DB.batch(statements);
     return reply(true);

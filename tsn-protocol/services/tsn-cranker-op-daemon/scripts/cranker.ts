@@ -33,6 +33,7 @@ import { sendSettlementV1 } from "../src/dbrix/settlement-transport.js";
 import { createMotherNodeTransactionSigner } from "../src/dbrix/mother-node-signer.js";
 import { ConfirmedReceiptReportPending, RetryableConfirmedReportError, confirmedReportAvailabilityError, sendConfirmedWorkReport } from "../src/receiver/confirmed-report.js";
 import { FUNDING_WORK_KINDS, NATIVE_WORK_KINDS, runCrankerWorkLoop } from "../src/receiver/work-loop.js";
+import { createCrankerWakeGate } from "../src/receiver/wake-gate.js";
 import { createCrankerLeaseGate } from "../src/receiver/lease-gate.js";
 import { nativeConflictReason, nativeSigningAvailabilityReason, nativeWorkRetryReason } from "../src/receiver/native-retry.js";
 import { assertFundingRoot } from "../src/dbrix/funding-root.js";
@@ -1119,10 +1120,40 @@ async function main() {
   const sleep = (milliseconds: number) => new Promise<void>(resolve => setTimeout(resolve, milliseconds));
   const acquireLeaseTurn = createCrankerLeaseGate({ clock: () => performance.now(), sleep });
   const lanes: readonly (readonly Work["kind"][])[] = [FUNDING_WORK_KINDS, NATIVE_WORK_KINDS];
+  const pollMs = Number(process.env.TSN_CRANKER_POLL_MS ?? 2000);
+  const wakeGate = createCrankerWakeGate({
+    clock: Date.now,
+    pollMs,
+    recoveryMs: lane => lane === "FUNDING" ? 10_000 : 60_000,
+    readCursor: async () => {
+      const response = await fetch(`${receiver()}/api/cranker/wake`, {
+        cache: "no-store", signal: AbortSignal.timeout(5000),
+      });
+      if (!response.ok) throw new Error("CRANKER_WAKE_UNAVAILABLE");
+      const body = await response.json() as { cursor?: unknown };
+      if (typeof body.cursor !== "string" || !/^(?:empty|[0-9a-f-]{36})$/i.test(body.cursor)) {
+        throw new Error("CRANKER_WAKE_CURSOR_INVALID");
+      }
+      return body.cursor;
+    },
+  });
   await Promise.all(lanes.map(supportedKinds => runCrankerWorkLoop<Work>({
-    supportedKinds, lease: async kinds => { await acquireLeaseTurn(); return lease(signer, kinds); },
+    supportedKinds,
+    lease: async kinds => {
+      const lane = kinds.includes("AUTHORIZED_FUNDING") ? "FUNDING" : "NATIVE";
+      if (!await wakeGate.shouldClaim(lane)) return null;
+      try {
+        await acquireLeaseTurn();
+        const work = await lease(signer, kinds);
+        wakeGate.receivedWork(lane, work !== null);
+        return work;
+      } catch (error) {
+        wakeGate.receivedWork(lane, true);
+        throw error;
+      }
+    },
     process: (work, claimMs) => processLeasedWork(signer, work, rpcUrl, claimMs),
-    sleep, pollMs: Number(process.env.TSN_CRANKER_POLL_MS ?? 2000),
+    sleep, pollMs,
     pollFailed: error => console.error(`[tsn-cranker] poll failed lane=${supportedKinds.includes("AUTHORIZED_FUNDING") ? "FUNDING" : "NATIVE"}: ${error instanceof Error ? error.message : String(error)}`),
   })));
 }

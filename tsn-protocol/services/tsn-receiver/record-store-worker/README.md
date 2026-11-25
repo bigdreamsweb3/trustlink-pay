@@ -4,6 +4,8 @@ This Worker stores JSON records for the Receiver on Cloudflare D1 (SQLite). Rece
 
 The production schema uses primary-key record reads and an exact metadata fence. D1 batch is transactional: its first guard rejects missing or changed metadata before record/index writes. Every batch either commits its new namespace revision and changed records or rolls back. No automatic TTL applies to work, epochs, leases or signed attempts. Existing Receiver guards still determine which records may be deleted. The unused Firebase wake-token route is retired; Cranker retains authenticated polling.
 
+The Worker retains one guard row per namespace and updates it through an upsert. The existing BEFORE INSERT trigger validates the expected metadata before SQLite resolves the primary-key conflict. This removes the guard deletion and repeated guard insertion from later commits while preserving atomic stale-generation rejection. Deploy this Worker update before updating Receiver and reloading Cranker. The existing schema and D1 binding remain applicable.
+
 Cloudflare D1 Free currently includes 5 million row reads/day, 100,000 row writes/day and 5 GB aggregate account storage, with 500 MB per database. The Workers Free limit also applies. Free quotas stop operations when exceeded; this is not unlimited storage or a performance promise. See https://developers.cloudflare.com/d1/platform/pricing/ and https://developers.cloudflare.com/d1/platform/limits/ . Local queries preserve the existing Receiver filter/cursor contract; large work collections can increase rows read.
 
 ## Verification

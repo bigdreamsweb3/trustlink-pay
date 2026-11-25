@@ -96,17 +96,20 @@ export class RecordTransaction {
   }
   async commit(raw: string): Promise<boolean> {
     if (!this.changes.length) return (await this.db.readKey(this.db.metadataKey))===raw;
-    if (this.metadata.revision>=Number.MAX_SAFE_INTEGER) throw new Error("TSN_STORE_REVISION_EXHAUSTED");
-    const metadata=clone(this.metadata);metadata.revision++;
+    const metadata=clone(this.metadata);
     const unique=new Map<string,{collection:string;id:string}>();
     for(const change of this.changes)unique.set(this.db.recordKey(change.collection,change.id),change);
     const keys=[this.db.metadataKey],values:string[]=[];
     for(const [key,reference] of unique){
       const row=await this.row(reference.collection,reference.id);
+      if (JSON.stringify(row) === JSON.stringify(await this.original(reference.collection,reference.id))) continue;
       const index=metadata.collections[reference.collection]??={};
       if(row===null)delete index[reference.id];else index[reference.id]=key;
       keys.push(key);values.push(JSON.stringify(row));
     }
+    if (keys.length === 1) return (await this.db.readKey(this.db.metadataKey)) === raw;
+    if (metadata.revision >= Number.MAX_SAFE_INTEGER) throw new Error("TSN_STORE_REVISION_EXHAUSTED");
+    metadata.revision++;
     const request={operation:"commit" as const,metadataKey:this.db.metadataKey,expected:raw,metadata:JSON.stringify(metadata),records:keys.slice(1).map((key,i)=>({key,value:values[i]==="null"?null:values[i]}))};
     if(Buffer.byteLength(request.metadata,"utf8")>768*1024)throw new Error("TSN_STORE_INDEX_FULL");
     if(request.records.some(record=>record.value!==null&&Buffer.byteLength(record.value,"utf8")>1024*1024))throw new Error("TSN_STORE_RECORD_TOO_LARGE");

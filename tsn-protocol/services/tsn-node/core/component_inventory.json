@@ -3591,7 +3591,7 @@
       "functions": [
         {
           "name": "prepare_tin_debit_request",
-          "line": 26,
+          "line": 29,
           "async": true,
           "verification": {
             "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
@@ -3647,6 +3647,19 @@
             "Any",
             "Callable",
             "Protocol"
+          ]
+        },
+        {
+          "module": "datetime",
+          "symbols": [
+            "datetime",
+            "timezone"
+          ]
+        },
+        {
+          "module": "verification.intent.build_canonical_message",
+          "symbols": [
+            "_build_canonical_message"
           ]
         }
       ],

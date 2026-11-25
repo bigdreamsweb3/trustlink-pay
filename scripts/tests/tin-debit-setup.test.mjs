@@ -84,7 +84,8 @@ function harness({ verifier = null, mother = motherAccount(), chain = genesis } 
       assert.deepEqual(keys.map(key => key.toBase58()), [MOTHER, VERIFIER].map(key => key.toBase58()));
       return [state.mother, state.verifier];
     },
-    getLatestBlockhash: async () => ({ blockhash: PublicKey.default.toBase58(), lastValidBlockHeight: 100 }),
+    getLatestBlockhashAndContext: async () => ({ context: { slot: 50 },
+      value: { blockhash: PublicKey.default.toBase58(), lastValidBlockHeight: 100 } }),
     getAccountInfo: async () => state.verifier,
   };
   const dependencies = {
@@ -241,6 +242,8 @@ test("mocked enrollment confirms all nine steps and re-reads a complete key befo
     assert.equal(signers.length, 1);
     assert.ok(signers[0].publicKey.equals(authority));
     assert.equal(options.commitment, "confirmed");
+    assert.equal(transaction.lastValidBlockHeight, 100);
+    assert.equal(options.blockhashContext.context.slot, 50);
     const ix = transaction.instructions[0];
     sent.push(ix.data);
     h.calls.sends++;

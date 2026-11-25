@@ -5,9 +5,10 @@ import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { sendAndConfirmDebitTransaction } from "./tin-debit-http-confirmation.mjs";
 
 const require = createRequire(new URL("../tsn-protocol/sdks/tsn-sdk/package.json", import.meta.url));
-const { Connection, Keypair, PublicKey, SystemProgram, Transaction, TransactionInstruction, sendAndConfirmTransaction } = require("@solana/web3.js");
+const { Connection, Keypair, PublicKey, SystemProgram, Transaction, TransactionInstruction } = require("@solana/web3.js");
 export { PublicKey, Transaction };
 export const GPRU = new PublicKey("6XsdcNRG7SkSceLduXmEvbrpCqgHfM6oj12Qx49o1hVR");
 export const TSNP = new PublicKey("TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V");
@@ -137,7 +138,11 @@ function packetBytes(authority, instructions) {
 
 export async function main(argv, dependencies = {}) {
   const options = parseOptions(argv), log = dependencies.log ?? console.log;
-  const connection = (dependencies.connectionFactory ?? (rpc => new Connection(rpc, "confirmed")))(options.rpc);
+  const connection = (dependencies.connectionFactory ?? (rpc => new Connection(rpc, {
+    commitment: "confirmed", disableRetryOnRateLimit: true,
+    fetch: (input, init) => fetch(input, { ...init, signal: init?.signal
+      ? AbortSignal.any([init.signal, AbortSignal.timeout(10_000)]) : AbortSignal.timeout(10_000) }),
+  })))(options.rpc);
   if (await connection.getGenesisHash() !== GENESIS) throw Error("TIN-Debit setup requires Devnet");
   let [mother, verifier] = await connection.getMultipleAccountsInfo([MOTHER, VERIFIER], "confirmed");
   const authority = motherAuthority(mother);
@@ -154,7 +159,7 @@ export async function main(argv, dependencies = {}) {
   if (!options.send || !instructions.length) return;
   const signer = (dependencies.readKeypair ?? (wallet => Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(wallet, "utf8"))))))(options.wallet);
   if (!signer.publicKey.equals(authority)) throw Error("Wallet must match current Mother authority");
-  const send = dependencies.send ?? sendAndConfirmTransaction;
+  const send = dependencies.send ?? sendAndConfirmDebitTransaction;
   // Re-read after every confirmed transaction, including before enabling. A matching
   // concurrent upload can be skipped; conflicting material always stops this run.
   for (let step = 0; step <= 9; step++) {
@@ -163,9 +168,12 @@ export async function main(argv, dependencies = {}) {
     const remaining = debitInitializationPlan(authority, material, verifier);
     if (!remaining.length) { log("CONFIRMED: TIN-Debit verifier enabled with all 27 matching IC points"); return; }
     if (step === 9) throw Error("TIN-Debit enrollment did not reach the expected confirmed state; inspect existing account before retry");
-    const { blockhash } = await connection.getLatestBlockhash("confirmed");
-    const transaction = new Transaction({ feePayer: authority, recentBlockhash: blockhash }).add(remaining[0]);
-    log(JSON.stringify({ signature: await send(connection, transaction, [signer], { commitment: "confirmed" }) }));
+    const blockhashContext = await connection.getLatestBlockhashAndContext("confirmed");
+    const transaction = new Transaction({ feePayer: authority, blockhash: blockhashContext.value.blockhash,
+      lastValidBlockHeight: blockhashContext.value.lastValidBlockHeight }).add(remaining[0]);
+    log(JSON.stringify({ signature: await send(connection, transaction, [signer], {
+      commitment: "confirmed", blockhashContext, onSigned: candidate => log(JSON.stringify({ phase: "SIGNED", ...candidate })),
+    }) }));
   }
 }
 

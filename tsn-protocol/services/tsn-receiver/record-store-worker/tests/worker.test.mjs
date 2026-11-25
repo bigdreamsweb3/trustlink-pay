@@ -22,7 +22,7 @@ test("D1 atomic batch publishes exact records and rejects stale generations with
   const stale={...body,records:[{key,value:'{"status":"FORGED"}'}]};
   assert.deepEqual(await (await handleStoreRequest(request(stale),{DB,STORE_TOKEN:token})).json(),{result:false});
   assert.equal(sqlite.prepare("SELECT value FROM records WHERE key=?").get(key).value,body.records[0].value);
-  assert.equal(sqlite.prepare("SELECT count(*) AS n FROM commit_guard").get().n,0);
+  assert.equal(sqlite.prepare("SELECT count(*) AS n FROM commit_guard").get().n,1);
   const deleted={...body,expected:next,metadata:next.replace('"revision":1','"revision":2'),records:[{key,value:null}]};
   assert.deepEqual(await (await handleStoreRequest(request(deleted),{DB,STORE_TOKEN:token})).json(),{result:true});assert.equal(sqlite.prepare("SELECT value FROM records WHERE key=?").get(key),undefined);
  }finally{sqlite.close();}
@@ -34,5 +34,25 @@ test("one hundred deletions stay atomic within the D1 Free binding limits",async
   for(const record of records)sqlite.prepare("INSERT INTO records(key,value) VALUES (?,?)").run(record.key,'{"status":"EXPIRED"}');
   const response=await handleStoreRequest(request({operation:"commit",metadataKey:"{test}:metadata",expected:initial,metadata:initial.replace('"revision":0','"revision":1'),records}),{DB,STORE_TOKEN:token});
   assert.deepEqual(await response.json(),{result:true});assert.equal(sqlite.prepare("SELECT count(*) AS n FROM records").get().n,1);
+ }finally{sqlite.close();}
+});
+
+test("successive commits reuse one guard row and preserve rollback after a stale update", async () => {
+ const {DB,sqlite}=sqliteBinding();try{
+  sqlite.prepare("INSERT INTO records(key,value) VALUES (?,?)").run("{test}:metadata",initial);
+  const key="{test}:record:"+"b".repeat(64);
+  let expected=initial;
+  for(let revision=1;revision<=3;revision++){
+   const metadata=JSON.stringify({...JSON.parse(initial),revision});
+   const before=sqlite.prepare("SELECT total_changes() AS n").get().n;
+   const body={operation:"commit",metadataKey:"{test}:metadata",expected,metadata,records:[{key,value:JSON.stringify({revision})}]};
+   assert.deepEqual(await(await handleStoreRequest(request(body),{DB,STORE_TOKEN:token})).json(),{result:true});
+   assert.equal(sqlite.prepare("SELECT total_changes() AS n").get().n-before,3);
+   assert.equal(sqlite.prepare("SELECT count(*) AS n FROM commit_guard").get().n,1);
+   expected=metadata;
+  }
+  const stale={operation:"commit",metadataKey:"{test}:metadata",expected:initial,metadata:initial.replace('"revision":0','"revision":1'),records:[{key,value:'{"forged":true}'}]};
+  assert.deepEqual(await(await handleStoreRequest(request(stale),{DB,STORE_TOKEN:token})).json(),{result:false});
+  assert.equal(sqlite.prepare("SELECT value FROM records WHERE key=?").get(key).value,'{"revision":3}');
  }finally{sqlite.close();}
 });

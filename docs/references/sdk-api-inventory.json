@@ -2110,8 +2110,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 271,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L271"
+            "line": 294,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L294"
           }
         },
         {
@@ -2143,8 +2143,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 212,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L212"
+            "line": 235,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L235"
           }
         },
         {
@@ -2167,8 +2167,38 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 329,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L329"
+            "line": 352,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L352"
+          }
+        },
+        {
+          "name": "buildTinDebitPreparationMessage",
+          "imports": [
+            "@trustlink/tsn-sdk",
+            "@trustlink/tsn-sdk/canonical-message"
+          ],
+          "docs": "Wallet-readable consent to resolve the current context for a TIN balance payment.",
+          "signatures": [
+            "(params: { senderTin: string; recipientTin: string; tokenMintAddress: string; expiresAt: string; }): string"
+          ],
+          "constructors": [],
+          "methods": [],
+          "declaredType": null,
+          "directThrowExpressions": [
+            "new CanonicalMessageError(\"TIN debit preparation requires different ten-digit TINs\")",
+            "new CanonicalMessageError(\"TIN debit preparation mint or expiry is invalid\")"
+          ],
+          "directCalls": [
+            "/^\\d{10}$/.test",
+            "/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test",
+            "/^[1-9]\\d{0,10}$/.test",
+            "buildMessage",
+            "Number"
+          ],
+          "source": {
+            "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
+            "line": 173,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L173"
           }
         },
         {
@@ -2191,8 +2221,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 345,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L345"
+            "line": 368,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L368"
           }
         },
         {
@@ -2272,8 +2302,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 307,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L307"
+            "line": 330,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L330"
           }
         },
         {
@@ -2305,8 +2335,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 244,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L244"
+            "line": 267,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L267"
           }
         },
         {
@@ -2331,8 +2361,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 371,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L371"
+            "line": 394,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L394"
           }
         },
         {
@@ -2357,8 +2387,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 361,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L361"
+            "line": 384,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L384"
           }
         },
         {
@@ -2453,8 +2483,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts",
-            "line": 172,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L172"
+            "line": 195,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/canonical-message.ts#L195"
           }
         }
       ]
@@ -2486,8 +2516,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/client.ts",
-                "line": 26,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L26"
+                "line": 27,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L27"
               }
             },
             {
@@ -2500,8 +2530,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/client.ts",
-                "line": 40,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L40"
+                "line": 41,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L41"
               }
             },
             {
@@ -2514,8 +2544,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/client.ts",
-                "line": 52,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L52"
+                "line": 53,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L53"
               }
             },
             {
@@ -2528,8 +2558,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/client.ts",
-                "line": 66,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L66"
+                "line": 67,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L67"
               }
             },
             {
@@ -2542,8 +2572,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/client.ts",
-                "line": 71,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L71"
+                "line": 72,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L72"
               }
             },
             {
@@ -2556,8 +2586,8 @@
               "docs": "",
               "source": {
                 "path": "tsn-protocol/sdks/tsn-sdk/src/client.ts",
-                "line": 75,
-                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L75"
+                "line": 76,
+                "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L76"
               }
             }
           ],
@@ -2569,7 +2599,7 @@
             "options.baseUrl.replace",
             "fetchImpl.bind",
             "options.apiKey?.trim",
-            "this.fetchImpl",
+            "fetchNodeResponse",
             "this.headers",
             "JSON.stringify",
             "response.text",
@@ -2581,8 +2611,8 @@
           ],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/client.ts",
-            "line": 7,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L7"
+            "line": 8,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L8"
           }
         },
         {
@@ -2600,8 +2630,8 @@
           "directCalls": [],
           "source": {
             "path": "tsn-protocol/sdks/tsn-sdk/src/client.ts",
-            "line": 1,
-            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L1"
+            "line": 2,
+            "url": "https://github.com/bigdreamsweb3/trustlink-pay/blob/main/tsn-protocol/sdks/tsn-sdk/src/client.ts#L2"
           }
         }
       ]
@@ -10868,7 +10898,7 @@
             "Math.floor",
             "Date.now",
             "new TextEncoder().encode",
-            "[params.tin, params.recipientTin, params.tokenMintAddress, expiresAt].join",
+            "buildTinDebitPreparationMessage",
             "params.ownerWallet.signMessage",
             "nacl.sign.detached.verify",
             "new PublicKey(walletAddress).toBytes",
@@ -14153,7 +14183,7 @@
   ],
   "counts": {
     "modules": 62,
-    "exports": 428,
+    "exports": 429,
     "publicMembers": 219
   }
 }

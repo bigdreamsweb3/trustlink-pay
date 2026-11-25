@@ -51,3 +51,48 @@ test("D1 indexed point reads use one request and omit unrelated rows",async()=>{
  const original=db.command,calls=[];db.command=async request=>{calls.push(request);return original(request);};
  assert.equal((await collection.doc("one").get()).get("id"),"one");assert.equal(calls.length,1);assert.equal(calls[0].keys.length,2);assert.equal(calls[0].keys.includes(db.recordKey("point","other")),false);
 });
+
+test("identical sets, unchanged merges and absent deletes perform no D1 mutations", async () => {
+ const db=fixture.persistenceFactory(),collection=db.collection("no-op"),doc=collection.doc("one");
+ await doc.create({status:"READY",version:1});
+ const original=db.command,calls=[];
+ db.command=async request=>{calls.push(request);return original(request);};
+ const before=binding.sqlite.prepare("SELECT total_changes() AS n").get().n;
+ const raw=binding.sqlite.prepare("SELECT value FROM records WHERE key=?").get(db.metadataKey).value;
+ await doc.set({status:"READY",version:1});
+ await doc.set({version:1},{merge:true});
+ await collection.doc("absent").delete();
+ await db.runTransaction(async tx=>{tx.create(collection.doc("temporary"),{value:1});tx.delete(collection.doc("temporary"));});
+ assert.equal(calls.filter(request=>request.operation==="commit").length,0);
+ assert.equal(binding.sqlite.prepare("SELECT total_changes() AS n").get().n,before);
+ assert.equal(binding.sqlite.prepare("SELECT value FROM records WHERE key=?").get(db.metadataKey).value,raw);
+ await assert.rejects(doc.create({status:"READY",version:1}),/ALREADY_EXISTS/);
+});
+
+test("an unchanged transaction still retries when its observed metadata generation advances", async () => {
+ const db=fixture.persistenceFactory(),doc=db.collection("no-op-race").doc("one");
+ await doc.create({version:1});
+ let attempts=0;
+ const observed=await db.runTransaction(async tx=>{
+  attempts++;
+  const value=(await tx.get(doc)).get("version");
+  tx.set(doc,{version:value});
+  if(attempts===1)await doc.set({version:2});
+  return value;
+ });
+ assert.equal(observed,2);assert.equal(attempts,2);
+});
+
+test("the Cranker wake cursor is a read-only point read with no work or credential projection", async () => {
+ await compileReceiverFixture(fixture.directory,["http/api/cranker/wake/GET.ts"]);
+ const {GET}=await import(pathToFileURL(path.join(fixture.directory,"http/api/cranker/wake/GET.mjs")).href);
+ const db=fixture.persistenceFactory(),control=db.collection("tsn_receiver_control").doc("cranker");
+ const nonce="12345678-1234-1234-1234-123456789abc";
+ await control.set({nonce,kind:"VERIFIED",private:"synthetic restricted value"});
+ const before=binding.sqlite.prepare("SELECT total_changes() AS n").get().n;
+ const response=await GET({control,NextResponse:{json:(body,options)=>({body,options})}});
+ assert.deepEqual(response.body,{cursor:nonce});
+ assert.equal(binding.sqlite.prepare("SELECT total_changes() AS n").get().n,before);
+ await control.delete();
+ assert.deepEqual((await GET({control,NextResponse:{json:body=>body}})),{cursor:"empty"});
+});

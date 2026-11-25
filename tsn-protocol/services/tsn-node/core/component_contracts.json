@@ -6009,6 +6009,7 @@
     "inputs": "node: Dependencies, request: TinDebitPrepareRequest",
     "output": "dict",
     "dependencies": [
+      "TSN_CANONICAL_DOMAIN_DISPLAY",
       "TSN_PROGRAM_ID",
       "TCAP_PROGRAM_ID",
       "GPRU_PROGRAM_ID",
@@ -6026,6 +6027,7 @@
       "HTTPException: generic authorization, context or idempotency refusal"
     ],
     "dependencyTypes": {
+      "TSN_CANONICAL_DOMAIN_DISPLAY": "str",
       "TSN_PROGRAM_ID": "str",
       "TCAP_PROGRAM_ID": "str",
       "GPRU_PROGRAM_ID": "str",

@@ -1,0 +1,15 @@
+# D1 write-budget correction, November 25, 2026
+
+The operator's dashboard showed 29.97k queries, 46.8k rows read and 10.93k rows written with 90.11 kB stored. Writes used approximately 10.93% of the 100k daily allowance. These are the supplied dashboard totals for the selected day, rather than a measured production rate.
+
+The Cranker's two-second polling called the authenticated lease endpoint even for an empty queue. Each attempt consumed a durable session counter and lease-rate bucket before searching for work. The D1 adapter published a metadata revision for every staged write, including identical values. The Worker's guard also required insertion and deletion on each committed batch.
+
+The implemented correction uses the existing `tsn_receiver_control/cranker` notification as an opaque read-only cursor at `GET /api/cranker/wake`. Both Cranker lanes share cursor polling, claim on a changed hint and drain immediately while work exists. Periodic authenticated recovery claims run every ten seconds for idle signed funding and every sixty seconds for idle native work. The shorter funding interval limits delay against the owner-signed blockhash lifetime. Errors retain normal claim retries. Real claims continue through signed admission, replay-counter consumption and the existing operator rate limit.
+
+The adapter filters identical final serialized rows before publishing metadata or SQL. A no-op transaction still compares its original metadata generation, preserving retry semantics after a concurrent change. The Worker upserts one retained guard row per namespace. The existing BEFORE INSERT trigger checks expected metadata before the primary-key conflict update, and stale generations still roll back the whole batch. No schema reset or history deletion is involved.
+
+Nine Cranker scheduling/lease-budget tests, twelve real-SQLite D1 relay/transaction/point-read checks and five Worker/import checks passed. The idle model produced 10,080 recovery claims across two lanes over 24 hours, with shared read-only cursor polling and the ten-/sixty-second recovery intervals. Real D1 metering includes indexes and workload-dependent mutations, so this model does not establish a production daily write total. A one-record update used three SQLite table changes in the retained-guard test, while stale-update and lost-acknowledgement protections passed. Receiver and Cranker type checks passed. The complete Receiver suite passed 115/115 checks.
+
+A read-only eleven-second observation of the currently deployed store found zero metadata revision changes and zero increases in the sampled Cranker session counters. This short interval does not attribute the earlier daily write total or establish a long-term production rate. The source changes had not been deployed during this observation.
+
+Deployment order is Worker, Receiver, then local Cranker reload. The existing D1 schema, token, namespace and binding are used. Measure additional dashboard writes during an idle interval after loading all updates. Production write-rate improvement and live payment behavior remain unverified until that operator rollout.

@@ -3,6 +3,7 @@ import test from "node:test";
 import nacl from "tweetnacl";
 import { Keypair } from "@solana/web3.js";
 import { sendTinDebitV1 } from "../dist/tin-debit.js";
+import { buildTinDebitPreparationMessage, isCanonicalTsnMessage } from "../dist/canonical-message.js";
 
 const key = Keypair.fromSeed(new Uint8Array(32).fill(71));
 const request = { paymentId: "same-debit", senderTin: "1234567890", recipientTin: "2345678901", amountBaseUnits: "30", nonce: "79" };
@@ -36,11 +37,28 @@ test("concurrent retry calls cannot start a second submission and cancellation r
 
 test("preparation consent binds both TINs, mint and expiry and verifies the wallet before transport", async () => {
   const p = params(); p.retryState = {}; let calls = 0, signatures = 0;
-  p.ownerWallet.signMessage = async message => { signatures++; assert.ok(new TextDecoder().decode(message).startsWith("TSN_TIN_DEBIT_PREPARE_V1\0")); return nacl.sign.detached(message, key.secretKey); };
+  p.ownerWallet.signMessage = async message => {
+    signatures++;
+    const text = new TextDecoder().decode(message);
+    assert.ok(isCanonicalTsnMessage(text));
+    assert.ok(text.startsWith("TSN TIN Balance Payment Preparation\n---\n"));
+    assert.match(text, /Sender TIN: 1234567890\nRecipient TIN: 2345678901/);
+    assert.match(text, /Expires: \d{4}-\d{2}-\d{2}T/);
+    assert.doesNotMatch(text, /[\u0000-\u0009\u000b-\u001f\u007f]/);
+    return nacl.sign.detached(message, key.secretKey);
+  };
   p.debitClient = { post: async (path, body) => {
     calls++; assert.equal(path, "/network/tin-debit/prepare");
-    const message = new TextEncoder().encode("TSN_TIN_DEBIT_PREPARE_V1\0" + [p.tin, p.recipientTin, p.tokenMintAddress, body.expiresAt].join("\n"));
+    const message = new TextEncoder().encode(buildTinDebitPreparationMessage({
+      senderTin: p.tin, recipientTin: p.recipientTin, tokenMintAddress: p.tokenMintAddress, expiresAt: body.expiresAt,
+    }));
     assert.ok(nacl.sign.detached.verify(message, Buffer.from(body.signature,"hex"), key.publicKey.toBytes()));
+    for (const changed of [{ recipientTin: "3456789012" }, { tokenMintAddress: "22222222222222222222222222222222" }, { expiresAt: String(Number(body.expiresAt) + 1) }]) {
+      const altered = new TextEncoder().encode(buildTinDebitPreparationMessage({
+        senderTin: p.tin, recipientTin: p.recipientTin, tokenMintAddress: p.tokenMintAddress, expiresAt: body.expiresAt, ...changed,
+      }));
+      assert.equal(nacl.sign.detached.verify(altered, Buffer.from(body.signature, "hex"), key.publicKey.toBytes()), false);
+    }
     throw new Error("preparation unavailable");
   } };
   await assert.rejects(sendTinDebitV1(p), /preparation unavailable/);

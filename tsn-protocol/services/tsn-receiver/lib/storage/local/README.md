@@ -1,6 +1,6 @@
 # Receiver local JSON storage
 
-This package owns the explicitly gated local Firestore adapter behind [the stable facade](../../local-firestore.ts). It implements the existing document, query, transaction and batch interfaces. Hosted Firestore selection, work contracts, privacy projections, protocol authorization and service configuration remain outside this package. Every implementation function or class constructor occupies its own file; class entrypoints attach named imported implementations.
+This package owns the explicitly gated local JSON adapter behind [the stable facade](../../local-json-store.ts). It implements the existing document, query, transaction and batch interfaces. Hosted D1 selection, work contracts, privacy projections, protocol authorization and service configuration remain outside this package. Every implementation function or class constructor occupies its own file; class entrypoints attach named imported implementations.
 
 ## Context and initialization
 

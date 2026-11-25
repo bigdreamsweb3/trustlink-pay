@@ -17,6 +17,7 @@ try {
   }
 } catch { /* environment variables may be supplied by the process manager */ }
 const tsnSdk = await import(pathToFileURL(path.join(root, "tsn-protocol/sdks/tsn-sdk/dist/index.js")).href);
+const { fetchNodeResponse } = await import(pathToFileURL(path.join(root, "tsn-protocol/sdks/tsn-sdk/dist/lib/fetch-node-response.js")).href);
 const port = Number(process.env.TSN_PROTOCOL_UI_PORT ?? 4317);
 // Prefer the local TSN gateway when it is healthy; otherwise use the live TSN
 // gateway. Never bypass the TSN gateway with a raw Solana provider.
@@ -32,7 +33,7 @@ const devnetRpcUrl = "https://api.devnet.solana.com";
 function configuredNodeUrl() {
   const value = mode === "local"
     ? process.env.TSN_LOCAL_NODE_URL ?? "http://127.0.0.1:8000"
-    : process.env.TSN_NODE_URL ?? "";
+    : `${(process.env.TSN_RECEIVER_URL ?? "https://tsn-receiver-kappa.vercel.app").replace(/\/$/, "")}/node`;
   return value.replace(/\/$/, "");
 }
 let rpcSelectionCache = null;
@@ -195,8 +196,8 @@ async function handleApi(req, res, url) {
     if (!nodeUrl) return void json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED_FOR_BLOCKHASH" });
     let blockhashResponse;
     try {
-      blockhashResponse = await fetch(`${nodeUrl}/network/recent-blockhash`, {
-        cache: "no-store", signal: AbortSignal.timeout(10_000),
+      blockhashResponse = await fetchNodeResponse(fetch, `${nodeUrl}/network/recent-blockhash`, {
+        cache: "no-store", signal: AbortSignal.timeout(90_000),
       });
     } catch (error) {
       return void json(res, 503, { error: "TSN_NODE_BLOCKHASH_UNAVAILABLE", detail: error instanceof Error ? error.message : String(error) });
@@ -619,8 +620,8 @@ async function handleApi(req, res, url) {
       if (session.pendingTinDebit && JSON.stringify(session.pendingTinDebit) !== JSON.stringify(body)) return json(res, 409, { error: "TIN_DEBIT_ALREADY_PENDING_CHECK_SAME_WORK" });
       session.pendingTinDebit = body;
     }
-    const response = await fetch(`${nodeUrl}/network/tin-debit${submit ? "" : "/prepare"}`, {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(30_000),
+    const response = await fetchNodeResponse(fetch, `${nodeUrl}/network/tin-debit${submit ? "" : "/prepare"}`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(90_000),
     });
     const result = await response.json().catch(() => ({}));
     if (submit && response.ok) session.pendingTinDebitWorkId = result.workId;
@@ -695,8 +696,8 @@ async function handleApi(req, res, url) {
     prepared.request = request;
     const nodeUrl = configuredNodeUrl();
     if (!nodeUrl) return json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED_FOR_LIVE_MODE" });
-    const response = await fetch(`${nodeUrl}/intents`, { method: "POST", headers: { "content-type": "application/json" },
-      body: encoded, signal: AbortSignal.timeout(30_000) });
+    const response = await fetchNodeResponse(fetch, `${nodeUrl}/intents`, { method: "POST", headers: { "content-type": "application/json" },
+      body: encoded, signal: AbortSignal.timeout(90_000) });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) return json(res, response.status, result);
     session.pendingTinCreditOperationId = String(result.id ?? result.paymentId ?? request.paymentId);
@@ -711,9 +712,9 @@ async function handleApi(req, res, url) {
         || body.operationId !== prepared.workId || prepared.completion) return json(res, 409, { error: "TIN_CREDIT_FUNDING_PREPARATION_UNAVAILABLE" });
     const nodeUrl = configuredNodeUrl();
     if (!nodeUrl) return json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED_FOR_LIVE_MODE" });
-    const response = await fetch(`${nodeUrl}/network/funding/readiness`, { method: "POST", headers: { "content-type": "application/json" },
+    const response = await fetchNodeResponse(fetch, `${nodeUrl}/network/funding/readiness`, { method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ workId: prepared.workId, senderPubkey: prepared.senderWallet, authorizationSignature: prepared.request.senderAuthorizationSignature }),
-      signal: AbortSignal.timeout(10_000) });
+      signal: AbortSignal.timeout(90_000) });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) return json(res, response.status, result);
     try { prepared.readiness = tsnSdk.assertTsnFundingReadiness(result, prepared.request, prepared.workId, new PublicKey(prepared.tcapProgramId)); }
@@ -745,8 +746,8 @@ async function handleApi(req, res, url) {
     }
     const nodeUrl = configuredNodeUrl();
     if (!nodeUrl) return json(res, 503, { error: "TSN_NODE_URL_NOT_CONFIGURED_FOR_LIVE_MODE" });
-    const response = await fetch(`${nodeUrl}/network/funding/complete`, { method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify(prepared.completion), signal: AbortSignal.timeout(30_000) });
+    const response = await fetchNodeResponse(fetch, `${nodeUrl}/network/funding/complete`, { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify(prepared.completion), signal: AbortSignal.timeout(90_000) });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) return json(res, response.status, result);
     prepared.attached = true;

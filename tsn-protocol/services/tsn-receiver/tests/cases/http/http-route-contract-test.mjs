@@ -11,10 +11,13 @@ import { assertHttpContract } from "./assert-http-contract.mjs";
 import { stagedHttpExpected } from "./staged-http-expected.mjs";
 export async function httpRouteContractTest(){
   const fixtures=JSON.parse(await readFile(new URL("./route-contract-baseline.json",import.meta.url),"utf8"));
+  // Firebase-only wake-token is retired; retain its captured baseline as history.
+  fixtures.contracts=fixtures.contracts.filter(contract=>!contract.route.includes("/wake-token/"));
+  fixtures.results=fixtures.results.filter(result=>!result.route.includes("/wake-token/"));
   const directory=await mkdtemp(path.join(os.tmpdir(),"receiver-http-contract-"));
-  const names=["TSN_RECEIVER_STORE","TSN_ALLOW_LOCAL_JSON_STORE","FIREBASE_WEB_API_KEY"],prior=[];
+  const names=["TSN_RECEIVER_STORE","TSN_ALLOW_LOCAL_JSON_STORE"],prior=[];
   for(const name of names)prior.push(process.env[name]);
-  process.env.TSN_RECEIVER_STORE="file";process.env.TSN_ALLOW_LOCAL_JSON_STORE="true";process.env.FIREBASE_WEB_API_KEY="SYNTHETIC_FIREBASE_KEY";
+  process.env.TSN_RECEIVER_STORE="file";process.env.TSN_ALLOW_LOCAL_JSON_STORE="true";
   try{
     await compileHttpFixture(directory,fixtures.contracts);const modules=new Map();
     for(const contract of fixtures.contracts){const module=await import(pathToFileURL(path.join(directory,contract.route).replace(/\.ts$/,".mjs")).href);assertHttpContract(contract,module);modules.set(contract.route,module);}

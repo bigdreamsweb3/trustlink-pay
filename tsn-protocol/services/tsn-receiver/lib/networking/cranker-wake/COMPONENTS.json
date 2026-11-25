@@ -1,15 +1,15 @@
 {
   "facade": "../../cranker-wake.ts",
-  "responsibility": "Cranker control notification",
+  "responsibility": "Durable payload-free coordination marker",
   "components": [
     {
       "name": "publishCrankerWake",
       "file": "publish-cranker-wake.ts",
       "imports": [
-        "./dependencies",
         "node:crypto",
-        "firebase-admin/database"
+        "./dependencies"
       ]
     }
-  ]
+  ],
+  "verification": "Receiver suite and D1 transaction checks; Cranker uses authenticated polling"
 }

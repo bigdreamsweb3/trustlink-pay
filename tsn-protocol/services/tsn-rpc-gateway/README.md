@@ -71,7 +71,12 @@ Inside this folder:
 
 See [`docs/RPC-GATEWAY.md`](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/RPC-GATEWAY.md) for the full setup guide.
 
+## Gateway repository commands
+
+Run `npm run git:commit:push:all` from this directory to publish only gateway files to [bigdreamsweb3/tsn-rpc-gateway](https://github.com/bigdreamsweb3/tsn-rpc-gateway) on `main`, matching `package.json`. In a protocol checkout, the package's self-contained helper keeps separate publication history under the enclosing Git metadata and preserves the protocol branch/index. A standalone gateway clone uses its own Git history. Review the complete local snapshot before running the command: it includes deletions of files absent locally, including remote-only files. First publication uses existing gateway `main` as its parent; failed pushes retain the local commit for retry and never force remote updates. `npm run git:pull:all` fetches only gateway tracking metadata without merging or replacing source.
+
 ## Signed funding blockhash visibility
+
 
 The gateway retries identical simulation or sendTransaction preflight requests across ranked providers after a bank returns `BlockhashNotFound`. It also retries exact RPC error `-32016` (minimum context slot not reached) and malformed JSON-RPC envelopes, preserving the caller's `minContextSlot` and signed bytes. Valid null/scalar results remain valid envelopes. It never refreshes the signed message or disables signature checks. If all attempted banks explicitly reject the hash, that error is returned; a mixed transport/context failure leaves validity unknown. Keep every upstream on the intended Devnet genesis. A reachable health endpoint does not prove transaction-bank visibility. See [SDK failure recovery](../../tsn-docs/sdk/troubleshooting.mdx).
 

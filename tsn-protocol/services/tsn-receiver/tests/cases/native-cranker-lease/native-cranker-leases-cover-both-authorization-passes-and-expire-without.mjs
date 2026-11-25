@@ -15,9 +15,9 @@ export async function caseNativeCrankerLeasesCoverBothAuthorizationPassesAndExpi
     let clock = { value: realNow() };
     process.env.TSN_RECEIVER_LOCAL_FILE = path.join(directory, "store.json");
     try {
-        await compileReceiverFixture(directory, ["local-firestore.ts", "work-contract.ts", "settlement-retry.ts", "native-work-retry.ts", "node-authorizations.ts", "store.ts"]);
+        await compileReceiverFixture(directory, ["local-json-store.ts", "work-contract.ts", "settlement-retry.ts", "native-work-retry.ts", "node-authorizations.ts", "store.ts"]);
         for (const [name, source] of Object.entries({
-            firebase: 'import {localDb} from "./local-firestore.mjs"; export const db=localDb; export const workCollection=db.collection("tsn_receiver_work");',
+            database: 'import {localDb} from "./local-json-store.mjs"; export const db=localDb; export const workCollection=db.collection("tsn_receiver_work");',
             "firestore-stub": "export const FieldPath={}; export const Timestamp={};",
             "node-envelope": "export const decryptPayloadForNode=x=>x; export const encryptPayloadForNode=x=>x;",
             "node-verification": "export const assertNodeVerificationAttestation=()=>{};",
@@ -26,7 +26,7 @@ export async function caseNativeCrankerLeasesCoverBothAuthorizationPassesAndExpi
         }))
             await writeFile(path.join(directory, name + ".mjs"), source);
         const load = caseLoad.bind(null, directory);
-        const { workCollection } = await load("firebase"), { createReceivedWork } = await load("work-contract");
+        const { workCollection } = await load("database"), { createReceivedWork } = await load("work-contract");
         const { leaseForCranker, leaseForNode, attachCrankerAuthorization, recordSettlementSubmission, retryLeasedSettlementFundingRoot } = await load("store");
         Date.now = readBoxedClock.bind(null, clock);
         const funding = { ...createReceivedWork({ id: "funding", kind: "AUTHORIZED_FUNDING", payload: {} }), status: "CONFIRMED", result: { signature: "confirmed-deposit" } };

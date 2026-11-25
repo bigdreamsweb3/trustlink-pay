@@ -539,7 +539,7 @@ ic: [[u8; 64]; HIDDEN_HEAD_PUBLIC_INPUTS + 1]
 
 ### `verify_dna_key_proof_v1`
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 109](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 111](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 pub fn verify_dna_key_proof_v1( ctx: Context<VerifyDnaKeyProof>, dna: [u8; 32], ephemeral_public_key: [u8; 32], one_time_public_key: [u8; 32], proof: gpru_ix::DnaKeyProofV1, ) -> Result<()>
@@ -547,15 +547,47 @@ pub fn verify_dna_key_proof_v1( ctx: Context<VerifyDnaKeyProof>, dna: [u8; 32], 
 
 ### `verify_hidden_head_transition_v2`
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 128](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 130](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 pub fn verify_hidden_head_transition_v2( ctx: Context<VerifyHiddenHeadTransitionV2>, args: HiddenHeadProofArgsV2, ) -> Result<()>
 ```
 
+### `initialize_tin_debit_verifier_v1`
+
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 137](../../tsn-protocol/programs/gpru/src/lib.rs).
+
+```rust
+pub fn initialize_tin_debit_verifier_v1(ctx: Context<InitializeTinDebitVerifierV1>, args: InitializeTinDebitVerifierArgsV1) -> Result<()>
+```
+
+### `write_tin_debit_verifier_ic_v1`
+
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 138](../../tsn-protocol/programs/gpru/src/lib.rs).
+
+```rust
+pub fn write_tin_debit_verifier_ic_v1(ctx: Context<ConfigureTinDebitVerifierV1>, args: WriteTinDebitVerifierIcArgsV1) -> Result<()>
+```
+
+### `enable_tin_debit_verifier_v1`
+
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 139](../../tsn-protocol/programs/gpru/src/lib.rs).
+
+```rust
+pub fn enable_tin_debit_verifier_v1(ctx: Context<ConfigureTinDebitVerifierV1>) -> Result<()>
+```
+
+### `verify_hidden_head_tin_debit_v1`
+
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 140](../../tsn-protocol/programs/gpru/src/lib.rs).
+
+```rust
+pub fn verify_hidden_head_tin_debit_v1(ctx: Context<VerifyHiddenHeadTinDebitV1>, args: HiddenHeadTinDebitProofV1) -> Result<()>
+```
+
 ### `initialize_tcap_epoch_verifier_v1`
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 135](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 142](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 pub fn initialize_tcap_epoch_verifier_v1(ctx: Context<InitializeTcapEpochVerifierV1>, args: ConfigureTcapEpochVerifierArgsV1) -> Result<()>
@@ -563,7 +595,7 @@ pub fn initialize_tcap_epoch_verifier_v1(ctx: Context<InitializeTcapEpochVerifie
 
 ### `write_tcap_epoch_verifier_ic_v1`
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 136](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 143](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 pub fn write_tcap_epoch_verifier_ic_v1(ctx: Context<ConfigureTcapEpochVerifierV1>, args: WriteTcapEpochVerifierIcArgsV1) -> Result<()>
@@ -571,7 +603,7 @@ pub fn write_tcap_epoch_verifier_ic_v1(ctx: Context<ConfigureTcapEpochVerifierV1
 
 ### `enable_tcap_epoch_verifier_v1`
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 137](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 144](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 pub fn enable_tcap_epoch_verifier_v1(ctx: Context<ConfigureTcapEpochVerifierV1>) -> Result<()>
@@ -579,7 +611,7 @@ pub fn enable_tcap_epoch_verifier_v1(ctx: Context<ConfigureTcapEpochVerifierV1>)
 
 ### `verify_tcap_credit_epoch_v1`
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 138](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 145](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 pub fn verify_tcap_credit_epoch_v1(ctx: Context<VerifyTcapCreditEpochV1>, args: TcapEpochProofV1) -> Result<()>
@@ -587,7 +619,7 @@ pub fn verify_tcap_credit_epoch_v1(ctx: Context<VerifyTcapCreditEpochV1>, args: 
 
 ### `initialize_hidden_head_verifier_v2`
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 144](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 151](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 pub fn initialize_hidden_head_verifier_v2( ctx: Context<InitializeHiddenHeadVerifierV2>, args: InitializeHiddenHeadVerifierArgsV2, ) -> Result<()>
@@ -595,7 +627,7 @@ pub fn initialize_hidden_head_verifier_v2( ctx: Context<InitializeHiddenHeadVeri
 
 ### `migrate_hidden_head_verifier_v2`
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 152](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 159](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 pub fn migrate_hidden_head_verifier_v2(ctx: Context<MigrateHiddenHeadVerifierV2>, args: InitializeHiddenHeadVerifierArgsV2) -> Result<()>
@@ -603,7 +635,7 @@ pub fn migrate_hidden_head_verifier_v2(ctx: Context<MigrateHiddenHeadVerifierV2>
 
 ### `rekey_hidden_head_verifier_v2`
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 156](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 163](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 pub fn rekey_hidden_head_verifier_v2(ctx: Context<ConfigureHiddenHeadVerifierV2>, args: InitializeHiddenHeadVerifierArgsV2) -> Result<()>
@@ -611,7 +643,7 @@ pub fn rekey_hidden_head_verifier_v2(ctx: Context<ConfigureHiddenHeadVerifierV2>
 
 ### `write_hidden_head_verifier_ic_v2`
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 160](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 167](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 pub fn write_hidden_head_verifier_ic_v2( ctx: Context<ConfigureHiddenHeadVerifierV2>, args: WriteHiddenHeadVerifierIcArgsV2, ) -> Result<()>
@@ -619,7 +651,7 @@ pub fn write_hidden_head_verifier_ic_v2( ctx: Context<ConfigureHiddenHeadVerifie
 
 ### `enable_hidden_head_verifier_v2`
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 167](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 174](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 pub fn enable_hidden_head_verifier_v2( ctx: Context<ConfigureHiddenHeadVerifierV2>, ) -> Result<()>
@@ -627,7 +659,7 @@ pub fn enable_hidden_head_verifier_v2( ctx: Context<ConfigureHiddenHeadVerifierV
 
 ### `VerifyDnaKeyProof` fields
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 22](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 24](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 tip_registry: UncheckedAccount<'info>
@@ -635,7 +667,7 @@ tip_registry: UncheckedAccount<'info>
 
 ### `HiddenHeadProofArgsV2` fields
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 30](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 32](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 public_inputs: [[u8; 32]; hidden_head::HIDDEN_HEAD_PUBLIC_INPUTS]
@@ -650,7 +682,7 @@ authorization_commitment: [u8; 32]
 
 ### `VerifyHiddenHeadTransitionV2` fields
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 42](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 44](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 tip_route_root: UncheckedAccount<'info>
@@ -662,7 +694,7 @@ funding_root: UncheckedAccount<'info>
 
 ### `InitializeHiddenHeadVerifierArgsV2` fields
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 57](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 59](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 circuit_commitment: [u8; 32]
@@ -675,7 +707,7 @@ delta_g2: [u8; 128]
 
 ### `WriteHiddenHeadVerifierIcArgsV2` fields
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 67](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 69](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 start_index: u8
@@ -684,7 +716,7 @@ points: Vec<[u8; 64]>
 
 ### `ConfigureHiddenHeadVerifierV2` fields
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 73](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 75](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 authority: Signer<'info>
@@ -694,7 +726,7 @@ verifier: Box<Account<'info, hidden_head::GpruHiddenHeadVerifierV2>>
 
 ### `InitializeHiddenHeadVerifierV2` fields
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 83](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 85](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 authority: Signer<'info>
@@ -705,7 +737,7 @@ system_program: Program<'info, System>
 
 ### `MigrateHiddenHeadVerifierV2` fields
 
-[Source: tsn-protocol/programs/gpru/src/lib.rs, line 94](../../tsn-protocol/programs/gpru/src/lib.rs).
+[Source: tsn-protocol/programs/gpru/src/lib.rs, line 96](../../tsn-protocol/programs/gpru/src/lib.rs).
 
 ```rust
 authority: Signer<'info>
@@ -950,6 +982,137 @@ epoch: UncheckedAccount<'info>
 verifier: Box<Account<'info,GpruTcapEpochVerifierV1>>
 ```
 
+### `circuit_commitment`
+
+[Source: tsn-protocol/programs/gpru/src/tin_debit.rs, line 110](../../tsn-protocol/programs/gpru/src/tin_debit.rs).
+
+```rust
+pub fn circuit_commitment() -> [u8; 32]
+```
+
+### `key_commitment`
+
+[Source: tsn-protocol/programs/gpru/src/tin_debit.rs, line 118](../../tsn-protocol/programs/gpru/src/tin_debit.rs).
+
+```rust
+pub fn key_commitment(v: &GpruTinDebitVerifierV1) -> [u8; 32]
+```
+
+### `initialize`
+
+[Source: tsn-protocol/programs/gpru/src/tin_debit.rs, line 141](../../tsn-protocol/programs/gpru/src/tin_debit.rs).
+
+```rust
+pub fn initialize( ctx: Context<InitializeTinDebitVerifierV1>, args: InitializeTinDebitVerifierArgsV1, ) -> Result<()>
+```
+
+### `write_ic`
+
+[Source: tsn-protocol/programs/gpru/src/tin_debit.rs, line 168](../../tsn-protocol/programs/gpru/src/tin_debit.rs).
+
+```rust
+pub fn write_ic( ctx: Context<ConfigureTinDebitVerifierV1>, args: WriteTinDebitVerifierIcArgsV1, ) -> Result<()>
+```
+
+### `enable`
+
+[Source: tsn-protocol/programs/gpru/src/tin_debit.rs, line 198](../../tsn-protocol/programs/gpru/src/tin_debit.rs).
+
+```rust
+pub fn enable(ctx: Context<ConfigureTinDebitVerifierV1>) -> Result<()>
+```
+
+### `verify`
+
+[Source: tsn-protocol/programs/gpru/src/tin_debit.rs, line 221](../../tsn-protocol/programs/gpru/src/tin_debit.rs).
+
+```rust
+pub fn verify( ctx: Context<VerifyHiddenHeadTinDebitV1>, args: HiddenHeadTinDebitProofV1, ) -> Result<()>
+```
+
+### `GpruTinDebitVerifierV1` fields
+
+[Source: tsn-protocol/programs/gpru/src/tin_debit.rs, line 24](../../tsn-protocol/programs/gpru/src/tin_debit.rs).
+
+```rust
+version: u16
+authority: Pubkey
+circuit_commitment: [u8; 32]
+verifying_key_commitment: [u8; 32]
+bump: u8
+enabled: u8
+alpha_g1: [u8; 64]
+beta_g2: [u8; 128]
+gamma_g2: [u8; 128]
+delta_g2: [u8; 128]
+ic: [[u8; 64]; TIN_DEBIT_PUBLIC_INPUTS + 1]
+```
+
+### `HiddenHeadTinDebitProofV1` fields
+
+[Source: tsn-protocol/programs/gpru/src/tin_debit.rs, line 42](../../tsn-protocol/programs/gpru/src/tin_debit.rs).
+
+```rust
+public_inputs: [[u8; 32]; TIN_DEBIT_PUBLIC_INPUTS]
+proof_a: [u8; 64]
+proof_b: [u8; 128]
+proof_c: [u8; 64]
+```
+
+### `InitializeTinDebitVerifierArgsV1` fields
+
+[Source: tsn-protocol/programs/gpru/src/tin_debit.rs, line 49](../../tsn-protocol/programs/gpru/src/tin_debit.rs).
+
+```rust
+circuit_commitment: [u8; 32]
+verifying_key_commitment: [u8; 32]
+alpha_g1: [u8; 64]
+beta_g2: [u8; 128]
+gamma_g2: [u8; 128]
+delta_g2: [u8; 128]
+```
+
+### `WriteTinDebitVerifierIcArgsV1` fields
+
+[Source: tsn-protocol/programs/gpru/src/tin_debit.rs, line 58](../../tsn-protocol/programs/gpru/src/tin_debit.rs).
+
+```rust
+start_index: u8
+points: Vec<[u8; 64]>
+```
+
+### `InitializeTinDebitVerifierV1` fields
+
+[Source: tsn-protocol/programs/gpru/src/tin_debit.rs, line 63](../../tsn-protocol/programs/gpru/src/tin_debit.rs).
+
+```rust
+authority: Signer<'info>
+mother_escrow: UncheckedAccount<'info>
+verifier: AccountLoader<'info, GpruTinDebitVerifierV1>
+system_program: Program<'info, System>
+```
+
+### `ConfigureTinDebitVerifierV1` fields
+
+[Source: tsn-protocol/programs/gpru/src/tin_debit.rs, line 73](../../tsn-protocol/programs/gpru/src/tin_debit.rs).
+
+```rust
+authority: Signer<'info>
+mother_escrow: UncheckedAccount<'info>
+verifier: AccountLoader<'info, GpruTinDebitVerifierV1>
+```
+
+### `VerifyHiddenHeadTinDebitV1` fields
+
+[Source: tsn-protocol/programs/gpru/src/tin_debit.rs, line 81](../../tsn-protocol/programs/gpru/src/tin_debit.rs).
+
+```rust
+tip_route_root: UncheckedAccount<'info>
+tcap_commitment_root: UncheckedAccount<'info>
+verifier: AccountLoader<'info, GpruTinDebitVerifierV1>
+instructions: UncheckedAccount<'info>
+```
+
 ## TSNP
 
 ### `tsn_accept_intent`
@@ -1096,9 +1259,17 @@ pub fn tsn_register_tcap_credit_authorization_v3( ctx: Context<RegisterTcapCredi
 pub fn tsn_register_tcap_debit_authorization_v2( ctx: Context<RegisterTcapDebitAuthorizationV2>, args: RegisterTcapDebitAuthorizationV2Args, ) -> Result<()>
 ```
 
-### `tsn_register_tcap_exit_debit_v1`
+### `tsn_register_tcap_tin_debit_authorization_v1`
 
 [Source: tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs, line 144](../../tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs).
+
+```rust
+pub fn tsn_register_tcap_tin_debit_authorization_v1( ctx: Context<RegisterTcapTinDebitAuthorizationV1>, args: RegisterTcapTinDebitAuthorizationV1Args, ) -> Result<()>
+```
+
+### `tsn_register_tcap_exit_debit_v1`
+
+[Source: tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs, line 151](../../tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs).
 
 ```rust
 pub fn tsn_register_tcap_exit_debit_v1(ctx: Context<RegisterTcapExitDebitV1>, args: RegisterTcapExitDebitV1Args) -> Result<()>
@@ -1106,7 +1277,7 @@ pub fn tsn_register_tcap_exit_debit_v1(ctx: Context<RegisterTcapExitDebitV1>, ar
 
 ### `tsn_register_tcap_exit_payout_v1`
 
-[Source: tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs, line 145](../../tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs).
+[Source: tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs, line 152](../../tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs).
 
 ```rust
 pub fn tsn_register_tcap_exit_payout_v1(ctx: Context<RegisterTcapExitPayoutV1>, args: RegisterTcapExitPayoutV1Args) -> Result<()>
@@ -1114,7 +1285,7 @@ pub fn tsn_register_tcap_exit_payout_v1(ctx: Context<RegisterTcapExitPayoutV1>, 
 
 ### `tsn_register_tcap_one_time_tip_authorization`
 
-[Source: tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs, line 147](../../tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs).
+[Source: tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs, line 154](../../tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs).
 
 ```rust
 pub fn tsn_register_tcap_one_time_tip_authorization( ctx: Context<RegisterTcapOneTimeTipAuthorization>, args: RegisterTcapOneTimeTipAuthorizationArgs, ) -> Result<()>
@@ -1122,7 +1293,7 @@ pub fn tsn_register_tcap_one_time_tip_authorization( ctx: Context<RegisterTcapOn
 
 ### `tsn_register_tcap_one_time_credit`
 
-[Source: tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs, line 154](../../tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs).
+[Source: tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs, line 161](../../tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs).
 
 ```rust
 pub fn tsn_register_tcap_one_time_credit( ctx: Context<RegisterTcapOneTimeCredit>, args: RegisterTcapOneTimeCreditArgs, ) -> Result<()>
@@ -1130,7 +1301,7 @@ pub fn tsn_register_tcap_one_time_credit( ctx: Context<RegisterTcapOneTimeCredit
 
 ### `tsn_register_tcap_one_time_transfer_credit`
 
-[Source: tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs, line 161](../../tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs).
+[Source: tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs, line 168](../../tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/lib.rs).
 
 ```rust
 pub fn tsn_register_tcap_one_time_transfer_credit( ctx: Context<RegisterTcapOneTimeTransferCredit>, args: RegisterTcapOneTimeTransferCreditArgs, ) -> Result<()>
@@ -2086,6 +2257,43 @@ asset_entry: UncheckedAccount<'info>
 reserve_state: UncheckedAccount<'info>
 liability: UncheckedAccount<'info>
 tcap_authorization_signer: UncheckedAccount<'info>
+```
+
+### `handler`
+
+[Source: tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_tin_debit_authorization_v1.rs, line 57](../../tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_tin_debit_authorization_v1.rs).
+
+```rust
+pub fn handler( ctx: Context<RegisterTcapTinDebitAuthorizationV1>, args: RegisterTcapTinDebitAuthorizationV1Args, ) -> Result<()>
+```
+
+### `RegisterTcapTinDebitAuthorizationV1Args` fields
+
+[Source: tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_tin_debit_authorization_v1.rs, line 17](../../tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_tin_debit_authorization_v1.rs).
+
+```rust
+authorization_digest: [u8; 32]
+proof: TcapHiddenHeadTinDebitProofV1
+```
+
+### `RegisterTcapTinDebitAuthorizationV1` fields
+
+[Source: tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_tin_debit_authorization_v1.rs, line 23](../../tsn-protocol/programs/tsn/protocol/programs/trustlink-escrow/src/tsn/instructions/register_tcap_tin_debit_authorization_v1.rs).
+
+```rust
+authority: Signer<'info>
+mother_escrow: Box<Account<'info, MotherEscrow>>
+tcap_program: UncheckedAccount<'info>
+tsn_program: UncheckedAccount<'info>
+config: UncheckedAccount<'info>
+asset_entry: UncheckedAccount<'info>
+commitment_root: UncheckedAccount<'info>
+reserve_state: UncheckedAccount<'info>
+authorization_signer: UncheckedAccount<'info>
+tip_route_root: UncheckedAccount<'info>
+tin_debit_verifier: UncheckedAccount<'info>
+instructions: UncheckedAccount<'info>
+gpru_program: UncheckedAccount<'info>
 ```
 
 ### `set_cranker_funding_policy`
@@ -3718,6 +3926,92 @@ nullifier_record: Account<'info, NullifierRecordV1>
 system_program: Program<'info, System>
 ```
 
+### `tin_debit_context`
+
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs, line 66](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs).
+
+```rust
+pub fn tin_debit_context( root: &Pubkey, asset: &Pubkey, reserve: &Pubkey, tip: &Pubkey, verifier: &Pubkey, ) -> Vec<u8>
+```
+
+### `tin_debit_deployment_commitment`
+
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs, line 88](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs).
+
+```rust
+pub fn tin_debit_deployment_commitment(context: &[u8]) -> [u8; 32]
+```
+
+### `tin_debit_authorization_digest`
+
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs, line 91](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs).
+
+```rust
+pub fn tin_debit_authorization_digest(context: &[u8], inputs: &[[u8; 32]; 26]) -> [u8; 32]
+```
+
+### `validate_tin_debit_statement`
+
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs, line 95](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs).
+
+```rust
+pub fn validate_tin_debit_statement(args: &DebitGpruMemoV1Args, context: &[u8]) -> Result<()>
+```
+
+### `read_tin_debit_u64`
+
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs, line 120](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs).
+
+```rust
+pub fn read_tin_debit_u64(b: &[u8; 32]) -> Result<u64>
+```
+
+### `handler`
+
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs, line 124](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs).
+
+```rust
+pub fn handler(ctx: Context<DebitGpruMemoV1>, args: DebitGpruMemoV1Args) -> Result<()>
+```
+
+### `TcapHiddenHeadTinDebitProofV1` fields
+
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs, line 23](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs).
+
+```rust
+public_inputs: [[u8; 32]; 26]
+proof_a: [u8; 64]
+proof_b: [u8; 128]
+proof_c: [u8; 64]
+```
+
+### `DebitGpruMemoV1Args` fields
+
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs, line 30](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs).
+
+```rust
+authorization_digest: [u8; 32]
+proof: TcapHiddenHeadTinDebitProofV1
+```
+
+### `DebitGpruMemoV1` fields
+
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs, line 35](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_gpru_memo_v1.rs).
+
+```rust
+authority: Signer<'info>
+config: Box<Account<'info, TcapGlobalConfigV1>>
+commitment_root: Box<Account<'info, TcapCommitmentRootStateV1>>
+asset_entry: Box<Account<'info, TcapAssetEntryV1>>
+reserve_state: Box<Account<'info, TcapReserveStateV1>>
+tsn_program: UncheckedAccount<'info>
+tsn_authorization_signer: UncheckedAccount<'info>
+tip_route_root: UncheckedAccount<'info>
+tin_debit_verifier: UncheckedAccount<'info>
+instructions: UncheckedAccount<'info>
+gpru_program: UncheckedAccount<'info>
+```
+
 ### `handler`
 
 [Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_tcap_balance_v1.rs, line 47](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/debit_tcap_balance_v1.rs).
@@ -4585,7 +4879,7 @@ system_program: Program<'info, System>
 
 ### `DepositWithFundingCommitmentArgsV1` fields
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs, line 48](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs, line 50](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs).
 
 ```rust
 amount: u64
@@ -4602,7 +4896,7 @@ expected_funding_commitment: [u8; 32]
 
 ### `UpdateAssetStatusArgsV1` fields
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs, line 71](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs, line 73](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs).
 
 ```rust
 status: crate::TcapAssetStatusV1
@@ -4611,7 +4905,7 @@ risk: crate::TcapRiskStateV1
 
 ### `InitializeCommitmentRootArgsV1` fields
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs, line 77](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs, line 79](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs).
 
 ```rust
 empty_tree_root: [u8; 32]
@@ -4619,7 +4913,7 @@ empty_tree_root: [u8; 32]
 
 ### `InitializeNullifierRegistryArgsV1` fields
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs, line 82](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs, line 84](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/mod.rs).
 
 ```rust
 domain_separator: [u8; 32]
@@ -4766,9 +5060,17 @@ pub fn handler(ctx: Context<SetAssetDepositPolicyV1>, enabled: bool) -> Result<(
 pub fn handler(ctx: Context<UpdateAssetStatusV1>, args: UpdateAssetStatusArgsV1) -> Result<()>
 ```
 
+### `debit_gpru_memo_v1`
+
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 30](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+
+```rust
+pub fn debit_gpru_memo_v1(ctx: Context<DebitGpruMemoV1>, args: DebitGpruMemoV1Args) -> Result<()>
+```
+
 ### `account_credit_epoch_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 31](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 33](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn account_credit_epoch_v1(ctx: Context<AccountCreditEpochV1>, args: AccountCreditEpochArgsV1) -> Result<()>
@@ -4776,7 +5078,7 @@ pub fn account_credit_epoch_v1(ctx: Context<AccountCreditEpochV1>, args: Account
 
 ### `initialize_tcap_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 33](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 35](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn initialize_tcap_v1( ctx: Context<InitializeTcapV1>, args: InitializeTcapArgsV1, ) -> Result<()>
@@ -4784,7 +5086,7 @@ pub fn initialize_tcap_v1( ctx: Context<InitializeTcapV1>, args: InitializeTcapA
 
 ### `initialize_one_time_tip`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 40](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 42](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn initialize_one_time_tip( ctx: Context<InitializeOneTimeTip>, args: InitializeOneTimeTipArgs, ) -> Result<()>
@@ -4792,7 +5094,7 @@ pub fn initialize_one_time_tip( ctx: Context<InitializeOneTimeTip>, args: Initia
 
 ### `consume_one_time_tip`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 47](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 49](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn consume_one_time_tip( ctx: Context<ConsumeOneTimeTip>, args: ConsumeOneTimeTipArgs, ) -> Result<()>
@@ -4800,7 +5102,7 @@ pub fn consume_one_time_tip( ctx: Context<ConsumeOneTimeTip>, args: ConsumeOneTi
 
 ### `credit_one_time_tip`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 54](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 56](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn credit_one_time_tip( ctx: Context<CreditOneTimeTip>, authorization_digest: [u8; 32], previous_commitment: [u8; 32], new_commitment: [u8; 32], policy_commitment: [u8; 32], nonce: [u8; 32], sequence: u64, token_id: u32, amount: u64, valid_after_slot: u64, expires_at_slot: u64, sealed: [u8; 48], seal_commitment: [u8; 32], ) -> Result<()>
@@ -4808,7 +5110,7 @@ pub fn credit_one_time_tip( ctx: Context<CreditOneTimeTip>, authorization_digest
 
 ### `credit_one_time_tip_transfer`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 88](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 90](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn credit_one_time_tip_transfer( ctx: Context<CreditOneTimeTipTransfer>, args: CreditOneTimeTipTransferArgs, ) -> Result<()>
@@ -4816,7 +5118,7 @@ pub fn credit_one_time_tip_transfer( ctx: Context<CreditOneTimeTipTransfer>, arg
 
 ### `initialize_one_time_tip_liability`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 95](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 97](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn initialize_one_time_tip_liability( ctx: Context<InitializeOneTimeTipLiability>, args: InitializeOneTimeTipLiabilityArgs, ) -> Result<()>
@@ -4824,7 +5126,7 @@ pub fn initialize_one_time_tip_liability( ctx: Context<InitializeOneTimeTipLiabi
 
 ### `debit_tcap_balance_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 103](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 105](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn debit_tcap_balance_v1( ctx: Context<DebitTcapBalanceV1>, args: DebitTcapBalanceV1Args, ) -> Result<()>
@@ -4832,7 +5134,7 @@ pub fn debit_tcap_balance_v1( ctx: Context<DebitTcapBalanceV1>, args: DebitTcapB
 
 ### `debit_tcap_exit_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 110](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 112](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn debit_tcap_exit_v1(ctx: Context<DebitTcapExitV1>, args: DebitTcapExitArgsV1) -> Result<()>
@@ -4840,7 +5142,7 @@ pub fn debit_tcap_exit_v1(ctx: Context<DebitTcapExitV1>, args: DebitTcapExitArgs
 
 ### `payout_tcap_exit_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 114](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 116](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn payout_tcap_exit_v1(ctx: Context<PayoutTcapExitV1>, args: PayoutTcapExitArgsV1) -> Result<()>
@@ -4848,7 +5150,7 @@ pub fn payout_tcap_exit_v1(ctx: Context<PayoutTcapExitV1>, args: PayoutTcapExitA
 
 ### `exit_tcap_liquidity_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 118](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 120](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn exit_tcap_liquidity_v1( ctx: Context<ExitTcapLiquidityV1>, args: ExitTcapLiquidityV1Args, ) -> Result<()>
@@ -4856,7 +5158,7 @@ pub fn exit_tcap_liquidity_v1( ctx: Context<ExitTcapLiquidityV1>, args: ExitTcap
 
 ### `initialize_asset_registry_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 125](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 127](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn initialize_asset_registry_v1(ctx: Context<InitializeAssetRegistryV1>) -> Result<()>
@@ -4864,7 +5166,7 @@ pub fn initialize_asset_registry_v1(ctx: Context<InitializeAssetRegistryV1>) -> 
 
 ### `migrate_reserve_transfer_pending_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 129](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 131](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn migrate_reserve_transfer_pending_v1( ctx: Context<MigrateReserveTransferPendingV1>, ) -> Result<()>
@@ -4872,7 +5174,7 @@ pub fn migrate_reserve_transfer_pending_v1( ctx: Context<MigrateReserveTransferP
 
 ### `migrate_tip_seal_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 135](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 137](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn migrate_tip_seal_v1(ctx: Context<MigrateTipSealV1>) -> Result<()>
@@ -4880,7 +5182,7 @@ pub fn migrate_tip_seal_v1(ctx: Context<MigrateTipSealV1>) -> Result<()>
 
 ### `repair_tip_seal_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 139](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 141](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn repair_tip_seal_v1(ctx: Context<RepairTipSealV1>) -> Result<()>
@@ -4888,7 +5190,7 @@ pub fn repair_tip_seal_v1(ctx: Context<RepairTipSealV1>) -> Result<()>
 
 ### `raise_minimum_instruction_version_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 143](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 145](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn raise_minimum_instruction_version_v2( ctx: Context<RaiseMinimumInstructionVersionV2>, ) -> Result<()>
@@ -4896,7 +5198,7 @@ pub fn raise_minimum_instruction_version_v2( ctx: Context<RaiseMinimumInstructio
 
 ### `register_governed_asset_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 149](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 151](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn register_governed_asset_v2( ctx: Context<RegisterGovernedAssetV2>, args: RegisterGovernedAssetArgsV2, ) -> Result<()>
@@ -4904,7 +5206,7 @@ pub fn register_governed_asset_v2( ctx: Context<RegisterGovernedAssetV2>, args: 
 
 ### `migrate_legacy_asset_policy_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 156](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 158](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn migrate_legacy_asset_policy_v2( ctx: Context<MigrateLegacyAssetPolicyV2>, args: MigrateLegacyAssetPolicyArgsV2, ) -> Result<()>
@@ -4912,7 +5214,7 @@ pub fn migrate_legacy_asset_policy_v2( ctx: Context<MigrateLegacyAssetPolicyV2>,
 
 ### `set_asset_approval_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 163](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 165](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn set_asset_approval_v2( ctx: Context<GovernAssetV2>, new_status: TcapAssetApprovalStatusV2, ) -> Result<()>
@@ -4920,7 +5222,7 @@ pub fn set_asset_approval_v2( ctx: Context<GovernAssetV2>, new_status: TcapAsset
 
 ### `set_asset_settlement_policy_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 170](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 172](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn set_asset_settlement_policy_v2( ctx: Context<GovernAssetV2>, settlements_enabled: bool, public_exit_enabled: bool, confidential_settlement_enabled: bool, ) -> Result<()>
@@ -4928,7 +5230,7 @@ pub fn set_asset_settlement_policy_v2( ctx: Context<GovernAssetV2>, settlements_
 
 ### `initialize_governed_reserve_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 184](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 186](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn initialize_governed_reserve_v2( ctx: Context<InitializeGovernedReserveV2>, ) -> Result<()>
@@ -4936,7 +5238,7 @@ pub fn initialize_governed_reserve_v2( ctx: Context<InitializeGovernedReserveV2>
 
 ### `initialize_governed_vault_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 190](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 192](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn initialize_governed_vault_v2( ctx: Context<InitializeGovernedVaultV2>, ) -> Result<()>
@@ -4944,7 +5246,7 @@ pub fn initialize_governed_vault_v2( ctx: Context<InitializeGovernedVaultV2>, ) 
 
 ### `sync_governed_asset_infrastructure_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 196](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 198](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn sync_governed_asset_infrastructure_v2( ctx: Context<SyncGovernedAssetInfrastructureV2>, ) -> Result<()>
@@ -4952,7 +5254,7 @@ pub fn sync_governed_asset_infrastructure_v2( ctx: Context<SyncGovernedAssetInfr
 
 ### `set_governed_deposit_policy_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 202](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 204](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn set_governed_deposit_policy_v2( ctx: Context<SetGovernedDepositPolicyV2>, enabled: bool, ) -> Result<()>
@@ -4960,7 +5262,7 @@ pub fn set_governed_deposit_policy_v2( ctx: Context<SetGovernedDepositPolicyV2>,
 
 ### `set_asset_operational_status_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 209](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 211](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn set_asset_operational_status_v2( ctx: Context<ManageOperationalAssetV2>, new_status: TcapAssetOperationalStatusV2, ) -> Result<()>
@@ -4968,7 +5270,7 @@ pub fn set_asset_operational_status_v2( ctx: Context<ManageOperationalAssetV2>, 
 
 ### `revoke_asset_approval_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 216](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 218](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn revoke_asset_approval_v2( ctx: Context<ManageOperationalAssetV2>, ) -> Result<()>
@@ -4976,7 +5278,7 @@ pub fn revoke_asset_approval_v2( ctx: Context<ManageOperationalAssetV2>, ) -> Re
 
 ### `initialize_nullifier_registry_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 222](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 224](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn initialize_nullifier_registry_v1( ctx: Context<InitializeNullifierRegistryV1>, domain_separator: [u8; 32], ) -> Result<()>
@@ -4984,7 +5286,7 @@ pub fn initialize_nullifier_registry_v1( ctx: Context<InitializeNullifierRegistr
 
 ### `initialize_commitment_root_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 229](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 231](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn initialize_commitment_root_v1( ctx: Context<InitializeCommitmentRootV1>, empty_tree_root: [u8; 32], ) -> Result<()>
@@ -4992,7 +5294,7 @@ pub fn initialize_commitment_root_v1( ctx: Context<InitializeCommitmentRootV1>, 
 
 ### `activate_commitment_root_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 236](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 238](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn activate_commitment_root_v1( ctx: Context<ActivateCommitmentRootV1>, ) -> Result<()>
@@ -5000,7 +5302,7 @@ pub fn activate_commitment_root_v1( ctx: Context<ActivateCommitmentRootV1>, ) ->
 
 ### `migrate_tcap_config_layout_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 242](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 244](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn migrate_tcap_config_layout_v1( ctx: Context<MigrateTcapConfigLayoutV1>, ) -> Result<()>
@@ -5008,7 +5310,7 @@ pub fn migrate_tcap_config_layout_v1( ctx: Context<MigrateTcapConfigLayoutV1>, )
 
 ### `register_tsn_authorization_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 248](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 250](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn register_tsn_authorization_v1( ctx: Context<RegisterTsnAuthorizationV1>, authorization: TsnSettlementAuthorizationV1, ) -> Result<()>
@@ -5016,7 +5318,7 @@ pub fn register_tsn_authorization_v1( ctx: Context<RegisterTsnAuthorizationV1>, 
 
 ### `credit_gpru_memo_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 256](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 258](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn credit_gpru_memo_v2( ctx: Context<CreditGpruMemoV2>, args: CreditGpruMemoV2Args, ) -> Result<()>
@@ -5024,7 +5326,7 @@ pub fn credit_gpru_memo_v2( ctx: Context<CreditGpruMemoV2>, args: CreditGpruMemo
 
 ### `initialize_tcap_tip_liability_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 263](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 265](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn initialize_tcap_tip_liability_v2( ctx: Context<InitializeTcapTipLiabilityV2>, args: InitializeTcapTipLiabilityV2Args, ) -> Result<()>
@@ -5032,7 +5334,7 @@ pub fn initialize_tcap_tip_liability_v2( ctx: Context<InitializeTcapTipLiability
 
 ### `migrate_asset_entry_custody_graph_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 270](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 272](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn migrate_asset_entry_custody_graph_v2( ctx: Context<MigrateAssetEntryCustodyGraphV2>, ) -> Result<()>
@@ -5040,7 +5342,7 @@ pub fn migrate_asset_entry_custody_graph_v2( ctx: Context<MigrateAssetEntryCusto
 
 ### `debit_tcap_gpru_tip_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 276](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 278](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn debit_tcap_gpru_tip_v2( ctx: Context<DebitTcapGpruTipV2>, args: DebitTcapGpruTipV2Args, ) -> Result<()>
@@ -5048,7 +5350,7 @@ pub fn debit_tcap_gpru_tip_v2( ctx: Context<DebitTcapGpruTipV2>, args: DebitTcap
 
 ### `deposit_private_funding_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 284](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 286](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn deposit_private_funding_v1(ctx: Context<DepositPrivateFundingV1>, amount: u64, note_commitment: [u8;32]) -> Result<()>
@@ -5056,7 +5358,7 @@ pub fn deposit_private_funding_v1(ctx: Context<DepositPrivateFundingV1>, amount:
 
 ### `initialize_private_funding_root_v1`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 289](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 291](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn initialize_private_funding_root_v1(ctx: Context<InitializePrivateFundingRootV1>) -> Result<()>
@@ -5064,7 +5366,7 @@ pub fn initialize_private_funding_root_v1(ctx: Context<InitializePrivateFundingR
 
 ### `migrate_private_funding_root_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 293](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 295](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn migrate_private_funding_root_v2(ctx: Context<MigratePrivateFundingRootV2>) -> Result<()>
@@ -5072,7 +5374,7 @@ pub fn migrate_private_funding_root_v2(ctx: Context<MigratePrivateFundingRootV2>
 
 ### `deposit_asset_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 297](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 299](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn deposit_asset_v2(ctx: Context<DepositAssetV2>, amount: u64) -> Result<()>
@@ -5080,7 +5382,7 @@ pub fn deposit_asset_v2(ctx: Context<DepositAssetV2>, amount: u64) -> Result<()>
 
 ### `deposit_with_funding_commitment_v2`
 
-[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 301](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
+[Source: tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs, line 303](../../tsn-protocol/programs/tcap-protocol/programs/tcap/src/lib.rs).
 
 ```rust
 pub fn deposit_with_funding_commitment_v2( ctx: Context<DepositWithFundingCommitmentV2>, args: DepositWithFundingCommitmentArgsV2, ) -> Result<()>

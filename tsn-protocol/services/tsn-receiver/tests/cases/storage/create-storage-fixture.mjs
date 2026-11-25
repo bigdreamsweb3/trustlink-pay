@@ -13,8 +13,8 @@ export async function createStorageFixture(initial, initialize = true) {
   try {
     if (typeof initial === "string") await writeFile(file, initial);
     await mkdir(moduleDirectory);
-    await compileReceiverFixture(moduleDirectory, ["local-firestore.ts","storage/local/create-store-context.ts","storage/local/with-file-lock.ts","storage/local/read-store.ts"]);
-    const { localDb, LocalDb } = await import(pathToFileURL(path.join(moduleDirectory,"local-firestore.mjs")).href);
+    await compileReceiverFixture(moduleDirectory, ["local-json-store.ts","storage/local/create-store-context.ts","storage/local/with-file-lock.ts","storage/local/read-store.ts"]);
+    const { localDb, LocalDb } = await import(pathToFileURL(path.join(moduleDirectory,"local-json-store.mjs")).href);
     const { createStoreContext } = await import(pathToFileURL(path.join(moduleDirectory,"storage/local/create-store-context.mjs")).href);
     const { withFileLock } = await import(pathToFileURL(path.join(moduleDirectory,"storage/local/with-file-lock.mjs")).href);
     const { ensureStoreReady } = await import(pathToFileURL(path.join(moduleDirectory,"storage/local/ensure-store-ready.mjs")).href);

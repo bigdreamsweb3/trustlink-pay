@@ -129,11 +129,13 @@ export function checkPrivateTracking(gitDir, object) {
   if (object !== undefined) requireReviewedHash(object, object, "object");
   const result = git(gitDir, object ? ["ls-tree", "-r", "--name-only", "-z", object] : ["ls-files", "-z"]);
   if (result.status !== 0) throw new Error("Cannot inspect tracked private-state filenames.");
-  const exceptions = new Set(["services/tsn-crosschain/.creds_example/contract_auth_keypair.json"]);
-  const privateNames = /(?:^|\/)(?:\.env(?:\..*)?|.*[-_]keypair\.json|.*\.service-account\.json|.*firebase-adminsdk.*\.json|\.receiver-store[^/]*|\.mempool-store\.json)$/i;
+  const publicDefaults = new Set(["protocol-tests/tcap-credit-devnet.defaults.env", "tsn-protocol/protocol-tests/tcap-credit-devnet.defaults.env"]);
+  const privateDirectories = /(?:^|\/)(?:private|private-state|secrets|\.secrets|credentials|\.credentials|\.creds|\.creds_example|\.fb_creds|\.keys|\.node-cache)(?:\/|$)/i;
+  const privateNames = /(?:^|\/)(?:\.env(?:\..*)?|[^/]+\.env(?:\..*)?|\.dev\.vars(?:\..*)?|.*keypair.*\.json|.*\.service-account\.json|.*firebase-adminsdk.*\.json|\.receiver-store[^/]*|\.mempool-store[^/]*|operator-state[^/]*\.json|receiver-export[^/]*\.json|wrangler\.toml|[^/]*\.(?:pem|key|p12|pfx|import\.sql|export\.sql|sqlite|sqlite3|db))$/i;
   for (const path of result.stdout.split("\0").filter(Boolean)) {
-    if (exceptions.has(path) || /(?:^|\/)\.env\.(?:example|sample|template)$/.test(path)) continue;
-    if (privateNames.test(path)) throw new Error("A private configuration/state filename is tracked; review without logging its contents.");
+    if (privateDirectories.test(path)) throw new Error("A private configuration/state filename is tracked; review without logging its contents.");
+    if (publicDefaults.has(path) || /(?:^|\/)\.env\.(?:example|sample|template)$/.test(path)) continue;
+    if (privateNames.test(path) || /(?:^|\/)keys\/(?!\.gitkeep$).*\.json$/i.test(path)) throw new Error("A private configuration/state filename is tracked; review without logging its contents.");
   }
 }
 

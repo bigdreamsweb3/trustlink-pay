@@ -7,7 +7,7 @@ The Node is organized into independently defined components with one authored fu
 Use `python -m testing.run_suite` from this directory for all available offline tests, with an installed compatible native library where required. The [verification tools](testing/README.md) describe output and proof-fixture limits. [Final verification](docs/verification.md) records the checks performed for this pilot.
 
 
-Python-based stateless protocol verifier and processor for the Transfer
+Local Python protocol verifier and processor for the Transfer
 Settlement Network, operated by TrustLink Labs.
 
 The plain-language explanation of what the Receiver stores, what the Node
@@ -20,6 +20,12 @@ Cranker settlement](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/doc
 - verifies canonical authorization and routing evidence;
 - returns verified or rejected evidence;
 - delegates every durable state operation to the Receiver.
+
+## Local outbound transport
+
+Receiver owns durable JSON work and encrypted durable application/signing jobs. Node initiates authenticated sync, claim, renewal and reply requests; existing ASGI handlers run in-process. The loopback-only listener supports local diagnostics and local-mode clients. Receiver has no Node URL callback or HTTP fallback. See [relay components](core/relay/README.md) and [cache contract](storage/cache/README.md) for deadlines, exact replies and restart uncertainty.
+
+The local cache stores bounded metadata and encrypted exact replies. Cache encryption derives from the existing verification seed with a separate domain and Receiver binding. Preserve uncertain reservations and reconcile the original request before any replacement. Credit, epoch and debit proving share one lock; one-thread proving and streamed hashes reduce concurrent load. Heap and initial WASM settings are not total RSS limits, and realistic hardware performance remains unverified.
 
 ## Setup
 
@@ -38,15 +44,15 @@ Copy `.env.example` to `.env` and configure:
 - `TSN_RECEIVER_NODE_API_KEY` - Node-to-Receiver service credential
 - `TSN_NODE_VERIFICATION_SIGNING_KEY` - dedicated Ed25519 private seed used to sign verification and rejection receipts
 - `TSN_MOTHER_AUTHORITY_KEYPAIR_PATH` - Mother authority Solana JSON keypair, kept only by the Node for signing validated TCAP settlement messages
-- `TSN_NODE_WAKE_TIMEOUT_MS` - Receiver wake request timeout (default `2500`)
+- `TSN_NODE_CACHE_DIR` - protected service-root local reply/cursor cache (default `.node-cache`)
+- `TSN_PROVER_HEAP_MB` - child JavaScript heap limit (default 2048 MB)
+- `TSN_PROVER_WASM_PAGES` - initial witness WASM pages (default 8192)
 - `TSN_PROGRAM_ID` - TSNP settlement program id scanned for epoch treasury and `CrankerVault` accounts
 - `TSN_RPC_URL` - Preferred endpoint for on-chain reads and settlement authorization checks; defaults to the TSN RPC gateway
 - `EPOCH_HOURS` - epoch duration, default `7`
 
 The production Node delegates durable work state to Receiver. Its local
-root-addressed witness snapshots are a separate proving cache. Firebase belongs
-to the TSN Receiver. Direct Firebase and JSON adapters require explicit
-isolated-test flags and are not production fallbacks.
+root-addressed witness snapshots are a separate proving cache. The Receiver now uses a private D1 JSON record store. Direct Node Firebase is retired; local JSON requires explicit isolated-test flags.
 
 Operator daemon state files such as `operator-state.json` are private per operator and must never be read by the TSN Node. Liquidity is discovered by scanning the TSN program for public `CrankerVault` accounts, then querying each vault SPL token account balance on-chain.
 
@@ -101,26 +107,18 @@ response, signs as payer and submits with its own operator key.
 
 ## Deployment
 
-The Node is a persistent service. Run it behind HTTPS on a VM or container
-host; it is not a Vercel function. The included `Dockerfile` binds to the
-platform-provided `HOST` and `PORT` values.
+The Node is a persistent local worker. Its entrypoints bind to `127.0.0.1`; containers must preserve the same loopback boundary and protected cache/witness volumes. Node initiates outbound HTTPS connections to Receiver/RPC.
 
 The Node stores durable work through the deployed TSN Receiver. It does not
-own Firebase credentials or user private keys.
+own record-store credentials or user private keys.
 
-When no work is available, the verifier is event-sleeping: it makes no timed
-Receiver/Firebase poll. The Receiver sends an authenticated, payload-free
-`POST /internal/wake` after committing new work. The Node then drains the
-queue and sleeps again. A single startup drain handles work that arrived while
-the Node was offline. If the Receiver is unavailable or the service credential
-is invalid, the Node uses bounded exponential backoff and returns to the same
-event wait after six failed attempts instead of burning CPU indefinitely.
+Work and relay handlers sleep after draining their lanes. Receiver updates a payload-free durable activity revision after commits. The local Node observes it through authenticated outbound sync, wakes its independent lanes and drains authoritative work. Receiver never opens a Node connection. Revision listening retains a bounded safety drain for missed hints; idle synchronization still incurs network/database requests. Native authorization and Mother signing use encrypted request/reply jobs fenced to the original Cranker lease.
 
 ## Blockhash verification and transient RPC failures
 
 New funding starts with a message-only `/intents` request. Node verifies recipient, asset, authorization and advisory token balance before publishing signed `FUNDING_READY` evidence; no funding blockhash exists at this stage. The application retrieves owner-authenticated `/network/funding/readiness`, offers explicit approval, then obtains a fresh blockhash and submits the exact wallet-signed deposit through `/network/funding/complete`. Receiver attaches only that wire/context to the original intent; final verification reuses the signed preparation without consuming the nonce twice. Readiness alone cannot enable Cranker.
 
-Before wallet signing, `/network/recent-blockhash` validates confirmed visibility and at least 100 remaining blocks, retaining the exact issuing tuple. It tries at most three candidates with four-second per-endpoint reads and nondecreasing minimum context. A normal candidate needs three RPC reads; exhausted candidates return HTTP 503. This signing headroom differs from Cranker's unchanged 20-block send margin. The worker gives one completed signed deposit a claim before epoch coordination, then preserves a coordination/ordinary-work turn. See the [deadline investigation](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/references/FUNDING-DEADLINE-20261118.md) for observed timing and verification limits; no signature lifetime or loaded-service latency guarantee is added.
+Before wallet signing, `/network/recent-blockhash` validates confirmed visibility and at least 100 remaining blocks, retaining the exact issuing tuple. It tries at most three candidates with four-second per-endpoint reads and nondecreasing minimum context. A normal candidate needs three RPC reads; exhausted candidates return HTTP 503. The runtime now gives signed funding its own event-driven worker, separate from message preparation, proving and accounting. Receiver atomically filters `AUTHORIZATION` and `SIGNED_DEPOSIT` claims, and the ordinary queue excludes funding. Cranker also has a separate funding loop; its two loops share the unchanged operator lease-rate budget and use independent authenticated sessions. See the [isolation record](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/references/FUNDING-ISOLATION-20261125.md) for offline evidence and remaining timing limits.
 
 Funding completion requires `senderFundingBlockhashContext` with exactly the prepared `blockhash`, positive safe-integer `lastValidBlockHeight` and nonnegative safe-integer `contextSlot`. Node binds its hash to the unchanged wire, signs the tuple into final Cranker execution evidence and simulates with confirmed commitment, signature verification and `minContextSlot`. The tuple is a routing hint, not an issuer signature or proof of nonexecution. Confirmed historical records remain readable; old pending work receives no invented readiness or context. See [the staged component contract](verification/work/README.md).
 

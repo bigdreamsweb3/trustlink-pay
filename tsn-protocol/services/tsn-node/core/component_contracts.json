@@ -1131,10 +1131,8 @@
     "inputs": "",
     "output": "Any",
     "dependencies": [
-      "ALLOW_DIRECT_FIREBASE_STORE",
       "ALLOW_LOCAL_JSON_STORE",
       "FileStore",
-      "FirebaseStore",
       "MEMPOOL_FILE",
       "MEMPOOL_STORE",
       "ReceiverStore",
@@ -1152,10 +1150,8 @@
       "RuntimeError"
     ],
     "dependencyTypes": {
-      "ALLOW_DIRECT_FIREBASE_STORE": "Any",
       "ALLOW_LOCAL_JSON_STORE": "Any",
       "FileStore": "Callable[..., Any]",
-      "FirebaseStore": "Callable[..., Any]",
       "MEMPOOL_FILE": "Any",
       "MEMPOOL_STORE": "Any",
       "ReceiverStore": "Callable[..., Any]",
@@ -4700,36 +4696,30 @@
   {
     "name": "receiver_verification_worker",
     "path": "core/worker/receiver_verification_worker.py",
-    "inputs": "",
+    "inputs": "*, signed_funding_only: bool = False",
     "output": "None",
     "dependencies": [
-      "TSN_LOCAL_FLOW_LOGS",
-      "TSN_NODE_ID",
       "TSN_RECEIVER_NODE_API_KEY",
       "_coordinate_private_credit_work",
       "_private_coordination_pending",
-      "_process_receiver_work_with_lease",
+      "_receiver_funding_wake_event",
       "_receiver_wake_event",
-      "logger",
-      "receiver_request"
+      "logger"
     ],
     "originalLine": 3247,
     "async": true,
     "runtimeRequired": true,
-    "responsibility": "Receiver verification worker. See the named validation/return operations in its dedicated implementation.",
+    "responsibility": "Drain one event-driven signed-funding or ordinary lane; each retains serial lease renewal, cancellation, bounded retry and signed decisions.",
     "errors": [
       "RuntimeError"
     ],
     "dependencyTypes": {
-      "TSN_LOCAL_FLOW_LOGS": "Any",
-      "TSN_NODE_ID": "Any",
       "TSN_RECEIVER_NODE_API_KEY": "Any",
       "_coordinate_private_credit_work": "Callable[..., Any]",
       "_private_coordination_pending": "Any",
-      "_process_receiver_work_with_lease": "Callable[..., Any]",
+      "_receiver_funding_wake_event": "Any",
       "_receiver_wake_event": "Any",
-      "logger": "Any",
-      "receiver_request": "Callable[..., Any]"
+      "logger": "Any"
     },
     "verification": {
       "status": "DIRECT_TEST_CALL_SOURCE_REFERENCES",
@@ -4906,19 +4896,23 @@
       "TSN_SETTLEMENT_AUTHORIZATION_SIGNING_KEY",
       "TSN_THRESHOLD_NONCE_SIGNING_KEY",
       "_node_verification_signing_key",
+      "_receiver_funding_wake_event",
       "_receiver_wake_event",
+      "_relay_wake_events",
       "_store",
       "close_epoch_task",
       "get_store",
       "is_epoch_due",
       "logger",
       "read_epoch_state",
-      "receiver_verification_worker"
+      "receiver_verification_worker",
+      "relay_worker",
+      "sync_local_node"
     ],
     "originalLine": 3349,
     "async": true,
     "runtimeRequired": true,
-    "responsibility": "Lifespan. See the named validation/return operations in its dedicated implementation.",
+    "responsibility": "Initialize the selected store and signing prerequisites, start both Receiver worker lanes, and cancel both and close the store on normal or exceptional shutdown.",
     "errors": [
       "RuntimeError"
     ],
@@ -4931,14 +4925,18 @@
       "TSN_SETTLEMENT_AUTHORIZATION_SIGNING_KEY": "Any",
       "TSN_THRESHOLD_NONCE_SIGNING_KEY": "Any",
       "_node_verification_signing_key": "Callable[..., Any]",
+      "_receiver_funding_wake_event": "Any",
       "_receiver_wake_event": "Any",
+      "_relay_wake_events": "Explicit component Dependencies Protocol",
       "_store": "Any",
       "close_epoch_task": "Callable[..., Any]",
       "get_store": "Callable[..., Any]",
       "is_epoch_due": "Callable[..., Any]",
       "logger": "Any",
       "read_epoch_state": "Callable[..., Any]",
-      "receiver_verification_worker": "Callable[..., Any]"
+      "receiver_verification_worker": "Callable[..., Any]",
+      "relay_worker": "Explicit component Dependencies Protocol",
+      "sync_local_node": "Explicit component Dependencies Protocol"
     },
     "verification": {
       "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
@@ -4954,6 +4952,7 @@
     "inputs": "",
     "output": "dict[str, Any]",
     "dependencies": [
+      "_receiver_funding_wake_event",
       "_receiver_wake_event",
       "close_epoch_task",
       "is_epoch_due",
@@ -4963,11 +4962,12 @@
     "originalLine": 3404,
     "async": true,
     "runtimeRequired": true,
-    "responsibility": "Wake the verifier after Receiver commit; carries no work payload.",
+    "responsibility": "Signal both Receiver worker events before awaited epoch rollover; carries no work payload.",
     "errors": [
       "HTTPException"
     ],
     "dependencyTypes": {
+      "_receiver_funding_wake_event": "Any",
       "_receiver_wake_event": "Any",
       "close_epoch_task": "Callable[..., Any]",
       "is_epoch_due": "Callable[..., Any]",
@@ -6043,6 +6043,480 @@
       ],
       "suiteEvidence": "docs/verification.md",
       "coverageMeasurement": "Scoped synthetic checks; no branch coverage or live execution inferred."
+    }
+  },
+  {
+    "name": "local_only_middleware",
+    "path": "api/handlers/local_only_middleware.py",
+    "inputs": "request, call_next",
+    "output": "See component return contract",
+    "dependencies": [],
+    "async": true,
+    "runtimeRequired": true,
+    "responsibility": "Reject nonloopback peers even when a custom launcher exposes the local Node application.",
+    "errors": [],
+    "dependencyTypes": {},
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "assert_relay_lease",
+    "path": "core/relay/assert_relay_lease.py",
+    "inputs": "node: RelayDependencies, job: dict, response: dict",
+    "output": "None",
+    "dependencies": [
+      "TSN_NODE_ID"
+    ],
+    "async": false,
+    "runtimeRequired": true,
+    "responsibility": "A cache never substitutes for an unexpired Receiver claim with the expected owner and version.",
+    "errors": [],
+    "dependencyTypes": {
+      "TSN_NODE_ID": "Explicit narrow Protocol or argument port"
+    },
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "dispatch_relay_job",
+    "path": "core/relay/dispatch_relay_job.py",
+    "inputs": "node: RelayDependencies, job: dict",
+    "output": "dict",
+    "dependencies": [
+      "TSN_RECEIVER_NODE_API_KEY",
+      "_relay_app"
+    ],
+    "async": true,
+    "runtimeRequired": true,
+    "responsibility": "Use existing ASGI handlers and authorization checks locally; no socket, URL or executable command is dispatched.",
+    "errors": [],
+    "dependencyTypes": {
+      "TSN_RECEIVER_NODE_API_KEY": "Explicit narrow Protocol or argument port",
+      "_relay_app": "Explicit narrow Protocol or argument port"
+    },
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "execute_relay_job",
+    "path": "core/relay/execute_relay_job.py",
+    "inputs": "node: RelayDependencies, job: dict",
+    "output": "dict",
+    "dependencies": [
+      "_local_cache_lock",
+      "dispatch_relay_job"
+    ],
+    "async": true,
+    "runtimeRequired": true,
+    "responsibility": "Use a checkpointed exact reply after restart; execute a fresh request only after local reservation.",
+    "errors": [],
+    "dependencyTypes": {
+      "_local_cache_lock": "Explicit narrow Protocol or argument port",
+      "dispatch_relay_job": "Explicit narrow Protocol or argument port"
+    },
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "keep_relay_lease",
+    "path": "core/relay/keep_relay_lease.py",
+    "inputs": "node: RelayDependencies, client, headers: dict, job: dict",
+    "output": "None",
+    "dependencies": [
+      "TSN_NODE_ID",
+      "receiver_request"
+    ],
+    "async": true,
+    "runtimeRequired": true,
+    "responsibility": "Renew one relay claim while processing/reporting; failure cancels its operation.",
+    "errors": [],
+    "dependencyTypes": {
+      "TSN_NODE_ID": "Explicit narrow Protocol or argument port",
+      "receiver_request": "Explicit narrow Protocol or argument port"
+    },
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "process_relay_job",
+    "path": "core/relay/process_relay_job.py",
+    "inputs": "node: RelayDependencies, client, headers: dict, job: dict",
+    "output": "None",
+    "dependencies": [
+      "TSN_NODE_ID",
+      "receiver_request"
+    ],
+    "async": true,
+    "runtimeRequired": true,
+    "responsibility": "Bound a relay handler/report by its live lease and cancel every child on loss, timeout or shutdown.",
+    "errors": [],
+    "dependencyTypes": {
+      "TSN_NODE_ID": "Explicit narrow Protocol or argument port",
+      "receiver_request": "Explicit narrow Protocol or argument port"
+    },
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "publish_relay_reply",
+    "path": "core/relay/publish_relay_reply.py",
+    "inputs": "node: RelayDependencies, client, headers: dict, job: dict",
+    "output": "None",
+    "dependencies": [
+      "TSN_NODE_ID",
+      "_local_cache_lock",
+      "execute_relay_job",
+      "receiver_request"
+    ],
+    "async": true,
+    "runtimeRequired": true,
+    "responsibility": "Retry only a cached exact response, never its underlying handler or Mother transaction signing.",
+    "errors": [],
+    "dependencyTypes": {
+      "TSN_NODE_ID": "Explicit narrow Protocol or argument port",
+      "_local_cache_lock": "Explicit narrow Protocol or argument port",
+      "execute_relay_job": "Explicit narrow Protocol or argument port",
+      "receiver_request": "Explicit narrow Protocol or argument port"
+    },
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "relay_worker",
+    "path": "core/relay/relay_worker.py",
+    "inputs": "node: RelayDependencies, lane: str",
+    "output": "None",
+    "dependencies": [
+      "TSN_NODE_ID",
+      "TSN_RECEIVER_NODE_API_KEY",
+      "_relay_wake_events",
+      "logger",
+      "receiver_request"
+    ],
+    "async": true,
+    "runtimeRequired": true,
+    "responsibility": "Drain one outbound request lane; each lane has one handler and sleeps when no notification remains.",
+    "errors": [],
+    "dependencyTypes": {
+      "TSN_NODE_ID": "Explicit narrow Protocol or argument port",
+      "TSN_RECEIVER_NODE_API_KEY": "Explicit narrow Protocol or argument port",
+      "_relay_wake_events": "Explicit narrow Protocol or argument port",
+      "logger": "Explicit narrow Protocol or argument port",
+      "receiver_request": "Explicit narrow Protocol or argument port"
+    },
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "reply_signature",
+    "path": "core/relay/reply_signature.py",
+    "inputs": "node: RelayDependencies, job: dict, reply: dict",
+    "output": "str",
+    "dependencies": [
+      "TSN_NODE_ID",
+      "_node_verification_signing_key"
+    ],
+    "async": false,
+    "runtimeRequired": true,
+    "responsibility": "Sign a response commitment for the current relay claim, distinct from a Mother transaction signature.",
+    "errors": [],
+    "dependencyTypes": {
+      "TSN_NODE_ID": "Explicit narrow Protocol or argument port",
+      "_node_verification_signing_key": "Explicit narrow Protocol or argument port"
+    },
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "sync_local_node",
+    "path": "core/relay/sync_local_node.py",
+    "inputs": "node: RelayDependencies",
+    "output": "None",
+    "dependencies": [
+      "LOCAL_NODE_CACHE_DIR",
+      "TSN_RECEIVER_NODE_API_KEY",
+      "TSN_RECEIVER_URL",
+      "_local_cache_lock",
+      "_receiver_funding_wake_event",
+      "_receiver_wake_event",
+      "_relay_wake_events",
+      "logger",
+      "receiver_request"
+    ],
+    "async": true,
+    "runtimeRequired": true,
+    "responsibility": "Observe a durable cursor over outbound HTTPS; keep missed notifications recoverable without copying the queue.",
+    "errors": [],
+    "dependencyTypes": {
+      "LOCAL_NODE_CACHE_DIR": "Explicit narrow Protocol or argument port",
+      "TSN_RECEIVER_NODE_API_KEY": "Explicit narrow Protocol or argument port",
+      "TSN_RECEIVER_URL": "Explicit narrow Protocol or argument port",
+      "_local_cache_lock": "Explicit narrow Protocol or argument port",
+      "_receiver_funding_wake_event": "Explicit narrow Protocol or argument port",
+      "_receiver_wake_event": "Explicit narrow Protocol or argument port",
+      "_relay_wake_events": "Explicit narrow Protocol or argument port",
+      "logger": "Explicit narrow Protocol or argument port",
+      "receiver_request": "Explicit narrow Protocol or argument port"
+    },
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "validate_relay_job",
+    "path": "core/relay/validate_relay_job.py",
+    "inputs": "job: dict",
+    "output": "dict",
+    "dependencies": [],
+    "async": false,
+    "runtimeRequired": true,
+    "responsibility": "Validate the fixed Receiver request envelope before dispatching to the existing in-process application.",
+    "errors": [],
+    "dependencyTypes": {},
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "prover_node_args",
+    "path": "settlement/proving/prover_node_args.py",
+    "inputs": "",
+    "output": "list[str]",
+    "dependencies": [],
+    "async": false,
+    "runtimeRequired": true,
+    "responsibility": "Bound the child JavaScript heap; WASM/native allocations remain separate and are not an RSS guarantee.",
+    "errors": [],
+    "dependencyTypes": {},
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "atomic_cache_json",
+    "path": "storage/cache/atomic_cache_json.py",
+    "inputs": "path, value: dict",
+    "output": "None",
+    "dependencies": [],
+    "async": false,
+    "runtimeRequired": true,
+    "responsibility": "Atomically replace one local cache record; this does not commit or authorize Receiver work.",
+    "errors": [],
+    "dependencyTypes": {},
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "cache_key",
+    "path": "storage/cache/cache_key.py",
+    "inputs": "node: CacheDependencies",
+    "output": "bytes",
+    "dependencies": [
+      "TSN_RECEIVER_URL",
+      "_node_verification_signing_key"
+    ],
+    "async": false,
+    "runtimeRequired": true,
+    "responsibility": "Derive a cache-only AEAD key from the existing Node seed with explicit domain and Receiver binding.",
+    "errors": [],
+    "dependencyTypes": {
+      "TSN_RECEIVER_URL": "Explicit narrow Protocol or argument port",
+      "_node_verification_signing_key": "Explicit narrow Protocol or argument port"
+    },
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "cache_path",
+    "path": "storage/cache/cache_path.py",
+    "inputs": "node: CacheDependencies, identifier: str",
+    "output": "Path",
+    "dependencies": [
+      "LOCAL_NODE_CACHE_DIR"
+    ],
+    "async": false,
+    "runtimeRequired": true,
+    "responsibility": "Resolve a bounded job cache filename; remote input never chooses a directory.",
+    "errors": [],
+    "dependencyTypes": {
+      "LOCAL_NODE_CACHE_DIR": "Explicit narrow Protocol or argument port"
+    },
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "cache_receiver_work",
+    "path": "storage/cache/cache_receiver_work.py",
+    "inputs": "node: CacheDependencies, work: dict",
+    "output": "None",
+    "dependencies": [
+      "_local_cache_lock",
+      "logger"
+    ],
+    "async": true,
+    "runtimeRequired": true,
+    "responsibility": "Mirror a claimed work's bounded public metadata outside the event loop, preserving remote lease authority.",
+    "errors": [],
+    "dependencyTypes": {
+      "_local_cache_lock": "Explicit narrow Protocol or argument port",
+      "logger": "Explicit narrow Protocol or argument port"
+    },
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "discard_published_reply",
+    "path": "storage/cache/discard_published_reply.py",
+    "inputs": "node: CacheDependencies, identifier: str",
+    "output": "None",
+    "dependencies": [],
+    "async": false,
+    "runtimeRequired": true,
+    "responsibility": "Remove only an acknowledged reply cache entry, after Receiver holds its verified durable result.",
+    "errors": [],
+    "dependencyTypes": {},
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "load_cached_reply",
+    "path": "storage/cache/load_cached_reply.py",
+    "inputs": "node: CacheDependencies, job: dict",
+    "output": "dict | None",
+    "dependencies": [],
+    "async": false,
+    "runtimeRequired": true,
+    "responsibility": "Recover only the exact encrypted reply; an interrupted reservation never permits automatic re-execution.",
+    "errors": [],
+    "dependencyTypes": {},
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "remember_local_work",
+    "path": "storage/cache/remember_local_work.py",
+    "inputs": "node: CacheDependencies, work: dict",
+    "output": "None",
+    "dependencies": [
+      "LOCAL_NODE_CACHE_DIR"
+    ],
+    "async": false,
+    "runtimeRequired": true,
+    "responsibility": "Retain bounded coordination metadata only; every execution still requires a current Receiver lease.",
+    "errors": [],
+    "dependencyTypes": {
+      "LOCAL_NODE_CACHE_DIR": "Explicit narrow Protocol or argument port"
+    },
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "reserve_local_reply",
+    "path": "storage/cache/reserve_local_reply.py",
+    "inputs": "node: CacheDependencies, job: dict",
+    "output": "None",
+    "dependencies": [],
+    "async": false,
+    "runtimeRequired": true,
+    "responsibility": "Checkpoint execution intent before calling a handler; bounded cache pressure stops new operations.",
+    "errors": [],
+    "dependencyTypes": {},
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
+    }
+  },
+  {
+    "name": "save_local_reply",
+    "path": "storage/cache/save_local_reply.py",
+    "inputs": "node: CacheDependencies, job: dict, reply: dict",
+    "output": "None",
+    "dependencies": [],
+    "async": false,
+    "runtimeRequired": true,
+    "responsibility": "Persist the exact reply before any outbound publication, without plaintext credentials or signing messages.",
+    "errors": [],
+    "dependencyTypes": {},
+    "verification": {
+      "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+      "testReferences": [],
+      "suiteEvidence": "docs/verification.md",
+      "coverageMeasurement": "Individual branch coverage was not measured."
     }
   }
 ]

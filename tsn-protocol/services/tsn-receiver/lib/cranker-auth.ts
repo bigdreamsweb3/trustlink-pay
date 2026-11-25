@@ -1,5 +1,5 @@
 /** Stable cranker-auth facade and production composition; implementations live in authentication/cranker. */
-import { db } from "./firebase";
+import { db } from "./database";
 import { hasRpcUrl } from "./authentication/cranker/has-rpc-url";
 import { DEFAULT_TSN_RPC_GATEWAY_URL, DEVNET_RPC_URL } from "./authentication/cranker/configuration";
 import { connectSolana } from "./authentication/cranker/connect-solana";

@@ -1,0 +1,112 @@
+{
+  "responsibility": "Versioned JSON document/query interface over private transactional D1 storage",
+  "components": [
+    {
+      "file": "command.ts",
+      "functions": [
+        "recordStoreCommand",
+        "lexical callback"
+      ],
+      "imports": [
+        "./types"
+      ]
+    },
+    {
+      "file": "database.ts",
+      "functions": [
+        "clone",
+        "name",
+        "lexical callback",
+        "lexical callback",
+        "data",
+        "get",
+        "lexical callback",
+        "where",
+        "orderBy",
+        "limit",
+        "startAfter",
+        "get",
+        "lexical callback",
+        "evaluate",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "doc",
+        "lexical callback",
+        "get",
+        "set",
+        "lexical callback",
+        "create",
+        "lexical callback",
+        "delete",
+        "lexical callback",
+        "collection",
+        "lexical callback",
+        "check",
+        "stage",
+        "create",
+        "set",
+        "update",
+        "delete",
+        "original",
+        "row",
+        "lexical callback",
+        "get",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "commit",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "recordKey",
+        "readDocument",
+        "readKeys",
+        "readKey",
+        "collection",
+        "runTransaction",
+        "lexical callback",
+        "batch",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback"
+      ],
+      "imports": [
+        "node:crypto",
+        "../local/row-matches",
+        "../local/compare-query-rows",
+        "./metadata",
+        "./decode-record",
+        "./types"
+      ]
+    },
+    {
+      "file": "decode-record.ts",
+      "functions": [
+        "decodeStoredRecord"
+      ],
+      "imports": [
+        "./types"
+      ]
+    },
+    {
+      "file": "metadata.ts",
+      "functions": [
+        "parseStoreMetadata",
+        "lexical callback",
+        "lexical callback"
+      ],
+      "imports": [
+        "./types"
+      ]
+    },
+    {
+      "file": "types.ts",
+      "functions": [],
+      "imports": []
+    }
+  ],
+  "verification": "tests/d1-relay.test.mjs; record-store-worker/tests with real in-memory SQLite"
+}

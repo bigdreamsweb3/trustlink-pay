@@ -1019,7 +1019,8 @@
       "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
       "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
       "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "docs/references/FUNDING-ISOLATION-20261125.md"
     ]
   },
   "tsn-protocol/services/tsn-crosschain/contracts/adapters/_template/README.md": {
@@ -1067,12 +1068,16 @@
   "tsn-protocol/services/tsn-node/README.md": {
     "status": "UNVERIFIED",
     "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
+    "evidence": [
+      "docs/references/FUNDING-ISOLATION-20261125.md"
+    ]
   },
   "tsn-protocol/services/tsn-receiver/README.md": {
     "status": "UNVERIFIED",
     "reason": "Indexed and scanned for status/terminology conflicts. Whole-page operational, historical or security claims have not all been re-executed or independently established; use the canonical Laboratory record for current native-credit behavior.",
-    "evidence": []
+    "evidence": [
+      "docs/references/FUNDING-ISOLATION-20261125.md"
+    ]
   },
   "tsn-protocol/services/tsn-rpc-gateway/README.md": {
     "status": "UNVERIFIED",
@@ -1350,7 +1355,8 @@
       "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
       "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
       "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "docs/references/FUNDING-ISOLATION-20261125.md"
     ]
   },
   "tsn-protocol/tsn-docs/overview/architecture.mdx": {
@@ -1479,7 +1485,8 @@
       "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
       "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
       "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "docs/references/FUNDING-ISOLATION-20261125.md"
     ]
   },
   "docs/laboratory/components.md": {
@@ -1493,7 +1500,8 @@
       "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
       "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
       "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "docs/references/FUNDING-ISOLATION-20261125.md"
     ]
   },
   "docs/laboratory/credit-abi.md": {
@@ -1777,7 +1785,8 @@
       "tsn-protocol/services/tsn-receiver/lib/work-contract.ts",
       "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
       "tsn-protocol/programs/tcap-protocol/programs/tcap/src/instructions/credit_gpru_memo_v1.rs",
-      "tsn-protocol/programs/gpru/src/hidden_head.rs"
+      "tsn-protocol/programs/gpru/src/hidden_head.rs",
+      "docs/references/FUNDING-ISOLATION-20261125.md"
     ]
   },
   "tsn-protocol/tsn-docs/api-reference/sdk/modules/authorization-device-authorization-client.mdx": {
@@ -2295,7 +2304,8 @@
     "evidence": [
       "docs/laboratory/architecture-map.md",
       "docs/laboratory/components.md",
-      "docs/laboratory/cryptography.md"
+      "docs/laboratory/cryptography.md",
+      "docs/references/FUNDING-ISOLATION-20261125.md"
     ]
   },
   "docs/laboratory/testing-and-evidence.md": {
@@ -2331,7 +2341,8 @@
       "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
       "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
       "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "docs/references/FUNDING-ISOLATION-20261125.md"
     ]
   },
   "docs/references/README.md": {
@@ -2452,7 +2463,8 @@
       "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
       "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
       "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "docs/references/FUNDING-ISOLATION-20261125.md"
     ]
   },
   ".agents/tsn-operator-guide-policy.md": {
@@ -2622,7 +2634,8 @@
       "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
       "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
       "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "docs/references/FUNDING-ISOLATION-20261125.md"
     ]
   },
   "tsn-protocol/services/tsn-node/docs/original-assessment.md": {
@@ -2650,7 +2663,8 @@
       "tsn-protocol/services/tsn-node/verification/identity/resolve_tin_identity_for_verification.py",
       "tsn-protocol/services/tsn-node/app/networking/cross_chain/ready_destination_networks.py",
       "tsn-protocol/services/tsn-node/app/networking/cross_chain/verify_destination_route.py",
-      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts"
+      "tsn-protocol/services/tsn-cranker-op-daemon/scripts/cranker.ts",
+      "docs/references/FUNDING-ISOLATION-20261125.md"
     ]
   },
   "tsn-protocol/tsn-docs/overview/cross-network-roadmap.mdx": {
@@ -2782,5 +2796,31 @@
       "tsn-protocol/programs/gpru/circuits/hidden_head_tin_debit_v1/offline/core.py",
       "tsn-protocol/programs/gpru/src/tin_debit.rs"
     ]
+  },
+  "tsn-protocol/services/tsn-node/core/worker/README.md": {
+    "status": "CURRENT",
+    "reason": "November 25 source-backed funding scheduling and bounded offline verification; live service latency, payment and recovery remain unverified.",
+    "evidence": [
+      "docs/references/FUNDING-ISOLATION-20261125.md"
+    ]
+  },
+  "tsn-protocol/services/tsn-receiver/lib/work/README.md": {
+    "status": "CURRENT",
+    "reason": "November 25 source-backed funding scheduling and bounded offline verification; live service latency, payment and recovery remain unverified.",
+    "evidence": [
+      "docs/references/FUNDING-ISOLATION-20261125.md"
+    ]
+  },
+  "docs/references/FUNDING-DEADLINE-20261118.md": {
+    "status": "CURRENT",
+    "reason": "November 25 source-backed funding scheduling and bounded offline verification; live service latency, payment and recovery remain unverified.",
+    "evidence": [
+      "docs/references/FUNDING-ISOLATION-20261125.md"
+    ]
+  },
+  "docs/references/FUNDING-ISOLATION-20261125.md": {
+    "status": "CURRENT",
+    "reason": "November 25 source-backed funding scheduling and bounded offline verification; live service latency, payment and recovery remain unverified.",
+    "evidence": []
   }
 }

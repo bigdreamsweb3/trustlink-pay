@@ -48,7 +48,7 @@ test("daemon normalizes conflicts and handles guarded retries before FAILED, eve
   assert.ok(source.includes("if (nativeReason) throw new Error(nativeReason)"));
   const branch = source.slice(source.indexOf("const retryReason = nativeWorkRetryReason(work, error)"));
   assert.match(branch, /reason: retryReason,[\s\S]*?"\/api\/cranker\/work\/retry"/);
-  assert.match(branch, /catch \(retryError\) {[\s\S]*?continue;[\s\S]*?await report\(signer, work, "FAILED"/);
+  assert.match(branch, /catch \(retryError\) {[\s\S]*?return;[\s\S]*?await report\(signer, work, "FAILED"/);
 });
 
 test("only the signing route's exact503 service envelope becomes availability retry", () => {

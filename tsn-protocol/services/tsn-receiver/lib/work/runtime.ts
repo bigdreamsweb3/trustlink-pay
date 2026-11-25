@@ -1,5 +1,5 @@
 import { createHash, randomInt } from "node:crypto";
-import { workCollection, db } from "../firebase";
+import { workCollection, db } from "../database";
 import { isSupportedWorkKind, hasResolvedNonExecution, assertExternalWorkKind, assertAuthorizedFundingIngress, compactAuthorizedFundingVerification, compactVerificationPayload, createReceivedWork, payloadCommitment, verifiedPayloadForWork } from "../work-contract";
 import { decryptPayloadForNode, encryptPayloadForNode } from "../node-envelope";
 import { assertNodeVerificationAttestation } from "../node-verification";

@@ -1,149 +1,21 @@
-# TSN Service Coordination and Resource Discipline
+# TSN coordination and free-tier resource discipline
 
-We treat network requests, database reads, CPU time, and hosted
-runtime minutes as scarce resources. Services communicate only when there is
-work to do, while Firestore remains the durable source of truth.
+**CURRENT source: Firebase-free D1 JSON record store.** Receiver remains the authenticated coordination boundary, while a private Cloudflare Worker persists its JSON records in D1. Node stays local and initiates outbound connections. The [Firebase-free checkpoint](references/FIREBASE-FREE-RECEIVER-20261125.md) records tests and unverified deployment/quotas.
 
-## Storage and authority
+## State and authority
 
-Firestore stores durable work, leases, idempotency, replay state, verification
-evidence, and settlement results. Realtime Database is a wake channel only. A
-wake marker contains no payment payload, route, amount, recipient, signature,
-or private value. It contains only a nonce, work kind, and timestamp.
+D1 holds work, leases, idempotency/replay state, encrypted ingress, verification evidence and results. The storage Worker performs bounded authenticated reads and exact metadata-fenced atomic SQL batches. It has no Node/Mother signing keys or payload-encryption key. Existing Node decisions and chain checks determine eligibility; a storage write or notification is not settlement.
 
-```mermaid
-flowchart TD
-    A[Authorized device submits signed intent] --> B[TSN Receiver]
-    B --> C[Firestore creates RECEIVED work]
-    C --> D[Receiver wakes TSN Node]
-    C --> E[Receiver writes payload-free wake marker]
-    D --> F[TSN Node leases and verifies]
-    F --> G[Receiver stores VERIFIED or REJECTED]
-    G -->|VERIFIED| E
-    E --> H[Cranker outbound stream receives wake]
-    H --> I[Cranker leases VERIFIED work]
-    I --> J[Cranker executes exact settlement]
-    J --> K[Cranker reports result]
-    K --> L[Receiver stores final evidence]
-```
+Receiver updates a payload-free Node activity revision after durable commits. Node observes it through bounded outbound synchronization and retains a safety drain for missed hints. Its funding/signing/public handlers sleep after draining their lanes. Existing Cranker funding/native loops use wallet/session-authenticated polling. Receiver stores a nonce/kind/time control marker for coordination diagnostics; it is not a work payload or execution authority. Firebase Realtime Database and wake-token authentication are retired.
 
-The wake is only a hint. The Node or Cranker must authenticate and re-read or
-lease authoritative work from the Receiver before acting.
+## Quota and failure behavior
 
-## Idle behavior
+Cloudflare D1 Free currently provides 5 million row reads/day, 100,000 row writes/day and 500 MB per database; aggregate account storage and Workers request/CPU quotas also apply. These are provider limits, not a measured capacity result for this deployment. Free quotas stop queries when exceeded. Monitor actual usage before treating the deployment as available for sustained traffic.
 
-### Receiver
+Indexed point reads use one Worker request and one SQLite snapshot for the namespace metadata and requested record. Queries preserve existing Receiver comparisons/order/cursors and load record pages; large collections can increase rows read. Transactions retry detected concurrent metadata changes only. Unknown commit responses propagate for reconciliation and never automatically repeat signing or submission.
 
-The Receiver has no background polling loop. It accepts a request, commits
-durable state, sends wake hints, and returns.
+Relay cleanup expires active admission and removes bounded terminal relay records after retention. Do not delete open epochs, unresolved signed attempts, authoritative root/nonce state or private opening backups to fit a free tier. Completed accounting and recovery/history obligations must be resolved before a separately reviewed archival policy removes records. The current change adds no general epoch deletion command.
 
-### TSN Node
+## Configuration and verification
 
-The Node waits on its authenticated Receiver wake event. It drains eligible
-work after a wake and sleeps when the queue is empty. It does not poll the
-Receiver or Firebase while idle.
-
-### Cranker
-
-With the wake channel enabled, a Cranker keeps one outbound authenticated
-Realtime Database stream open. It calls the lease endpoint only after a wake.
-
-If the stream is unavailable, it uses a bounded safety fallback:
-
-```text
-2s → 4s → 8s → 16s → 30s
-```
-
-With wake mode enabled, the fallback check is limited by
-`TSN_CRANKER_WAKE_FALLBACK_POLL_MS` (default five minutes). This recovers lost
-wakes without continuous high-frequency reads.
-
-## Event sequence
-
-1. Receiver writes the signed work record in a Firestore transaction.
-2. Receiver sends a payload-free wake to the Node.
-3. Receiver writes `tsn/crankerWake` in Realtime Database.
-4. Node leases and verifies the work.
-5. Receiver stores `VERIFIED` or `REJECTED` in Firestore.
-6. On `VERIFIED`, Receiver writes a second wake marker. The first wake can
-   arrive before verification completes.
-7. Cranker receives the marker and calls `/api/cranker/work`.
-8. Receiver leases only verified work and returns the Node-approved execution
-   view.
-9. Cranker submits the exact authorized transaction and reports its result.
-
-## Authentication boundaries
-
-| Connection                           | Authentication                    | Allowed data                |
-| ------------------------------------ | --------------------------------- | --------------------------- |
-| Receiver → Node wake                 | `TSN_RECEIVER_NODE_API_KEY`       | reason only                 |
-| Cranker → wake-token endpoint        | Signed operator challenge        | Derived operator identity  |
-| Cranker → Realtime Database          | Firebase ID token, `role=cranker` | wake marker only            |
-| Cranker → lease/transition endpoints | Signed operator challenge        | lease and public evidence  |
-| Node → Receiver work endpoints       | `TSN_RECEIVER_NODE_API_KEY`       | verification state/evidence |
-
-No wake path carries a master seed, child private key, serialized key,
-settlement secret, or private permit.
-
-## Resource budget
-
-| State             | Firestore                | Realtime Database                    | Worker activity               |
-| ----------------- | ------------------------ | ------------------------------------ | ----------------------------- |
-| Idle              | no work reads            | one quiet stream per enabled Cranker | Node sleeps; Cranker waits    |
-| New submission    | one idempotent write     | one marker write                     | Node wake; Cranker wake event |
-| Node verification | lease and transition     | one marker if verified               | Node verification             |
-| Settlement        | lease/result transitions | no marker required                   | one execution attempt         |
-| Lost wake         | durable state unchanged  | reconnect with backoff               | bounded fallback lease check  |
-
-## Configuration
-
-Receiver:
-
-```text
-FIREBASE_PROJECT_ID=tsn-epoch-record
-FIREBASE_CLIENT_EMAIL=...
-FIREBASE_PRIVATE_KEY=...
-FIREBASE_DATABASE_URL=...
-FIREBASE_WEB_API_KEY=...
-TSN_RECEIVER_NODE_API_KEY=...
-# Crankers are admitted by on-chain Mother DNA; no per-operator allowlist.
-TSN_NODE_URL=...
-```
-
-Cranker:
-
-```text
-TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app
-TSN_CRANKER_OPERATOR_PUBKEY=<registered-operator-pubkey>
-KEYPAIR_PATH=./keys/cranker-keypair.json
-TSN_CRANKER_WAKE_ENABLED=true
-FIREBASE_DATABASE_URL=...
-TSN_CRANKER_WAKE_FALLBACK_POLL_MS=300000
-```
-
-Deploy the Realtime Database rules after creating the database:
-
-```bash
-firebase deploy --only database --project tsn-epoch-record
-```
-
-Rules must allow reads only for Firebase tokens whose custom claim is
-`role == 'cranker'`; writes are server-only.
-
-## Operational signals
-
-```text
-[tsn-cranker] wake=outbound-realtime-database
-[tsn-cranker] receiver.wake-received
-```
-
-Without wake configuration, an idle Cranker should show increasing intervals,
-not a rapid loop:
-
-```text
-[tsn-cranker] receiver.poll no-eligible-work; sleepMs=4000
-[tsn-cranker] receiver.poll no-eligible-work; sleepMs=8000
-```
-
-Wake failure never deletes work. Stale leases are requeued by the Receiver;
-Firestore remains authoritative if Realtime Database is unavailable.
+Only Receiver and the private Worker share the storage token. Node keeps its existing Receiver credential and verification seed; Cranker keeps its registered wallet/session identity. Browser clients receive no storage credential. D1 source, real in-memory SQLite tests, Receiver build, hosted D1 verification and live payment evidence are distinct checks. Internal provisioning/import steps remain in the run-your-own guide and are operator-controlled.

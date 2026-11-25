@@ -2339,6 +2339,166 @@
       "async": false,
       "kind": "test",
       "provenance": "Added November 24 for TIN-Debit; scoped synthetic tests, no historical extraction provenance."
+    },
+    {
+      "component": "cases/funding_queue/functions/test_funding_during_slow_work.py",
+      "name": "test_funding_during_slow_work",
+      "definitionLine": 6,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added November 25 for independent signed-funding workers; synthetic offline regression, no historical extraction provenance."
+    },
+    {
+      "component": "cases/funding_queue/functions/test_wake_before_epoch_close.py",
+      "name": "test_wake_before_epoch_close",
+      "definitionLine": 9,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added November 25 for independent signed-funding workers; synthetic offline regression, no historical extraction provenance."
+    },
+    {
+      "component": "cases/funding_queue/functions/close_slow_epoch.py",
+      "name": "close_slow_epoch",
+      "definitionLine": 4,
+      "async": true,
+      "kind": "fixture-or-support",
+      "provenance": "Added November 25 for independent signed-funding workers; synthetic offline regression, no historical extraction provenance."
+    },
+    {
+      "component": "cases/local_node/blocked_operation.py",
+      "name": "blocked_operation",
+      "definitionLine": 5,
+      "async": true,
+      "kind": "fixture-or-support",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/fixture.py",
+      "name": "fixture",
+      "definitionLine": 16,
+      "async": false,
+      "kind": "fixture-or-support",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/publish_request.py",
+      "name": "publish_request",
+      "definitionLine": 4,
+      "async": true,
+      "kind": "fixture-or-support",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/renewal_request.py",
+      "name": "renewal_request",
+      "definitionLine": 5,
+      "async": true,
+      "kind": "fixture-or-support",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/reply_handler.py",
+      "name": "reply_handler",
+      "definitionLine": 4,
+      "async": true,
+      "kind": "fixture-or-support",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/set_up.py",
+      "name": "set_up",
+      "definitionLine": 5,
+      "async": false,
+      "kind": "fixture-or-support",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/tear_down.py",
+      "name": "tear_down",
+      "definitionLine": 1,
+      "async": false,
+      "kind": "fixture-or-support",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/test_cache_corruption.py",
+      "name": "test_cache_corruption",
+      "definitionLine": 6,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/test_cursor_recovery.py",
+      "name": "test_cursor_recovery",
+      "definitionLine": 10,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/test_encrypted_restart.py",
+      "name": "test_encrypted_restart",
+      "definitionLine": 6,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/test_hash_and_path_validation.py",
+      "name": "test_hash_and_path_validation",
+      "definitionLine": 7,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/test_lease_loss.py",
+      "name": "test_lease_loss",
+      "definitionLine": 11,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/test_loopback_only.py",
+      "name": "test_loopback_only",
+      "definitionLine": 5,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/test_publish_retry.py",
+      "name": "test_publish_retry",
+      "definitionLine": 8,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/test_reply_binding.py",
+      "name": "test_reply_binding",
+      "definitionLine": 7,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/test_resource_arguments.py",
+      "name": "test_resource_arguments",
+      "definitionLine": 9,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
+    },
+    {
+      "component": "cases/local_node/test_unknown_execution.py",
+      "name": "test_unknown_execution",
+      "definitionLine": 5,
+      "async": true,
+      "kind": "test",
+      "provenance": "Added November 25 for local outbound relay/cache/resource controls; synthetic offline checks only."
     }
   ],
   "mappingBoundary": "Original 231 components and originalTests hashes retain their extraction provenance. newComponents separately records later authored test and fixture functions; source references do not measure execution or branch coverage.",

@@ -1,15 +1,13 @@
 {
   "facade": "../../node-authorizations.ts",
-  "responsibility": "Node authorization forwarding",
+  "responsibility": "Durable native Node authorization",
   "components": [
     {
       "name": "requestNodeAuthorization",
       "file": "request-node-authorization.ts",
       "imports": [
-        "./dependencies",
-        "../common/has-configured-node-url",
-        "../common/clean-node-url",
-        "./configuration"
+        "./configuration",
+        "../../node-relay/types"
       ]
     }
   ]

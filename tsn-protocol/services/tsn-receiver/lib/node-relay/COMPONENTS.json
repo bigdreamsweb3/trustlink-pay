@@ -1,0 +1,195 @@
+{
+  "responsibility": "Durable encrypted local Node request/reply transport",
+  "components": [
+    {
+      "file": "claim.ts",
+      "functions": [
+        "claimRelayJob",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback"
+      ],
+      "imports": [
+        "./types"
+      ]
+    },
+    {
+      "file": "cleanup.ts",
+      "functions": [
+        "cleanupRelayJobs",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback"
+      ],
+      "imports": [
+        "./types"
+      ]
+    },
+    {
+      "file": "complete.ts",
+      "functions": [
+        "completeRelayJob",
+        "lexical callback"
+      ],
+      "imports": [
+        "./verify-reply",
+        "./types"
+      ]
+    },
+    {
+      "file": "enqueue.ts",
+      "functions": [
+        "enqueueRelayRequest",
+        "lexical callback"
+      ],
+      "imports": [
+        "node:crypto",
+        "./validate-request",
+        "./request-hash",
+        "./cleanup",
+        "./types"
+      ]
+    },
+    {
+      "file": "http.ts",
+      "functions": [
+        "relayHttp"
+      ],
+      "imports": [
+        "next/server",
+        "./claim",
+        "./complete",
+        "./renew",
+        "./sync",
+        "./cleanup",
+        "./types"
+      ]
+    },
+    {
+      "file": "renew.ts",
+      "functions": [
+        "renewRelayJob",
+        "lexical callback"
+      ],
+      "imports": [
+        "./types"
+      ]
+    },
+    {
+      "file": "reply-message.ts",
+      "functions": [
+        "relayReplyMessage"
+      ],
+      "imports": [
+        "node:crypto"
+      ]
+    },
+    {
+      "file": "request-hash.ts",
+      "functions": [
+        "relayRequestHash"
+      ],
+      "imports": [
+        "node:crypto",
+        "../contracts/commitments/stable",
+        "./types"
+      ]
+    },
+    {
+      "file": "request.ts",
+      "functions": [
+        "requestLocalNode"
+      ],
+      "imports": [
+        "./enqueue",
+        "./wait-reply",
+        "./types"
+      ]
+    },
+    {
+      "file": "runtime.ts",
+      "functions": [],
+      "imports": [
+        "../firebase",
+        "../node-envelope",
+        "./types"
+      ]
+    },
+    {
+      "file": "signal-node.ts",
+      "functions": [
+        "signalLocalNode",
+        "lexical callback"
+      ],
+      "imports": [
+        "node:crypto",
+        "./types"
+      ]
+    },
+    {
+      "file": "sync.ts",
+      "functions": [
+        "syncLocalNode",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback"
+      ],
+      "imports": [
+        "./types"
+      ]
+    },
+    {
+      "file": "types.ts",
+      "functions": [],
+      "imports": [
+        "../security/node-envelope/configuration"
+      ]
+    },
+    {
+      "file": "validate-request.ts",
+      "functions": [
+        "validateRelayRequest",
+        "lexical callback"
+      ],
+      "imports": [
+        "./types"
+      ]
+    },
+    {
+      "file": "verify-reply.ts",
+      "functions": [
+        "verifyRelayReply"
+      ],
+      "imports": [
+        "node:crypto",
+        "../security/node-attestation/configured-public-key",
+        "./reply-message",
+        "./types"
+      ]
+    },
+    {
+      "file": "wait-reply.ts",
+      "functions": [
+        "waitRelayReply",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback",
+        "lexical callback"
+      ],
+      "imports": [
+        "./types"
+      ]
+    }
+  ],
+  "verification": "tests/node-relay.test.mjs; hosted Firestore/Vercel parity unverified"
+}

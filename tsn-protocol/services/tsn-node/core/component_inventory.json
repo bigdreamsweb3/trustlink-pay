@@ -1,5 +1,5 @@
 {
-  "status": "Source inventory extended November 24, 2026 for TIN-Debit; scoped AST parse and one-function checks, no branch coverage or deployment claim",
+  "status": "November 25 Firebase-free Node: retired direct Firebase adapters, complete offline suite passed; no live service or chain claim",
   "scope": "Every authored production Python source file in this Node; testing/ support and tests/ are counted separately without duplicating their inventory",
   "references": {
     "activeServerContracts": "core/component_contracts.json",
@@ -7,22 +7,22 @@
     "verification": "docs/verification.md"
   },
   "coverage": {
-    "productionFiles": 583,
-    "productionFunctions": 408,
+    "productionFiles": 565,
+    "productionFunctions": 393,
     "verificationToolsFiles": 7,
     "verificationToolsFunctions": 5,
-    "testsFiles": 376,
-    "testsFunctions": 275
+    "testsFiles": 397,
+    "testsFunctions": 295
   },
   "productionCoverage": {
-    "files": 583,
-    "functionFreeFiles": 175,
-    "singleFunctionFiles": 408,
+    "files": 565,
+    "functionFreeFiles": 172,
+    "singleFunctionFiles": 393,
     "multipleFunctionFiles": [],
     "originalServerContractEntries": 147,
     "missingServerContractFiles": [],
     "testComponentEntries": 228,
-    "newComponentTestFunctions": 47,
+    "newComponentTestFunctions": 67,
     "contractVerificationStatuses": {
       "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED": 100,
       "TEST_SOURCE_REFERENCES_WITHOUT_DIRECT_CALL": 13,
@@ -34,7 +34,35 @@
       "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED": 328,
       "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD": 31,
       "TEST_SOURCE_REFERENCES_WITHOUT_DIRECT_CALL": 4
-    }
+    },
+    "localRelayComponents": [
+      "api/handlers/local_only_middleware.py",
+      "core/relay/__init__.py",
+      "core/relay/assert_relay_lease.py",
+      "core/relay/dependencies.py",
+      "core/relay/dispatch_relay_job.py",
+      "core/relay/execute_relay_job.py",
+      "core/relay/keep_relay_lease.py",
+      "core/relay/process_relay_job.py",
+      "core/relay/publish_relay_reply.py",
+      "core/relay/relay_worker.py",
+      "core/relay/reply_signature.py",
+      "core/relay/sync_local_node.py",
+      "core/relay/validate_relay_job.py",
+      "settlement/proving/prover_node_args.py",
+      "settlement/proving/resource_limits.py",
+      "storage/cache/__init__.py",
+      "storage/cache/atomic_cache_json.py",
+      "storage/cache/cache_key.py",
+      "storage/cache/cache_path.py",
+      "storage/cache/cache_receiver_work.py",
+      "storage/cache/dependencies.py",
+      "storage/cache/discard_published_reply.py",
+      "storage/cache/load_cached_reply.py",
+      "storage/cache/remember_local_work.py",
+      "storage/cache/reserve_local_reply.py",
+      "storage/cache/save_local_reply.py"
+    ]
   },
   "sourceInterfaceGroups": [
     {
@@ -2756,6 +2784,30 @@
       }
     },
     {
+      "file": "api/handlers/local_only_middleware.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "local_only_middleware",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 5,
+          "async": true
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
       "file": "api/handlers/mempool_status.py",
       "sourceInterfaces": [
         "server.py"
@@ -3836,7 +3888,7 @@
       "functions": [
         {
           "name": "wake_receiver_verification",
-          "line": 20,
+          "line": 21,
           "async": true,
           "verification": {
             "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
@@ -4055,7 +4107,6 @@
         "app/networking/solana/solana_rpc.py",
         "app/storage/mempool/file_store_init.py",
         "app/storage/mempool/file_store_read.py",
-        "app/storage/mempool/firebase_store_init.py",
         "app/storage/mempool/get_store.py",
         "app/storage/mempool/is_processing_stale.py",
         "app/storage/mempool/k_canonical_message_nonces.py",
@@ -13000,857 +13051,6 @@
       }
     },
     {
-      "file": "app/storage/mempool/firebase_store_aclose.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [],
-      "classes": [],
-      "imports": [
-        {
-          "module": "storage.common.aclose",
-          "symbol": "aclose",
-          "alias": null,
-          "localFile": "storage/common/aclose.py",
-          "localImport": true,
-          "relativeImport": false
-        }
-      ],
-      "explicitExports": [
-        "aclose"
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_consume.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "_consume",
-          "line": 5,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_consume_once.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "consume_once",
-          "line": 5,
-          "async": true,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_consume_transaction.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "_consume_transaction",
-          "line": 5,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_delete.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "delete",
-          "line": 5,
-          "async": true,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_delete_keys.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "_delete_keys",
-          "line": 5,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_doc.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [],
-      "classes": [],
-      "imports": [
-        {
-          "module": "storage.firebase.doc",
-          "symbol": "_doc",
-          "alias": null,
-          "localFile": "storage/firebase/doc.py",
-          "localImport": true,
-          "relativeImport": false
-        }
-      ],
-      "explicitExports": [
-        "_doc"
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_get.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "get",
-          "line": 6,
-          "async": true,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "typing",
-          "symbol": "Optional",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_hget.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "hget",
-          "line": 6,
-          "async": true,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "typing",
-          "symbol": "Optional",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_hgetall.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "hgetall",
-          "line": 6,
-          "async": true,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "typing",
-          "symbol": "Any",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_hlen.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [],
-      "classes": [],
-      "imports": [
-        {
-          "module": "storage.common.hlen",
-          "symbol": "hlen",
-          "alias": null,
-          "localFile": "storage/common/hlen.py",
-          "localImport": true,
-          "relativeImport": false
-        }
-      ],
-      "explicitExports": [
-        "hlen"
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_hset.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "hset",
-          "line": 6,
-          "async": true,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "typing",
-          "symbol": "Optional",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_init.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "__init__",
-          "line": 7,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "app",
-          "symbol": "config",
-          "alias": null,
-          "localFile": "app/__init__.py",
-          "localImport": true,
-          "relativeImport": false
-        },
-        {
-          "module": "glob",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "os",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "firebase_admin",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "firebase_admin",
-          "symbol": "credentials",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "firebase_admin",
-          "symbol": "firestore",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_item_doc.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [],
-      "classes": [],
-      "imports": [
-        {
-          "module": "storage.firebase.item_doc",
-          "symbol": "_item_doc",
-          "alias": null,
-          "localFile": "storage/firebase/item_doc.py",
-          "localImport": true,
-          "relativeImport": false
-        }
-      ],
-      "explicitExports": [
-        "_item_doc"
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_read_document.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "_read_document",
-          "line": 4,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_read_item.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "_read_item",
-          "line": 4,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_read_items.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "_read_items",
-          "line": 5,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "typing",
-          "symbol": "Any",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_set.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "set",
-          "line": 5,
-          "async": true,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_write_document.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "_write_document",
-          "line": 4,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_write_item.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "_write_item",
-          "line": 4,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "app/storage/mempool/firebase_store_write_mapping.py",
-      "sourceInterfaces": [
-        "app/store.py"
-      ],
-      "functions": [
-        {
-          "name": "_write_mapping",
-          "line": 5,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
       "file": "app/storage/mempool/get_mempool_store.py",
       "sourceInterfaces": [
         "app/store.py"
@@ -14631,7 +13831,6 @@
       ],
       "functions": [],
       "classes": [
-        "FirebaseStore",
         "FileStore"
       ],
       "imports": [
@@ -14650,174 +13849,6 @@
           "localFile": "storage/common/claim_once.py",
           "localImport": true,
           "relativeImport": false
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_init",
-          "symbol": "__init__",
-          "alias": "_FirebaseStore_init",
-          "localFile": "app/storage/mempool/firebase_store_init.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_doc",
-          "symbol": "_doc",
-          "alias": "_FirebaseStore_doc",
-          "localFile": "app/storage/mempool/firebase_store_doc.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_item_doc",
-          "symbol": "_item_doc",
-          "alias": "_FirebaseStore_item_doc",
-          "localFile": "app/storage/mempool/firebase_store_item_doc.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_get",
-          "symbol": "get",
-          "alias": "_FirebaseStore_get",
-          "localFile": "app/storage/mempool/firebase_store_get.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_set",
-          "symbol": "set",
-          "alias": "_FirebaseStore_set",
-          "localFile": "app/storage/mempool/firebase_store_set.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_hget",
-          "symbol": "hget",
-          "alias": "_FirebaseStore_hget",
-          "localFile": "app/storage/mempool/firebase_store_hget.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_read_document",
-          "symbol": "_read_document",
-          "alias": "_FirebaseStore_read_document",
-          "localFile": "app/storage/mempool/firebase_store_read_document.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_write_document",
-          "symbol": "_write_document",
-          "alias": "_FirebaseStore_write_document",
-          "localFile": "app/storage/mempool/firebase_store_write_document.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_read_item",
-          "symbol": "_read_item",
-          "alias": "_FirebaseStore_read_item",
-          "localFile": "app/storage/mempool/firebase_store_read_item.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_write_item",
-          "symbol": "_write_item",
-          "alias": "_FirebaseStore_write_item",
-          "localFile": "app/storage/mempool/firebase_store_write_item.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_read_items",
-          "symbol": "_read_items",
-          "alias": "_FirebaseStore_read_items",
-          "localFile": "app/storage/mempool/firebase_store_read_items.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_hgetall",
-          "symbol": "hgetall",
-          "alias": "_FirebaseStore_hgetall",
-          "localFile": "app/storage/mempool/firebase_store_hgetall.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_hlen",
-          "symbol": "hlen",
-          "alias": "_FirebaseStore_hlen",
-          "localFile": "app/storage/mempool/firebase_store_hlen.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_write_mapping",
-          "symbol": "_write_mapping",
-          "alias": "_FirebaseStore_write_mapping",
-          "localFile": "app/storage/mempool/firebase_store_write_mapping.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_hset",
-          "symbol": "hset",
-          "alias": "_FirebaseStore_hset",
-          "localFile": "app/storage/mempool/firebase_store_hset.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_consume_transaction",
-          "symbol": "_consume_transaction",
-          "alias": "_FirebaseStore_consume_transaction",
-          "localFile": "app/storage/mempool/firebase_store_consume_transaction.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_consume",
-          "symbol": "_consume",
-          "alias": "_FirebaseStore_consume",
-          "localFile": "app/storage/mempool/firebase_store_consume.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_consume_once",
-          "symbol": "consume_once",
-          "alias": "_FirebaseStore_consume_once",
-          "localFile": "app/storage/mempool/firebase_store_consume_once.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_delete_keys",
-          "symbol": "_delete_keys",
-          "alias": "_FirebaseStore_delete_keys",
-          "localFile": "app/storage/mempool/firebase_store_delete_keys.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_delete",
-          "symbol": "delete",
-          "alias": "_FirebaseStore_delete",
-          "localFile": "app/storage/mempool/firebase_store_delete.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "app.storage.mempool.firebase_store_aclose",
-          "symbol": "aclose",
-          "alias": "_FirebaseStore_aclose",
-          "localFile": "app/storage/mempool/firebase_store_aclose.py",
-          "localImport": true,
-          "relativeImport": true
         },
         {
           "module": "app.storage.mempool.file_store_init",
@@ -18355,7 +17386,6 @@
         }
       ],
       "importedBy": [
-        "storage/firebase/initialize.py",
         "storage/local/initialize.py",
         "storage/local/read.py",
         "transactions/native/signing/mother_authority_signing_key.py"
@@ -18470,7 +17500,7 @@
       "functions": [
         {
           "name": "lifespan",
-          "line": 33,
+          "line": 37,
           "async": true,
           "verification": {
             "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
@@ -18556,6 +17586,276 @@
       ],
       "verification": {
         "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "core/relay/__init__.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "core/relay/assert_relay_lease.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "assert_relay_lease",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 6,
+          "async": false
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "core/relay/dependencies.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [],
+      "classes": [
+        "RelayDependencies"
+      ],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "core/relay/dispatch_relay_job.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "dispatch_relay_job",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 8,
+          "async": true
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "core/relay/execute_relay_job.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "execute_relay_job",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 12,
+          "async": true
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "core/relay/keep_relay_lease.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "keep_relay_lease",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 8,
+          "async": true
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "core/relay/process_relay_job.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "process_relay_job",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 11,
+          "async": true
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "core/relay/publish_relay_reply.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "publish_relay_reply",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 11,
+          "async": true
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "core/relay/relay_worker.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "relay_worker",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 9,
+          "async": true
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "core/relay/reply_signature.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "reply_signature",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 9,
+          "async": false
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "core/relay/sync_local_node.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "sync_local_node",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 12,
+          "async": true
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "core/relay/validate_relay_job.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "validate_relay_job",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 7,
+          "async": false
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
         "testReferences": []
       }
     },
@@ -19319,14 +18619,6 @@
           "alias": null,
           "localFile": null,
           "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "storage.firebase.types",
-          "symbol": "FirebaseStore",
-          "alias": null,
-          "localFile": "storage/firebase/types.py",
-          "localImport": true,
           "relativeImport": false
         },
         {
@@ -26311,7 +25603,7 @@
       "functions": [
         {
           "name": "claim_receiver_work",
-          "line": 21,
+          "line": 23,
           "async": true,
           "verification": {
             "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
@@ -26571,7 +25863,7 @@
       "functions": [
         {
           "name": "receiver_verification_worker",
-          "line": 24,
+          "line": 25,
           "async": true,
           "verification": {
             "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
@@ -26925,7 +26217,7 @@
       "functions": [
         {
           "name": "_verify_and_report_receiver_work",
-          "line": 26,
+          "line": 27,
           "async": true,
           "verification": {
             "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
@@ -27024,6 +26316,14 @@
         {
           "module": "typing",
           "symbol": "Protocol",
+          "alias": null,
+          "localFile": null,
+          "localImport": false,
+          "relativeImport": false
+        },
+        {
+          "module": "time",
+          "symbol": "module",
           "alias": null,
           "localFile": null,
           "localImport": false,
@@ -35024,7 +34324,7 @@
       "functions": [
         {
           "name": "prove_debit",
-          "line": 9,
+          "line": 11,
           "async": true,
           "verification": {
             "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
@@ -38157,7 +37457,7 @@
       "functions": [
         {
           "name": "prove_epoch",
-          "line": 15,
+          "line": 16,
           "async": true,
           "verification": {
             "status": "TEST_SOURCE_REFERENCES_WITHOUT_DIRECT_CALL",
@@ -38304,7 +37604,7 @@
       "functions": [
         {
           "name": "prove_hidden_head_credit",
-          "line": 11,
+          "line": 12,
           "async": true,
           "verification": {
             "status": "TEST_SOURCE_REFERENCES_WITHOUT_DIRECT_CALL",
@@ -38440,6 +37740,44 @@
       ],
       "verification": {
         "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/proving/prover_node_args.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "prover_node_args",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 5,
+          "async": false
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "settlement/proving/resource_limits.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
         "testReferences": []
       }
     },
@@ -42092,6 +41430,252 @@
       }
     },
     {
+      "file": "storage/cache/__init__.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "storage/cache/atomic_cache_json.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "atomic_cache_json",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 7,
+          "async": false
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "storage/cache/cache_key.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "cache_key",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 8,
+          "async": false
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "storage/cache/cache_path.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "cache_path",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 8,
+          "async": false
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "storage/cache/cache_receiver_work.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "cache_receiver_work",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 8,
+          "async": true
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "storage/cache/dependencies.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [],
+      "classes": [
+        "CacheDependencies"
+      ],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "storage/cache/discard_published_reply.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "discard_published_reply",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 6,
+          "async": false
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "storage/cache/load_cached_reply.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "load_cached_reply",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 11,
+          "async": false
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "storage/cache/remember_local_work.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "remember_local_work",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 9,
+          "async": false
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "storage/cache/reserve_local_reply.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "reserve_local_reply",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 8,
+          "async": false
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
+      "file": "storage/cache/save_local_reply.py",
+      "sourceInterfaces": [
+        "server.py"
+      ],
+      "functions": [
+        {
+          "name": "save_local_reply",
+          "verification": {
+            "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+            "testReferences": []
+          },
+          "line": 13,
+          "async": false
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "importedBy": [],
+      "verification": {
+        "status": "SCOPED_OFFLINE_CHECKS_SEE_VERIFICATION_RECORD",
+        "testReferences": []
+      }
+    },
+    {
       "file": "storage/common/__init__.py",
       "sourceInterfaces": [
         "server.py",
@@ -42158,9 +41742,7 @@
       ],
       "importedBy": [
         "app/storage/mempool/file_store_aclose.py",
-        "app/storage/mempool/firebase_store_aclose.py",
         "storage/common/__init__.py",
-        "storage/firebase/aclose.py",
         "storage/local/aclose.py"
       ],
       "verification": {
@@ -42199,7 +41781,6 @@
       ],
       "importedBy": [
         "app/storage/mempool/types.py",
-        "storage/firebase/types.py",
         "storage/local/types.py"
       ],
       "verification": {
@@ -42238,10 +41819,8 @@
       ],
       "importedBy": [
         "app/storage/mempool/file_store_hlen.py",
-        "app/storage/mempool/firebase_store_hlen.py",
         "app/storage/receiver/receiver_store_hlen.py",
         "storage/common/__init__.py",
-        "storage/firebase/hlen.py",
         "storage/local/hlen.py"
       ],
       "verification": {
@@ -42439,7 +42018,7 @@
       "functions": [
         {
           "name": "get_store",
-          "line": 25,
+          "line": 23,
           "async": true,
           "verification": {
             "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
@@ -43026,1369 +42605,6 @@
       ],
       "importedBy": [
         "storage/coordination/__init__.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/__init__.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "importedBy": [],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/aclose.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [],
-      "classes": [],
-      "imports": [
-        {
-          "module": "storage.common.aclose",
-          "symbol": "aclose",
-          "alias": null,
-          "localFile": "storage/common/aclose.py",
-          "localImport": true,
-          "relativeImport": false
-        }
-      ],
-      "explicitExports": [
-        "aclose"
-      ],
-      "importedBy": [
-        "storage/firebase/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/consume_once.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "consume_once",
-          "line": 8,
-          "async": true,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "functools",
-          "symbol": "partial",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "storage.firebase.consume_once_consume",
-          "symbol": "consume_once_consume",
-          "alias": null,
-          "localFile": "storage/firebase/consume_once_consume.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "functools",
-          "symbol": "partial",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "storage.firebase.consume_once_update",
-          "symbol": "consume_once_update",
-          "alias": null,
-          "localFile": "storage/firebase/consume_once_update.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/consume_once_consume.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "consume_once_consume",
-          "line": 7,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "functools",
-          "symbol": "partial",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "storage.firebase.consume_once_update",
-          "symbol": "consume_once_update",
-          "alias": null,
-          "localFile": "storage/firebase/consume_once_update.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/consume_once.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/consume_once_update.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "consume_once_update",
-          "line": 5,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/consume_once.py",
-        "storage/firebase/consume_once_consume.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/delete.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "delete",
-          "line": 6,
-          "async": true,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "functools",
-          "symbol": "partial",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "storage.firebase.delete_delete_keys",
-          "symbol": "delete_delete_keys",
-          "alias": null,
-          "localFile": "storage/firebase/delete_delete_keys.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/delete_delete_keys.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "delete_delete_keys",
-          "line": 5,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/delete.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/doc.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "_doc",
-          "line": 3,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/firebase_store_doc.py",
-        "storage/firebase/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/get.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "get",
-          "line": 7,
-          "async": true,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "functools",
-          "symbol": "partial",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "storage.firebase.get_call",
-          "symbol": "get_call",
-          "alias": null,
-          "localFile": "storage/firebase/get_call.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "typing",
-          "symbol": "Optional",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/get_call.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "get_call",
-          "line": 6,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "typing",
-          "symbol": "Optional",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/get.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/hget.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "hget",
-          "line": 7,
-          "async": true,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "functools",
-          "symbol": "partial",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "storage.firebase.hget_call",
-          "symbol": "hget_call",
-          "alias": null,
-          "localFile": "storage/firebase/hget_call.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "typing",
-          "symbol": "Optional",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/hget_call.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "hget_call",
-          "line": 6,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "typing",
-          "symbol": "Optional",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/hget.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/hgetall.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "hgetall",
-          "line": 6,
-          "async": true,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "functools",
-          "symbol": "partial",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "storage.firebase.hgetall_read_items",
-          "symbol": "hgetall_read_items",
-          "alias": null,
-          "localFile": "storage/firebase/hgetall_read_items.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/hgetall_read_items.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "hgetall_read_items",
-          "line": 5,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/hgetall.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/hlen.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [],
-      "classes": [],
-      "imports": [
-        {
-          "module": "storage.common.hlen",
-          "symbol": "hlen",
-          "alias": null,
-          "localFile": "storage/common/hlen.py",
-          "localImport": true,
-          "relativeImport": false
-        }
-      ],
-      "explicitExports": [
-        "hlen"
-      ],
-      "importedBy": [
-        "storage/firebase/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/hset.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "hset",
-          "line": 9,
-          "async": true,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "functools",
-          "symbol": "partial",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "storage.firebase.hset_write_mapping",
-          "symbol": "hset_write_mapping",
-          "alias": null,
-          "localFile": "storage/firebase/hset_write_mapping.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "functools",
-          "symbol": "partial",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "storage.firebase.hset_call",
-          "symbol": "hset_call",
-          "alias": null,
-          "localFile": "storage/firebase/hset_call.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "typing",
-          "symbol": "Optional",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/hset_call.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "hset_call",
-          "line": 6,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "typing",
-          "symbol": "Optional",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/hset.py",
-        "storage/firebase/hset_write_mapping.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/hset_write_mapping.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "hset_write_mapping",
-          "line": 8,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "functools",
-          "symbol": "partial",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "storage.firebase.hset_call",
-          "symbol": "hset_call",
-          "alias": null,
-          "localFile": "storage/firebase/hset_call.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "typing",
-          "symbol": "Optional",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/hset.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/initialize.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "__init__",
-          "line": 6,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "glob",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "os",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "core.configuration",
-          "symbol": "FIREBASE_COLLECTION",
-          "alias": null,
-          "localFile": "core/configuration.py",
-          "localImport": true,
-          "relativeImport": false
-        },
-        {
-          "module": "firebase_admin",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "firebase_admin",
-          "symbol": "credentials",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "firebase_admin",
-          "symbol": "firestore",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/item_doc.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "_item_doc",
-          "line": 3,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "app/storage/mempool/firebase_store_item_doc.py",
-        "storage/firebase/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/set.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "set",
-          "line": 6,
-          "async": true,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "functools",
-          "symbol": "partial",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "storage.firebase.set_call",
-          "symbol": "set_call",
-          "alias": null,
-          "localFile": "storage/firebase/set_call.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/types.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/set_call.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [
-        {
-          "name": "set_call",
-          "line": 5,
-          "async": false,
-          "verification": {
-            "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-            "testReferences": []
-          }
-        }
-      ],
-      "classes": [],
-      "imports": [
-        {
-          "module": "__future__",
-          "symbol": "annotations",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        },
-        {
-          "module": "asyncio",
-          "symbol": "module",
-          "alias": null,
-          "localFile": null,
-          "localImport": false,
-          "relativeImport": false
-        }
-      ],
-      "importedBy": [
-        "storage/firebase/set.py"
-      ],
-      "verification": {
-        "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
-        "testReferences": []
-      }
-    },
-    {
-      "file": "storage/firebase/types.py",
-      "sourceInterfaces": [
-        "server.py"
-      ],
-      "functions": [],
-      "classes": [
-        "FirebaseStore"
-      ],
-      "imports": [
-        {
-          "module": "storage.firebase.initialize",
-          "symbol": "__init__",
-          "alias": null,
-          "localFile": "storage/firebase/initialize.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "storage.firebase.doc",
-          "symbol": "_doc",
-          "alias": null,
-          "localFile": "storage/firebase/doc.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "storage.firebase.item_doc",
-          "symbol": "_item_doc",
-          "alias": null,
-          "localFile": "storage/firebase/item_doc.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "storage.firebase.get",
-          "symbol": "get",
-          "alias": null,
-          "localFile": "storage/firebase/get.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "storage.firebase.set",
-          "symbol": "set",
-          "alias": null,
-          "localFile": "storage/firebase/set.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "storage.firebase.hget",
-          "symbol": "hget",
-          "alias": null,
-          "localFile": "storage/firebase/hget.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "storage.firebase.hgetall",
-          "symbol": "hgetall",
-          "alias": null,
-          "localFile": "storage/firebase/hgetall.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "storage.firebase.hlen",
-          "symbol": "hlen",
-          "alias": null,
-          "localFile": "storage/firebase/hlen.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "storage.firebase.hset",
-          "symbol": "hset",
-          "alias": null,
-          "localFile": "storage/firebase/hset.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "storage.firebase.consume_once",
-          "symbol": "consume_once",
-          "alias": null,
-          "localFile": "storage/firebase/consume_once.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "storage.common.claim_once",
-          "symbol": "claim_once",
-          "alias": null,
-          "localFile": "storage/common/claim_once.py",
-          "localImport": true,
-          "relativeImport": false
-        },
-        {
-          "module": "storage.firebase.delete",
-          "symbol": "delete",
-          "alias": null,
-          "localFile": "storage/firebase/delete.py",
-          "localImport": true,
-          "relativeImport": true
-        },
-        {
-          "module": "storage.firebase.aclose",
-          "symbol": "aclose",
-          "alias": null,
-          "localFile": "storage/firebase/aclose.py",
-          "localImport": true,
-          "relativeImport": true
-        }
-      ],
-      "classMethodBindings": [
-        {
-          "class": "FirebaseStore",
-          "member": "__init__",
-          "descriptor": "instance",
-          "implementation": "storage/firebase/initialize.py",
-          "function": "__init__"
-        },
-        {
-          "class": "FirebaseStore",
-          "member": "_doc",
-          "descriptor": "instance",
-          "implementation": "storage/firebase/doc.py",
-          "function": "_doc"
-        },
-        {
-          "class": "FirebaseStore",
-          "member": "_item_doc",
-          "descriptor": "instance",
-          "implementation": "storage/firebase/item_doc.py",
-          "function": "_item_doc"
-        },
-        {
-          "class": "FirebaseStore",
-          "member": "get",
-          "descriptor": "instance",
-          "implementation": "storage/firebase/get.py",
-          "function": "get"
-        },
-        {
-          "class": "FirebaseStore",
-          "member": "set",
-          "descriptor": "instance",
-          "implementation": "storage/firebase/set.py",
-          "function": "set"
-        },
-        {
-          "class": "FirebaseStore",
-          "member": "hget",
-          "descriptor": "instance",
-          "implementation": "storage/firebase/hget.py",
-          "function": "hget"
-        },
-        {
-          "class": "FirebaseStore",
-          "member": "hgetall",
-          "descriptor": "instance",
-          "implementation": "storage/firebase/hgetall.py",
-          "function": "hgetall"
-        },
-        {
-          "class": "FirebaseStore",
-          "member": "hlen",
-          "descriptor": "instance",
-          "implementation": "storage/common/hlen.py",
-          "function": "hlen"
-        },
-        {
-          "class": "FirebaseStore",
-          "member": "hset",
-          "descriptor": "instance",
-          "implementation": "storage/firebase/hset.py",
-          "function": "hset"
-        },
-        {
-          "class": "FirebaseStore",
-          "member": "consume_once",
-          "descriptor": "instance",
-          "implementation": "storage/firebase/consume_once.py",
-          "function": "consume_once"
-        },
-        {
-          "class": "FirebaseStore",
-          "member": "claim_once",
-          "descriptor": "instance",
-          "implementation": "storage/common/claim_once.py",
-          "function": "claim_once"
-        },
-        {
-          "class": "FirebaseStore",
-          "member": "delete",
-          "descriptor": "instance",
-          "implementation": "storage/firebase/delete.py",
-          "function": "delete"
-        },
-        {
-          "class": "FirebaseStore",
-          "member": "aclose",
-          "descriptor": "instance",
-          "implementation": "storage/common/aclose.py",
-          "function": "aclose"
-        }
-      ],
-      "importedBy": [
-        "core/runtime.py"
       ],
       "verification": {
         "status": "FULL_SUITE_ONLY_INDIVIDUAL_COVERAGE_UNMEASURED",
@@ -56621,6 +54837,6 @@
     "forbiddenProductionPatterns": [],
     "topLevelImportCycles": [],
     "missingTestComponentTargets": [],
-    "method": "November 24: all Python files parsed and one-function invariant checked. Prior import/symbol/cycle findings retain their November 22 audit scope; see verification record for runtime imports/tests."
+    "method": "All current Python files AST-parsed; one-function/no-lambda invariant passed. Deleted Firebase component references removed. Complete offline suite validates runtime imports; no new complete cycle audit is claimed."
   }
 }

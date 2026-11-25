@@ -25,12 +25,12 @@ const routes = new Map([
     "git:commit:push:all": "node scripts/repo-security.mjs commit-push-all protocol origin main",
   }],
   ["tsn-protocol/services/tsn-rpc-gateway/package.json", {
-    "git:pull:all": "node ../../scripts/repo-security.mjs fetch protocol origin main",
-    "git:commit:push:all": "node ../../scripts/repo-security.mjs commit-push-all protocol origin main",
+    "git:pull:all": "node scripts/git-repository.mjs fetch gateway origin main",
+    "git:commit:push:all": "node scripts/git-repository.mjs commit-push-all gateway origin main",
   }],
   ["tsn-protocol/services/tsn-receiver/package.json", {
-    "git:pull:all": "node ../../scripts/repo-security.mjs fetch protocol origin main",
-    "git:commit:push:all": "node ../../scripts/repo-security.mjs commit-push-all protocol origin main",
+    "git:pull:all": "node scripts/git-repository.mjs fetch receiver origin main",
+    "git:commit:push:all": "node scripts/git-repository.mjs commit-push-all receiver origin main",
   }],
   ["tsn-protocol/services/tsn-node/package.json", {
     "git:pull:all": "node ../../scripts/repo-security.mjs fetch protocol origin main",
@@ -99,12 +99,15 @@ for (const [relativePath, commands] of routes) {
       assert.equal(tokens.length, 6, "Routes supply repository, remote and branch; push-current captures HEAD, push requires a hash, and commit routes capture their selected scope");
       assert.equal(tokens[0], "node");
       assert.ok(["fetch", "push", "push-current", "commit-push", "commit-push-all"].includes(tokens[2]));
-      assert.ok(["workspace", "protocol", "pitch-deck"].includes(tokens[3]));
+      assert.ok(["workspace", "protocol", "pitch-deck", "receiver", "gateway"].includes(tokens[3]));
       assert.equal(tokens[4], "origin");
       assert.equal(tokens[5], "main");
       assert.doesNotMatch(command, /--(?:force(?:-with-lease)?|no-verify|allow-empty)\b|\s-M\b/);
       const helper = resolve(dirname(manifestPath), tokens[1]);
-      assert.equal(helper, resolve(root, relativePath === "package.json" || relativePath === "pitch-deck/package.json" ? "scripts/repo-security.mjs" : "tsn-protocol/scripts/repo-security.mjs"));
+      const expectedHelper = relativePath === "tsn-protocol/services/tsn-receiver/package.json" ? "tsn-protocol/services/tsn-receiver/scripts/git-repository.mjs"
+        : relativePath === "tsn-protocol/services/tsn-rpc-gateway/package.json" ? "tsn-protocol/services/tsn-rpc-gateway/scripts/git-repository.mjs"
+        : relativePath === "package.json" || relativePath === "pitch-deck/package.json" ? "scripts/repo-security.mjs" : "tsn-protocol/scripts/repo-security.mjs";
+      assert.equal(helper, resolve(root, expectedHelper));
       assert.ok(existsSync(helper), "Guarded helper must exist at the package-relative route");
       // Routing checks never execute Git operations, npm lifecycle scripts, or the helper.
     });

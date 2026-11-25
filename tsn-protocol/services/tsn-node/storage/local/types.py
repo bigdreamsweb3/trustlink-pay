@@ -13,7 +13,7 @@ from .delete import delete
 from .aclose import aclose
 
 class FileStore:
-    'Local JSON-backed mempool store for devnet testing without Firebase quota.'
+    'Local JSON-backed mempool store for isolated devnet testing.'
     __init__ = __init__
     _read = _read
     _write = _write

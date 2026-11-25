@@ -169,6 +169,29 @@ export function isCanonicalTsnMessage(message: string) {
   return typeof message === "string" && message.startsWith("TSN ") && message.includes("\n---\n");
 }
 
+/** Wallet-readable consent to resolve the current context for a TIN balance payment. */
+export function buildTinDebitPreparationMessage(params: {
+  senderTin: string;
+  recipientTin: string;
+  tokenMintAddress: string;
+  expiresAt: string;
+}) {
+  if (!/^\d{10}$/.test(params.senderTin) || !/^\d{10}$/.test(params.recipientTin)
+      || params.senderTin === params.recipientTin) {
+    throw new CanonicalMessageError("TIN debit preparation requires different ten-digit TINs");
+  }
+  if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(params.tokenMintAddress)
+      || !/^[1-9]\d{0,10}$/.test(params.expiresAt)) {
+    throw new CanonicalMessageError("TIN debit preparation mint or expiry is invalid");
+  }
+  return buildMessage("TIN Balance Payment Preparation", [
+    ["Sender TIN", params.senderTin],
+    ["Recipient TIN", params.recipientTin],
+    ["Token Mint", params.tokenMintAddress],
+    ["Expires", new Date(Number(params.expiresAt) * 1000)],
+  ]);
+}
+
 export type VerifiedRecipientCredential = {
   credentialType: string;
   issuer: string;

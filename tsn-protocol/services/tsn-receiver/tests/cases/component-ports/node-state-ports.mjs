@@ -12,8 +12,8 @@ export async function nodeStatePorts() {
   const previous = process.env.TSN_RECEIVER_LOCAL_FILE;
   process.env.TSN_RECEIVER_LOCAL_FILE = path.join(directory, "store.json");
   try {
-    await compileReceiverFixture(directory, ["local-firestore.ts", "state/node-key-value/execute-state-operation.ts"]);
-    const { localDb } = await import(pathToFileURL(path.join(directory, "local-firestore.mjs")).href);
+    await compileReceiverFixture(directory, ["local-json-store.ts", "state/node-key-value/execute-state-operation.ts"]);
+    const { localDb } = await import(pathToFileURL(path.join(directory, "local-json-store.mjs")).href);
     const { executeStateOperation } = await import(pathToFileURL(path.join(directory, "state/node-key-value/execute-state-operation.mjs")).href);
     const dependencies = { database: localDb, root: localDb.collection("test_state") };
     assert.deepEqual(await executeStateOperation(dependencies, { operation: "set", key: "bucket", value: "value" }), { ok: true });

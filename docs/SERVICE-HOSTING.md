@@ -1,5 +1,7 @@
 # TrustLink Labs Service Hosting
 
+**Source topology updated November 25, 2026; hosted relay deployment and limits remain UNVERIFIED.** The [local relay checkpoint](references/LOCAL-NODE-RELAY-20261125.md) supersedes the earlier Wasmer Node topology.
+
 This document records where the active TSN XP and Transfer Settlement Network
 (TSN) components run. It describes the current Devnet/test deployment, not a
 mainnet production guarantee.
@@ -11,9 +13,9 @@ mainnet production guarantee.
 | TSN XP                | Active user-facing product and SDK integration experience                              | Local development        | No public XP URL yet                                                           | `protocol-tests/ui/`                                                             |
 | Earlier TrustLink Pay | Earlier hosted browser application                                                    | Vercel                   | [trustlink-pay.vercel.app](https://trustlink-pay.vercel.app/)                 | `trustlink-pay` repository, `frontend/`                                           |
 | TrustLink backend      | User authentication, application APIs, non-secret application data                 | Vercel                   | [trustlink-pay-backend.vercel.app](https://trustlink-pay-backend.vercel.app/) | `trustlink-pay` repository, `backend/`                                            |
-| TSN Receiver           | Durable ingress, Firestore-backed work records, leases, transitions, and evidence  | Vercel endpoint supplied | [tsn-receiver-kappa.vercel.app](https://tsn-receiver-kappa.vercel.app/)       | [bigdreamsweb3/tsn-receiver](https://github.com/bigdreamsweb3/tsn-receiver)       |
+| TSN Receiver           | Durable ingress, D1 JSON-backed work records, leases, transitions, and evidence  | Vercel endpoint supplied | [tsn-receiver-kappa.vercel.app](https://tsn-receiver-kappa.vercel.app/)       | [bigdreamsweb3/tsn-receiver](https://github.com/bigdreamsweb3/tsn-receiver)       |
 | TSN RPC Gateway        | Controlled Solana RPC access and upstream selection                                | Vercel                   | [tsn-rpc-gateway.vercel.app](https://tsn-rpc-gateway.vercel.app/)             | [bigdreamsweb3/tsn-rpc-gateway](https://github.com/bigdreamsweb3/tsn-rpc-gateway) |
-| TSN Node               | Stateless verification, route resolution, epoch work, and Receiver work processing | Wasmer                   | [tsn-node.wasmer.app](https://tsn-node.wasmer.app/)                           | [bigdreamsweb3/tsn-node](https://github.com/bigdreamsweb3/tsn-node)               |
+| TSN Node               | Local verification, route resolution, proving and outbound Receiver processing | Operator machine | No public Node endpoint | [bigdreamsweb3/tsn-node](https://github.com/bigdreamsweb3/tsn-node)               |
 | Cranker operator       | Leases verified work and submits the exact authorized Solana transaction           | Operator machine         | No public service URL                                                         | `tsn-protocol/services/tsn-cranker-op-daemon/`                                    |
 | TSNP program            | On-chain authorization, commitments, escrow, replay, and settlement state          | Solana Devnet            | Program account, not HTTP                                                     | `tsn-protocol/programs/tsn/protocol/`                                             |
 | TIP / TIN registrar    | On-chain Transfer Identity Number registry                                         | Solana Devnet            | Program account, not HTTP                                                     | `tsn-protocol/programs/transfer-identity-protocol/`                               |
@@ -22,6 +24,8 @@ The Cranker is intentionally not hosted as a public API. An operator runs it
 on a workstation, VM, or private machine with its fee-payer/operator key. The
 Cranker receives only authenticated, non-secret work from the Receiver and
 submits transactions to Solana.
+
+The [Firebase-free checkpoint](references/FIREBASE-FREE-RECEIVER-20261125.md) records the private D1 Worker and free-tier limits. Its actual Worker URL/database ID remain operator-provided and unverified.
 
 ## Runtime topology
 
@@ -32,8 +36,7 @@ flowchart TD
     FRONTEND --> RECEIVER["TSN Receiver\nVercel\ndurable ingress and work state"]
     FRONTEND --> RPC["TSN RPC Gateway\nVercel"]
 
-    RECEIVER --> NODE["TSN Node\nWasmer\nverification and decision services"]
-    NODE --> RECEIVER
+    NODE["Local TSN Node\noutbound verification and decision services"] -->|"Pull encrypted jobs"| RECEIVER
     NODE --> RPC
 
     RECEIVER --> CRANKER["Cranker operator machine\nprivate process, no public endpoint"]
@@ -76,7 +79,7 @@ fallbacks when a local service is stopped:
 | Frontend backend proxy | `http://localhost:3000` | `https://trustlink-pay-backend.vercel.app` |
 | RPC Gateway            | `http://127.0.0.1:8787` | `https://tsn-rpc-gateway.vercel.app`       |
 | TSN Receiver           | `http://127.0.0.1:8010` | `https://tsn-receiver-kappa.vercel.app`    |
-| TSN Node               | `http://127.0.0.1:8000` | `https://tsn-node.wasmer.app`              |
+| Node application facade | `http://127.0.0.1:8000` | Receiver `/node` durable relay |
 
 Relevant fallback variables are server-side unless they begin with
 `NEXT_PUBLIC_`:
@@ -85,18 +88,13 @@ Relevant fallback variables are server-side unless they begin with
 - `NEXT_PUBLIC_TSN_RPC_GATEWAY_URL`
 - `TSN_RPC_GATEWAY_URL`
 - `TSN_RECEIVER_URL` and `TSN_RECEIVER_FALLBACK_URL`
-- `TSN_NODE_URL` and `TSN_NODE_FALLBACK_URL`
+- Application Node base: configured Receiver URL plus `/node` in hosted mode
 
-The Receiver wakes the Node with an authenticated, payload-free request after
-each durable work commit. The Node drains the queue and then sleeps; it does
-not continuously poll the Receiver while idle. Set `TSN_NODE_URL`,
-`TSN_NODE_FALLBACK_URL`, and the matching `TSN_RECEIVER_NODE_API_KEY` in the
-Receiver deployment so this wake path is active.
+Receiver updates a payload-free durable activity revision after commits. The local Node observes it through authenticated outbound sync, wakes its independent lanes and drains authoritative work. Receiver never opens a Node connection. Revision listening retains a bounded safety drain for missed hints; idle synchronization still incurs network/database requests. Native authorization and Mother signing use encrypted request/reply jobs fenced to the original Cranker lease.
 
-Only public HTTPS URLs may be exposed to the browser. API keys, Firebase
+Only public HTTPS URLs may be exposed to the browser. API keys, record-store
 credentials, route-decryption keys, operator keys, and Cranker key material
-must remain in Vercel/Wasmer secret configuration or the Cranker operator
-machine. They must never be placed in `NEXT_PUBLIC_*` variables.
+must remain in Receiver secret configuration or protected Node/Cranker operator storage. They must never be placed in `NEXT_PUBLIC_*` variables.
 
 ## Cranker operator setup
 
@@ -129,7 +127,7 @@ does not need to be reachable from the public internet.
   `TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.vercel.app` and
   `NEXT_PUBLIC_TSN_RPC_GATEWAY_URL=https://tsn-rpc-gateway.vercel.app`
   where browser access is required.
-- TSN Node: deploy the standalone Wasmer app from `tsn-node`.
+- TSN Node: reload the local worker from reviewed source; preserve private witness state and encrypted reply cache.
 - Cranker: update the operator machine and restart its supervised process.
 - TSNP/TIP Programs: deploy or upgrade explicitly on Solana Devnet; an HTTP
   service deployment does not upgrade an on-chain program.
@@ -148,5 +146,5 @@ does not by itself prove that a payment settled on-chain.
 | Program                | Program ID                                    |
 | ---------------------- | --------------------------------------------- |
 | TSN / TrustLink Escrow | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
-| TCAP                   | `TcApT4CytBqvqEDpRYVB7WfiB1e53VJJg9X8NoRP8V`  |
+| TCAP                   | `tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF`  |
 | TIP / TIN registrar    | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |

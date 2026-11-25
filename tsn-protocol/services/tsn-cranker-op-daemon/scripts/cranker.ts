@@ -32,6 +32,8 @@ import { createDbrixSettlementMemoInstruction } from "../src/dbrix/settlement-me
 import { sendSettlementV1 } from "../src/dbrix/settlement-transport.js";
 import { createMotherNodeTransactionSigner } from "../src/dbrix/mother-node-signer.js";
 import { ConfirmedReceiptReportPending, RetryableConfirmedReportError, confirmedReportAvailabilityError, sendConfirmedWorkReport } from "../src/receiver/confirmed-report.js";
+import { FUNDING_WORK_KINDS, NATIVE_WORK_KINDS, runCrankerWorkLoop } from "../src/receiver/work-loop.js";
+import { createCrankerLeaseGate } from "../src/receiver/lease-gate.js";
 import { nativeConflictReason, nativeSigningAvailabilityReason, nativeWorkRetryReason } from "../src/receiver/native-retry.js";
 import { assertFundingRoot } from "../src/dbrix/funding-root.js";
 import { buildPublicTinDebitInstructionsV1 } from "../src/dbrix/tin-debit-transition.js";
@@ -79,7 +81,7 @@ type ReceiverSession = {
 };
 
 const RECEIVER_SESSION_IDLE_REAUTH_MS = 5 * 60_000;
-let receiverSession: ReceiverSession | null = null;
+const receiverSessions: Record<"FUNDING" | "NATIVE", ReceiverSession | null> = { FUNDING: null, NATIVE: null };
 
 const NODE_ATTESTATION_FIELDS = [
   "version", "workId", "workKind", "decision", "inputPayloadCommitment",
@@ -350,6 +352,7 @@ async function receiverRequest<T>(
   body: Record<string, unknown>,
   path = "/api/cranker/work",
   signal?: AbortSignal,
+  lane: "FUNDING" | "NATIVE" = "NATIVE",
 ): Promise<T> {
   const bodyText = JSON.stringify(body);
   const publicKey = signer.publicKey.toBase58();
@@ -402,11 +405,11 @@ async function receiverRequest<T>(
 
   async function getSession() {
     const now = Date.now();
-    const cached = receiverSession;
+    const cached = receiverSessions[lane];
     if (cached && cached.receiverUrl === receiverUrl && cached.publicKey === publicKey
       && cached.expiresAtMs - now > 30_000 && now - cached.lastUsedAtMs < RECEIVER_SESSION_IDLE_REAUTH_MS) return cached;
-    receiverSession = await establishSession();
-    return receiverSession;
+    receiverSessions[lane] = await establishSession();
+    return receiverSessions[lane];
   }
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -432,7 +435,7 @@ async function receiverRequest<T>(
     });
     const responseText = await response.text();
     if (response.status === 401 && /CRANKER_SESSION_(?:INVALID|EXPIRED)/.test(responseText) && attempt === 0) {
-      if (receiverSession === session) receiverSession = null;
+      if (receiverSessions[lane] === session) receiverSessions[lane] = null;
       continue;
     }
     session.lastUsedAtMs = Date.now();
@@ -450,11 +453,12 @@ async function receiverRequest<T>(
   throw new Error("Receiver session could not be renewed");
 }
 
-async function lease(signer: Keypair): Promise<Work | null> {
+async function lease(signer: Keypair, supportedKinds: readonly Work["kind"][]): Promise<Work | null> {
   const response = await receiverRequest<{ work: Work | null }>(
     signer,
     "POST",
-    { supportedKinds: ["AUTHORIZED_FUNDING", "SETTLEMENT", "TIN_OPERATION", "TCAP_EPOCH_ACCOUNTING", "TIN_DEBIT"] },
+    { supportedKinds }, "/api/cranker/work", undefined,
+    supportedKinds.includes("AUTHORIZED_FUNDING") ? "FUNDING" : "NATIVE",
   );
   return response.work;
 }
@@ -473,7 +477,7 @@ async function report(
     expectedVersion: work.stateVersion,
     status,
     evidence,
-  }, "/api/cranker/work", signal);
+  }, "/api/cranker/work", signal, work.kind === "AUTHORIZED_FUNDING" ? "FUNDING" : "NATIVE");
   if (status === "CONFIRMED" && typeof evidence.signature === "string") {
     await sendConfirmedWorkReport(send, work.id, evidence.signature);
   } else {
@@ -1112,61 +1116,58 @@ async function main() {
   console.log(
     `[tsn-cranker] operator=${signer.publicKey.toBase58()} cranker=${cranker.toBase58()} receiver=${receiver()}`,
   );
-  for (;;) {
-    try {
-      const work = await lease(signer);
-      if (!work) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, Number(process.env.TSN_CRANKER_POLL_MS ?? 2000)),
-        );
-        continue;
-      }
-      crankerLog(`work leased id=${work.id} kind=${work.kind} stateVersion=${work.stateVersion}`);
-      try {
-        verifyNodeAttestation(work);
-        if (work.kind === "AUTHORIZED_FUNDING")
-          await processAuthorizedFunding(signer, work, rpcUrl);
-        else if (work.kind === "TIN_OPERATION")
-          await processTinOperation(signer, work, rpcUrl);
-        else if (work.kind === "TCAP_EPOCH_ACCOUNTING") await processPrivateCoordination(signer, work, rpcUrl);
-        else if (work.kind === "SETTLEMENT") await processSettlement(signer, work, rpcUrl);
-        else if (work.kind === "TIN_DEBIT") await processTinDebit(signer, work, rpcUrl);
-        else throw new Error("WORK_KIND_UNSUPPORTED");
-      } catch (error) {
-        if (error instanceof ConfirmedReceiptReportPending) {
-          crankerLog(error.message);
-          continue;
-        }
-        crankerLog(`work processing failed id=${work.id} kind=${work.kind} error=${error instanceof Error ? error.message : String(error)}`);
-        const retryReason = nativeWorkRetryReason(work, error);
-        if (retryReason) {
-          try {
-            await receiverRequest(signer, "POST", {
-              id: work.id, expectedVersion: work.stateVersion, reason: retryReason,
-            }, "/api/cranker/work/retry");
-            crankerLog(`unsigned native work requeued id=${work.id}`);
-          } catch (retryError) {
-            // A concurrent receipt/version change must be reconciled; do not
-            // overwrite it with FAILED or attempt a replacement transaction.
-            console.error(retryError);
-          }
-          continue;
-        }
-        await report(signer, work, "FAILED", {
-          ...(work.result ?? {}),
-          ...(error instanceof OwnerFundingSubmissionError ? error.evidence : {}),
-          reason: error instanceof Error ? error.message : String(error),
-        }).catch(() => undefined);
-        console.error(error);
-      }
-    } catch (error) {
-      console.error(
-        `[tsn-cranker] poll failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+  const sleep = (milliseconds: number) => new Promise<void>(resolve => setTimeout(resolve, milliseconds));
+  const acquireLeaseTurn = createCrankerLeaseGate({ clock: () => performance.now(), sleep });
+  const lanes: readonly (readonly Work["kind"][])[] = [FUNDING_WORK_KINDS, NATIVE_WORK_KINDS];
+  await Promise.all(lanes.map(supportedKinds => runCrankerWorkLoop<Work>({
+    supportedKinds, lease: async kinds => { await acquireLeaseTurn(); return lease(signer, kinds); },
+    process: (work, claimMs) => processLeasedWork(signer, work, rpcUrl, claimMs),
+    sleep, pollMs: Number(process.env.TSN_CRANKER_POLL_MS ?? 2000),
+    pollFailed: error => console.error(`[tsn-cranker] poll failed lane=${supportedKinds.includes("AUTHORIZED_FUNDING") ? "FUNDING" : "NATIVE"}: ${error instanceof Error ? error.message : String(error)}`),
+  })));
+}
+
+async function processLeasedWork(signer: Keypair, work: Work, rpcUrl: string, claimMs: number) {
+  crankerLog(`work leased id=${work.id} kind=${work.kind} stateVersion=${work.stateVersion} claimMs=${claimMs} verifiedAgeMs=${Date.now() - Date.parse(String(work.verification?.nodeAttestation?.signedAt ?? ""))}`);
+  try {
+    verifyNodeAttestation(work);
+    if (work.kind === "AUTHORIZED_FUNDING")
+      await processAuthorizedFunding(signer, work, rpcUrl);
+    else if (work.kind === "TIN_OPERATION")
+      await processTinOperation(signer, work, rpcUrl);
+    else if (work.kind === "TCAP_EPOCH_ACCOUNTING") await processPrivateCoordination(signer, work, rpcUrl);
+    else if (work.kind === "SETTLEMENT") await processSettlement(signer, work, rpcUrl);
+    else if (work.kind === "TIN_DEBIT") await processTinDebit(signer, work, rpcUrl);
+    else throw new Error("WORK_KIND_UNSUPPORTED");
+  } catch (error) {
+    if (error instanceof ConfirmedReceiptReportPending) {
+      crankerLog(error.message);
+      return;
     }
+    crankerLog(`work processing failed id=${work.id} kind=${work.kind} error=${error instanceof Error ? error.message : String(error)}`);
+    const retryReason = nativeWorkRetryReason(work, error);
+    if (retryReason) {
+      try {
+        await receiverRequest(signer, "POST", {
+          id: work.id, expectedVersion: work.stateVersion, reason: retryReason,
+        }, "/api/cranker/work/retry");
+        crankerLog(`unsigned native work requeued id=${work.id}`);
+      } catch (retryError) {
+        // A concurrent receipt/version change must be reconciled; do not
+        // overwrite it with FAILED or attempt a replacement transaction.
+        console.error(retryError);
+      }
+      return;
+    }
+    await report(signer, work, "FAILED", {
+      ...(work.result ?? {}),
+      ...(error instanceof OwnerFundingSubmissionError ? error.evidence : {}),
+      reason: error instanceof Error ? error.message : String(error),
+    }).catch(() => undefined);
+    console.error(error);
   }
 }
+
 
 void main().catch((error) => {
   console.error(error);

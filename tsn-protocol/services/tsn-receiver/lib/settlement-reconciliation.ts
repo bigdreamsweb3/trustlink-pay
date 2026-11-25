@@ -1,7 +1,7 @@
 /** Stable settlement-reconciliation facade and production composition; implementations live in recovery/receipt-reconciliation. */
 import { fetchResponse } from "./networking/common/fetch-response";
-import { db } from "./firebase";
-import { workCollection } from "./firebase";
+import { db } from "./database";
+import { workCollection } from "./database";
 import { wakeTsnNode } from "./node-wake";
 import { reconcileSettlementReceipt as reconcileSettlementReceiptComponent } from "./recovery/receipt-reconciliation/reconcile-settlement-receipt";
 import { reconcileExpiredCrankerConfirmation as reconcileExpiredCrankerConfirmationComponent } from "./recovery/receipt-reconciliation/reconcile-expired-cranker-confirmation";

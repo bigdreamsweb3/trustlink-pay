@@ -1,7 +1,7 @@
 {
   "name": "@trustlink/tsn-receiver",
   "private": true,
-  "description": "TSN Receiver by TrustLink Labs — durable Firebase-backed ingress, work leasing, and status service for the Transfer Settlement Network.",
+  "description": "TSN Receiver by TrustLink Labs — durable JSON record ingress, work leasing and status service.",
   "type": "module",
   "version": "0.1.0",
   "repository": {
@@ -16,20 +16,18 @@
     "dev": "next dev -p 8010",
     "build": "next build",
     "start": "next start -p 8010",
-    "typecheck": "tsc --noEmit --pretty false",
+    "typecheck": "tsc --project tsconfig.typecheck.json --noEmit --pretty false",
     "test": "npm run typecheck && node --experimental-strip-types --test tests/*.test.mjs",
     "// === Git & Deployment ===": "Repository helpers. Review git status before committing or pushing.",
     "git:status": "git status --short",
     "git:hygiene": "node scripts/git-hygiene-check.mjs",
     "git:hygiene:report": "node scripts/git-hygiene-check.mjs --write-report --warn-only",
     "git:hygiene:fix": "node scripts/git-hygiene-check.mjs --fix",
-    "git:pull:all": "node ../../scripts/repo-security.mjs fetch protocol origin main",
-    "git:commit:push:all": "node ../../scripts/repo-security.mjs commit-push-all protocol origin main"
+    "git:pull:all": "node scripts/git-repository.mjs fetch receiver origin main",
+    "git:commit:push:all": "node scripts/git-repository.mjs commit-push-all receiver origin main"
   },
   "dependencies": {
-    "@firebase/app": "^0.14.13",
     "@solana/web3.js": "^1.99.0",
-    "firebase-admin": "^13.4.0",
     "next": "^15.5.21",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"

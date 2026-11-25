@@ -6,20 +6,19 @@ selected explicitly by `TSN_RECEIVER_STORE=file`.
 
 ## Local development
 
-Local development uses a JSON file so the Receiver can be run without Firebase
-service-account credentials:
+Local development uses an explicitly gated JSON file without hosted storage credentials:
 
 ```env
 TSN_RECEIVER_STORE=file
 TSN_RECEIVER_LOCAL_FILE=.receiver-store.json
 TSN_ALLOW_LOCAL_JSON_STORE=true
-TSN_RECEIVER_NODE_API_KEY=1000000008
+TSN_RECEIVER_NODE_API_KEY=<shared randomly generated service credential>
 TSN_RECEIVER_NODE_PAYLOAD_KEY=<local 32-byte hex secret>
-TSN_NODE_URL=http://127.0.0.1:8000
+# Local Node pulls Receiver work; no Node callback URL.
 TSN_RECEIVER_PUBLIC_URL=http://127.0.0.1:8010
 ```
 
-The JSON adapter must preserve the same operations as Firebase:
+Both adapters preserve the same work operations:
 
 ```text
 receive()                 create idempotent RECEIVED work
@@ -42,30 +41,16 @@ Ordinary document reads validate the index and requested file; queries read only
 
 ## Live deployment (`.env`)
 
-The hosted Receiver uses the main `.env` file with Firebase and must not silently fall back to a local
-file:
+The hosted Receiver uses D1 JSON records through a private Worker, selected by `TSN_RECEIVER_STORE=d1`. Configure `TSN_RECORD_STORE_URL`, `TSN_RECORD_STORE_TOKEN` and the initialized `TSN_RECORD_STORE_NAMESPACE`; preserve the existing Node credential and payload-encryption key. Missing metadata or indexed records fails closed. Production does not silently create an empty queue or fall back to workstation JSON. Firebase storage, credentials and its wake-token route are retired.
 
-```env
-TSN_RECEIVER_STORE=firebase
-TSN_ALLOW_LOCAL_JSON_STORE=false
-FIREBASE_PROJECT_ID=tsn-epoch-record
-FIREBASE_CLIENT_EMAIL=<service account client email>
-FIREBASE_PRIVATE_KEY=<service account private key PEM>
-TSN_RECEIVER_NODE_API_KEY=<shared Node service credential>
-TSN_RECEIVER_NODE_PAYLOAD_KEY=<shared 32-byte encryption secret>
-```
-
-The live process must fail startup when the Firebase server credentials are
-missing or invalid. `FIREBASE_WEB_API_KEY` is used only for the public
-cranker-wake flow when configured; it is not a substitute for the server
-credential.
+D1 stores individual JSON rows plus a namespace index/revision. A metadata fence and one transactional batch publish all changed rows together. Point reads fetch only metadata and the selected row in one snapshot; queries retain the existing filters/cursors. No automatic TTL applies to authoritative work or epoch history. See [record-store contracts](../../../tsn-protocol/services/tsn-receiver/lib/storage/record-store/README.md) and [free-tier checkpoint](../../references/FIREBASE-FREE-RECEIVER-20261125.md).
 
 ## Boundary and security rules
 
 - The browser submits to Receiver ingress in both modes.
 - The Node reads work through the authenticated Receiver lease API in both
   modes.
-- The wake from Receiver to Node contains no work payload.
+- Node observes a payload-free revision through outbound Receiver requests.
 - The local JSON adapter must never be enabled by a hosted deployment.
 - The Node API key and Receiver payload-encryption key must match between the
   local Receiver and local Node, but their values must not be committed.

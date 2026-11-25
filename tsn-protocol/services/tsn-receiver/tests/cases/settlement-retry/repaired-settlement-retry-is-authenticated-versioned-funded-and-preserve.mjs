@@ -34,21 +34,24 @@ export async function caseRepairedSettlementRetryIsAuthenticatedVersionedFundedA
     const directory = await mkdtemp(path.join(os.tmpdir(), "tsn-settlement-retry-"));
     const previousFile = process.env.TSN_RECEIVER_LOCAL_FILE;
     const previousKey = process.env.TSN_RECEIVER_NODE_API_KEY;
+    const previousPin = process.env.TSN_NODE_VERIFICATION_PUBLIC_KEY;
+    process.env.TSN_NODE_VERIFICATION_PUBLIC_KEY = "synthetic-pin";
     process.env.TSN_RECEIVER_LOCAL_FILE = path.join(directory, "receiver.json");
     process.env.TSN_RECEIVER_NODE_API_KEY = "isolated-test-credential";
     try {
-        await compileReceiverFixture(directory, ["work-contract.ts", "settlement-retry.ts", "native-work-retry.ts", "node-authorizations.ts", "local-firestore.ts", "store.ts", "auth.ts"], { routes: [{ path: "app/api/internal/node/work/retry/route.ts", output: "route" }, { path: "app/api/cranker/work/retry/route.ts", output: "cranker-retry-route" }, { path: "app/api/cranker/work/route.ts", output: "cranker-work-route" }] });
+        await compileReceiverFixture(directory, ["work-contract.ts", "settlement-retry.ts", "native-work-retry.ts", "node-authorizations.ts", "local-json-store.ts", "store.ts", "auth.ts"], { routes: [{ path: "app/api/internal/node/work/retry/route.ts", output: "route" }, { path: "app/api/cranker/work/retry/route.ts", output: "cranker-retry-route" }, { path: "app/api/cranker/work/route.ts", output: "cranker-work-route" }] });
         await writeFile(path.join(directory, "firestore-stub.mjs"), "export const FieldPath = {}; export const Timestamp = {};");
-        await writeFile(path.join(directory, "firebase.mjs"), 'import {localDb} from "./local-firestore.mjs"; export const db=localDb; export const workCollection=db.collection("tsn_receiver_work");');
+        await writeFile(path.join(directory, "database.mjs"), 'import {localDb} from "./local-json-store.mjs"; export const db=localDb; export const workCollection=db.collection("tsn_receiver_work");');
         await writeFile(path.join(directory, "node-envelope.mjs"), "export const decryptPayloadForNode = x=>x; export const encryptPayloadForNode = x=>x;");
         await writeFile(path.join(directory, "node-verification.mjs"), "export const assertNodeVerificationAttestation = ()=>{};");
         await writeFile(path.join(directory, "settlement-reconciliation.mjs"), "export const reconcileExpiredCrankerConfirmation=async()=>{throw new Error('Unexpected late receipt report')};");
+        await writeFile(path.join(directory, "node-relay/request.mjs"), 'export const requestLocalNode=async (_,request)=>globalThis.fetch("https://isolated-relay.invalid"+request.path,{method:request.method,body:request.body});');
         await writeFile(path.join(directory, "node-wake.mjs"), "export const wakes=[]; export const wakeTsnNode=async reason=>{wakes.push(reason)};");
         await writeFile(path.join(directory, "cranker-wake.mjs"), "export const publishCrankerWake = async ()=>{};");
         await writeFile(path.join(directory, "next-stub.mjs"), "export class NextResponse { constructor(body, options={}) { this.status=options.status??200; this.data=JSON.parse(body); } static json(data, options={}) { return {status:options.status??200,data}; } }");
         await writeFile(path.join(directory, "cranker-auth.mjs"), 'export async function authenticateCrankerRequest(request) { const owner=request.headers.get("x-test-cranker"); if (!owner) throw new Error("CRANKER_SESSION_INVALID"); return owner; } export async function enforceCrankerLeaseRateLimit() {}');
         const load = loadReceiverFixtureModule.bind(null, directory);
-        const { workCollection, db } = await load("firebase");
+        const { workCollection, db } = await load("database");
         const { createReceivedWork } = await load("work-contract");
         const { snapshotRetryPatch, fundedRootRetryPatch, FUNDED_ROOT_STALE } = await load("settlement-retry");
         const { POST } = await load("route");
@@ -205,10 +208,6 @@ export async function caseRepairedSettlementRetryIsAuthenticatedVersionedFundedA
         assert.equal(freshLease.payload.intentId, funding.id);
         // Authorization-time changes recover before a stale proof reaches Cranker.
         const previousFetch = globalThis.fetch;
-        const previousNodeUrl = process.env.TSN_NODE_URL;
-        const previousFallbackUrl = process.env.TSN_NODE_FALLBACK_URL;
-        process.env.TSN_NODE_URL = "http://mock-node.invalid";
-        delete process.env.TSN_NODE_FALLBACK_URL;
         try {
             await db.runTransaction(writeVerifiedSettlement.bind(null, workCollection, id, leased));
             globalThis.fetch = fundingRootConflictResponse.bind(null, FUNDED_ROOT_STALE);
@@ -267,14 +266,6 @@ export async function caseRepairedSettlementRetryIsAuthenticatedVersionedFundedA
         }
         finally {
             globalThis.fetch = previousFetch;
-            if (previousNodeUrl === undefined)
-                delete process.env.TSN_NODE_URL;
-            else
-                process.env.TSN_NODE_URL = previousNodeUrl;
-            if (previousFallbackUrl === undefined)
-                delete process.env.TSN_NODE_FALLBACK_URL;
-            else
-                process.env.TSN_NODE_FALLBACK_URL = previousFallbackUrl;
         }
     }
     finally {
@@ -286,6 +277,8 @@ export async function caseRepairedSettlementRetryIsAuthenticatedVersionedFundedA
             delete process.env.TSN_RECEIVER_NODE_API_KEY;
         else
             process.env.TSN_RECEIVER_NODE_API_KEY = previousKey;
+        if (previousPin === undefined) delete process.env.TSN_NODE_VERIFICATION_PUBLIC_KEY;
+        else process.env.TSN_NODE_VERIFICATION_PUBLIC_KEY = previousPin;
         await rm(directory, { recursive: true, force: true });
     }
 }

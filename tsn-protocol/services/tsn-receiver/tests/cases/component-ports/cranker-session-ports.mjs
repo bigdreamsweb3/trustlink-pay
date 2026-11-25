@@ -17,9 +17,9 @@ export async function crankerSessionPorts() {
   const previous = process.env.TSN_RECEIVER_LOCAL_FILE;
   process.env.TSN_RECEIVER_LOCAL_FILE = path.join(directory, "store.json");
   try {
-    await compileReceiverFixture(directory, ["local-firestore.ts", "authentication/cranker/issue-cranker-session.ts",
+    await compileReceiverFixture(directory, ["local-json-store.ts", "authentication/cranker/issue-cranker-session.ts",
       "authentication/cranker/authenticate-cranker-request.ts", "authentication/cranker/enforce-cranker-lease-rate-limit.ts"]);
-    const { localDb } = await import(pathToFileURL(path.join(directory, "local-firestore.mjs")).href);
+    const { localDb } = await import(pathToFileURL(path.join(directory, "local-json-store.mjs")).href);
     const { issueCrankerSession } = await import(pathToFileURL(path.join(directory, "authentication/cranker/issue-cranker-session.mjs")).href);
     const { authenticateCrankerRequest } = await import(pathToFileURL(path.join(directory, "authentication/cranker/authenticate-cranker-request.mjs")).href);
     const { enforceCrankerLeaseRateLimit } = await import(pathToFileURL(path.join(directory, "authentication/cranker/enforce-cranker-lease-rate-limit.mjs")).href);

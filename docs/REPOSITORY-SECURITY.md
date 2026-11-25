@@ -9,10 +9,12 @@ The reviewed helper accepts these exact source URLs:
 - `https://github.com/bigdreamsweb3/trustlink-pay.git`
 - `https://github.com/Trustlink-Labs/TSN-Protocol.git`
 - `https://github.com/Trustlink-Labs/TSN-Pitch-Deck.git` for the independent `pitch-deck` checkout
+- `https://github.com/bigdreamsweb3/tsn-receiver.git` through the Receiver package helper
+- `https://github.com/bigdreamsweb3/tsn-rpc-gateway.git` through the RPC gateway package helper
 
 [repo-security.mjs](../scripts/repo-security.mjs) hardens root/protocol Git, the independent local pitch/research repositories where present, and retained root submodule metadata. Seven configurations were hardened here. Hooks point at an empty directory; fsmonitor and recursive submodule work are disabled; Git transports are denied by default; object/TLS checks are enabled; implicit pushes are refused. Existing submodule URLs remain metadata, with update mode `none` and locally denied transports. History and files are retained.
 
-The project Git npm scripts use a real guarded helper. Fetch retrieves approved code without applying it; push requires the exact reviewed commit hash. The root `git:commit:push:all` explicitly stages the whole workspace, honoring Git ignores, then captures its tree and parent and pushes that exact commit. Root `git:commit:push:staged` retains selective staged-only behavior. Protocol/service `git:commit:push:all` aliases stage only the full protocol repository. The pitch-deck `push` helper stages only its independent checkout and targets its approved remote. Research imports and the former third-repository docs importer remain blocked. Versioned editor settings disable task/npm detection, Git autofetch and smart commits and enable sync/force-push confirmations. They cannot prevent a deliberately launched task or every extension; VS Code's application-only automatic-task preference was not added as a misleading workspace setting. Two later sidebar commits were observed waiting on commit-message editors; they ended without changing either HEAD. The original repeated npm task's trigger remains unverified.
+The project Git npm scripts use a real guarded helper. Fetch retrieves approved code without applying it; push requires the exact reviewed commit hash. The root `git:commit:push:all` explicitly stages the whole workspace, honoring Git ignores, then captures its tree and parent and pushes that exact commit. Root `git:commit:push:staged` retains selective staged-only behavior. Protocol and Node `git:commit:push:all` aliases stage the full protocol repository. Receiver and RPC gateway use their own package-scoped helpers. The pitch-deck `push` helper stages only its independent checkout and targets its approved remote. Research imports and the former third-repository docs importer remain blocked. Versioned editor settings disable task/npm detection, Git autofetch and smart commits and enable sync/force-push confirmations. They cannot prevent a deliberately launched task or every extension; VS Code's application-only automatic-task preference was not added as a misleading workspace setting. Two later sidebar commits were observed waiting on commit-message editors; they ended without changing either HEAD. The original repeated npm task's trigger remains unverified.
 
 Run the offline checks from the root:
 
@@ -62,7 +64,19 @@ npm --prefix "C:\Users\codepara\Desktop\trust-link" run git:push:tsn-protocol
 npm --prefix "C:\Users\codepara\Desktop\trust-link\tsn-protocol" run git:commit:push:all
 ```
 
-Both stage and commit the full nonignored protocol checkout before pushing its exact commit to `https://github.com/Trustlink-Labs/TSN-Protocol.git` on `main`. Protocol `git:push:all` and the Node/Receiver/gateway `git:commit:push:all` aliases use the same whole-protocol scope, regardless of the launching directory. Root-only files are excluded from the Labs repository. For selective protocol publication, stage reviewed paths and run its `git:commit:push:staged`; for an existing commit only, use its `git:push:current`.
+Both stage and commit the full nonignored protocol checkout before pushing its exact commit to `https://github.com/Trustlink-Labs/TSN-Protocol.git` on `main`. Protocol `git:push:all` and the Node `git:commit:push:all` alias use the same whole-protocol scope, regardless of the launching directory. Root-only files are excluded from the Labs repository. For selective protocol publication, stage reviewed paths and run its `git:commit:push:staged`; for an existing commit only, use its `git:push:current`.
+
+For Receiver publication, review its directory and run its package task:
+
+```powershell
+npm --prefix "C:\Users\codepara\Desktop\trust-link\tsn-protocol\services\tsn-receiver" run git:commit:push:all
+```
+
+The [Receiver helper](../tsn-protocol/services/tsn-receiver/scripts/git-repository.mjs) validates its package repository URL against `https://github.com/bigdreamsweb3/tsn-receiver.git` and publishes only Receiver files on `main`. In this nested layout it maintains a bare publication repository under the enclosing Git directory's `trustlink-receiver-publication.git`, leaving root/protocol HEAD and index untouched. A standalone Receiver clone uses its own Git boundary. The first nested publication fetches existing Receiver `main` as its parent, or starts a root commit when that branch does not exist; authentication and connectivity failures remain failures. Snapshots mirror the nonignored local directory, including deletions of absent remote-only files. Review that complete scope before running the task.
+
+Receiver `git:pull:all` fetches its tracking metadata without merging or checking out files. Publication retains the captured commit after push failure for retry, refuses non-fast-forward updates, rejects unexpected destinations/URL rewrites and private filenames, and disables hooks, fsmonitor, redirects and recursive submodule operations for its Git commands. Its self-contained ignore rules exclude private environment variants, Firebase credentials, keypairs and generated output. This changes source publication only; service, account, SDK and chain contracts are unchanged.
+
+RPC gateway's directory-local `git:commit:push:all` uses its [package helper](../tsn-protocol/services/tsn-rpc-gateway/scripts/git-repository.mjs) to publish only gateway files to `https://github.com/bigdreamsweb3/tsn-rpc-gateway.git` on `main`, matching its manifest. It follows the same snapshot, retry and destination checks as Receiver, with separate metadata under `trustlink-rpc-gateway-publication.git`. Its `git:pull:all` fetches gateway tracking metadata without merging. Review the full directory, including deletions, before publication; root/protocol branches and indexes remain separate.
 
 For the explicitly requested pitch-deck publication, review its pending changes and run either equivalent command:
 

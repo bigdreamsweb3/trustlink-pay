@@ -14,5 +14,4 @@ from settlement.funding.funding_contract import TCAP_PROGRAM
 from settlement.witness.hex_field import hex_field
 from settlement.proving.epoch_prover_contract import GPRU
 from settlement.proving.epoch_prover_contract import INPUTS
-from settlement.proving.epoch_prover_contract import _lock
 from settlement.proving.prove_epoch import prove_epoch

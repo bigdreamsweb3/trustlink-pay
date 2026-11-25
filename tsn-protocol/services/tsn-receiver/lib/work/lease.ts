@@ -6,7 +6,7 @@ import { compareAccountingPriority } from "./compare-accounting-priority";
 import { claimWorkTransaction } from "./claim-work-transaction";
 import { workWithStatus } from "./workWithStatus";
 import { matchesFundingLeasePhase } from "./matches-funding-lease-phase";
-export async function lease(dependencies: Pick<WorkDependencies, "db" | "hasResolvedNonExecution" | "isSupportedWorkKind" | "randomInt" | "workCollection">, status: "RECEIVED" | "VERIFIED", next: "NODE_VERIFYING" | "CRANKER_LEASED", owner: string, supportedKinds?: WorkKind[], fundingPhase?: "SIGNED_DEPOSIT") {
+export async function lease(dependencies: Pick<WorkDependencies, "db" | "hasResolvedNonExecution" | "isSupportedWorkKind" | "randomInt" | "workCollection">, status: "RECEIVED" | "VERIFIED", next: "NODE_VERIFYING" | "CRANKER_LEASED", owner: string, supportedKinds?: WorkKind[], fundingPhase?: "AUTHORIZATION" | "SIGNED_DEPOSIT") {
     if (fundingPhase !== undefined && next !== "NODE_VERIFYING") throw new Error("INVALID_NODE_FUNDING_FILTER");
     // Requeue abandoned leases before selecting fresh work. This prevents a
     // Node authorization failure or Cranker crash from permanently stranding

@@ -1,7 +1,7 @@
 /** Stable failed-settlement-resolution facade and production composition; implementations live in recovery/nonexecution. */
 import { fetchResponse } from "./networking/common/fetch-response";
-import { db } from "./firebase";
-import { workCollection } from "./firebase";
+import { db } from "./database";
+import { workCollection } from "./database";
 import { wakeTsnNode } from "./node-wake";
 import { resolveFailedSettlement as resolveFailedSettlementComponent } from "./recovery/nonexecution/resolve-failed-settlement";
 

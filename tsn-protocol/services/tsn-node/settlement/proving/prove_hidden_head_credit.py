@@ -2,10 +2,11 @@
 from __future__ import annotations
 from typing import Any
 from settlement.proving.hidden_head_contract import PROTOCOL_ROOT
-from settlement.proving.hidden_head_contract import _prover_lock
 import asyncio
 import json
 import os
+from settlement.proving.resource_limits import LOCAL_PROVER_LOCK
+from settlement.proving.prover_node_args import prover_node_args
 from settlement.proving.validate_prover_result import validate_prover_result
 
 async def prove_hidden_head_credit(witness: dict[str, Any], verifier_data: bytes, verifier_bump: int,
@@ -16,9 +17,9 @@ async def prove_hidden_head_credit(witness: dict[str, Any], verifier_data: bytes
     script = PROTOCOL_ROOT / "programs/gpru/circuits/hidden_head_v1/scripts/node-prove.mjs"
     inputs = existing_proof if existing_proof is not None else {k: [str(v) for v in value] if isinstance(value, list) else str(value) for k, value in witness.items()}
     encoded = json.dumps(inputs, separators=(",", ":")).encode("ascii")
-    async with _prover_lock:
+    async with LOCAL_PROVER_LOCK:
         process = await asyncio.create_subprocess_exec(
-            os.environ.get("GPRU_NODE_EXECUTABLE", "node"), str(script), *( ["--verify"] if existing_proof is not None else [] ),
+            *prover_node_args(), str(script), *( ["--verify"] if existing_proof is not None else [] ),
             stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
         )
         try:

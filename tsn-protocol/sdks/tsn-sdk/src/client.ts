@@ -1,3 +1,4 @@
+import { fetchNodeResponse } from "./lib/fetch-node-response.js";
 export type TsnHttpClientOptions = {
   baseUrl: string;
   fetchImpl?: typeof fetch;
@@ -24,7 +25,7 @@ export class TsnHttpClient {
   }
 
   async post<TRequest, TResponse>(path: string, body: TRequest): Promise<TResponse> {
-    const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
+    const response = await fetchNodeResponse(this.fetchImpl, `${this.baseUrl}${path}`, {
       method: "POST",
       headers: this.headers(true),
       body: JSON.stringify(body),
@@ -38,7 +39,7 @@ export class TsnHttpClient {
   }
 
   async get<TResponse>(path: string): Promise<TResponse> {
-    const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
+    const response = await fetchNodeResponse(this.fetchImpl, `${this.baseUrl}${path}`, {
       headers: this.headers(),
     });
 
@@ -50,7 +51,7 @@ export class TsnHttpClient {
   }
 
   async patch<TRequest, TResponse>(path: string, body: TRequest): Promise<TResponse> {
-    const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
+    const response = await fetchNodeResponse(this.fetchImpl, `${this.baseUrl}${path}`, {
       method: "PATCH",
       headers: this.headers(true),
       body: JSON.stringify(body),

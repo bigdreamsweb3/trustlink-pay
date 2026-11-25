@@ -1,0 +1,8 @@
+name = "tsn-record-store"
+main = "src/worker.mjs"
+compatibility_date = "2026-11-25"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tsn-receiver"
+database_id = "[TO FILL: your D1 database id]"

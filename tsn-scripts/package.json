@@ -1,0 +1,12 @@
+{
+  "name": "trustlink-tsn-scripts",
+  "private": true,
+  "scripts": {
+    "rpc:gateway:dev": "npm --prefix .. run rpc:gateway:dev",
+    "rpc:gateway:inspect": "npm --prefix .. run rpc:gateway:inspect",
+    "tsn:receiver:dev": "npm --prefix .. run tsn:receiver:dev",
+    "tsn:node:dev": "npm --prefix .. run tsn:node:dev",
+    "tsn:cranker:start": "npm --prefix .. run tsn:cranker:start",
+    "tsn:cranker:help": "npm --prefix .. run tsn:cranker:help"
+  }
+}

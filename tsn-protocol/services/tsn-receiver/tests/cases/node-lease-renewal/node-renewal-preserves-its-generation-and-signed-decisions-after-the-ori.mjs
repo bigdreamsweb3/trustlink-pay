@@ -25,15 +25,15 @@ export async function caseNodeRenewalPreservesItsGenerationAndSignedDecisionsAft
     const rawPublic = keys.publicKey.export({ format: "der", type: "spki" }).subarray(-32);
     process.env.TSN_NODE_VERIFICATION_PUBLIC_KEY = rawPublic.toString("hex");
     try {
-        await compileReceiverFixture(directory, ["work-contract.ts", "settlement-retry.ts", "native-work-retry.ts", "local-firestore.ts", "store.ts", "auth.ts", "node-verification.ts"], { routes: [{ path: "app/api/internal/node/work/route.ts", output: "route" }] });
+        await compileReceiverFixture(directory, ["work-contract.ts", "settlement-retry.ts", "native-work-retry.ts", "local-json-store.ts", "store.ts", "auth.ts", "node-verification.ts"], { routes: [{ path: "app/api/internal/node/work/route.ts", output: "route" }] });
         await writeFile(path.join(directory, "firestore-stub.mjs"), "export const FieldPath = {}; export const Timestamp = {};");
-        await writeFile(path.join(directory, "firebase.mjs"), 'import {localDb} from "./local-firestore.mjs"; export const db=localDb; export const workCollection=db.collection("tsn_receiver_work");');
+        await writeFile(path.join(directory, "database.mjs"), 'import {localDb} from "./local-json-store.mjs"; export const db=localDb; export const workCollection=db.collection("tsn_receiver_work");');
         await writeFile(path.join(directory, "node-envelope.mjs"), "export const decryptPayloadForNode=x=>x; export const encryptPayloadForNode=x=>x;");
         await writeFile(path.join(directory, "node-wake.mjs"), "export const wakeTsnNode=async()=>{};");
         await writeFile(path.join(directory, "cranker-wake.mjs"), "export const publishCrankerWake=async()=>{};");
         await writeFile(path.join(directory, "next-stub.mjs"), "export class NextResponse {static json(data,options={}) {return {status:options.status??200,data};}}");
         const load = loadReceiverFixtureModule.bind(null, directory);
-        const { db, workCollection } = await load("firebase");
+        const { db, workCollection } = await load("database");
         const { createReceivedWork, payloadCommitment, crankerExecutionPayload } = await load("work-contract");
         const { leaseForNode, renewNodeLease, transition } = await load("store");
         const { PUT } = await load("route");

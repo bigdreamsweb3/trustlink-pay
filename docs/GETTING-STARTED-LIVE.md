@@ -13,7 +13,7 @@ for production funds, real stablecoins, or private keys that hold value.
 | Earlier TrustLink Pay app | [trustlink-pay.vercel.app](https://trustlink-pay.vercel.app/)            | Earlier hosted application surface                 |
 | TrustLink backend | [trustlink-pay-backend.vercel.app](https://trustlink-pay-backend.vercel.app/) | Authentication and application APIs                |
 | TSN Receiver      | [tsn-receiver-kappa.vercel.app](https://tsn-receiver-kappa.vercel.app/)       | Intent ingress, durable work, leases, and evidence |
-| TSN Node          | [tsn-node.wasmer.app](https://tsn-node.wasmer.app/)                           | Verification and Receiver work processing          |
+| TSN Node | Local operator worker; Receiver `/node` facade | Outbound verification and Receiver work processing |
 | TSN RPC Gateway   | [tsn-rpc-gateway.vercel.app](https://tsn-rpc-gateway.vercel.app/)             | Controlled Solana RPC access                       |
 | TSNP              | Solana Devnet program account                                                 | On-chain authorization and settlement              |
 
@@ -93,7 +93,7 @@ TSN_RECEIVER_URL=https://tsn-receiver-kappa.vercel.app
 | Program                | Program ID                                    |
 | ---------------------- | --------------------------------------------- |
 | TSN / TrustLink Escrow | `TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V` |
-| TCAP                   | `TcApT4CytBqvqEDpRYVB7WfiB1e53VJJg9X8NoRP8V`  |
+| TCAP                   | `tCaP5R8LZFL1ridm3JCAtiqFzNnZCQYj3Hb7kw42YZF`  |
 | TIP / TIN registrar    | `TinseNnU588NkmRZBe4ADJbxqrqQma92678UFP6VuwT` |
 
 The SDK owns canonical plan construction, commitments, source selection,
@@ -131,7 +131,7 @@ addresses and their fallbacks are documented in
 
 ## TSN Node and Receiver contributors
 
-The TSN Node is hosted at Wasmer and the Receiver is hosted at Vercel. Their
+The TSN Node runs locally and initiates authenticated outbound Receiver requests; the Receiver is configured for Vercel/Firebase. Hosted relay deployment remains unverified. Their
 source repositories are separate:
 
 - [TSN Node](https://github.com/bigdreamsweb3/tsn-node)

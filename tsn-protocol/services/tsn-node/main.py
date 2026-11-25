@@ -1,4 +1,4 @@
-"""Wasmer Edge entrypoint for the TrustLink Labs TSN Node."""
+"""Local loopback entrypoint for the TrustLink Labs TSN Node."""
 
 import os
 
@@ -12,7 +12,7 @@ __all__ = ["app"]
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
-        host=os.environ.get("HOST", "0.0.0.0"),
+        host="127.0.0.1",
         port=int(os.environ.get("PORT", "8000")),
         reload=False,
     )

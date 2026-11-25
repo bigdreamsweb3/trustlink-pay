@@ -91,7 +91,6 @@ import secrets
 import struct
 import time
 import uvicorn
-from storage.firebase.types import FirebaseStore
 from storage.local.types import FileStore
 from core.schemas.create_intent_request import CreateIntentRequest
 from core.schemas.mempool_intent import MempoolIntent
@@ -230,6 +229,9 @@ from verification.work import _verify_receiver_work
 from core.worker import _renew_receiver_node_lease
 from core.worker import _verify_and_report_receiver_work
 from core.worker import _process_receiver_work_with_lease
+from core.relay import dispatch_relay_job, execute_relay_job, relay_worker, sync_local_node
+from storage.cache.cache_receiver_work import cache_receiver_work
+from api.handlers.local_only_middleware import local_only_middleware
 from core.worker import receiver_verification_worker
 from core.worker import _receiver_work_by_id
 from core.worker import _receiver_verified_payload
@@ -264,7 +266,6 @@ from api.handlers import close_epoch
 @dataclass(repr=False)
 class NodeRuntime:
     """Composition root. Replace declared ports on an instance for isolated tests."""
-    ALLOW_DIRECT_FIREBASE_STORE: Any = field(default_factory=partial(copy.copy, settings.ALLOW_DIRECT_FIREBASE_STORE))
     ALLOW_LOCAL_JSON_STORE: Any = field(default_factory=partial(copy.copy, settings.ALLOW_LOCAL_JSON_STORE))
     ASSOCIATED_TOKEN_PROGRAM_ID: Any = field(default_factory=partial(copy.copy, settings.ASSOCIATED_TOKEN_PROGRAM_ID))
     BASE58_ALPHABET: Any = field(default_factory=partial(copy.copy, settings.BASE58_ALPHABET))
@@ -274,7 +275,6 @@ class NodeRuntime:
     DEVNET_USDC_MINT: Any = field(default_factory=partial(copy.copy, settings.DEVNET_USDC_MINT))
     EPOCH_HOURS: Any = field(default_factory=partial(copy.copy, settings.EPOCH_HOURS))
     EPOCH_SECS: Any = field(default_factory=partial(copy.copy, settings.EPOCH_SECS))
-    FIREBASE_COLLECTION: Any = field(default_factory=partial(copy.copy, settings.FIREBASE_COLLECTION))
     GITHUB_API: Any = field(default_factory=partial(copy.copy, settings.GITHUB_API))
     GITHUB_REPO: Any = field(default_factory=partial(copy.copy, settings.GITHUB_REPO))
     GPRU_PROGRAM_ID: Any = field(default_factory=partial(copy.copy, settings.GPRU_PROGRAM_ID))
@@ -320,9 +320,14 @@ class NodeRuntime:
     TSN_THRESHOLD_NONCE_SIGNING_KEY: Any = field(default_factory=partial(copy.copy, settings.TSN_THRESHOLD_NONCE_SIGNING_KEY))
     VAULT_LIQUIDITY_REFRESH_SECS: Any = field(default_factory=partial(copy.copy, settings.VAULT_LIQUIDITY_REFRESH_SECS))
     logger: Any = field(default_factory=partial(copy.copy, settings.logger))
+    LOCAL_NODE_CACHE_DIR: Any = field(default_factory=partial(copy.copy, settings.LOCAL_NODE_CACHE_DIR))
+    _relay_app: Any = None
+    _relay_wake_events: Any = None
+    _local_cache_lock: Any = field(default_factory=asyncio.Lock)
     _store: Any = None
     _vault_liquidity_cache: Any = None
     _receiver_wake_event: Any = None
+    _receiver_funding_wake_event: Any = None
     _private_coordination_pending: bool = False
     _vault_liquidity_lock: Any = field(default_factory=asyncio.Lock)
 
@@ -414,7 +419,6 @@ class NodeRuntime:
     validate_transaction_record_v1 = staticmethod(validate_transaction_record_v1)
     verify_destination_route = staticmethod(verify_destination_route)
     verify_threshold_access_request = staticmethod(verify_threshold_access_request)
-    FirebaseStore = FirebaseStore
     FileStore = FileStore
     CreateIntentRequest = CreateIntentRequest
     MempoolIntent = MempoolIntent
@@ -553,6 +557,12 @@ class NodeRuntime:
     _renew_receiver_node_lease = _renew_receiver_node_lease
     _verify_and_report_receiver_work = _verify_and_report_receiver_work
     _process_receiver_work_with_lease = _process_receiver_work_with_lease
+    dispatch_relay_job = dispatch_relay_job
+    execute_relay_job = execute_relay_job
+    relay_worker = relay_worker
+    sync_local_node = sync_local_node
+    cache_receiver_work = cache_receiver_work
+    local_only_middleware = staticmethod(local_only_middleware)
     receiver_verification_worker = receiver_verification_worker
     _receiver_work_by_id = _receiver_work_by_id
     _receiver_verified_payload = staticmethod(_receiver_verified_payload)

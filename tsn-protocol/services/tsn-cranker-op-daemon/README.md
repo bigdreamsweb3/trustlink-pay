@@ -4,6 +4,12 @@ The Cranker daemon is the reference Receiver-driven execution operator for TSN. 
 source; the Cranker leases TSN Node-verified work and submits the exact
 authorized on-chain transaction.
 
+## Independent funding submission
+
+The daemon runs one `AUTHORIZED_FUNDING` loop independently from its serialized settlement, TIN, debit and accounting loop. Each loop completes one work item before its next claim. Slow native authorization or confirmation therefore does not hold the funding loop. Both loops share the existing thirty-per-minute operator lease admission budget; they use distinct Receiver sessions so one loop cannot overtake the other's authenticated request counter. Claim duration and age of the Node decision are logged alongside the existing work identity. The exact owner wire, twenty-block guard, Node attestation, confirmation and failed-attempt reconciliation remain required.
+
+Load matching Receiver, Node and Cranker source through their existing commands. No program, dependency, environment or storage migration change is required. RPC/storage delay, wallet review and CPU saturation can still cause expiry. The [November 25 validation](https://github.com/bigdreamsweb3/trustlink-pay/blob/main/docs/references/FUNDING-ISOLATION-20261125.md) distinguishes offline scheduling/authorization checks from live payment evidence.
+
 ## Funding and settlement
 
 Native wallet-to-TIN credit separates the sender-approved TCAP reserve deposit from the proof-authorized confidential-state transition. Cranker broadcasts the deposit without changing its signed bytes or payer; the SDK sets the depositor as its fee payer. Cranker pays the later native settlement transaction fee and obtains the exact Mother-authority co-signature through Receiver.

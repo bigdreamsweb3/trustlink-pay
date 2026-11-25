@@ -27,9 +27,9 @@ export async function verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodes
     const realNow = Date.now;
     Date.now = currentSyntheticTime.bind(null, realNow());
     try {
-        await compileReceiverFixture(verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext.directory, ["local-firestore.ts", "work-contract.ts", "settlement-retry.ts", "native-work-retry.ts", "store.ts", "private-credit-coordination.ts"]);
+        await compileReceiverFixture(verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext.directory, ["local-json-store.ts", "work-contract.ts", "settlement-retry.ts", "native-work-retry.ts", "store.ts", "private-credit-coordination.ts"]);
         for (const [name, source] of Object.entries({
-            firebase: 'import {localDb} from "./local-firestore.mjs";export const db=localDb;export const workCollection=db.collection("tsn_receiver_work");',
+            database: 'import {localDb} from "./local-json-store.mjs";export const db=localDb;export const workCollection=db.collection("tsn_receiver_work");',
             "firestore-stub": "export const FieldPath={};export const Timestamp={};",
             "node-envelope": "export const decryptPayloadForNode=x=>x;export const encryptPayloadForNode=x=>x;",
             "node-verification": "export const assertNodeVerificationAttestation=()=>{};",
@@ -40,7 +40,7 @@ export async function verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodes
         const load = loadComponent.bind(null, {
             verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext: verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext
         });
-        const { workCollection, db } = await load("firebase");
+        const { workCollection, db } = await load("database");
         verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext.workCollection = workCollection;
         const { createReceivedWork } = await load("work-contract");
         verifyEpochsPaginateDeferAndSerializeAcrossConcurrentNodesContext.createReceivedWork = createReceivedWork;

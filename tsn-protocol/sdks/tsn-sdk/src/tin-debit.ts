@@ -1,7 +1,7 @@
 import { bytesToHex } from "@noble/hashes/utils";
 import nacl from "tweetnacl";
 import { PublicKey } from "@solana/web3.js";
-import { parseTokenAmountToBaseUnits } from "./canonical-message.js";
+import { buildTinDebitPreparationMessage, parseTokenAmountToBaseUnits } from "./canonical-message.js";
 import { withTinOwnerDebitOpeningV1, type LoadTinOwnerBalanceV1Params } from "./tin-owner-balance.js";
 import { deriveGpruTinDebitCommitmentsV1, buildTinDebitApprovalMessageV1, signTinDebitOpeningV1,
   GPRU_TIN_DEBIT_FIELD_V1 } from "./gpru/tin-debit-opening.js";
@@ -43,7 +43,10 @@ export async function sendTinDebitV1(params: SendTinDebitV1Params): Promise<TinD
     };
     if (params.retryState.requestJson) return await submit(params.retryState.requestJson);
     const expiresAt = String(Math.floor(Date.now() / 1000) + 240);
-    const prepareMessage = new TextEncoder().encode("TSN_TIN_DEBIT_PREPARE_V1\0" + [params.tin, params.recipientTin, params.tokenMintAddress, expiresAt].join("\n"));
+    const prepareMessage = new TextEncoder().encode(buildTinDebitPreparationMessage({
+      senderTin: params.tin, recipientTin: params.recipientTin,
+      tokenMintAddress: params.tokenMintAddress, expiresAt,
+    }));
     let prepareSignature: Uint8Array;
     try {
       const signed = await params.ownerWallet.signMessage(prepareMessage, "utf8");

@@ -18,7 +18,7 @@ The SDK requires standards-based fetch, WebCrypto and binary/Solana types where 
 
 ## Python verification service
 
-FastAPI, Uvicorn, HTTPX, Firebase Admin, python-dotenv, PyNaCl and cryptography are declared in the [Node requirements](../../tsn-protocol/services/tsn-node/requirements.txt). FastAPI defines validated HTTP models; HTTPX performs Receiver/RPC calls; PyNaCl supports Ed25519 and Secretbox/curve-related operations used in service payload boundaries. The cryptography package supplies other keyed operations used by source. Declared Python requirements are lower bounds, not pinned production reproducibility guarantees.
+FastAPI, Uvicorn, HTTPX, python-dotenv, PyNaCl and cryptography are declared in the [Node requirements](../../tsn-protocol/services/tsn-node/requirements.txt). FastAPI defines validated HTTP models; HTTPX performs Receiver/RPC calls; PyNaCl supports Ed25519 and Secretbox/curve-related operations used in service payload boundaries. The cryptography package supplies other keyed operations used by source. Declared Python requirements are lower bounds, not pinned production reproducibility guarantees.
 
 Node's hidden-head adapter launches a Node subprocess for `snarkjs` operations rather than reimplementing Groth16 in Python. The witness store uses JSON snapshots with root-selected filenames and structural/root checks. Local persistence does not establish cross-operator consensus or a complete history indexer.
 
@@ -30,7 +30,7 @@ The circuit package declares `circom2 0.2.19`, `circomlib 2.0.5` and `snarkjs 0.
 
 ## Storage, ingress and messaging
 
-Receiver uses Firebase Admin `^13.4.0` and Next `^15.5.21` with React `^19.1.1` in its manifest. Firestore transactions control durable idempotency, lease/version updates and the relation between funding and settlement work. The [local Firestore implementation](../../tsn-protocol/services/tsn-receiver/lib/local-firestore.ts) supports controlled local development; it is not evidence of identical durability or multi-process scaling.
+Receiver uses Next `^15.5.21` and React `^19.1.1` with a private D1 JSON record-store Worker. Atomic SQLite batches control durable idempotency, lease/version changes and funding/settlement relations. The [local JSON implementation](../../tsn-protocol/services/tsn-receiver/lib/local-json-store.ts) supports isolated development; [record-store contracts](../../tsn-protocol/services/tsn-receiver/lib/storage/record-store/README.md) separate real SQLite checks from unverified hosted D1 behavior. Firebase dependencies are retired.
 
 Node/Cranker wake notifications carry coordination signals rather than private work payloads; authenticated workers re-read leased work. Receiver's encrypted Node envelope reduces durable plaintext exposure but does not conceal plaintext at initial ingress. Service keys, wallet challenge/session authorization and signed Node decisions serve separate purposes.
 

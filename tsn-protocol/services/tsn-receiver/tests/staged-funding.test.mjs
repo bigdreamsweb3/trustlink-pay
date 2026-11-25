@@ -18,6 +18,7 @@ import { signedFundingLeaseTest } from "./cases/staged-funding/signed-funding-le
 import { emptySignedFundingLeaseTest } from "./cases/staged-funding/empty-signed-funding-lease-test.mjs";
 import { signedFundingFilterRaceTest } from "./cases/staged-funding/signed-funding-filter-race-test.mjs";
 import { signedFundingFilterRouteTest } from "./cases/staged-funding/signed-funding-filter-route-test.mjs";
+import { independentFundingLanesTest } from "./cases/staged-funding/independent-funding-lanes-test.mjs";
 import { signedFundingReclamationRaceTest } from "./cases/staged-funding/signed-funding-reclamation-race-test.mjs";
 
 /** Discovery facade; each case uses fresh explicit local storage and synthetic cryptographic material. */
@@ -38,6 +39,7 @@ test("one signed-funding claim bypasses unrelated work while the next ordinary c
 test("a signed-funding fast claim leaves message-only work available for normal verification", emptySignedFundingLeaseTest.bind(null, fixture));
 test("signed-funding selection rechecks the current phase atomically before leasing", signedFundingFilterRaceTest.bind(null, fixture));
 test("Node work HTTP validates the optional signed-funding filter before the persistence call", signedFundingFilterRouteTest.bind(null, fixture));
+test("authorization and signed-funding lanes claim disjoint work without blocking each other", independentFundingLanesTest.bind(null, fixture));
 test("signed-funding reclamation rechecks the persisted phase while ordinary reclamation remains unchanged", signedFundingReclamationRaceTest.bind(null, fixture));
 
 test("TIN-Debit ingress encrypts openings and preserves identical retries", tinDebitIngressTest.bind(null, fixture));

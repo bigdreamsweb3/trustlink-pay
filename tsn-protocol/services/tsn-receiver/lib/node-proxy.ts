@@ -1,10 +1,6 @@
-/** Stable node-proxy facade and production composition; implementations live in networking/node-proxy. */
-import { fetchResponse } from "./networking/common/fetch-response";
-import { proxyNode as proxyNodeComponent } from "./networking/node-proxy/proxy-node";
-
-const dependencies = {
-  environment: process.env,
-  fetch: fetchResponse,
-};
-
-export const proxyNode = proxyNodeComponent.bind(null, dependencies);
+/** Production composition for the local Node application facade. */
+import { requireService } from "./auth";
+import { requestLocalNode } from "./node-relay/request";
+import { relayDependencies } from "./node-relay/runtime";
+import { proxyNode as component } from "./networking/node-proxy/proxy-node";
+export const proxyNode = component.bind(null, {requireService, request: requestLocalNode.bind(null, relayDependencies)});

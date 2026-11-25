@@ -1,3 +1,4 @@
+import { localProverOptions, hashProverFile } from "../../runtime/local-prover-resources.mjs";
 // Node settlement adapter: private witness enters over stdin, never an argv
 // value, log, or persistent witness file. Only a locally verified proof exits.
 import { createHash } from "node:crypto";
@@ -49,7 +50,7 @@ try {
     verificationKeySha256: path.resolve(process.env.GPRU_EPOCH_VERIFICATION_KEY_PATH),
   };
   for (const [key, artifactPath] of Object.entries(artifactPaths)) {
-    if (!/^[0-9a-f]{64}$/.test(metadata[key] ?? "") || hash(await readFile(artifactPath)) !== metadata[key]) {
+    if (!/^[0-9a-f]{64}$/.test(metadata[key] ?? "") || await hashProverFile(artifactPath) !== metadata[key]) {
       throw new Error("PROVER_ARTIFACT_HASH_MISMATCH");
     }
   }
@@ -77,7 +78,7 @@ try {
     if (!Array.isArray(input.publicInputs) || input.publicInputs.length !== 5) throw new Error("INVALID_PUBLIC_INPUTS");
     publicSignals = input.publicInputs.map(value => limbs(value, 32)[0]);
   } else {
-    ({ proof, publicSignals } = await snarkjs.groth16.fullProve(input, artifactPaths.witnessWasmSha256, artifactPaths.provingKeySha256));
+    ({ proof, publicSignals } = await snarkjs.groth16.fullProve(input, artifactPaths.witnessWasmSha256, artifactPaths.provingKeySha256, undefined, localProverOptions.witness, localProverOptions.prover));
   }
   if (publicSignals.length !== 5 || !await snarkjs.groth16.verify(vk, publicSignals, proof)) throw new Error("LOCAL_GROTH16_VERIFICATION_FAILED");
   const output = {

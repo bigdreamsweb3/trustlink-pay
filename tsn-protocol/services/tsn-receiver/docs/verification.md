@@ -142,3 +142,11 @@ Run from the Receiver directory with existing dependencies. The audit reads auth
 No operator store migration, service startup/reload, signing/submission, program deployment, Git commit or push occurred in this task. Firebase emulator/hosted transaction parity and live Receiver/Node/Cranker/payment/recovery were not performed. The journal tests establish isolated interruption recovery, not power-loss durability across arbitrary filesystems. The guarded file adapter remains an isolated-test capability, and existing privacy limitations remain unchanged.
 
 The separate ignored demo evidence collector still expects the former monolithic file and is unverified for manifest storage. Existing Receiver status APIs retain their contracts; a raw monolithic parser must not report an empty successful selection when reading a canonical store. The affected internal evidence runbook records that tooling boundary without changing the separate demo implementation.
+
+## Local Node relay — November 25, 2026
+
+Receiver typecheck passed. The full serial suite completed 102 tests: 101 passed; one retired direct-Node-HTTP retry fixture failed. The fixture was updated to a durable reply stub and its isolated rerun passed with its original stale-root, availability, domain404 and signed-attempt guards. Six new relay cases passed in the full run, covering encryption, response mutations, native generations, expiry, credential admission and watcher/admission bounds. The entire suite was not rerun after that fixture-only correction. Hosted Firestore/Vercel parity and live payment remain unverified. See [relay contracts](../lib/node-relay/README.md).
+
+## Firebase-free D1 storage — November 25, 2026
+
+The full Receiver suite passed 110/110, with no failures or skips, in 342.98 seconds. Final D1 relay/transaction/point-read checks passed 9/9 separately; the private Worker schema/SQL/import checks passed 4/4 using real in-memory SQLite. Receiver typecheck and an isolated production build passed without touching operator state or live `.next`. Firebase source/SDK/token paths are retired. Actual D1 binding behavior, hosted latency/quotas and live migration/payment remain unverified. See [record-store contracts](../lib/storage/record-store/README.md).

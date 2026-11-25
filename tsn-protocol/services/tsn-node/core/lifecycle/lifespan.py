@@ -20,6 +20,10 @@ class Dependencies(Protocol):
     TSN_THRESHOLD_NONCE_SIGNING_KEY: Any
     _node_verification_signing_key: Callable[..., Any]
     _receiver_wake_event: Any
+    _receiver_funding_wake_event: Any
+    _relay_wake_events: Any
+    relay_worker: Callable[..., Any]
+    sync_local_node: Callable[..., Any]
     _store: Any
     close_epoch_task: Callable[..., Any]
     get_store: Callable[..., Any]
@@ -57,18 +61,27 @@ async def lifespan(node: Dependencies, app: FastAPI):
             node.logger.exception("Startup epoch close failed; live work remains available")
     pass  # Mutable state belongs to the explicit Node runtime.
     node._receiver_wake_event = asyncio.Event()
+    node._receiver_funding_wake_event = asyncio.Event()
     # Process work that arrived while the Node was offline, then sleep again.
     node._receiver_wake_event.set()
-    # Do not keep a periodic scheduler alive on the hosted Node. Epoch rollover
-    # is checked at startup and on authenticated Receiver wake-ups, so an idle
-    # deployment consumes no timer/polling CPU.
+    node._receiver_funding_wake_event.set()
+    node._relay_wake_events = {lane: asyncio.Event() for lane in ("FUNDING", "SIGNING", "PUBLIC")}
+    for wake in node._relay_wake_events.values():
+        wake.set()
+    # Durable outbound synchronization observes Receiver revisions and wakes local lanes.
     tasks: list[asyncio.Task[Any]] = []
     if node.TSN_RECEIVER_URL and node.TSN_RECEIVER_NODE_API_KEY:
         tasks.append(asyncio.create_task(node.receiver_verification_worker()))
+        tasks.append(asyncio.create_task(node.receiver_verification_worker(signed_funding_only=True)))
+        tasks.append(asyncio.create_task(node.sync_local_node()))
+        for lane in node._relay_wake_events:
+            tasks.append(asyncio.create_task(node.relay_worker(lane)))
     node.logger.info("TSN Node started on port %d (epoch every %dh)", node.PORT, node.EPOCH_HOURS)
-    yield
-    for task in tasks:
-        task.cancel()
-    await asyncio.gather(*tasks, return_exceptions=True)
-    if node._store:
-        await node._store.aclose()
+    try:
+        yield
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        if node._store:
+            await node._store.aclose()

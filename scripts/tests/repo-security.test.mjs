@@ -249,7 +249,10 @@ test("the private-state gate catches forced tracking while retaining public env 
     let result = spawnSync("git", ["-C", repo, "add", "--", ".env.example"], { env: gitEnvironment(), encoding: "utf8", windowsHide: true });
     assert.equal(result.status, 0);
     checkPrivateTracking(f.gitDir);
-    for (const filename of [".receiver-store.json", ".receiver-store.json.lock", ".receiver-store.json.1234.synthetic.tmp", ".receiver-store.before-reset.json.bak", ".receiver-store"]) {
+    for (const filename of [".receiver-store.json", ".receiver-store.json.lock", ".receiver-store.json.1234.synthetic.tmp", ".receiver-store.before-reset.json.bak", ".receiver-store",
+      ".dev.vars", ".dev.vars.production", "private/.env.example", "private/record-store-worker/storage-token.env", "secrets/token.txt", "private-state/records.json",
+      "services/tsn-crosschain/.creds_example/contract_auth_keypair.json", ".keys/text", ".node-cache/reply.json", "storage-token.env", "storage-token.env.backup", "signer.pem", "receiver.import.sql", "receiver.export.sql", "receiver-export-test.json", "receiver.sqlite"]) {
+      mkdirSync(resolve(repo, filename, ".."), { recursive: true });
       writeFileSync(join(repo, filename), "{}\n");
       result = spawnSync("git", ["-C", repo, "add", "--", filename], { env: gitEnvironment(), encoding: "utf8", windowsHide: true });
       assert.equal(result.status, 0);

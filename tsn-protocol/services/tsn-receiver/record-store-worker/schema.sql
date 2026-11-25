@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS records (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS commit_guard (metadata_key TEXT PRIMARY KEY, expected TEXT NOT NULL);
+CREATE TRIGGER IF NOT EXISTS validate_commit_guard BEFORE INSERT ON commit_guard
+BEGIN
+  SELECT CASE WHEN (SELECT value FROM records WHERE key = NEW.metadata_key) IS NOT NEW.expected
+    THEN RAISE(ABORT, 'TSN_STORE_CONFLICT') END;
+END;

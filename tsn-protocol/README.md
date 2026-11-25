@@ -35,9 +35,9 @@ flowchart TB
 
     subgraph INGRESS["2. TSN Receiver — durable ingress and leases"]
         direction TB
-        D["Node POST /intents forwards message-only ingress"]
+        D["Receiver queues /node/intents; local Node pulls<br/>Node forwards authenticated message-only ingress"]
         E["Create AUTHORIZED_FUNDING: AUTHORIZATION<br/>No settlement or Cranker eligibility yet"]
-        F["Node leases funding verification<br/>Versioned work and authenticated payload"]
+        F["Local Node opens outbound lease requests<br/>Versioned work and authenticated payload"]
         D --> E --> F
     end
 
@@ -67,8 +67,8 @@ flowchart TB
 
     subgraph SUBMISSION["6. Cranker and Mother authority — settlement submission"]
         direction TB
-        O["Cranker checks attestation and leases settlement<br/>Obtain authorization bound to current lease"]
-        P["Build exact TSNP call followed by Memo<br/>Mother validates then signs final fresh blockhash"]
+        O["Cranker checks attestation and leases settlement<br/>Queue authorization; local Node pulls<br/>Original Cranker lease remains mandatory"]
+        P["Build exact TSNP call followed by Memo<br/>Local Mother handler validates exact relay request<br/>Signs final fresh blockhash; caches encrypted reply"]
         Q["Cranker signs and submits second transaction<br/>Mother authorization is distinct from Node decision signing"]
         O --> P --> Q
     end

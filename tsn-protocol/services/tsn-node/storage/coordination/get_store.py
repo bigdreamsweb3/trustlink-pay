@@ -10,8 +10,6 @@ from typing import Any, Callable, Protocol
 class Dependencies(Protocol):
     ReceiverStore: Callable[..., Any]
     FileStore: Callable[..., Any]
-    FirebaseStore: Callable[..., Any]
-    ALLOW_DIRECT_FIREBASE_STORE: Any
     ALLOW_LOCAL_JSON_STORE: Any
     MEMPOOL_FILE: Any
     MEMPOOL_STORE: Any
@@ -28,14 +26,12 @@ async def get_store(node: Dependencies) -> Any:
         if node.TSN_RECEIVER_URL:
             node._store = node.ReceiverStore(node.TSN_RECEIVER_URL, node.TSN_RECEIVER_NODE_API_KEY, node.TSN_RECEIVER_FALLBACK_URL)
             node.logger.info("TSN Node durable state is delegated to Receiver: %s", node.TSN_RECEIVER_URL)
-        elif node.MEMPOOL_STORE == "firebase" and node.ALLOW_DIRECT_FIREBASE_STORE:
-            node._store = node.FirebaseStore()
         elif node.MEMPOOL_STORE in {"file", "local", "json"} and node.ALLOW_LOCAL_JSON_STORE:
             node._store = node.FileStore(node.MEMPOOL_FILE)
             node.logger.warning("Using explicitly enabled local-only TSN JSON store: %s", node.MEMPOOL_FILE)
         else:
             raise RuntimeError(
                 "TSN Node durable state requires TSN_RECEIVER_URL and TSN_RECEIVER_NODE_API_KEY. "
-                "Direct Firebase and local JSON are isolated-test adapters only."
+                "Local JSON is an isolated-test adapter only."
             )
     return node._store

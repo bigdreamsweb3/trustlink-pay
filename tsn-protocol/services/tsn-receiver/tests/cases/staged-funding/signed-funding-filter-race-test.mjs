@@ -17,4 +17,10 @@ export async function signedFundingFilterRaceTest(fixture) {
     context.dependencies, candidate, "RECEIVED", "NODE_VERIFYING", "fast-node", "SIGNED_DEPOSIT"));
   assert.equal(claimed, null);
   assert.deepEqual(await readWork(context, reference.id), before);
+  await reference.set({ ...before, fundingPhase: "SIGNED_DEPOSIT" });
+  const signed = await readWork(context, reference.id);
+  const authorization = await context.dependencies.db.runTransaction(fixture.claimWorkTransaction.bind(null,
+    context.dependencies, candidate, "RECEIVED", "NODE_VERIFYING", "ordinary-node", "AUTHORIZATION"));
+  assert.equal(authorization, null);
+  assert.deepEqual(await readWork(context, reference.id), signed);
 }

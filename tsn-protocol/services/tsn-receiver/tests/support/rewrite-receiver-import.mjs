@@ -6,7 +6,7 @@ import { receiverFixtureDestination } from "./receiver-fixture-destination.mjs";
 export function rewriteReceiverImport(context, match, prefix, quote, specifier) {
   if (!specifier.startsWith(".")) {
     if (specifier === "@solana/web3.js") return `${prefix}${quote}${import.meta.resolve(specifier)}${quote}`;
-    const stub = specifier === "next/server" ? "next-stub.mjs" : specifier === "firebase-admin/firestore" ? "firestore-stub.mjs" : undefined;
+    const stub = specifier === "next/server" ? "next-stub.mjs" : undefined;
     if (!stub) return match;
     let relative = path.relative(path.dirname(receiverFixtureDestination(context, context.source)), path.join(context.moduleDirectory, stub)).replaceAll("\\", "/");
     if (!relative.startsWith(".")) relative = `./${relative}`;

@@ -3,7 +3,9 @@ import asyncio
 import hashlib
 import json
 import os
-from .contract import CIRCUIT, PUBLIC_FIELDS, PROVER_LOCK
+from settlement.proving.resource_limits import LOCAL_PROVER_LOCK
+from settlement.proving.prover_node_args import prover_node_args
+from .contract import CIRCUIT, PUBLIC_FIELDS
 
 
 async def prove_debit(witness: dict, verifier: bytes, bump: int, existing_proof: dict | None = None) -> dict:
@@ -11,8 +13,8 @@ async def prove_debit(witness: dict, verifier: bytes, bump: int, existing_proof:
     if any(not os.environ.get(name) for name in required):
         raise RuntimeError("GPRU_TIN_DEBIT_PROVER_NOT_CONFIGURED")
     payload = existing_proof if existing_proof is not None else witness
-    async with PROVER_LOCK:
-        process = await asyncio.create_subprocess_exec(os.environ.get("GPRU_NODE_EXECUTABLE", "node"), str(CIRCUIT / "tools/node-prove.mjs"),
+    async with LOCAL_PROVER_LOCK:
+        process = await asyncio.create_subprocess_exec(*prover_node_args(), str(CIRCUIT / "tools/node-prove.mjs"),
             *(["--verify"] if existing_proof is not None else []), stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
         try:
             stdout, _ = await asyncio.wait_for(process.communicate(json.dumps(payload, separators=(",", ":")).encode("ascii")), 300)

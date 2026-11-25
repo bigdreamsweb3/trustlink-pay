@@ -1,6 +1,1 @@
-
-
-export interface Dependencies {
-  environment: NodeJS.ProcessEnv;
-  fetch: typeof fetch;
-}
+export interface Dependencies { signal: () => Promise<void>; }

@@ -56,12 +56,12 @@ export async function verifyFinalizedReceiptRepairPreservesFundingRejectsMismatc
     process.env.TSN_RECEIVER_NODE_API_KEY = "synthetic-receipt-key";
     process.env.TSN_RPC_URL = "https://offline.invalid";
     try {
-        await compileReceiverFixture(verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.directory, ["work-contract.ts", "settlement-retry.ts", "native-work-retry.ts", "node-authorizations.ts", "settlement-reconciliation.ts", "local-firestore.ts", "store.ts", "auth.ts"], { routes: [
+        await compileReceiverFixture(verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.directory, ["work-contract.ts", "settlement-retry.ts", "native-work-retry.ts", "node-authorizations.ts", "settlement-reconciliation.ts", "local-json-store.ts", "store.ts", "auth.ts"], { routes: [
                 { path: "app/api/internal/node/work/reconcile/route.ts", output: "route" },
                 { path: "app/api/cranker/work/route.ts", output: "cranker-report-route" },
             ] });
         const stubs = { "firestore-stub": "export const FieldPath={};export const Timestamp={};",
-            firebase: 'import {localDb} from "./local-firestore.mjs";export const db=localDb;export const workCollection=db.collection("tsn_receiver_work");',
+            database: 'import {localDb} from "./local-json-store.mjs";export const db=localDb;export const workCollection=db.collection("tsn_receiver_work");',
             "node-envelope": "export const decryptPayloadForNode=x=>x;export const encryptPayloadForNode=x=>x;",
             "node-verification": "export const assertNodeVerificationAttestation=()=>{};",
             "node-wake": "export const wakes=[]; export const wakeTsnNode=async reason=>{wakes.push(reason)};",
@@ -74,7 +74,7 @@ export async function verifyFinalizedReceiptRepairPreservesFundingRejectsMismatc
             verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext: verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext
         });
         const { wakes } = await load("node-wake");
-        const { workCollection, db } = await load("firebase");
+        const { workCollection, db } = await load("database");
         verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.workCollection = workCollection;
         verifyFinalizedReceiptRepairPreservesFundingRejectsMismatchesAndWakesOnlyContext.db = db;
         const { createReceivedWork } = await load("work-contract");

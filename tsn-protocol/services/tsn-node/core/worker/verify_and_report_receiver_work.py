@@ -11,6 +11,7 @@ from typing import Any
 import asyncio
 import httpx
 import re
+import time
 from typing import Any, Callable, Protocol
 
 class Dependencies(Protocol):
@@ -30,6 +31,7 @@ async def _verify_and_report_receiver_work(node: Dependencies, client: httpx.Asy
         "payloadCommitment": str(work.get("payloadCommitment") or ""),
     }
     retry_delay = 2.0
+    started = time.monotonic()
     while True:
         try:
             evidence = await node._verify_receiver_work(work)
@@ -64,6 +66,8 @@ async def _verify_and_report_receiver_work(node: Dependencies, client: httpx.Asy
         work=work, status=status, evidence=evidence,
         verification_type=str(evidence.get("verificationType") or ""),
     )
+    verified_ms = int((time.monotonic() - started) * 1000)
+    report_started = time.monotonic()
     response = await node.receiver_request(client, "PATCH", "/api/internal/node/work", headers=headers, json={
         "id": work["id"], "owner": node.TSN_NODE_ID, "expectedVersion": work["stateVersion"],
         "status": status, "evidence": evidence,
@@ -78,5 +82,6 @@ async def _verify_and_report_receiver_work(node: Dependencies, client: httpx.Asy
             node.logger.error("Receiver decision refused: work_id=%s error=%s", work["id"], code)
     response.raise_for_status()
     if node.TSN_LOCAL_FLOW_LOGS:
-        node.logger.info("TSN Receiver work transitioned: work_id=%s status=%s verified_payload_commitment=%s",
-                    work["id"], status, lease_context["payloadCommitment"])
+        node.logger.info("TSN Receiver work transitioned: work_id=%s status=%s verified_payload_commitment=%s verification_ms=%d report_ms=%d",
+                    work["id"], status, lease_context["payloadCommitment"], verified_ms,
+                    int((time.monotonic() - report_started) * 1000))

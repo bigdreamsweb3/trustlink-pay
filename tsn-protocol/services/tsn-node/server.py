@@ -93,7 +93,6 @@ import uvicorn
 from core.runtime import NodeRuntime
 
 runtime = NodeRuntime()
-ALLOW_DIRECT_FIREBASE_STORE = runtime.ALLOW_DIRECT_FIREBASE_STORE
 ALLOW_LOCAL_JSON_STORE = runtime.ALLOW_LOCAL_JSON_STORE
 ASSOCIATED_TOKEN_PROGRAM_ID = runtime.ASSOCIATED_TOKEN_PROGRAM_ID
 BASE58_ALPHABET = runtime.BASE58_ALPHABET
@@ -103,7 +102,6 @@ CRANKER_VAULT_DISCRIMINATOR = runtime.CRANKER_VAULT_DISCRIMINATOR
 DEVNET_USDC_MINT = runtime.DEVNET_USDC_MINT
 EPOCH_HOURS = runtime.EPOCH_HOURS
 EPOCH_SECS = runtime.EPOCH_SECS
-FIREBASE_COLLECTION = runtime.FIREBASE_COLLECTION
 GITHUB_API = runtime.GITHUB_API
 GITHUB_REPO = runtime.GITHUB_REPO
 GPRU_PROGRAM_ID = runtime.GPRU_PROGRAM_ID
@@ -300,7 +298,6 @@ get_settlement_networks = runtime.get_settlement_networks
 get_network_overview = runtime.get_network_overview
 get_epoch_status = runtime.get_epoch_status
 close_epoch = runtime.close_epoch
-FirebaseStore = runtime.FirebaseStore
 FileStore = runtime.FileStore
 CreateIntentRequest = runtime.CreateIntentRequest
 MempoolIntent = runtime.MempoolIntent
@@ -329,6 +326,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+runtime._relay_app = app
+app.middleware("http")(runtime.local_only_middleware)
 
 app.post('/internal/wake', dependencies=[Depends(require_worker_api_key)])(wake_receiver_verification)
 app.exception_handler(RequestValidationError)(private_payment_validation_error)

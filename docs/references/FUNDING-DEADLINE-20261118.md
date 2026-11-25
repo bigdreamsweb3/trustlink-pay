@@ -35,3 +35,7 @@ Receiver's updated source audit records 764 files/626 functions, including 401 p
 Receiver and Node must load matching source for the optional filter. From the repository root, the operator uses `npm run tsn:receiver:dev` and `npm run tsn:node:dev` in their existing separate terminals after stopping the prior processes themselves. This task does not reload them. It requires no program deployment, state migration, storage reset, new environment variable or gateway/SDK/Cranker code reload. The [internal operator guide](../RUN-YOUR-OWN-TSN.md) carries the matching troubleshooting steps and remains internal.
 
 Live queue latency, hosted Firestore parity, fresh funding confirmation, separate credit/epoch execution and owner recovery remain unverified. Preserve and reconcile original signed attempts before authorizing replacement funding; no deadline observation or FAILED report authorizes an automatic retry or duplicate deposit.
+
+## Later scheduling replacement, November 25, 2026
+
+The [independent funding workers](FUNDING-ISOLATION-20261125.md) replace this checkpoint's nonpreemptive priority pass. Its original observations and test results remain dated evidence; current runtime scheduling follows the later record.

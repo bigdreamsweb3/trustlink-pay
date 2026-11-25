@@ -82,5 +82,5 @@ test("authorization and receipt mismatches remain pending without retries", asyn
 test("daemon handles pending confirmation before its FAILED report branch", async () => {
   const source = await readFile(new URL("../scripts/cranker.ts", import.meta.url), "utf8");
   assert.match(source, /status === "CONFIRMED"[\s\S]*sendConfirmedWorkReport/);
-  assert.match(source, /error instanceof ConfirmedReceiptReportPending[\s\S]*?continue;[\s\S]*?await report\(signer, work, "FAILED"/);
+  assert.match(source, /error instanceof ConfirmedReceiptReportPending[\s\S]*?return;[\s\S]*?await report\(signer, work, "FAILED"/);
 });

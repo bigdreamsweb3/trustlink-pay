@@ -15,6 +15,7 @@ NODE_ROOT = _node_root
 load_dotenv(_node_root / ".env.local", override=False)
 load_dotenv(_node_root / ".env", override=False)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 logger = logging.getLogger("tsn-mempool")
 
@@ -22,7 +23,7 @@ GITHUB_REPO     = "bigdreamsweb3/tsn-epoch-records"
 
 GITHUB_API      = "https://api.github.com"
 
-MEMPOOL_STORE   = os.environ.get("MEMPOOL_STORE", "firebase").strip().lower()
+MEMPOOL_STORE   = os.environ.get("MEMPOOL_STORE", "receiver").strip().lower()
 
 ALLOW_LOCAL_JSON_STORE = os.environ.get("TSN_ALLOW_LOCAL_JSON_STORE", "").strip().lower() == "true"
 
@@ -46,11 +47,9 @@ TSN_NODE_VERIFICATION_SIGNING_KEY = clean_env(os.environ.get("TSN_NODE_VERIFICAT
 
 TSN_LOCAL_FLOW_LOGS = os.environ.get("TSN_LOCAL_FLOW_LOGS", "").strip().lower() in {"1", "true", "yes", "on"} or TSN_NODE_ID == "tsn-node-local"
 
-ALLOW_DIRECT_FIREBASE_STORE = os.environ.get("TSN_ALLOW_DIRECT_FIREBASE_STORE", "").strip().lower() == "true"
 
 MEMPOOL_FILE    = Path(os.environ.get("MEMPOOL_FILE", ".mempool-store.json")).resolve()
 
-FIREBASE_COLLECTION = os.environ.get("FIREBASE_COLLECTION", "tsn_mempool").strip()
 
 TSN_PROGRAM_ID  = os.environ.get("TSN_PROGRAM_ID") or os.environ.get("PROGRAM_ID") or "TSN31jddtsmUg4D5aEdhY31nwB1e53VJJg9X8NoRP8V"
 
@@ -86,7 +85,10 @@ EPOCH_SECS      = EPOCH_HOURS * 60 * 60
 
 VAULT_LIQUIDITY_REFRESH_SECS = max(60, int(os.environ.get("VAULT_LIQUIDITY_REFRESH_SECS", str(EPOCH_SECS))))
 
-HOST            = os.environ.get("HOST", "0.0.0.0").strip()
+HOST            = "127.0.0.1"
+LOCAL_NODE_CACHE_DIR = Path(os.environ.get("TSN_NODE_CACHE_DIR", str(NODE_ROOT / ".node-cache")))
+if not LOCAL_NODE_CACHE_DIR.is_absolute():
+    LOCAL_NODE_CACHE_DIR = NODE_ROOT / LOCAL_NODE_CACHE_DIR
 
 PORT            = int(os.environ.get("PORT", "8000"))
 

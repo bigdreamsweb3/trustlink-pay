@@ -1,6 +1,6 @@
 /** Stable private-credit-coordination facade and production composition; implementations live in state/private-coordination. */
-import { db } from "./firebase";
-import { workCollection } from "./firebase";
+import { db } from "./database";
+import { workCollection } from "./database";
 import { coordinationInventory as coordinationInventoryComponent } from "./state/private-coordination/coordination-inventory";
 import { enqueueCoordination as enqueueCoordinationComponent } from "./state/private-coordination/enqueue-coordination";
 import { deferPrivateCredit as deferPrivateCreditComponent } from "./state/private-coordination/defer-private-credit";

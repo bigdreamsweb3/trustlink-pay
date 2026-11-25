@@ -1,6 +1,6 @@
 # Proposed next MCES implementation: Receiver
 
-**Status: original implementation plan, approved on November 17, 2026.** The user selected Receiver and additionally requested local work files grouped by TCAP accounting epoch/kind, with funding/TIN unassigned. [Receiver architecture](../../services/tsn-receiver/docs/architecture.md) and [verification](../../services/tsn-receiver/docs/verification.md) record implementation and bounded evidence. The [ranking](candidate-ranking.md) and [assessment](candidate-assessment.md) preserve the pre-refactor selection rationale; this sequence does not authorize another service's refactor.
+**Status: original implementation plan, approved on November 17, 2026.** The user selected Receiver and additionally requested local work files grouped by TCAP accounting epoch/kind, with funding/TIN unassigned. [Receiver architecture](../../services/tsn-receiver/docs/architecture.md) and [verification](../../services/tsn-receiver/docs/verification.md) record implementation and bounded evidence. Firebase preservation below describes this original extraction, not the current storage contract; the [D1 replacement](../../services/tsn-receiver/lib/storage/record-store/README.md) is separate. The [ranking](candidate-ranking.md) and [assessment](candidate-assessment.md) preserve the pre-refactor selection rationale; this sequence does not authorize another service's refactor.
 
 ## Intended contract and scope
 
@@ -27,7 +27,7 @@ These are preservation requirements derived from current service source and the 
 
 ## Dependencies requiring special attention
 
-`firebase-admin` and [lib/firebase.ts](../../services/tsn-receiver/lib/firebase.ts) own the current adapter selection and exported collections. Several modules construct collections at import time. Capture that timing before moving composition; changing eagerly validated credentials into silently deferred checks would change behavior. Keep hosted Firestore and [local-firestore.ts](../../services/tsn-receiver/lib/local-firestore.ts) as distinct adapters behind the same actual operations, without claiming that local tests establish hosted equivalence.
+`firebase-admin` and [former lib/firebase.ts; current database facade](../../services/tsn-receiver/lib/database.ts) own the current adapter selection and exported collections. Several modules construct collections at import time. Capture that timing before moving composition; changing eagerly validated credentials into silently deferred checks would change behavior. Keep hosted Firestore and [former local-firestore.ts; current JSON facade](../../services/tsn-receiver/lib/local-json-store.ts) as distinct adapters behind the same actual operations, without claiming that local tests establish hosted equivalence.
 
 Next.js route resolution and Node crypto imports constrain package exports and bundling. The modular implementation must remain compatible with the existing module resolution and server-only execution. Do not change Next/React/TypeScript versions, manifest dependencies, build helpers or service configuration merely to support the new layout.
 

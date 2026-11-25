@@ -39,9 +39,14 @@ async def read_debit_context(node: Dependencies, mint: str, minimum_slot: int = 
     if not isinstance(values, list) or len(values) != 6:
         raise ValueError("TIN_DEBIT_CONTEXT_UNAVAILABLE")
     decoded = []
-    for account, owner in zip(values, (node.TCAP_PROGRAM_ID,) * 3 + (node.TINS_PROGRAM_ID, node.GPRU_PROGRAM_ID, node.TCAP_PROGRAM_ID)):
+    names = ("config", "assetEntry", "reserveState", "tipRouteRoot", "tinDebitVerifier", "commitmentRoot")
+    for name, account, owner in zip(names, values, (node.TCAP_PROGRAM_ID,) * 3 + (node.TINS_PROGRAM_ID, node.GPRU_PROGRAM_ID, node.TCAP_PROGRAM_ID)):
+        if account is None:
+            if name == "tinDebitVerifier":
+                raise ValueError("TIN_DEBIT_VERIFIER_UNAVAILABLE")
+            raise ValueError(f"TIN_DEBIT_ACCOUNT_MISSING:{name}")
         if not isinstance(account, dict) or account.get("owner") != owner:
-            raise ValueError("TIN_DEBIT_ACCOUNT_OWNER_INVALID")
+            raise ValueError(f"TIN_DEBIT_ACCOUNT_OWNER_INVALID:{name}")
         decoded.append(base64.b64decode(account["data"][0], validate=True))
     config, entry, reserve, tip, verifier, root = decoded
     root_bump = Pubkey.find_program_address([b"tcap:commitment-root:v1"], Pubkey.from_string(node.TCAP_PROGRAM_ID))[1]

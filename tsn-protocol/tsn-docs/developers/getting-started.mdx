@@ -19,7 +19,7 @@ import { getTsnNetworkStatus } from "@trustlink/tsn-sdk";
 
 const network = await getTsnNetworkStatus({
   live: {
-    node: process.env.TSN_NODE_URL,
+    node: process.env.TSN_RECEIVER_URL ? process.env.TSN_RECEIVER_URL + "/node" : undefined,
     receiver: process.env.TSN_RECEIVER_URL,
     rpc: process.env.TSN_RPC_URL,
   },
@@ -113,7 +113,7 @@ const request = buildPaymentAuthorizationIntentRequest({
   source: "my-tsn-app",
 });
 
-const client = new TsnHttpClient({ baseUrl: process.env.TSN_NODE_URL! });
+const client = new TsnHttpClient({ baseUrl: (process.env.TSN_RECEIVER_URL! + "/node") });
 const intent = await client.postIntent<CreateIntentRequest, PublicTsnMempoolIntent>(request);
 console.log(intent.id, intent.status);
 ```

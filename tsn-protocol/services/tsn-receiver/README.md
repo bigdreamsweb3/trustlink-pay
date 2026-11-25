@@ -1,6 +1,6 @@
 # TSN Receiver by TrustLink Labs
 
-The TSN Receiver by TrustLink Labs is the durable Firebase-backed ingress,
+The TSN Receiver by TrustLink Labs is the durable D1 JSON-backed ingress,
 status, and work-publication service for the Transfer Settlement Network
 (TSN). It accepts payment and TIN-operation submissions, preserves narrow
 coordination records and restricted encrypted Node payloads, leases work atomically, and publishes final status
@@ -18,9 +18,17 @@ State flow:
 
 `RECEIVED (AUTHORIZATION) -> NODE_VERIFYING -> FUNDING_READY -> RECEIVED (SIGNED_DEPOSIT) -> NODE_VERIFYING -> VERIFIED -> CRANKER_LEASED -> SUBMITTED -> CONFIRMED`
 
-The TSN Node is the only service allowed to move work from `RECEIVED` to `VERIFIED`. Crankers can lease only `VERIFIED` work. All leases and transitions use Firestore transactions and monotonic state versions.
+The TSN Node is the only service allowed to move work from `RECEIVED` to `VERIFIED`. Crankers can lease only `VERIFIED` work. All leases and transitions use atomic record-store transactions and monotonic state versions.
 
-Node can request one signed-deposit fast claim with `{nodeId, supportedKinds: ["AUTHORIZED_FUNDING"], fundingPhase: "SIGNED_DEPOSIT"}` at `POST /api/internal/node/work`. Receiver validates that exact filter, excludes message-only funding, and rechecks the phase in the claim transaction. Normal claims retain accounting priority and the existing shared-root controls; Node runs coordination and normal selection after each fast pass. No service configuration or stored-record conversion is required.
+Node requests disjoint funding phases with `{nodeId, supportedKinds: ["AUTHORIZED_FUNDING"], fundingPhase: "AUTHORIZATION" | "SIGNED_DEPOSIT"}` at `POST /api/internal/node/work`. Receiver validates the phase/kind combination and rechecks it in reclamation and claim transactions. Node runs signed verification independently from ordinary preparation/proving/accounting; its normal supported-kind list excludes funding. Cranker likewise uses disjoint funding/native supported kinds without changing Receiver authorization, shared-root or lease guards. Matching Receiver, Node and Cranker source must be loaded together; the funding-lane change requires no program or stored-record conversion.
+
+## Local Node durable relay
+
+Node runs locally and initiates every Receiver connection. Receiver queues bounded encrypted requests in `tsn_node_requests` and maintains a payload-free activity revision in `tsn_node_relay/activity`. Authenticated `/api/internal/node/relay` supports GET sync, POST claim, PUT renewal and PATCH attested reply. Public Node APIs use `/node/<path>`; existing network/identity forwarding uses the same durable transport. Receiver `/intents` retains authenticated Node ingress.
+
+Requests use separate FUNDING, SIGNING and PUBLIC lanes, 128 active jobs per lane, 60-second renewable claims and deadline-bounded execution. Public requests expire after 120 seconds and wait up to 20 seconds per HTTP call. Native requests retain their original Cranker work/version/lease deadline and wait up to 120 seconds. Pending public replies return 503 `NODE_RELAY_PENDING` with `x-tsn-relay-id`; clients resume only that exact ID. Replies use the existing pinned Node Ed25519 key and are encrypted at rest. Cleanup expires active jobs and deletes up to 32 terminal records after one-day retention; ISO string deadlines use application cleanup, not database TTL.
+
+Cloudflare D1 JSON records provide hosted authoritative storage. Local JSON supports isolated tests and cannot persist workstation files from Vercel. Relay routes export `maxDuration=180`; deployed plan support and D1 behavior require hosted verification. [Relay contracts](lib/node-relay/README.md) record source/offline evidence and limits.
 
 ## Funded-note ingress and settlement projection
 
@@ -52,60 +60,13 @@ The isolated local JSON adapter retries transient Windows `EPERM`/`EACCES` while
 
 ## Runtime boundary
 
-The Receiver is suitable for Vercel's Node.js runtime because it is an API
-service, not a continuous worker. Firebase credentials and both service
-credentials are server-only environment variables. Browsers receive none of
-them.
+Receiver can remain on Vercel with a private Cloudflare D1 JSON record store. Node and Cranker run as separate local workers and use authenticated Receiver APIs. Storage credentials stay only in Receiver and the private Worker; existing Node verification and Mother keys remain separate.
 
-The TSN Node and TSN Cranker must be deployed as separate persistent services.
-They communicate with this Receiver through authenticated service endpoints.
+Receiver updates a payload-free revision after commits. Local Node observes it through bounded outbound reads and wakes its lanes. Native authorization/signing requests retain original Cranker fences. Cranker uses its existing authenticated polling loops; Firebase Realtime Database and wake-token authentication are retired.
 
-The Receiver also sends an authenticated, payload-free `POST /internal/wake`
-notification to the TSN Node after each durable work commit. The Node drains
-the queue and then waits on its wake event; it does not poll Firebase or the
-Receiver while idle. `TSN_NODE_URL`, `TSN_NODE_FALLBACK_URL`, and
-`TSN_RECEIVER_NODE_API_KEY` configure this notification path.
+## Hosted storage configuration
 
-When the optional Realtime Database wake channel is enabled, the Receiver also
-writes a control marker to `tsn/crankerWake`. The marker contains only a nonce,
-work kind, and timestamp. A Cranker opens an outbound authenticated Realtime
-Database stream, receives the marker, then calls `/api/cranker/work` to lease
-verified work from Firestore. Firestore remains authoritative for work,
-leases, idempotency, replay state, and results; the wake marker is never a
-work payload. If the channel is unavailable, Crankers use bounded fallback
-backoff rather than failing a durable submission.
-
-## Deploy to Vercel
-
-Create a separate Vercel project from this repository. Vercel Root Directory
-must be the repository root. Set all values through Vercel Project Environment
-Variables; never commit a `.env.local` file.
-
-Required server-only variables:
-
-```text
-FIREBASE_PROJECT_ID
-FIREBASE_CLIENT_EMAIL
-FIREBASE_PRIVATE_KEY
-FIREBASE_DATABASE_URL
-FIREBASE_WEB_API_KEY
-TSN_RECEIVER_NODE_API_KEY
-TSN_RECEIVER_NODE_PAYLOAD_KEY
-TSN_NODE_VERIFICATION_PUBLIC_KEY
-```
-
-All three Firebase variables are mandatory in the hosted Receiver. The service
-does not fall back to Google application-default credentials, because a Vercel
-function has no implicit Firebase identity. If any value is missing or the
-private key has invalid newline escaping, durable state requests fail closed.
-
-Optional variables:
-
-```text
-TSN_RECEIVER_COLLECTION=tsn_receiver_work
-TSN_RECEIVER_STATE_COLLECTION=tsn_receiver_state
-TSN_NODE_URL=https://<your-tsn-node-domain>
-```
+Production uses `TSN_RECEIVER_STORE=d1`, `TSN_RECORD_STORE_URL`, `TSN_RECORD_STORE_TOKEN` and `TSN_RECORD_STORE_NAMESPACE`. The namespace must be separately initialized or imported before use; missing storage fails closed. Preserve existing `TSN_RECEIVER_NODE_API_KEY`, `TSN_RECEIVER_NODE_PAYLOAD_KEY` and `TSN_NODE_VERIFICATION_PUBLIC_KEY`. The record-store implementation and free-tier limits are documented in [storage contracts](lib/storage/record-store/README.md).
 
 Cranker APIs use Ed25519 challenge-response to establish a short-lived Receiver
 session. At session establishment, the Receiver reads the Mother Escrow and
@@ -126,13 +87,6 @@ onboarding or rotation. The EVM wallet is a separate gas signer and is not the
 Receiver admission identity. Legacy Cranker API-key authentication is disabled
 and is not part of the deployment configuration.
 
-Deploy the Realtime Database rules from this repository after creating the
-database in the Firebase project:
-
-```bash
-firebase deploy --only database
-```
-
 After deployment, use the generated HTTPS URL as `TSN_RECEIVER_URL` in the
 TSN Node and TSN Cranker. Internal API keys are for server-to-server calls
 only; they must not be placed in browser-visible Vercel variables.
@@ -144,9 +98,15 @@ Node lease. Configure the same public key in the Cranker so it can independently
 verify the receipt and the exact execution payload before submitting a
 transaction.
 
+## Receiver repository commands
+
+Run `npm run git:commit:push:all` from this directory to capture Receiver files and publish to [bigdreamsweb3/tsn-receiver](https://github.com/bigdreamsweb3/tsn-receiver) on `main`, matching this package's `repository.url`. Review the directory's changes before launching the command. In a protocol/workspace checkout, the helper keeps a separate publication history inside the enclosing Git metadata and leaves its branch and index intact. A standalone Receiver clone uses its own Git history; the helper is included in this package and requires no parent scripts.
+
+The first nested publication fetches the destination's existing `main` as its parent; an empty destination starts a Receiver root commit. Each publication mirrors the nonignored Receiver directory, including deletions. Remote-only files disappear from the resulting snapshot if they are absent locally. A failed push retains its local Receiver commit for retry; non-fast-forward updates require reconciliation and are never forced. `npm run git:pull:all` fetches only Receiver tracking metadata without merging or replacing source files. Secrets and local state remain excluded by this directory's ignore rules and private-filename checks.
+
 ## Local verification
 
-Receiver follows the [MCES architecture](docs/architecture.md), with [component guidance](docs/engineering.md), a [source inventory](core/component_inventory.json) and [bounded verification](docs/verification.md). Runtime functions, methods and callbacks are isolated by responsibility with explicit dependency ports. The earlier canonical-storage checkpoint passed 72 isolated tests; the November 18 staged-funding checkpoint records its added tests, typecheck/audit and broader regression limits separately. Hosted Firestore parity, final-source live latency and payment execution remain unverified.
+Receiver follows the [MCES architecture](docs/architecture.md), with [component guidance](docs/engineering.md), a [source inventory](core/component_inventory.json) and [bounded verification](docs/verification.md). Runtime functions, methods and callbacks are isolated by responsibility with explicit dependency ports. The earlier canonical-storage checkpoint passed 72 isolated tests; the November 18 staged-funding checkpoint records its added tests, typecheck/audit and broader regression limits separately. Hosted D1 parity, final-source live latency and payment execution remain unverified.
 
 In explicitly gated local mode, `TSN_RECEIVER_LOCAL_FILE` is a canonical ordered manifest backed by `<file>.d/epochs/<accounting-epoch>/<work-kind>/<id-sha256>.json`. Each work retains its full existing JSON row. Funding and TIN use `unassigned`; settlement remains unassigned until its stored verified transition supplies an accounting epoch. Metadata uses separate collection paths.
 
@@ -159,7 +119,7 @@ npm test
 ```
 
 TrustLink Labs maintains the protocol architecture. This repository contains
-only the Receiver service and its Firebase integration boundary.
+only the Receiver service and its private record-store integration boundary.
 
 ## Experimental private-credit and aggregate accounting
 

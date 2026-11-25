@@ -7,14 +7,14 @@
       "path": "/internal/wake",
       "function": "wake_receiver_verification",
       "file": "tsn-protocol/services/tsn-node/api/handlers/wake_receiver_verification.py",
-      "line": 20,
+      "line": 21,
       "signature": "",
       "implementationSignature": "node: Dependencies",
       "returns": "dict[str, Any]",
       "binding": "wake_receiver_verification",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 331,
+      "registrationLine": 333,
       "decoratorOptions": {
         "dependencies": "[Depends(require_worker_api_key)]"
       }
@@ -31,7 +31,7 @@
       "binding": "create_settlement_authorization",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 333,
+      "registrationLine": 335,
       "decoratorOptions": {
         "dependencies": "[Depends(require_worker_api_key)]"
       }
@@ -48,7 +48,7 @@
       "binding": "sign_settlement_transaction",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 334,
+      "registrationLine": 336,
       "decoratorOptions": {
         "dependencies": "[Depends(require_worker_api_key)]"
       }
@@ -65,7 +65,7 @@
       "binding": "mempool_status",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 335,
+      "registrationLine": 337,
       "decoratorOptions": {
         "response_model": "MempoolStatusResponse"
       }
@@ -82,7 +82,7 @@
       "binding": "consume_threshold_access_nonce",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 336,
+      "registrationLine": 338,
       "decoratorOptions": {}
     },
     {
@@ -97,10 +97,40 @@
       "binding": "post_intent",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 337,
+      "registrationLine": 339,
       "decoratorOptions": {
         "response_model": "PublicMempoolIntent"
       }
+    },
+    {
+      "method": "POST",
+      "path": "/network/tin-debit/prepare",
+      "function": "prepare_tin_debit_request",
+      "file": "tsn-protocol/services/tsn-node/api/handlers/prepare_tin_debit.py",
+      "line": 26,
+      "signature": "request: TinDebitPrepareRequest",
+      "implementationSignature": "node: Dependencies, request: TinDebitPrepareRequest",
+      "returns": "dict",
+      "binding": "prepare_tin_debit_request",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 340,
+      "decoratorOptions": {}
+    },
+    {
+      "method": "POST",
+      "path": "/network/tin-debit",
+      "function": "post_tin_debit",
+      "file": "tsn-protocol/services/tsn-node/api/handlers/post_tin_debit.py",
+      "line": 33,
+      "signature": "request: TinDebitRequest",
+      "implementationSignature": "node: Dependencies, request: TinDebitRequest",
+      "returns": "dict",
+      "binding": "post_tin_debit",
+      "boundRuntimePort": true,
+      "registrationFile": "tsn-protocol/services/tsn-node/server.py",
+      "registrationLine": 341,
+      "decoratorOptions": {}
     },
     {
       "method": "GET",
@@ -114,7 +144,7 @@
       "binding": "get_network_recent_blockhash",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 338,
+      "registrationLine": 342,
       "decoratorOptions": {}
     },
     {
@@ -129,7 +159,7 @@
       "binding": "post_funding_readiness",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 339,
+      "registrationLine": 343,
       "decoratorOptions": {}
     },
     {
@@ -144,7 +174,7 @@
       "binding": "post_complete_funding",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 340,
+      "registrationLine": 344,
       "decoratorOptions": {}
     },
     {
@@ -159,7 +189,7 @@
       "binding": "list_intents",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 341,
+      "registrationLine": 345,
       "decoratorOptions": {
         "response_model": "list[PublicMempoolIntent]",
         "dependencies": "[Depends(require_worker_api_key)]"
@@ -177,7 +207,7 @@
       "binding": "update_intent_status",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 342,
+      "registrationLine": 346,
       "decoratorOptions": {
         "response_model": "MempoolIntent",
         "dependencies": "[Depends(require_worker_api_key)]"
@@ -195,7 +225,7 @@
       "binding": "list_pending_intent_work",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 343,
+      "registrationLine": 347,
       "decoratorOptions": {
         "response_model": "list[IntentWorkItem]",
         "dependencies": "[Depends(require_worker_api_key)]"
@@ -213,7 +243,7 @@
       "binding": "get_metrics",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 344,
+      "registrationLine": 348,
       "decoratorOptions": {
         "response_model": "MetricsResponse"
       }
@@ -230,7 +260,7 @@
       "binding": "post_cranker_heartbeat",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 345,
+      "registrationLine": 349,
       "decoratorOptions": {
         "response_model": "CrankerHeartbeatRecord",
         "dependencies": "[Depends(require_worker_api_key)]"
@@ -248,7 +278,7 @@
       "binding": "get_settlement_networks",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 346,
+      "registrationLine": 350,
       "decoratorOptions": {}
     },
     {
@@ -263,7 +293,7 @@
       "binding": "get_network_overview",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 347,
+      "registrationLine": 351,
       "decoratorOptions": {
         "response_model": "NetworkOverviewResponse"
       }
@@ -280,7 +310,7 @@
       "binding": "get_epoch_status",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 348,
+      "registrationLine": 352,
       "decoratorOptions": {
         "response_model": "EpochStatus"
       }
@@ -297,7 +327,7 @@
       "binding": "close_epoch",
       "boundRuntimePort": true,
       "registrationFile": "tsn-protocol/services/tsn-node/server.py",
-      "registrationLine": 349,
+      "registrationLine": 353,
       "decoratorOptions": {
         "response_model": "EpochCloseResult",
         "dependencies": "[Depends(require_worker_api_key)]"
@@ -2122,6 +2152,359 @@
       "modelConfig": null
     },
     {
+      "name": "TinDebitIdentityRequest",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+      "line": 6,
+      "fields": [
+        "senderTin: str = Field(pattern='^\\\\d{10}$')",
+        "recipientTin: str = Field(pattern='^\\\\d{10}$')",
+        "tokenMintAddress: str = Field(min_length=32, max_length=44)"
+      ],
+      "fieldSources": [
+        {
+          "name": "senderTin",
+          "declaration": "senderTin: str = Field(pattern='^\\\\d{10}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 8,
+          "declaredIn": "TinDebitIdentityRequest"
+        },
+        {
+          "name": "recipientTin",
+          "declaration": "recipientTin: str = Field(pattern='^\\\\d{10}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 9,
+          "declaredIn": "TinDebitIdentityRequest"
+        },
+        {
+          "name": "tokenMintAddress",
+          "declaration": "tokenMintAddress: str = Field(min_length=32, max_length=44)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 10,
+          "declaredIn": "TinDebitIdentityRequest"
+        }
+      ],
+      "bases": [],
+      "modelConfig": "model_config = ConfigDict(extra='forbid')"
+    },
+    {
+      "name": "TinDebitPrepareRequest",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+      "line": 13,
+      "fields": [
+        "senderTin: str = Field(pattern='^\\\\d{10}$')",
+        "recipientTin: str = Field(pattern='^\\\\d{10}$')",
+        "tokenMintAddress: str = Field(min_length=32, max_length=44)",
+        "ownerPublicKey: str = Field(pattern='^[0-9a-f]{64}$')",
+        "signature: str = Field(pattern='^[0-9a-f]{128}$', repr=False)",
+        "expiresAt: str = Field(pattern='^[1-9][0-9]{0,12}$')"
+      ],
+      "fieldSources": [
+        {
+          "name": "senderTin",
+          "declaration": "senderTin: str = Field(pattern='^\\\\d{10}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 8,
+          "declaredIn": "TinDebitIdentityRequest"
+        },
+        {
+          "name": "recipientTin",
+          "declaration": "recipientTin: str = Field(pattern='^\\\\d{10}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 9,
+          "declaredIn": "TinDebitIdentityRequest"
+        },
+        {
+          "name": "tokenMintAddress",
+          "declaration": "tokenMintAddress: str = Field(min_length=32, max_length=44)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 10,
+          "declaredIn": "TinDebitIdentityRequest"
+        },
+        {
+          "name": "ownerPublicKey",
+          "declaration": "ownerPublicKey: str = Field(pattern='^[0-9a-f]{64}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 14,
+          "declaredIn": "TinDebitPrepareRequest"
+        },
+        {
+          "name": "signature",
+          "declaration": "signature: str = Field(pattern='^[0-9a-f]{128}$', repr=False)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 15,
+          "declaredIn": "TinDebitPrepareRequest"
+        },
+        {
+          "name": "expiresAt",
+          "declaration": "expiresAt: str = Field(pattern='^[1-9][0-9]{0,12}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 16,
+          "declaredIn": "TinDebitPrepareRequest"
+        }
+      ],
+      "bases": [
+        {
+          "name": "TinDebitIdentityRequest",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 6
+        }
+      ],
+      "modelConfig": "model_config = ConfigDict(extra='forbid')"
+    },
+    {
+      "name": "TinDebitApproval",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+      "line": 19,
+      "fields": [
+        "ownerPublicKey: str = Field(pattern='^[0-9a-f]{64}$')",
+        "signature: str = Field(pattern='^[0-9a-f]{128}$', repr=False)"
+      ],
+      "fieldSources": [
+        {
+          "name": "ownerPublicKey",
+          "declaration": "ownerPublicKey: str = Field(pattern='^[0-9a-f]{64}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 21,
+          "declaredIn": "TinDebitApproval"
+        },
+        {
+          "name": "signature",
+          "declaration": "signature: str = Field(pattern='^[0-9a-f]{128}$', repr=False)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 22,
+          "declaredIn": "TinDebitApproval"
+        }
+      ],
+      "bases": [],
+      "modelConfig": "model_config = ConfigDict(extra='forbid')"
+    },
+    {
+      "name": "TinDebitOpening",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+      "line": 25,
+      "fields": [
+        "ownerPublicKey: str = Field(pattern='^[0-9a-f]{64}$')",
+        "signature: str = Field(pattern='^[0-9a-f]{128}$', repr=False)",
+        "version: Literal[1]",
+        "recordType: Literal['tsn-gpru-tin-debit-opening-v1']",
+        "leg: Literal[0]",
+        "authorizationCommitment: str = Field(pattern='^[0-9a-f]{64}$')",
+        "routeKeyCommitment: str = Field(pattern='^[0-9a-f]{64}$')",
+        "tokenId: int = Field(strict=True, gt=0, le=4294967295)",
+        "sequence: str = Field(pattern='^(0|[1-9][0-9]{0,19})$')",
+        "previousMemoCommitment: str = Field(pattern='^[0-9a-f]{64}$')",
+        "balance: str = Field(pattern='^(0|[1-9][0-9]{0,38})$', repr=False)",
+        "blinding: str = Field(pattern='^(0|[1-9][0-9]{0,76})$', repr=False)"
+      ],
+      "fieldSources": [
+        {
+          "name": "ownerPublicKey",
+          "declaration": "ownerPublicKey: str = Field(pattern='^[0-9a-f]{64}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 21,
+          "declaredIn": "TinDebitApproval"
+        },
+        {
+          "name": "signature",
+          "declaration": "signature: str = Field(pattern='^[0-9a-f]{128}$', repr=False)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 22,
+          "declaredIn": "TinDebitApproval"
+        },
+        {
+          "name": "version",
+          "declaration": "version: Literal[1]",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 26,
+          "declaredIn": "TinDebitOpening"
+        },
+        {
+          "name": "recordType",
+          "declaration": "recordType: Literal['tsn-gpru-tin-debit-opening-v1']",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 27,
+          "declaredIn": "TinDebitOpening"
+        },
+        {
+          "name": "leg",
+          "declaration": "leg: Literal[0]",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 28,
+          "declaredIn": "TinDebitOpening"
+        },
+        {
+          "name": "authorizationCommitment",
+          "declaration": "authorizationCommitment: str = Field(pattern='^[0-9a-f]{64}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 29,
+          "declaredIn": "TinDebitOpening"
+        },
+        {
+          "name": "routeKeyCommitment",
+          "declaration": "routeKeyCommitment: str = Field(pattern='^[0-9a-f]{64}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 30,
+          "declaredIn": "TinDebitOpening"
+        },
+        {
+          "name": "tokenId",
+          "declaration": "tokenId: int = Field(strict=True, gt=0, le=4294967295)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 31,
+          "declaredIn": "TinDebitOpening"
+        },
+        {
+          "name": "sequence",
+          "declaration": "sequence: str = Field(pattern='^(0|[1-9][0-9]{0,19})$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 32,
+          "declaredIn": "TinDebitOpening"
+        },
+        {
+          "name": "previousMemoCommitment",
+          "declaration": "previousMemoCommitment: str = Field(pattern='^[0-9a-f]{64}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 33,
+          "declaredIn": "TinDebitOpening"
+        },
+        {
+          "name": "balance",
+          "declaration": "balance: str = Field(pattern='^(0|[1-9][0-9]{0,38})$', repr=False)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 34,
+          "declaredIn": "TinDebitOpening"
+        },
+        {
+          "name": "blinding",
+          "declaration": "blinding: str = Field(pattern='^(0|[1-9][0-9]{0,76})$', repr=False)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 35,
+          "declaredIn": "TinDebitOpening"
+        }
+      ],
+      "bases": [
+        {
+          "name": "TinDebitApproval",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 19
+        }
+      ],
+      "modelConfig": "model_config = ConfigDict(extra='forbid')"
+    },
+    {
+      "name": "TinDebitRequest",
+      "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+      "line": 38,
+      "fields": [
+        "senderTin: str = Field(pattern='^\\\\d{10}$')",
+        "recipientTin: str = Field(pattern='^\\\\d{10}$')",
+        "tokenMintAddress: str = Field(min_length=32, max_length=44)",
+        "paymentId: str = Field(pattern='^[a-zA-Z0-9_-]{1,128}$')",
+        "amountBaseUnits: str = Field(pattern='^[1-9][0-9]{0,19}$')",
+        "nonce: str = Field(pattern='^[1-9][0-9]{0,77}$', repr=False)",
+        "amountBlinding: str = Field(pattern='^[1-9][0-9]{0,77}$', repr=False)",
+        "deploymentCommitment: str = Field(pattern='^[0-9a-f]{64}$')",
+        "validAfterSlot: str = Field(pattern='^(0|[1-9][0-9]{0,19})$')",
+        "expiresAtSlot: str = Field(pattern='^[1-9][0-9]{0,19}$')",
+        "approval: TinDebitApproval = Field(repr=False)",
+        "senderOpening: TinDebitOpening = Field(repr=False)"
+      ],
+      "fieldSources": [
+        {
+          "name": "senderTin",
+          "declaration": "senderTin: str = Field(pattern='^\\\\d{10}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 8,
+          "declaredIn": "TinDebitIdentityRequest"
+        },
+        {
+          "name": "recipientTin",
+          "declaration": "recipientTin: str = Field(pattern='^\\\\d{10}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 9,
+          "declaredIn": "TinDebitIdentityRequest"
+        },
+        {
+          "name": "tokenMintAddress",
+          "declaration": "tokenMintAddress: str = Field(min_length=32, max_length=44)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 10,
+          "declaredIn": "TinDebitIdentityRequest"
+        },
+        {
+          "name": "paymentId",
+          "declaration": "paymentId: str = Field(pattern='^[a-zA-Z0-9_-]{1,128}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 39,
+          "declaredIn": "TinDebitRequest"
+        },
+        {
+          "name": "amountBaseUnits",
+          "declaration": "amountBaseUnits: str = Field(pattern='^[1-9][0-9]{0,19}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 40,
+          "declaredIn": "TinDebitRequest"
+        },
+        {
+          "name": "nonce",
+          "declaration": "nonce: str = Field(pattern='^[1-9][0-9]{0,77}$', repr=False)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 41,
+          "declaredIn": "TinDebitRequest"
+        },
+        {
+          "name": "amountBlinding",
+          "declaration": "amountBlinding: str = Field(pattern='^[1-9][0-9]{0,77}$', repr=False)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 42,
+          "declaredIn": "TinDebitRequest"
+        },
+        {
+          "name": "deploymentCommitment",
+          "declaration": "deploymentCommitment: str = Field(pattern='^[0-9a-f]{64}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 43,
+          "declaredIn": "TinDebitRequest"
+        },
+        {
+          "name": "validAfterSlot",
+          "declaration": "validAfterSlot: str = Field(pattern='^(0|[1-9][0-9]{0,19})$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 44,
+          "declaredIn": "TinDebitRequest"
+        },
+        {
+          "name": "expiresAtSlot",
+          "declaration": "expiresAtSlot: str = Field(pattern='^[1-9][0-9]{0,19}$')",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 45,
+          "declaredIn": "TinDebitRequest"
+        },
+        {
+          "name": "approval",
+          "declaration": "approval: TinDebitApproval = Field(repr=False)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 46,
+          "declaredIn": "TinDebitRequest"
+        },
+        {
+          "name": "senderOpening",
+          "declaration": "senderOpening: TinDebitOpening = Field(repr=False)",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 47,
+          "declaredIn": "TinDebitRequest"
+        }
+      ],
+      "bases": [
+        {
+          "name": "TinDebitIdentityRequest",
+          "file": "tsn-protocol/services/tsn-node/core/schemas/tin_debit_request.py",
+          "line": 6
+        }
+      ],
+      "modelConfig": "model_config = ConfigDict(extra='forbid')"
+    },
+    {
       "name": "TokenNetworkStatus",
       "file": "tsn-protocol/services/tsn-node/core/schemas/token_network_status.py",
       "line": 5,
@@ -2405,28 +2788,6 @@
     },
     {
       "method": "POST",
-      "path": "/api/cranker/wake-token",
-      "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/wake-token/route.ts",
-      "line": 5,
-      "implementation": {
-        "file": "tsn-protocol/services/tsn-receiver/lib/http/api/cranker/wake-token/POST.ts",
-        "line": 9,
-        "function": "POST"
-      },
-      "authReferences": [
-        "authenticateCrankerRequest"
-      ],
-      "authReferenceSources": [
-        {
-          "name": "authenticateCrankerRequest",
-          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/cranker/authenticate-cranker-request.ts",
-          "line": 12,
-          "function": "authenticateCrankerRequest"
-        }
-      ]
-    },
-    {
-      "method": "POST",
       "path": "/api/cranker/work/retry",
       "file": "tsn-protocol/services/tsn-receiver/app/api/cranker/work/retry/route.ts",
       "line": 5,
@@ -2574,6 +2935,86 @@
           "file": "tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts",
           "line": 6,
           "function": "requireService"
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/internal/node/relay",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/relay/route.ts",
+      "line": 8,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/node-relay/http.ts",
+        "line": 10,
+        "function": "relayHttp"
+      },
+      "authReferences": [
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "unresolved": true
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/node/relay",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/relay/route.ts",
+      "line": 9,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/node-relay/http.ts",
+        "line": 10,
+        "function": "relayHttp"
+      },
+      "authReferences": [
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "unresolved": true
+        }
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/internal/node/relay",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/relay/route.ts",
+      "line": 10,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/node-relay/http.ts",
+        "line": 10,
+        "function": "relayHttp"
+      },
+      "authReferences": [
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "unresolved": true
+        }
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/internal/node/relay",
+      "file": "tsn-protocol/services/tsn-receiver/app/api/internal/node/relay/route.ts",
+      "line": 11,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/lib/node-relay/http.ts",
+        "line": 10,
+        "function": "relayHttp"
+      },
+      "authReferences": [
+        "requireService"
+      ],
+      "authReferenceSources": [
+        {
+          "name": "requireService",
+          "unresolved": true
         }
       ]
     },
@@ -2786,7 +3227,8 @@
         "function": "POST"
       },
       "authReferences": [
-        "assertExternalWorkKind"
+        "assertExternalWorkKind",
+        "requireService"
       ],
       "authReferenceSources": [
         {
@@ -2794,6 +3236,12 @@
           "file": "tsn-protocol/services/tsn-receiver/lib/contracts/kinds/assert-external-work-kind.ts",
           "line": 10,
           "function": "assertExternalWorkKind"
+        },
+        {
+          "name": "requireService",
+          "file": "tsn-protocol/services/tsn-receiver/lib/authentication/service/require-service.ts",
+          "line": 6,
+          "function": "requireService"
         }
       ]
     },
@@ -2817,7 +3265,7 @@
       "line": 5,
       "implementation": {
         "file": "tsn-protocol/services/tsn-receiver/lib/http/api/work-status/by-id/GET.ts",
-        "line": 13,
+        "line": 14,
         "function": "GET"
       },
       "authReferences": [],
@@ -2895,6 +3343,45 @@
       "implementation": {
         "file": "tsn-protocol/services/tsn-receiver/lib/http/network/proxy/GET.ts",
         "line": 11,
+        "function": "GET"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
+    },
+    {
+      "method": "GET",
+      "path": "/node/[...path]",
+      "file": "tsn-protocol/services/tsn-receiver/app/node/[...path]/route.ts",
+      "line": 6,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/app/node/[...path]/route.ts",
+        "line": 6,
+        "function": "GET"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
+    },
+    {
+      "method": "POST",
+      "path": "/node/[...path]",
+      "file": "tsn-protocol/services/tsn-receiver/app/node/[...path]/route.ts",
+      "line": 9,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/app/node/[...path]/route.ts",
+        "line": 6,
+        "function": "GET"
+      },
+      "authReferences": [],
+      "authReferenceSources": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/node/[...path]",
+      "file": "tsn-protocol/services/tsn-receiver/app/node/[...path]/route.ts",
+      "line": 10,
+      "implementation": {
+        "file": "tsn-protocol/services/tsn-receiver/app/node/[...path]/route.ts",
+        "line": 6,
         "function": "GET"
       },
       "authReferences": [],

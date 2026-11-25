@@ -11,6 +11,7 @@ from typing import Any, Callable, Protocol
 
 class Dependencies(Protocol):
     _receiver_wake_event: Any
+    _receiver_funding_wake_event: Any
     close_epoch_task: Callable[..., Any]
     is_epoch_due: Callable[..., Any]
     logger: Any
@@ -19,14 +20,16 @@ class Dependencies(Protocol):
 
 async def wake_receiver_verification(node: Dependencies) -> dict[str, Any]:
     """Wake the verifier after Receiver commit; carries no work payload."""
-    if node._receiver_wake_event is None:
+    if node._receiver_wake_event is None or node._receiver_funding_wake_event is None:
         raise HTTPException(503, "TSN Node verifier is not ready")
+    # Signal both lanes before any awaited epoch work can delay a signed deposit.
+    node._receiver_wake_event.set()
+    node._receiver_funding_wake_event.set()
     if node.is_epoch_due(await node.read_epoch_state()):
         try:
             result = await node.close_epoch_task()
             node.logger.info("Wake-triggered epoch close completed: %s", result.message)
         except Exception:
             node.logger.exception("Wake-triggered epoch close failed; work remains available")
-    node._receiver_wake_event.set()
     node.logger.info("TSN Receiver wake accepted")
     return {"ok": True, "status": "awake"}

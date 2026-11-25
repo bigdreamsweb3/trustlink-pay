@@ -13,9 +13,9 @@ The root `.gitmodules` lists Node, mempool UI and epoch-record paths, while pack
 ```mermaid
 flowchart LR
   App[Application and sender wallet] --> SDK[TSN SDK]
-  SDK --> N[Node HTTP facade]
+  SDK --> N[Receiver public Node facade]
   N --> R[Receiver durable ingress]
-  R --> V[Node lease and verification]
+  V[Local Node outbound lease and verification] --> R
   V --> TIP[TIP identity and shared route root]
   R --> C[Cranker leased execution]
   C --> D[TCAP wallet deposit]
@@ -34,7 +34,9 @@ flowchart LR
   C --> Q[TCAP and GPRU aggregate liability accounting]
 ```
 
-The Node's HTTP facade accepts application intents and forwards them to Receiver. Receiver owns durable coordination, not private balance authority. Node independently resolves the recipient route and verifies funding. Cranker validates Node's signed execution projection and submits the permitted transaction. Mother authority co-signs the inspected settlement; TCAP calls GPRU as part of its own validation. GPRU does not receive custody of reserve tokens.
+Receiver stores encrypted application requests; the local Node claims them over outbound HTTPS and dispatches its existing facade in-process. Receiver owns durable coordination, not private balance authority. Node independently resolves the recipient route and verifies funding. Cranker validates Node's signed execution projection and submits the permitted transaction. Mother authority co-signs the inspected settlement; TCAP calls GPRU as part of its own validation. GPRU does not receive custody of reserve tokens.
+
+The [local relay checkpoint](../references/LOCAL-NODE-RELAY-20261125.md) records transport, cache and resource controls. Receiver now stores JSON records through a private D1 Worker; local cache metadata and exact replies do not grant leases. Node continues to validate downloaded work and RPC data.
 
 ## Native credit sequence
 
@@ -47,16 +49,16 @@ sequenceDiagram
   participant P as Solana programs
   A->>A: Review TIN, asset, amount, fee and expiry
   A->>A: Sign canonical intent message
-  A->>N: POST /intents
-  N->>R: Forward authorized funding ingress
+  A->>R: POST /node/intents, encrypted relay request
+  N->>R: Pull relay job, forward authenticated funding ingress
   R-->>A: Accepted work identity / pending status
   N->>R: Lease RECEIVED funding
   N->>N: Verify message, recipient, asset and advisory wallet balance
   N->>R: Signed FUNDING_READY decision with private preparation
-  A->>N: Owner-authenticated readiness request
-  N-->>A: Deposit accounts, amount, expiry and version/commitment
+  A->>R: Owner-authenticated readiness relay request
+  N->>R: Attested encrypted reply, Receiver returns it to app
   A->>A: Explicit funding approval with fresh blockhash and wallet signature
-  A->>N: Complete the original intent with exact wire/context
+  A->>R: Complete original intent through durable relay
   N->>R: Atomic attachment creates RECEIVED settlement reference
   N->>N: Reuse verified authorization to validate and simulate exact deposit
   N->>R: Signed VERIFIED decision
@@ -70,9 +72,11 @@ sequenceDiagram
   N->>N: Reconstruct witness, encrypt Memo, prove and verify locally
   N->>R: Signed VERIFIED execution projection
   C->>R: Claim VERIFIED settlement
-  C->>N: Request current-lease authorization and exact unsigned message signing
+  C->>R: Queue current-lease authorization and exact unsigned signing request
+  N->>R: Pull native request under original Cranker generation
   N->>N: Validate, select final fresh hash and Mother-sign unchanged statement
-  N-->>C: Signed V1 message with final hash/lifetime/context
+  N->>R: Attested encrypted signed V1 message, final hash/lifetime/context
+  R-->>C: Return exact durable Node reply
   C->>C: Validate replacement, payer-sign and checkpoint final identity
   C->>P: Submit TSNP authorization call followed by Memo
   P->>P: TSNP -> TCAP -> GPRU checks
@@ -84,6 +88,8 @@ sequenceDiagram
 The sequence is a source description. Receiver creates the settlement reference at signed funding attachment, and its verification requires confirmed funding. Readiness reserves no funds and does not authorize Cranker execution. Node cannot prepare a usable settlement without pinned proving artifacts, root-matching witness snapshots and a matching initialized verifier; funding confirmation alone does not confer settlement authorization.
 
 Node's authorization response binds the exact verified transition to Receiver's current lease ID/version/expiry and includes Cranker's required kind. The earlier incomplete envelope was corrected and tested locally. Node automatically reconstructs missing TIP membership snapshots from confirmed, indexed creation history before proving. Missing TCAP state snapshots or unavailable TIP history still stop preparation; a guarded authenticated retry can requeue an unsubmitted settlement rejected for missing snapshots or the exact repaired TCAP asset-preflight reason while preserving confirmed funding and requiring fresh Node verification. The diagram describes the source contract; the November 5 finalized reference receipt verifies one credit, with owner recovery still a separate check.
+
+Signed funding now uses independent event-driven Node verification and independent Cranker submission, avoiding waits behind ordinary proofs or native authorization. Receiver atomically separates message-only `AUTHORIZATION` and completed `SIGNED_DEPOSIT` claims. The ordinary Node worker and native Cranker loop retain their serialized work and existing shared-root/lease checks; Cranker uses independent session counters and shares the existing thirty-per-minute lease budget. This changes scheduling without changing TCAP instructions, wallet-signed bytes or the twenty-block send guard. The [November 25 record](../references/FUNDING-ISOLATION-20261125.md) separates offline regressions from unverified loaded-service timing.
 
 ## State and public boundaries
 

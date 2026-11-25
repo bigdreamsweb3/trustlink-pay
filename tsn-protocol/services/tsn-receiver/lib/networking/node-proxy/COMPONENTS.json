@@ -1,17 +1,14 @@
 {
   "facade": "../../node-proxy.ts",
-  "responsibility": "Public Node proxy",
+  "responsibility": "Durable application Node facade",
   "components": [
     {
       "name": "proxyNode",
       "file": "proxy-node.ts",
       "imports": [
-        "./dependencies",
         "next/server",
-        "next/server",
-        "../common/has-configured-node-url",
-        "../common/clean-node-url",
-        "./configuration"
+        "./configuration",
+        "../../node-relay/types"
       ]
     }
   ]

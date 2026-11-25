@@ -4,13 +4,14 @@ from settlement.proving.epoch_prover_contract import GPRU
 from settlement.proving.epoch_prover_contract import INPUTS
 from settlement.proving.epoch_prover_contract import PROTOCOL_ROOT
 from app.solana_pubkey import Pubkey
-from settlement.proving.epoch_prover_contract import _lock
 import asyncio
 import base64
 import hashlib
 from settlement.witness.hex_field import hex_field
 import json
 import os
+from settlement.proving.resource_limits import LOCAL_PROVER_LOCK
+from settlement.proving.prover_node_args import prover_node_args
 
 async def prove_epoch(witness: dict, rpc, existing_proof: dict | None = None) -> dict:
     names = ("GPRU_EPOCH_CIRCUIT_BUILD_DIR", "GPRU_EPOCH_CIRCUIT_WASM_PATH", "GPRU_EPOCH_PROVING_KEY_PATH", "GPRU_EPOCH_VERIFICATION_KEY_PATH", "GPRU_EPOCH_PROVER_METADATA_PATH", "GPRU_EPOCH_PROVER_METADATA_SHA256")
@@ -24,8 +25,8 @@ async def prove_epoch(witness: dict, rpc, existing_proof: dict | None = None) ->
         or data[8:10] != b"\x01\x00" or data[106] != 1 or data[107] != bump): raise ValueError("GPRU_EPOCH_VERIFIER_UNAVAILABLE")
     script = PROTOCOL_ROOT/"programs/gpru/circuits/tcap_epoch_v1/scripts/node-prove.mjs"
     payload = existing_proof if existing_proof is not None else {k: [str(v) for v in x] if isinstance(x,list) else str(x) for k,x in witness.items()}
-    async with _lock:
-        proc = await asyncio.create_subprocess_exec(os.environ.get("GPRU_NODE_EXECUTABLE","node"),str(script),*(["--verify"] if existing_proof else []),stdin=asyncio.subprocess.PIPE,stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.DEVNULL)
+    async with LOCAL_PROVER_LOCK:
+        proc = await asyncio.create_subprocess_exec(*prover_node_args(),str(script),*(["--verify"] if existing_proof else []),stdin=asyncio.subprocess.PIPE,stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.DEVNULL)
         try: stdout,_ = await asyncio.wait_for(proc.communicate(json.dumps(payload,separators=(",",":")).encode("ascii")),300)
         except BaseException:
             if proc.returncode is None: proc.kill()

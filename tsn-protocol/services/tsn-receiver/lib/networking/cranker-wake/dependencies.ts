@@ -1,7 +1,2 @@
-import type { initializeApp } from "firebase-admin/app";
-
-export interface Dependencies {
-  environment: NodeJS.ProcessEnv;
-  clock: DateConstructor;
-  app: ReturnType<typeof initializeApp> | null;
-}
+import type { DatabasePort } from "../../work/dependencies";
+export interface Dependencies { db: DatabasePort; clock: DateConstructor; }

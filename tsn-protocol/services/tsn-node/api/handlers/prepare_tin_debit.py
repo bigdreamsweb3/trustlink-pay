@@ -6,12 +6,15 @@ import hashlib
 import time
 from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
+from datetime import datetime, timezone
+from verification.intent.build_canonical_message import _build_canonical_message
 
 
 from typing import Any, Callable, Protocol
 
 
 class Dependencies(Protocol):
+    TSN_CANONICAL_DOMAIN_DISPLAY: str
     TSN_PROGRAM_ID: str
     TCAP_PROGRAM_ID: str
     GPRU_PROGRAM_ID: str
@@ -32,14 +35,24 @@ async def prepare_tin_debit_request(node: Dependencies, request: TinDebitPrepare
     if not now <= int(request.expiresAt) <= now + 300:
         raise HTTPException(403, "TIN_DEBIT_PREPARATION_AUTH_EXPIRED")
     public = bytes.fromhex(request.ownerPublicKey)
-    message = b"TSN_TIN_DEBIT_PREPARE_V1\0" + "\n".join((request.senderTin, request.recipientTin, request.tokenMintAddress, request.expiresAt)).encode("ascii")
+    expires = datetime.fromtimestamp(int(request.expiresAt), timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    message = _build_canonical_message(node, "TIN Balance Payment Preparation", [
+        ("Sender TIN", request.senderTin),
+        ("Recipient TIN", request.recipientTin),
+        ("Token Mint", request.tokenMintAddress),
+        ("Expires", expires),
+    ]).encode("utf-8")
     try:
         if hashlib.sha256(public).hexdigest() != sender["ownerPubkeyHash"]:
             raise ValueError("owner")
         VerifyKey(public).verify(message, bytes.fromhex(request.signature))
     except (BadSignatureError, ValueError) as exc:
         raise HTTPException(403, "TIN_DEBIT_PREPARATION_OWNER_REQUIRED") from exc
-    context = await read_debit_context(node, request.tokenMintAddress)
+    try:
+        context = await read_debit_context(node, request.tokenMintAddress)
+    except ValueError as exc:
+        detail = "TIN_DEBIT_VERIFIER_UNAVAILABLE" if str(exc) == "TIN_DEBIT_VERIFIER_UNAVAILABLE" else "TIN_DEBIT_CONTEXT_UNAVAILABLE"
+        raise HTTPException(503, detail) from exc
     return {"tokenId": context["asset"]["tokenId"], "decimals": context["asset"]["decimals"],
         "senderRouteKeyCommitment": sender["gpruElgamalKeyCommitment"],
         "recipientRouteKeyCommitment": recipient["gpruElgamalKeyCommitment"],

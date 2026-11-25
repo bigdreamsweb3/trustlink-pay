@@ -3,7 +3,7 @@ import type { ReceiverWork, WorkKind, WorkStatus } from "../work-contract";
 import type { WorkDependencies } from "./dependencies";
 import { now } from "./now";
 import { matchesFundingLeasePhase } from "./matches-funding-lease-phase";
-export async function claimWorkTransaction(dependencies: Pick<WorkDependencies, "db" | "hasResolvedNonExecution" | "isSupportedWorkKind" | "workCollection">, candidate: any, status: any, next: any, owner: any, fundingPhase: "SIGNED_DEPOSIT" | undefined, transaction: any) {
+export async function claimWorkTransaction(dependencies: Pick<WorkDependencies, "db" | "hasResolvedNonExecution" | "isSupportedWorkKind" | "workCollection">, candidate: any, status: any, next: any, owner: any, fundingPhase: "AUTHORIZATION" | "SIGNED_DEPOSIT" | undefined, transaction: any) {
     const snapshot = await transaction.get(candidate.ref);
     if (!snapshot.exists || snapshot.get("status") !== status)
         return null;

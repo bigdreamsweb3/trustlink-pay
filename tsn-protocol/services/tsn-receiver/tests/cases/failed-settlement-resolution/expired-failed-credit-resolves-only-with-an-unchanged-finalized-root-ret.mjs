@@ -33,9 +33,9 @@ export async function caseExpiredFailedCreditResolvesOnlyWithAnUnchangedFinalize
     process.env.TSN_RECEIVER_NODE_API_KEY = "synthetic-recovery-key";
     process.env.TSN_RPC_URL = "https://offline.invalid";
     try {
-        await compileReceiverFixture(directory, ["work-contract.ts", "failed-settlement-resolution.ts", "local-firestore.ts", "store.ts", "settlement-retry.ts", "native-work-retry.ts", "node-authorizations.ts", "auth.ts", "http/api/work-status/by-id/GET.ts"], { routes: [{ path: "app/api/internal/node/work/resolve-failed/route.ts", output: "route" }] });
+        await compileReceiverFixture(directory, ["work-contract.ts", "failed-settlement-resolution.ts", "local-json-store.ts", "store.ts", "settlement-retry.ts", "native-work-retry.ts", "node-authorizations.ts", "auth.ts", "http/api/work-status/by-id/GET.ts"], { routes: [{ path: "app/api/internal/node/work/resolve-failed/route.ts", output: "route" }] });
         for (const [name, source] of Object.entries({
-            firebase: 'import {localDb} from "./local-firestore.mjs";export const db=localDb;export const workCollection=db.collection("tsn_receiver_work");',
+            database: 'import {localDb} from "./local-json-store.mjs";export const db=localDb;export const workCollection=db.collection("tsn_receiver_work");',
             "firestore-stub": "export const FieldPath={};export const Timestamp={};",
             "node-envelope": "export const decryptPayloadForNode=x=>x;export const encryptPayloadForNode=x=>x;",
             "node-verification": "export const assertNodeVerificationAttestation=()=>{};",
@@ -45,7 +45,7 @@ export async function caseExpiredFailedCreditResolvesOnlyWithAnUnchangedFinalize
         }))
             await writeFile(path.join(directory, `${name}.mjs`), source);
         const load = loadReceiverFixtureModule.bind(null, directory);
-        const { db, workCollection } = await load("firebase");
+        const { db, workCollection } = await load("database");
         const { payloadCommitment, createReceivedWork, hasResolvedNonExecution } = await load("work-contract");
         const { resolveFailedSettlement } = await load("failed-settlement-resolution");
         const { leaseForNode } = await load("store");
